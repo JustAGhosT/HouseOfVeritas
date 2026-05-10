@@ -33,7 +33,7 @@ resource "azurerm_application_gateway" "main" {
   }
 
   dynamic "frontend_port" {
-    for_each = local.has_ssl ? [1] : []
+    for_each = toset(local.has_ssl ? ["enabled"] : [])
     content {
       name = "https-port"
       port = 443
@@ -129,7 +129,7 @@ resource "azurerm_application_gateway" "main" {
   # HTTPS listeners (only when SSL cert is provided)
   # No ssl_profile — listeners inherit gateway-level ssl_policy (AppGwSslPolicy20220101 = TLS 1.2 and 1.3)
   dynamic "http_listener" {
-    for_each = local.has_ssl ? [1] : []
+    for_each = toset(local.has_ssl ? ["enabled"] : [])
     content {
       name                           = "docuseal-https-listener"
       frontend_ip_configuration_name = "frontend-ip-config"
@@ -141,7 +141,7 @@ resource "azurerm_application_gateway" "main" {
   }
 
   dynamic "http_listener" {
-    for_each = local.has_ssl ? [1] : []
+    for_each = toset(local.has_ssl ? ["enabled"] : [])
     content {
       name                           = "baserow-https-listener"
       frontend_ip_configuration_name = "frontend-ip-config"
@@ -154,7 +154,7 @@ resource "azurerm_application_gateway" "main" {
 
   # SSL Certificate (only when provided)
   dynamic "ssl_certificate" {
-    for_each = local.has_ssl ? [1] : []
+    for_each = toset(local.has_ssl ? ["enabled"] : [])
     content {
       name     = "ssl-cert"
       data     = var.ssl_certificate_data
@@ -164,7 +164,7 @@ resource "azurerm_application_gateway" "main" {
 
   # HTTP-only routing (when no SSL - route HTTP directly to backends)
   dynamic "request_routing_rule" {
-    for_each = local.has_ssl ? [] : [1]
+    for_each = toset(local.has_ssl ? [] : ["enabled"])
     content {
       name                       = "docuseal-routing"
       rule_type                  = "Basic"
@@ -176,7 +176,7 @@ resource "azurerm_application_gateway" "main" {
   }
 
   dynamic "request_routing_rule" {
-    for_each = local.has_ssl ? [] : [1]
+    for_each = toset(local.has_ssl ? [] : ["enabled"])
     content {
       name                       = "baserow-routing"
       rule_type                  = "Basic"
@@ -189,7 +189,7 @@ resource "azurerm_application_gateway" "main" {
 
   # SSL routing (when SSL - redirect HTTP to HTTPS, route HTTPS to backends)
   dynamic "request_routing_rule" {
-    for_each = local.has_ssl ? [1] : []
+    for_each = toset(local.has_ssl ? ["enabled"] : [])
     content {
       name                        = "http-to-https-docuseal"
       rule_type                   = "Basic"
@@ -200,7 +200,7 @@ resource "azurerm_application_gateway" "main" {
   }
 
   dynamic "request_routing_rule" {
-    for_each = local.has_ssl ? [1] : []
+    for_each = toset(local.has_ssl ? ["enabled"] : [])
     content {
       name                        = "http-to-https-baserow"
       rule_type                   = "Basic"
@@ -211,7 +211,7 @@ resource "azurerm_application_gateway" "main" {
   }
 
   dynamic "request_routing_rule" {
-    for_each = local.has_ssl ? [1] : []
+    for_each = toset(local.has_ssl ? ["enabled"] : [])
     content {
       name                       = "docuseal-https-routing"
       rule_type                  = "Basic"
@@ -223,7 +223,7 @@ resource "azurerm_application_gateway" "main" {
   }
 
   dynamic "request_routing_rule" {
-    for_each = local.has_ssl ? [1] : []
+    for_each = toset(local.has_ssl ? ["enabled"] : [])
     content {
       name                       = "baserow-https-routing"
       rule_type                  = "Basic"
@@ -236,7 +236,7 @@ resource "azurerm_application_gateway" "main" {
 
   # Redirect configurations (only when SSL cert is provided)
   dynamic "redirect_configuration" {
-    for_each = local.has_ssl ? [1] : []
+    for_each = toset(local.has_ssl ? ["enabled"] : [])
     content {
       name                 = "docuseal-http-to-https"
       redirect_type        = "Permanent"
@@ -247,7 +247,7 @@ resource "azurerm_application_gateway" "main" {
   }
 
   dynamic "redirect_configuration" {
-    for_each = local.has_ssl ? [1] : []
+    for_each = toset(local.has_ssl ? ["enabled"] : [])
     content {
       name                 = "baserow-http-to-https"
       redirect_type        = "Permanent"

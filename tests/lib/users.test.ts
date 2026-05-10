@@ -13,8 +13,10 @@ import {
 
 describe("users", () => {
   describe("USERS store", () => {
-    it("should contain 4 users", () => {
-      expect(Object.keys(USERS)).toHaveLength(4)
+    it("should contain the 4 named personas", () => {
+      for (const id of ["hans", "charl", "lucky", "irma"]) {
+        expect(USERS).toHaveProperty(id)
+      }
     })
 
     it("should have bcrypt-hashed passwords", () => {

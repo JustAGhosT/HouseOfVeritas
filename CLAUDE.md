@@ -12,7 +12,7 @@ Project context for Claude Code / Cursor AI sessions.
 - **Backend:** Next.js API routes, Azure Functions (Python)
 - **Database:** Baserow (operational), PostgreSQL (DocuSeal/Baserow backend), MongoDB (kiosk)
 - **Infrastructure:** Terraform (Azure), Docker, GitHub Actions CI/CD
-- **Integrations:** DocuSeal (e-signatures), Baserow (data), SendGrid (email), Twilio (SMS)
+- **Integrations:** DocuSeal (e-signatures), Baserow (data), Azure Communication Services (email), Twilio (SMS)
 
 ## Key Commands
 
@@ -82,3 +82,7 @@ Lifecycle hooks in `.claude/hooks/`:
 ## Current State
 
 Run `/assess-all` for latest metrics. See `.claude/reports/orchestrator-summary.md` for prioritized backlog.
+
+## Baton Integration
+
+Baton is the shared task graph for cross-repo work. When the `baton` MCP server is available, agents should check for existing work with `task_check` at the start of meaningful tasks, create or claim visible work with `task_notify`/`log_agent_message`, update the task when significant new information becomes available, and log completion or blockers before handing off.

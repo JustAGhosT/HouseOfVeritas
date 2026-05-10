@@ -27,11 +27,14 @@ export function Hero() {
 
   return (
     <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 pt-24 pb-16">
-      {/* Background gradient */}
-      <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-zinc-950 via-zinc-950 to-zinc-900" />
+      {/* Vortex Glow */}
+      <div className="vortex-glow" />
 
-      {/* Subtle radial glow */}
-      <div className="pointer-events-none absolute top-1/4 left-1/2 h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-blue-900/10 blur-3xl" />
+      {/* Noise Overlay */}
+      <div className="noise-overlay" />
+
+      {/* Background gradient */}
+      <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-background via-background/90 to-muted/20" />
 
       <div className="relative z-10 mx-auto max-w-5xl text-center">
         {/* Badge */}
@@ -39,16 +42,15 @@ export function Hero() {
           initial={motionEnabled ? { opacity: 0, y: 20 } : { opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
           transition={motionEnabled ? { duration: 0.6, delay: 0.2 } : { duration: 0 }}
-          className="mb-8 inline-flex items-center gap-2 rounded-full border border-blue-800/50 bg-zinc-900 px-4 py-2"
+          className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-card px-4 py-2"
         >
-          <span className="pulse-glow h-2 w-2 rounded-full bg-blue-500" />
-          <span className="text-sm text-zinc-400">Azure-Powered Platform</span>
+          <span className="pulse-glow h-2 w-2 rounded-full bg-primary" />
+          <span className="text-sm text-muted-foreground">Azure-Powered Platform</span>
         </motion.div>
 
         {/* Headline with text mask animation */}
         <h1
-          className="mb-6 text-5xl font-bold tracking-tight text-white sm:text-6xl lg:text-7xl"
-          style={{ fontFamily: "var(--font-inter), sans-serif" }}
+          className="font-serif mb-6 text-5xl font-bold tracking-tight text-foreground sm:text-6xl lg:text-7xl"
         >
           <span className="block overflow-hidden">
             <motion.span
@@ -63,7 +65,7 @@ export function Hero() {
           </span>
           <span className="block overflow-hidden">
             <motion.span
-              className="block bg-linear-to-r from-blue-400 via-green-400 to-emerald-400 bg-clip-text text-transparent"
+              className="block bg-linear-to-r from-primary to-secondary bg-clip-text text-transparent"
               variants={textRevealVariants}
               initial="hidden"
               animate="visible"
@@ -79,7 +81,7 @@ export function Hero() {
           initial={motionEnabled ? { opacity: 0, y: 20 } : { opacity: 1, y: 0 }}
           animate={{ opacity: 1, y: 0 }}
           transition={motionEnabled ? { duration: 0.6, delay: 0.5 } : { duration: 0 }}
-          className="mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-zinc-400 sm:text-xl"
+          className="mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl"
         >
           The complete platform for estate management, document compliance, and operational
           accountability. Everything you need for legally enforceable governance.
@@ -94,7 +96,7 @@ export function Hero() {
         >
           <Button
             size="lg"
-            className="shimmer-btn h-12 cursor-pointer rounded-full bg-blue-600 px-8 text-base font-medium text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700"
+            className="shimmer-btn h-12 cursor-pointer rounded-full px-8 text-base font-medium text-primary-foreground shadow-lg shadow-primary/20"
             data-testid="access-documents-btn"
             onClick={openLoginModal}
           >
@@ -104,12 +106,28 @@ export function Hero() {
           <Button
             variant="outline"
             size="lg"
-            className="h-12 cursor-pointer rounded-full border-zinc-700 bg-transparent px-8 text-base font-medium text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800 hover:text-white"
+            className="h-12 cursor-pointer rounded-full border-border bg-transparent px-8 text-base font-medium text-muted-foreground hover:border-border/80 hover:bg-muted hover:text-foreground"
             data-testid="view-dashboard-btn"
             onClick={openLoginModal}
           >
             View Operations Dashboard
           </Button>
+
+          {/* Wax Seal Button */}
+          <div className="mt-8 flex flex-col items-center gap-2 sm:mt-0 sm:ml-8">
+            <button
+              className="wax-seal-btn"
+              onClick={() => {}}
+              title="Recite the Oath"
+            >
+              <div className="text-center font-serif text-[10px] leading-tight font-bold tracking-tighter uppercase text-white/90">
+                Recite<br />The<br />Oath
+              </div>
+            </button>
+            <span className="font-serif text-[10px] tracking-widest uppercase text-primary/60">
+              The Ritual
+            </span>
+          </div>
         </motion.div>
       </div>
     </section>

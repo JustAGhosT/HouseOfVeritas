@@ -117,7 +117,7 @@ export function PayrollPanel() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -127,8 +127,8 @@ export function PayrollPanel() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-green-500/20 p-2">
-            <DollarSign className="h-5 w-5 text-green-400" />
+          <div className="rounded-xl bg-primary/20 p-2">
+            <DollarSign className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h2 className="font-semibold text-white">Payroll Management</h2>
@@ -159,7 +159,7 @@ export function PayrollPanel() {
 
       {/* Mode Alert */}
       {data?.mode === "mock" && (
-        <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-400">
+        <div className="flex items-center gap-2 rounded-lg border border-secondary/30 bg-secondary/10 p-3 text-sm text-secondary">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>Using demo data. Configure QuickBooks/Xero for live payroll integration.</span>
         </div>
@@ -201,7 +201,7 @@ export function PayrollPanel() {
         <button
           onClick={runPayroll}
           disabled={processing}
-          className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 transition-colors hover:bg-primary/90 disabled:opacity-50"
         >
           {processing ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -212,7 +212,7 @@ export function PayrollPanel() {
         </button>
         <button
           onClick={exportPayroll}
-          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+          className="flex items-center gap-2 rounded-lg bg-secondary text-secondary-foreground px-4 py-2 transition-colors hover:bg-secondary/90"
         >
           <Download className="h-4 w-4" />
           Export CSV
@@ -247,13 +247,13 @@ export function PayrollPanel() {
                     <td className="p-4 text-white/70">{emp.role}</td>
                     <td className="p-4 text-right text-white/70">{emp.monthlyHours}h</td>
                     <td className="p-4 text-right">
-                      {emp.overtime > 0 && <span className="text-amber-400">+{emp.overtime}h</span>}
+                      {emp.overtime > 0 && <span className="text-secondary">+{emp.overtime}h</span>}
                     </td>
                     <td className="p-4 text-right text-white">R{emp.grossPay.toLocaleString()}</td>
-                    <td className="p-4 text-right text-red-400/70">-R{emp.deductions.tax}</td>
-                    <td className="p-4 text-right text-red-400/70">-R{emp.deductions.uif}</td>
-                    <td className="p-4 text-right text-red-400/70">-R{emp.deductions.pension}</td>
-                    <td className="p-4 text-right font-semibold text-green-400">
+                    <td className="p-4 text-right text-destructive">-R{emp.deductions.tax}</td>
+                    <td className="p-4 text-right text-destructive">-R{emp.deductions.uif}</td>
+                    <td className="p-4 text-right text-destructive">-R{emp.deductions.pension}</td>
+                    <td className="p-4 text-right font-semibold text-primary">
                       R{emp.netPay.toLocaleString()}
                     </td>
                   </tr>
@@ -264,17 +264,17 @@ export function PayrollPanel() {
                   <td colSpan={2} className="p-4 font-semibold text-white">
                     TOTALS
                   </td>
-                  <td className="p-4 text-right font-semibold text-white">
+                  <td className="p-4 text-right font-semibold text-foreground">
                     {data.totals.totalHours}h
                   </td>
-                  <td className="p-4 text-right text-amber-400">{data.totals.totalOvertime}h</td>
-                  <td className="p-4 text-right font-semibold text-white">
+                  <td className="p-4 text-right text-secondary">{data.totals.totalOvertime}h</td>
+                  <td className="p-4 text-right font-semibold text-foreground">
                     R{data.totals.totalGrossPay.toLocaleString()}
                   </td>
-                  <td colSpan={3} className="p-4 text-right text-red-400">
+                  <td colSpan={3} className="p-4 text-right text-destructive">
                     -R{data.totals.totalDeductions.toLocaleString()}
                   </td>
-                  <td className="p-4 text-right font-bold text-green-400">
+                  <td className="p-4 text-right font-bold text-primary">
                     R{data.totals.totalNetPay.toLocaleString()}
                   </td>
                 </tr>
@@ -299,10 +299,10 @@ function SummaryCard({
   color: "blue" | "green" | "amber" | "purple"
 }) {
   const colors = {
-    blue: "from-blue-600/20 to-blue-600/5 border-blue-500/30 text-blue-400",
-    green: "from-green-600/20 to-green-600/5 border-green-500/30 text-green-400",
-    amber: "from-amber-600/20 to-amber-600/5 border-amber-500/30 text-amber-400",
-    purple: "from-purple-600/20 to-purple-600/5 border-purple-500/30 text-purple-400",
+    blue: "from-secondary/20 to-secondary/5 border-secondary/30 text-secondary",
+    green: "from-primary/20 to-primary/5 border-primary/30 text-primary",
+    amber: "from-accent/20 to-accent/5 border-accent/30 text-accent",
+    purple: "from-secondary/20 to-secondary/5 border-secondary/30 text-secondary",
   }
 
   return (

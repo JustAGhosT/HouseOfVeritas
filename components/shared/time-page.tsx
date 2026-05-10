@@ -83,18 +83,18 @@ export function TimePage({ personaId, title = "Time Clock", showAll = false }: T
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold text-white">
-          <Clock className="h-7 w-7" />
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-foreground">
+          <Clock className="h-7 w-7 text-primary" />
           {title}
         </h1>
-        <p className="mt-1 text-white/60">{showAll ? "All time entries" : "Clock in and out"}</p>
+        <p className="mt-1 text-muted-foreground">{showAll ? "All time entries" : "Clock in and out"}</p>
       </div>
 
       {!showAll && (
-        <Card className="border-white/10 bg-[#0d0d12]/80">
+        <Card className="border-border bg-card/80 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="text-white">Today</CardTitle>
-            <CardDescription className="text-white/60">
+            <CardTitle className="text-foreground">Today</CardTitle>
+            <CardDescription className="text-muted-foreground">
               {summary?.totalHoursToday != null
                 ? `${summary.totalHoursToday.toFixed(1)} hours today`
                 : "Clock in to start"}
@@ -104,7 +104,7 @@ export function TimePage({ personaId, title = "Time Clock", showAll = false }: T
             <Button
               size="lg"
               className={
-                clockedIn ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"
+                clockedIn ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : "bg-primary text-primary-foreground hover:bg-primary/90"
               }
               onClick={handleClock}
               disabled={processing}
@@ -127,40 +127,40 @@ export function TimePage({ personaId, title = "Time Clock", showAll = false }: T
         </Card>
       )}
 
-      <Card className="border-white/10 bg-[#0d0d12]/80">
+      <Card className="border-border bg-card/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-white">Recent Entries</CardTitle>
-          <CardDescription className="text-white/60">
+          <CardTitle className="text-foreground">Recent Entries</CardTitle>
+          <CardDescription className="text-muted-foreground">
             {entries.length} entr{entries.length !== 1 ? "ies" : "y"}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-white/40" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : entries.length === 0 ? (
-            <p className="py-8 text-center text-white/50">No time entries found.</p>
+            <p className="py-8 text-center text-muted-foreground">No time entries found.</p>
           ) : (
             <div className="space-y-2">
               {entries.slice(0, 10).map((e) => (
                 <div
                   key={e.id}
-                  className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-3"
+                  className="flex items-center justify-between rounded-lg border border-border bg-muted/50 p-3"
                 >
-                  <span className="text-white/80">{e.date}</span>
-                  <span className="text-white/60">
+                  <span className="text-foreground">{e.date}</span>
+                  <span className="text-muted-foreground">
                     {e.clockIn || "-"} → {e.clockOut || "-"}
                   </span>
                   {e.employeeName && showAll && (
-                    <span className="text-sm text-white/40">{e.employeeName}</span>
+                    <span className="text-sm text-muted-foreground/70">{e.employeeName}</span>
                   )}
                 </div>
               ))}
             </div>
           )}
           <div className="mt-4">
-            <Button variant="outline" className="border-white/10" onClick={fetchTime}>
+            <Button variant="outline" className="border-border hover:bg-muted text-foreground" onClick={fetchTime}>
               <RefreshCw className="mr-2 h-4 w-4" />
               Refresh
             </Button>

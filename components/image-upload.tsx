@@ -145,7 +145,7 @@ export function ImageUpload({
                 <X className="h-3 w-3 text-white" />
               </button>
               {idx < uploadedFiles.length && (
-                <div className="absolute right-1 bottom-1 rounded-full bg-green-500/80 p-1">
+                <div className="absolute right-1 bottom-1 rounded-full bg-primary/80 p-1">
                   <CheckCircle className="h-3 w-3 text-white" />
                 </div>
               )}
@@ -170,13 +170,13 @@ export function ImageUpload({
           <div
             className={`rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
               uploading
-                ? "border-blue-500/50 bg-blue-500/5"
-                : "border-white/20 hover:border-white/40"
+                ? "border-primary/50 bg-primary/5"
+                : "border-border hover:border-border/80"
             }`}
           >
             {uploading ? (
               <div className="flex flex-col items-center">
-                <Loader2 className="mb-2 h-8 w-8 animate-spin text-blue-400" />
+                <Loader2 className="mb-2 h-8 w-8 animate-spin text-primary" />
                 <p className="text-sm text-white/60">Uploading...</p>
               </div>
             ) : (
@@ -196,7 +196,7 @@ export function ImageUpload({
       )}
 
       {/* Error Display */}
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
   )
 }

@@ -122,26 +122,26 @@ export function PWAInstallBanner() {
 
   return (
     <div className="animate-in slide-in-from-bottom-5 fade-in fixed right-4 bottom-4 left-4 z-50 duration-300 md:right-4 md:left-auto md:w-96">
-      <div className="rounded-xl border border-blue-500/30 bg-linear-to-r from-blue-600 to-blue-700 p-4 shadow-2xl">
+      <div className="rounded-xl border border-border bg-card p-4 shadow-2xl">
         <div className="flex items-start gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20">
-            <span className="text-lg font-bold text-white">HV</span>
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary">
+            <span className="text-lg font-bold font-serif">HV</span>
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-white">Install House of Veritas</h3>
-            <p className="mt-1 text-sm text-white/80">
+            <h3 className="font-semibold text-foreground">Install House of Veritas</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
               Install our app for quick access and offline support
             </p>
             <div className="mt-3 flex gap-2">
               <button
                 onClick={installApp}
-                className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-blue-600 transition-colors hover:bg-white/90"
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 Install
               </button>
               <button
                 onClick={() => setDismissed(true)}
-                className="rounded-lg bg-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/30"
+                className="rounded-lg bg-muted px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
               >
                 Not now
               </button>
@@ -160,7 +160,7 @@ export function OfflineStatusBanner() {
   if (isOnline) return null
 
   return (
-    <div className="fixed top-0 right-0 left-0 z-50 bg-amber-500 px-4 py-2 text-center text-sm font-medium text-amber-950">
+    <div className="fixed top-0 right-0 left-0 z-50 bg-destructive px-4 py-2 text-center text-sm font-medium text-destructive-foreground">
       You&apos;re offline. Some features may be limited.
     </div>
   )

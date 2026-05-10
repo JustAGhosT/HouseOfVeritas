@@ -61,9 +61,9 @@ export function DocumentsPage({ personaId, personaName, title = "Documents" }: D
   }, [fetchDocuments])
 
   const getUrgencyColor = (u: string) => {
-    if (u === "red" || u === "orange") return "bg-red-500/20 text-red-400"
-    if (u === "yellow") return "bg-amber-500/20 text-amber-400"
-    return "bg-green-500/20 text-green-400"
+    if (u === "red" || u === "orange") return "bg-destructive/20 text-destructive"
+    if (u === "yellow") return "bg-accent/20 text-accent"
+    return "bg-secondary/20 text-secondary"
   }
 
   const formatDate = (d: string) =>
@@ -74,53 +74,53 @@ export function DocumentsPage({ personaId, personaName, title = "Documents" }: D
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold text-white">
-          <FileText className="h-7 w-7" />
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-foreground">
+          <FileText className="h-7 w-7 text-primary" />
           {title}
         </h1>
-        <p className="mt-1 text-white/60">Documents you are responsible for or have signed</p>
+        <p className="mt-1 text-muted-foreground">Documents you are responsible for or have signed</p>
       </div>
 
-      <Card className="border-white/10 bg-[#0d0d12]/80">
+      <Card className="border-border bg-card/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-white">Document List</CardTitle>
-          <CardDescription className="text-white/60">
+          <CardTitle className="text-foreground">Document List</CardTitle>
+          <CardDescription className="text-muted-foreground">
             {documents.length} document{documents.length !== 1 ? "s" : ""}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-white/40" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : documents.length === 0 ? (
-            <p className="py-8 text-center text-white/50">No documents found.</p>
+            <p className="py-8 text-center text-muted-foreground">No documents found.</p>
           ) : (
             <div className="space-y-3">
               {documents.map((doc) => (
                 <div
                   key={doc.id}
-                  className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/5 p-4 transition-colors hover:bg-white/7"
+                  className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/50 p-4 transition-colors hover:bg-muted"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-white">{doc.name}</p>
+                    <p className="truncate font-medium text-foreground">{doc.name}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
-                      <Badge variant="outline" className="border-white/20 text-white/60">
+                      <Badge variant="outline" className="border-border text-muted-foreground">
                         {doc.type}
                       </Badge>
                       <Badge className={getUrgencyColor(doc.urgency)}>{doc.status}</Badge>
-                      <span className="text-sm text-white/40">
+                      <span className="text-sm text-muted-foreground/70">
                         Next review: {formatDate(doc.nextReview)}
                       </span>
                     </div>
                   </div>
-                  <ExternalLink className="h-5 w-5 shrink-0 text-white/30" />
+                  <ExternalLink className="h-5 w-5 shrink-0 text-muted-foreground/30" />
                 </div>
               ))}
             </div>
           )}
           <div className="mt-4">
-            <Button variant="outline" className="border-white/10" onClick={fetchDocuments}>
+            <Button variant="outline" className="border-border hover:bg-muted text-foreground" onClick={fetchDocuments}>
               <RefreshCw className="mr-2 h-4 w-4" />
               Refresh
             </Button>

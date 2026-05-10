@@ -111,9 +111,9 @@ export function ExpensesPage({
   }, [])
 
   const getStatusColor = (s: string) => {
-    if (s === "Approved") return "bg-green-500/20 text-green-400"
-    if (s === "Rejected") return "bg-red-500/20 text-red-400"
-    return "bg-amber-500/20 text-amber-400"
+    if (s === "Approved") return "bg-secondary/20 text-secondary"
+    if (s === "Rejected") return "bg-destructive/20 text-destructive"
+    return "bg-accent/20 text-accent"
   }
 
   const handleSuggestCategory = async () => {
@@ -175,23 +175,23 @@ export function ExpensesPage({
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-semibold text-white">
-            <DollarSign className="h-7 w-7" />
+          <h1 className="flex items-center gap-2 text-2xl font-semibold text-foreground">
+            <DollarSign className="h-7 w-7 text-primary" />
             {title}
           </h1>
-          <p className="mt-1 text-white/60">{showAll ? "All expenses" : "Your expense requests"}</p>
+          <p className="mt-1 text-muted-foreground">{showAll ? "All expenses" : "Your expense requests"}</p>
         </div>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
               <Plus className="mr-2 h-4 w-4" />
               Add Expense
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md border-white/10 bg-[#0d0d12] text-white">
+          <DialogContent className="max-w-md border-border bg-card text-foreground">
             <DialogHeader>
               <DialogTitle>Add Expense</DialogTitle>
-              <DialogDescription className="text-white/60">
+              <DialogDescription className="text-muted-foreground">
                 Submit an expense for approval.
               </DialogDescription>
             </DialogHeader>
@@ -203,7 +203,7 @@ export function ExpensesPage({
                     value={formData.category}
                     onValueChange={(v) => setFormData((p) => ({ ...p, category: v }))}
                   >
-                    <SelectTrigger className="flex-1 border-white/10 bg-white/5">
+                    <SelectTrigger className="flex-1 border-border bg-background">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -220,7 +220,7 @@ export function ExpensesPage({
                     size="icon"
                     onClick={handleSuggestCategory}
                     disabled={suggesting}
-                    className="shrink-0 border-white/10"
+                    className="shrink-0 border-border"
                     title="Suggest category with AI"
                   >
                     <AiSuggestIcon loading={suggesting} size="md" />
@@ -234,7 +234,7 @@ export function ExpensesPage({
                   step="0.01"
                   value={formData.amount}
                   onChange={(e) => setFormData((p) => ({ ...p, amount: e.target.value }))}
-                  className="mt-1 border-white/10 bg-white/5"
+                  className="mt-1 border-border bg-background"
                   required
                 />
               </div>
@@ -243,7 +243,7 @@ export function ExpensesPage({
                 <Input
                   value={formData.vendor}
                   onChange={(e) => setFormData((p) => ({ ...p, vendor: e.target.value }))}
-                  className="mt-1 border-white/10 bg-white/5"
+                  className="mt-1 border-border bg-background"
                   placeholder="Optional"
                 />
               </div>
@@ -253,7 +253,7 @@ export function ExpensesPage({
                   type="date"
                   value={formData.date}
                   onChange={(e) => setFormData((p) => ({ ...p, date: e.target.value }))}
-                  className="mt-1 border-white/10 bg-white/5"
+                  className="mt-1 border-border bg-background"
                 />
               </div>
               <div>
@@ -264,7 +264,7 @@ export function ExpensesPage({
                     setFormData((p) => ({ ...p, project: v === "_none" ? "" : v }))
                   }
                 >
-                  <SelectTrigger className="mt-1 border-white/10 bg-white/5">
+                  <SelectTrigger className="mt-1 border-border bg-background">
                     <SelectValue placeholder="Select project" />
                   </SelectTrigger>
                   <SelectContent>
@@ -282,17 +282,17 @@ export function ExpensesPage({
                 <Input
                   value={formData.notes}
                   onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))}
-                  className="mt-1 border-white/10 bg-white/5"
+                  className="mt-1 border-border bg-background"
                 />
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
+                <Button type="button" variant="outline" className="border-border hover:bg-muted text-foreground" onClick={() => setAddOpen(false)}>
                   Cancel
                 </Button>
                 <Button
                   type="submit"
                   disabled={submitting || !formData.amount}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   {submitting ? "Submitting..." : "Submit"}
                 </Button>
@@ -304,59 +304,59 @@ export function ExpensesPage({
 
       {summary && (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <Card className="border-white/10 bg-white/5">
+          <Card className="border-border bg-card">
             <CardContent className="pt-4">
-              <p className="text-sm text-white/50">Total Amount</p>
-              <p className="text-2xl font-semibold text-white">
+              <p className="text-sm text-muted-foreground">Total Amount</p>
+              <p className="text-2xl font-semibold text-foreground">
                 R{summary.totalAmount?.toLocaleString() || 0}
               </p>
             </CardContent>
           </Card>
-          <Card className="border-white/10 bg-white/5">
+          <Card className="border-border bg-card">
             <CardContent className="pt-4">
-              <p className="text-sm text-amber-400/80">Pending</p>
-              <p className="text-2xl font-semibold text-amber-400">{summary.pending}</p>
+              <p className="text-sm text-accent/80">Pending</p>
+              <p className="text-2xl font-semibold text-accent">{summary.pending}</p>
             </CardContent>
           </Card>
-          <Card className="border-white/10 bg-white/5">
+          <Card className="border-border bg-card">
             <CardContent className="pt-4">
-              <p className="text-sm text-green-400/80">Approved</p>
-              <p className="text-2xl font-semibold text-green-400">{summary.approved}</p>
+              <p className="text-sm text-secondary/80">Approved</p>
+              <p className="text-2xl font-semibold text-secondary">{summary.approved}</p>
             </CardContent>
           </Card>
         </div>
       )}
 
-      <Card className="border-white/10 bg-[#0d0d12]/80">
+      <Card className="border-border bg-card/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-white">Expense List</CardTitle>
-          <CardDescription className="text-white/60">
+          <CardTitle className="text-foreground">Expense List</CardTitle>
+          <CardDescription className="text-muted-foreground">
             {expenses.length} expense{expenses.length !== 1 ? "s" : ""}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-white/40" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : expenses.length === 0 ? (
-            <p className="py-8 text-center text-white/50">No expenses found.</p>
+            <p className="py-8 text-center text-muted-foreground">No expenses found.</p>
           ) : (
             <div className="space-y-3">
               {expenses.map((e) => (
                 <div
                   key={e.id}
-                  className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4"
+                  className="flex items-center justify-between rounded-xl border border-border bg-muted/50 p-4"
                 >
                   <div>
-                    <p className="font-medium text-white">{e.category}</p>
-                    <p className="text-sm text-white/50">
+                    <p className="font-medium text-foreground">{e.category}</p>
+                    <p className="text-sm text-muted-foreground">
                       {e.date} · {e.vendor || "-"}
                       {e.requesterName && showAll && ` · ${e.requesterName}`}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-white">R{e.amount?.toLocaleString()}</span>
+                    <span className="font-medium text-foreground">R{e.amount?.toLocaleString()}</span>
                     <Badge className={getStatusColor(e.approvalStatus)}>{e.approvalStatus}</Badge>
                   </div>
                 </div>
@@ -364,7 +364,7 @@ export function ExpensesPage({
             </div>
           )}
           <div className="mt-4">
-            <Button variant="outline" className="border-white/10" onClick={fetchExpenses}>
+            <Button variant="outline" className="border-border hover:bg-muted text-foreground" onClick={fetchExpenses}>
               <RefreshCw className="mr-2 h-4 w-4" />
               Refresh
             </Button>

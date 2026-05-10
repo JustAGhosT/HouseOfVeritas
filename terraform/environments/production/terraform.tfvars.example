@@ -1,39 +1,54 @@
-# Example terraform.tfvars file
-# Copy this to terraform.tfvars and fill in your values
-# DO NOT commit terraform.tfvars to version control!
+# Example terraform.tfvars for the production environment.
+# Copy to terraform.tfvars (gitignored) and fill in your values.
+#
+# These all have sensible defaults in variables.tf — only override what you
+# specifically want to change. Most fields here are commented out so the
+# defaults flow through.
 
-environment         = "production"
-location            = "South Africa North"
-resource_group_name = "rg-houseofveritas-prod"
+# Defaults follow the org convention: nl-prod-hov-{type}-san for hyphenated
+# resources and nlprodhovXXsan for storage accounts (no hyphens permitted).
 
-# Storage (must be globally unique, lowercase, no hyphens)
-storage_account_name = "sthouseofveritas"
+# environment         = "prod"
+# location            = "South Africa North"
+# resource_group_name = "nl-prod-hov-rg-san"
 
-# Key Vault (must be globally unique)
-key_vault_name = "kv-houseofveritas"
+# Storage (override only if you need a different name; storage account names
+# are globally unique, lowercase, alphanumeric, 3-24 chars, no hyphens).
+# storage_account_name = "nlprodhovstsan"
 
-# Database
-db_server_name      = "pg-houseofveritas"
-db_admin_username   = "hov_admin"
-db_admin_password   = "CHANGE_ME_SECURE_PASSWORD_HERE"  # Generate a strong password
+# Key Vault - globally unique within Azure DNS.
+# key_vault_name = "nl-prod-hov-kv-san"
 
-cosmos_account_name          = "nlprodhovcosmosan"
-cosmos_mongo_database_name   = "house_of_veritas"
-cosmos_mongo_collection_name = "kiosk_requests"
-cosmos_mongo_throughput      = 400
-cosmos_public_network_access_enabled = true
-cosmos_enable_free_tier      = false
+# Database - PostgreSQL Flexible Server.
+# db_server_name    = "nl-prod-hov-pg-san"
+# db_admin_username = "hov_admin"
+db_admin_password   = "CHANGE_ME_SECURE_PASSWORD_HERE"  # NOT optional
 
-# Domain
-domain_name = "nexamesh.ai"  # Or .co.za
+# Cosmos DB (Mongo API) for the kiosk request queue.
+# cosmos_account_name          = "nlprodhovcosmosan"
+# cosmos_mongo_database_name   = "house_of_veritas"
+# cosmos_mongo_collection_name = "kiosk_requests"
+# cosmos_mongo_throughput      = 400
 
-# SMTP Configuration (Gmail example)
-smtp_host     = "smtp.gmail.com"
-smtp_port     = "587"
-smtp_username = "your-email@gmail.com"
-smtp_password = "your-app-specific-password"
+# Domain. Update if you've migrated off nexamesh.ai.
+# domain_name = "nexamesh.ai"
 
-# SSL Certificate
-# Generate with: cat your-cert.pfx | base64
-ssl_certificate_data     = "BASE64_ENCODED_PFX_CERTIFICATE"
-ssl_certificate_password = "your-certificate-password"
+# SMTP - used by the DocuSeal container for outbound mail. Point at the
+# Azure Communication Services SMTP relay; the credentials are an Entra
+# app + client-secret tied to the linked Email Communication Service.
+# smtp_host     = "smtp.azurecomm.net"
+# smtp_port     = "587"
+# smtp_username = "<acs-resource-name>.<entra-app-id>.<tenant-id>"
+# smtp_password = "<entra-app-client-secret>"
+
+# Azure Communication Services connection string, used by the Next.js app
+# and the Azure Functions for transactional email. Sender domain
+# (EMAIL_FROM) is configured on the App Service / Function App, not here.
+# acs_connection_string = "endpoint=https://...;accesskey=..."
+
+# SSL - leave unset for an HTTP-only MVP launch (the gateway module gates
+# every HTTPS listener / redirect on var.ssl_certificate_data != "").
+# Provide a base64 PFX once you have a real cert in DNS:
+#   cat your-cert.pfx | base64 > pfx.b64
+# ssl_certificate_data     = "BASE64_ENCODED_PFX_CERTIFICATE"
+# ssl_certificate_password = "your-certificate-password"

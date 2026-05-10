@@ -39,9 +39,9 @@ export function OnboardingTutorial({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-white/20 bg-[#0d0d12] shadow-2xl">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
         <div className="p-6">
-          <div className="mb-4 flex items-center gap-2 text-blue-400">
+          <div className="mb-4 flex items-center gap-2 text-primary">
             <Sparkles className="h-5 w-5" />
             <span className="text-sm font-medium tracking-wider uppercase">Guided Tour</span>
           </div>
@@ -53,7 +53,7 @@ export function OnboardingTutorial({
             {steps.map((_, i) => (
               <div
                 key={i}
-                className={`h-2 w-2 rounded-full ${i === step ? "bg-blue-500" : "bg-white/30"}`}
+                className={`h-2 w-2 rounded-full ${i === step ? "bg-primary" : "bg-muted"}`}
               />
             ))}
           </div>
@@ -61,7 +61,7 @@ export function OnboardingTutorial({
             <Button variant="ghost" size="sm" className="text-white/60" onClick={handleSkip}>
               Skip
             </Button>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={handleNext}>
+            <Button size="sm" className="shimmer-btn bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleNext}>
               {isLast ? "Finish" : "Next"}
               {!isLast && <ArrowRight className="ml-1 h-4 w-4" />}
             </Button>

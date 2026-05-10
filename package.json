@@ -2,6 +2,7 @@
   "name": "house-of-veritas",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.30.3",
   "engines": {
     "node": ">=18.0.0"
   },
@@ -24,6 +25,7 @@
     "spell:fix": "cspell \"**/*\" --no-progress -u"
   },
   "dependencies": {
+    "@azure/communication-email": "^1.1.0",
     "@azure/storage-blob": "^12.31.0",
     "@emotion/is-prop-valid": "latest",
     "@hookform/resolvers": "^3.10.0",
@@ -101,6 +103,7 @@
     "@types/proper-lockfile": "^4.1.4",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.0.18",
     "cspell": "^9.6.4",
     "eslint": "^9.39.3",
     "eslint-config-next": "^16.1.5",
@@ -111,7 +114,6 @@
     "tailwindcss": "^4.1.9",
     "tw-animate-css": "1.3.3",
     "typescript": "^5",
-    "vitest": "^4.0.18",
-    "@vitest/coverage-v8": "^4.0.18"
+    "vitest": "^4.0.18"
   }
 }

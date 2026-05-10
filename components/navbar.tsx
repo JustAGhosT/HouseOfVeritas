@@ -47,12 +47,16 @@ export function Navbar() {
     >
       <nav
         ref={navRef}
-        className="flex w-full max-w-none min-w-full items-center justify-between border-b border-zinc-800 bg-zinc-900/95 px-4 py-3 backdrop-blur-md sm:px-6 lg:px-8"
+        className="nav-glass-refined relative flex w-full max-w-none min-w-full items-center justify-between px-4 py-3 sm:px-6 lg:px-8 border-b-2 border-primary/20 shadow-lg shadow-black/40"
       >
+        {/* Decorative Filigree Corners */}
+        <div className="filigree-corner filigree-tl opacity-40 scale-75" />
+        <div className="filigree-corner filigree-tr opacity-40 scale-75" />
+
         {/* Logo */}
-        <Link href="/" className="flex cursor-pointer items-center gap-3">
-          <Image src="/hv-logo-small.svg" alt="House of Veritas" width={40} height={40} />
-          <span className="hidden font-semibold text-white sm:block">House of Veritas</span>
+        <Link href="/" className="flex cursor-pointer items-center gap-4 transition-transform hover:scale-105">
+          <Image src="/hv-logo-small.svg" alt="House of Veritas" width={44} height={44} className="drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]" />
+          <span className="font-serif hidden font-bold text-lg text-foreground sm:block tracking-[0.1em] uppercase">House of Veritas</span>
         </Link>
 
         {/* Desktop Nav Items */}
@@ -61,14 +65,16 @@ export function Navbar() {
             <Link
               key={item.label}
               href={item.href}
-              className="relative cursor-pointer px-4 py-2 text-sm text-zinc-400 transition-colors hover:text-white"
+              className={`relative cursor-pointer px-4 py-2 text-sm transition-colors hover:text-foreground ${
+                hoveredIndex === index ? "nav-signature" : "text-muted-foreground"
+              }`}
               onMouseEnter={() => setHoveredIndex(index)}
               onMouseLeave={() => setHoveredIndex(null)}
             >
               {hoveredIndex === index && (
                 <motion.div
                   layoutId={motionEnabled ? "navbar-hover" : undefined}
-                  className="absolute inset-0 rounded-full bg-zinc-800"
+                  className="absolute inset-0 rounded-full bg-muted"
                   initial={false}
                   transition={
                     motionEnabled
@@ -85,8 +91,8 @@ export function Navbar() {
         {/* CTA Buttons */}
         <div className="hidden items-center gap-3 md:flex">
           {/* Motion Toggle */}
-          <div className="flex items-center gap-2 border-r border-zinc-700 pr-3">
-            <Zap size={14} className={motionEnabled ? "text-yellow-400" : "text-zinc-500"} />
+          <div className="flex items-center gap-2 border-r border-border pr-3">
+            <Zap size={14} className={motionEnabled ? "text-primary" : "text-muted-foreground"} />
             <Switch
               checked={motionEnabled}
               onCheckedChange={setMotionEnabled}
@@ -97,14 +103,14 @@ export function Navbar() {
           <Button
             variant="ghost"
             size="sm"
-            className="cursor-pointer text-zinc-400 hover:bg-zinc-800 hover:text-white"
+            className="cursor-pointer text-muted-foreground hover:bg-muted hover:text-foreground"
             onClick={openLoginModal}
           >
             Login
           </Button>
           <Button
             size="sm"
-            className="shimmer-btn cursor-pointer rounded-full bg-blue-600 px-4 text-white hover:bg-blue-700"
+            className="shimmer-btn cursor-pointer rounded-full bg-primary px-4 text-primary-foreground hover:bg-primary/90"
             onClick={openLoginModal}
           >
             Access Documents
@@ -113,7 +119,7 @@ export function Navbar() {
 
         {/* Mobile Menu Button */}
         <button
-          className="cursor-pointer p-2 text-zinc-400 hover:text-white md:hidden"
+          className="cursor-pointer p-2 text-muted-foreground hover:text-foreground md:hidden"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
         >
@@ -129,25 +135,25 @@ export function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={motionEnabled ? { opacity: 0, y: -10 } : { opacity: 0 }}
             transition={motionEnabled ? undefined : { duration: 0 }}
-            className="absolute top-full right-0 left-0 border-b border-zinc-800 bg-zinc-900/98 p-4 backdrop-blur-md"
+            className="absolute top-full right-0 left-0 border-b border-border bg-card/98 p-4 backdrop-blur-md"
           >
             <div className="mx-auto flex max-w-6xl flex-col gap-2">
               {navItems.map((item) => (
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="cursor-pointer rounded-lg px-4 py-3 text-sm text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
+                  className="cursor-pointer rounded-lg px-4 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {item.label}
                 </Link>
               ))}
-              <hr className="my-2 border-zinc-800" />
+              <hr className="my-2 border-border" />
               {/* Motion Toggle */}
-              <div className="flex items-center justify-between gap-2 border-b border-zinc-800 pb-3">
+              <div className="flex items-center justify-between gap-2 border-b border-border pb-3">
                 <div className="flex items-center gap-2">
-                  <Zap size={14} className={motionEnabled ? "text-yellow-400" : "text-zinc-500"} />
-                  <span className="text-sm text-zinc-400">Animations</span>
+                  <Zap size={14} className={motionEnabled ? "text-primary" : "text-muted-foreground"} />
+                  <span className="text-sm text-muted-foreground">Animations</span>
                 </div>
                 <Switch
                   checked={motionEnabled}
@@ -158,7 +164,7 @@ export function Navbar() {
               </div>
               <Button
                 variant="ghost"
-                className="cursor-pointer justify-start text-zinc-400 hover:text-white"
+                className="cursor-pointer justify-start text-muted-foreground hover:text-foreground"
                 onClick={() => {
                   openLoginModal()
                   setMobileMenuOpen(false)
@@ -167,7 +173,7 @@ export function Navbar() {
                 Login
               </Button>
               <Button
-                className="shimmer-btn cursor-pointer rounded-full bg-blue-600 text-white hover:bg-blue-700"
+                className="shimmer-btn cursor-pointer rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
                 onClick={() => {
                   openLoginModal()
                   setMobileMenuOpen(false)

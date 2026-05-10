@@ -15,18 +15,21 @@ import { Suspense } from "react"
 export default function Home() {
   return (
     <SmoothScroll>
-      <main className="relative min-h-screen bg-zinc-950">
+      <main className="relative bg-background">
         <GridPattern />
-        <div className="relative z-10">
+        <div className="relative z-10 flex flex-col min-h-screen">
           <Suspense fallback={null}>
             <LoginRedirectHandler />
           </Suspense>
           <Navbar />
           <Hero />
           <StatsSection />
+          <div className="ornate-divider"><div className="ornate-divider-mark" /></div>
           <FeatureModules />
+          <div className="ornate-divider"><div className="ornate-divider-mark" /></div>
           <DashboardPreview />
           <RoleDashboards />
+          <div className="ornate-divider"><div className="ornate-divider-mark" /></div>
           <ComplianceSection />
           <FinalCTA />
           <Footer />

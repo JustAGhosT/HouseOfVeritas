@@ -50,10 +50,10 @@ const PERSONA_INFO: Record<string, string> = {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  planned: "bg-gray-500/20 text-gray-400",
-  in_progress: "bg-blue-500/20 text-blue-400",
-  on_hold: "bg-amber-500/20 text-amber-400",
-  completed: "bg-green-500/20 text-green-400",
+  planned: "bg-muted text-muted-foreground",
+  in_progress: "bg-primary/20 text-primary",
+  on_hold: "bg-secondary/20 text-secondary",
+  completed: "bg-primary/40 text-primary-foreground",
 }
 
 interface ProjectsPageContentProps {
@@ -316,7 +316,7 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
             <Button
               type="button"
               size="sm"
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
               onClick={handleSuggestFromPhoto}
               disabled={aiLoading}
             >
@@ -383,7 +383,7 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
             type="button"
             variant="ghost"
             size="sm"
-            className="h-7 text-blue-400 hover:text-blue-300"
+            className="h-7 text-primary hover:text-primary/80"
             onClick={handleRefineDescription}
             disabled={refineLoading || !formData.name}
           >
@@ -424,8 +424,8 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-white">
-            <FolderKanban className="h-8 w-8 text-blue-400" />
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
+            <FolderKanban className="h-8 w-8 text-primary" />
             Projects
           </h1>
           <p className="mt-1 text-white/60">
@@ -444,7 +444,7 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
               }}
             >
               <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700">
+                <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Project
                 </Button>
@@ -462,7 +462,7 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
                     <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                       Cancel
                     </Button>
-                    <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                    <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">
                       Create
                     </Button>
                   </DialogFooter>
@@ -480,7 +480,7 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
             <DialogTrigger asChild>
               <Button
                 variant={isAdmin ? "outline" : "default"}
-                className={!isAdmin ? "bg-blue-600 hover:bg-blue-700" : "border-white/20"}
+                className={!isAdmin ? "bg-primary text-primary-foreground hover:bg-primary/90" : "border-white/20"}
               >
                 <Sparkles className="mr-2 h-4 w-4" />
                 Suggest Project
@@ -503,7 +503,7 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                  <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">
                     Submit suggestion
                   </Button>
                 </DialogFooter>
@@ -514,9 +514,9 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
       </div>
 
       {isAdmin && suggestions.length > 0 && (
-        <Card className="border-amber-500/30 bg-amber-500/10">
+        <Card className="border-secondary/30 bg-secondary/10">
           <CardHeader>
-            <CardTitle className="text-amber-400">Pending suggestions</CardTitle>
+            <CardTitle className="text-secondary">Pending suggestions</CardTitle>
             <CardDescription className="text-white/60">
               {suggestions.length} project suggestion{suggestions.length !== 1 ? "s" : ""} awaiting
               review
@@ -538,7 +538,7 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
                 <div className="flex gap-2">
                   <Button
                     size="sm"
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
                     onClick={() => handleApproveSuggestion(s.id)}
                   >
                     <Check className="mr-1 h-4 w-4" />
@@ -547,7 +547,7 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-red-500/50 text-red-400"
+                    className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
                     onClick={() => handleRejectSuggestion(s.id)}
                   >
                     <X className="mr-1 h-4 w-4" />
@@ -642,7 +642,7 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="text-blue-400 hover:text-blue-300"
+                                  className="text-primary hover:text-primary/80 hover:bg-primary/10"
                                   onClick={() => handleSuggestMember(sub.id, sub.name)}
                                   disabled={loading}
                                 >

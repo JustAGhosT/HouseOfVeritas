@@ -281,23 +281,28 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
+          cache: "pnpm"
 
       - name: Install Dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Lint Check
-        run: npm run lint
+        run: pnpm lint
 
       - name: Build Application
-        run: npm run build
+        run: pnpm build
 
       - name: Run Tests
-        run: npm test -- --run
+        run: pnpm test -- --run
 
   # ============================================
   # Job 4: E2E Tests
@@ -313,23 +318,28 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
+          cache: "pnpm"
 
       - name: Install Dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Build Application
-        run: npm run build
+        run: pnpm build
 
       - name: Run E2E Tests
-        run: npm run test:e2e
+        run: pnpm test:e2e
         env:
           CI: true
           BASE_URL: http://localhost:3000

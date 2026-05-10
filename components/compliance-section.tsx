@@ -2,7 +2,7 @@
 
 import { useMotion } from "@/lib/motion-context"
 import { motion, useInView } from "framer-motion"
-import { Activity, Clock, Database, FileCheck, Lock, Shield } from "lucide-react"
+import { Activity, Clock, Database, FileCheck, Lock, Shield, Server } from "lucide-react"
 import { useRef } from "react"
 
 const trustIndicators = [
@@ -44,7 +44,7 @@ export function ComplianceSection() {
   const { motionEnabled } = useMotion()
 
   return (
-    <section id="compliance" className="bg-zinc-950/50 px-4 py-24">
+    <section id="compliance" className="bg-background px-4 py-24">
       <div className="mx-auto max-w-6xl">
         <motion.div
           initial={motionEnabled ? { opacity: 0, y: 20 } : { opacity: 1, y: 0 }}
@@ -53,17 +53,17 @@ export function ComplianceSection() {
           className="mb-16 text-center"
         >
           <h2
-            className="mb-4 text-3xl font-bold text-white sm:text-4xl"
-            style={{ fontFamily: "var(--font-inter)" }}
+            className="font-serif mb-4 text-3xl font-bold text-foreground sm:text-4xl"
           >
-            Trust & Compliance
+            Bank-Grade Security & Compliance
           </h2>
-          <p className="mx-auto max-w-2xl text-zinc-400">
-            Built on enterprise-grade infrastructure with full legal compliance and audit readiness.
+          <p className="mx-auto max-w-2xl text-muted-foreground">
+            Built from the ground up to handle sensitive estate data, with enterprise-grade encryption
+            and full BCEA compliance for all employee and contractor operations.
           </p>
         </motion.div>
 
-        <div ref={ref} className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div ref={ref} className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           {trustIndicators.map((indicator, index) => {
             const Icon = indicator.icon
             return (
@@ -72,13 +72,25 @@ export function ComplianceSection() {
                 initial={motionEnabled ? { opacity: 0, y: 20 } : { opacity: 1, y: 0 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                 transition={motionEnabled ? { duration: 0.6, delay: index * 0.1 } : { duration: 0 }}
-                className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 transition-all duration-300 hover:border-zinc-700"
+                className="group ornate-border overflow-hidden rounded-2xl bg-card p-8 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10"
               >
-                <div className="mb-4 w-fit rounded-lg bg-emerald-900/20 p-2">
-                  <Icon className="h-5 w-5 text-emerald-400" strokeWidth={1.5} />
+                {/* Inner Glow Polish */}
+                <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                
+                <div className="relative z-10">
+                  <div className="mb-6 flex items-center justify-between">
+                    <div className="rounded-xl bg-secondary/15 p-3 shadow-inner">
+                      <Icon className="h-6 w-6 text-secondary" strokeWidth={1.5} />
+                    </div>
+                    <Shield className="h-5 w-5 text-primary/30 transition-colors group-hover:text-primary/60" strokeWidth={1.5} />
+                  </div>
+                  <h3 className="mb-3 font-serif text-xl font-bold text-foreground tracking-tight">
+                    {indicator.title}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground/90 italic font-medium">
+                    {indicator.description}
+                  </p>
                 </div>
-                <h3 className="mb-2 text-lg font-semibold text-white">{indicator.title}</h3>
-                <p className="text-sm text-zinc-400">{indicator.description}</p>
               </motion.div>
             )
           })}
@@ -89,21 +101,19 @@ export function ComplianceSection() {
           initial={motionEnabled ? { opacity: 0, y: 20 } : { opacity: 1, y: 0 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={motionEnabled ? { duration: 0.6, delay: 0.6 } : { duration: 0 }}
-          className="mt-12 rounded-2xl border border-emerald-900/30 bg-linear-to-br from-emerald-950/20 to-zinc-900/50 p-8"
+          className="mt-12 flex flex-wrap items-center justify-center gap-8" // Replaced original classes with new structure
         >
-          <div className="grid gap-8 text-center md:grid-cols-3">
-            <div>
-              <div className="mb-2 text-3xl font-bold text-emerald-400">AES-256</div>
-              <div className="text-sm text-zinc-400">Encryption at Rest</div>
-            </div>
-            <div>
-              <div className="mb-2 text-3xl font-bold text-emerald-400">TLS 1.2+</div>
-              <div className="text-sm text-zinc-400">In-Transit Security</div>
-            </div>
-            <div>
-              <div className="mb-2 text-3xl font-bold text-emerald-400">Azure</div>
-              <div className="text-sm text-zinc-400">Enterprise Infrastructure</div>
-            </div>
+          <div className="flex items-center gap-2 opacity-50 transition-opacity hover:opacity-100">
+            <Lock className="h-6 w-6 text-muted-foreground" />
+            <div className="text-sm text-muted-foreground">Encryption at Rest</div>
+          </div>
+          <div className="flex items-center gap-2 opacity-50 transition-opacity hover:opacity-100">
+            <Server className="h-6 w-6 text-muted-foreground" /> {/* Changed from Database to Server */}
+            <div className="text-sm text-muted-foreground">In-Transit Security</div>
+          </div>
+          <div className="flex items-center gap-2 opacity-50 transition-opacity hover:opacity-100">
+            <Database className="h-6 w-6 text-muted-foreground" />
+            <div className="text-sm text-muted-foreground">Enterprise Infrastructure</div>
           </div>
         </motion.div>
       </div>

@@ -9,8 +9,8 @@ requests>=2.31.0
 # Azure Storage (for backups)
 azure-storage-blob>=12.19.0
 
-# Email (SendGrid)
-sendgrid>=6.10.0
+# Email (Azure Communication Services)
+azure-communication-email>=1.0.0
 
 # Twilio SMS (optional)
 twilio>=8.10.0

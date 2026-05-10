@@ -525,23 +525,23 @@ export default function KioskPage() {
   if (!currentUser) {
     return (
       <ErrorBoundary>
-        <div className="flex min-h-screen flex-col items-center justify-center bg-[#0a0a0f] p-4">
+        <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
           <div className="w-full max-w-sm space-y-6">
             {/* Header */}
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br from-blue-500 to-purple-600">
-                <span className="text-3xl font-bold text-white">HV</span>
+              <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-primary/80 border border-primary/30 shadow-lg">
+                <span className="font-serif text-3xl font-bold text-primary-foreground">HV</span>
               </div>
-              <h1 className="text-2xl font-bold text-white">House of Veritas</h1>
-              <p className="text-white/60">Employee Kiosk</p>
+              <h1 className="font-serif text-2xl font-bold text-foreground">House of Veritas</h1>
+              <p className="text-muted-foreground">Employee Kiosk</p>
             </div>
 
             {/* Clock Display */}
             <div className="text-center">
-              <p className="font-mono text-5xl text-white">
+              <p className="font-mono text-5xl text-foreground">
                 {currentTime.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
               </p>
-              <p className="text-white/60">
+              <p className="text-muted-foreground">
                 {currentTime.toLocaleDateString("en-ZA", {
                   weekday: "long",
                   day: "numeric",
@@ -551,9 +551,9 @@ export default function KioskPage() {
             </div>
 
             {/* PIN Entry */}
-            <Card className="border-white/10 bg-white/5">
+            <Card className="border-border bg-card/80 backdrop-blur-sm shadow-xl">
               <CardContent className="space-y-4 pt-6">
-                <p className="text-center text-white/80">Enter your PIN to clock in</p>
+                <p className="text-center text-foreground/80">Enter your PIN to clock in</p>
 
                 <Input
                   id="pin-input"
@@ -564,12 +564,12 @@ export default function KioskPage() {
                   value={pin}
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
                   placeholder="••••"
-                  className="h-16 border-white/10 bg-white/5 text-center text-3xl tracking-widest"
+                  className="h-16 border-border bg-background text-center text-3xl tracking-widest text-foreground focus:border-primary/50 focus:ring-primary/20"
                   autoFocus
                   aria-label="PIN code"
                 />
 
-                {error && <p className="text-center text-sm text-red-400">{error}</p>}
+                {error && <p className="text-center text-sm text-destructive">{error}</p>}
 
                 {/* Number Pad */}
                 <div className="grid grid-cols-3 gap-2">
@@ -577,7 +577,7 @@ export default function KioskPage() {
                     <Button
                       key={idx}
                       variant="outline"
-                      className={`h-16 border-white/10 text-2xl ${num === "" ? "invisible" : ""}`}
+                      className={`h-16 border-border text-2xl text-foreground hover:bg-muted ${num === "" ? "invisible" : ""}`}
                       onClick={() => {
                         if (num === "⌫") {
                           setPin((p) => p.slice(0, -1))
@@ -594,11 +594,11 @@ export default function KioskPage() {
                 </div>
 
                 <Button
-                  className="h-14 w-full bg-blue-600 text-lg hover:bg-blue-700"
+                  className="h-14 w-full bg-primary text-primary-foreground text-lg hover:bg-primary/90 transition-all font-medium"
                   onClick={handlePinLogin}
                   disabled={pin.length !== 4 || loading}
                 >
-                  {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : "Enter"}
+                  {loading ? <Loader2 className="h-6 w-6 animate-spin text-primary-foreground/50" /> : "Enter"}
                 </Button>
               </CardContent>
             </Card>
@@ -606,7 +606,7 @@ export default function KioskPage() {
             {/* Admin Link */}
             <Button
               variant="ghost"
-              className="w-full text-white/40"
+              className="w-full text-muted-foreground hover:text-foreground hover:bg-background/50"
               onClick={() => router.push("/login")}
             >
               <Home className="mr-2 h-4 w-4" />
@@ -621,33 +621,33 @@ export default function KioskPage() {
   // Main Kiosk Interface
   return (
     <ErrorBoundary>
-      <div className="flex min-h-screen flex-col bg-[#0a0a0f] p-4">
+      <div className="flex min-h-screen flex-col bg-background p-4">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-blue-500 to-purple-600">
-              <User className="h-6 w-6 text-white" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-primary to-primary/80 border border-primary/30">
+              <User className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
-              <p className="text-lg font-semibold text-white">{currentUser.name}</p>
-              <p className="text-sm text-white/60">{currentUser.role}</p>
+              <p className="text-lg font-semibold text-foreground">{currentUser.name}</p>
+              <p className="text-sm text-muted-foreground">{currentUser.role}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 text-white/60 hover:bg-white/10 hover:text-white"
+              className="h-10 w-10 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               onClick={openNotificationPrefs}
               data-testid="kiosk-notification-settings"
             >
               <Bell className="h-5 w-5" />
             </Button>
             <div className="text-right">
-              <p className="font-mono text-3xl text-white">
+              <p className="font-mono text-3xl text-foreground">
                 {currentTime.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
               </p>
-              <Badge className={currentUser.clockedIn ? "bg-green-500" : "bg-gray-500"}>
+              <Badge className={currentUser.clockedIn ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground"}>
                 {currentUser.clockedIn ? "Clocked In" : "Clocked Out"}
               </Badge>
             </div>
@@ -658,7 +658,7 @@ export default function KioskPage() {
         {successMessage && (
           <div
             role="alert"
-            className="animate-in fade-in slide-in-from-top fixed top-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl bg-green-600 px-6 py-3 text-white shadow-lg"
+            className="animate-in fade-in slide-in-from-top fixed top-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl bg-secondary px-6 py-3 text-secondary-foreground shadow-lg border border-secondary/50"
           >
             <CheckCircle className="h-5 w-5" />
             {successMessage}
@@ -669,7 +669,7 @@ export default function KioskPage() {
         {error && (
           <div
             role="alert"
-            className="animate-in fade-in slide-in-from-top fixed top-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-white shadow-lg"
+            className="animate-in fade-in slide-in-from-top fixed top-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl bg-destructive px-6 py-3 text-destructive-foreground shadow-lg border border-destructive/50"
           >
             <XCircle className="h-5 w-5" />
             {error}
@@ -681,10 +681,10 @@ export default function KioskPage() {
           {/* Clock In/Out */}
           <Button
             data-testid="kiosk-clock-btn"
-            className={`flex h-32 flex-col gap-2 text-base sm:h-36 sm:text-lg ${
+            className={`flex h-32 flex-col gap-2 text-base sm:h-36 sm:text-lg transition-all border ${
               currentUser.clockedIn
-                ? "bg-red-600 hover:bg-red-700"
-                : "bg-green-600 hover:bg-green-700"
+                ? "bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/30"
+                : "bg-secondary/10 text-secondary hover:bg-secondary/20 border-secondary/30"
             }`}
             onClick={handleClockInOut}
             disabled={loading}
@@ -696,7 +696,7 @@ export default function KioskPage() {
           {/* Scan Item */}
           <Button
             data-testid="kiosk-scan-btn"
-            className="flex h-32 flex-col gap-2 bg-cyan-600 text-base hover:bg-cyan-700 sm:h-36 sm:text-lg"
+            className="flex h-32 flex-col gap-2 bg-primary text-primary-foreground text-base hover:bg-primary/90 sm:h-36 sm:text-lg border border-primary/20"
             onClick={() => setShowScanner(true)}
           >
             <ScanLine className="h-10 w-10" />
@@ -706,7 +706,7 @@ export default function KioskPage() {
           {/* Use Stock */}
           <Button
             data-testid="kiosk-use-stock-btn"
-            className="flex h-32 flex-col gap-2 bg-orange-600 text-base hover:bg-orange-700 sm:h-36 sm:text-lg"
+            className="flex h-32 flex-col gap-2 bg-accent text-accent-foreground text-base hover:bg-accent/90 sm:h-36 sm:text-lg border border-accent/20"
             onClick={() => {
               setActionType("consume")
               setShowScanner(true)
@@ -719,50 +719,50 @@ export default function KioskPage() {
           {/* My Tasks */}
           <Button
             data-testid="kiosk-tasks-btn"
-            className="flex h-32 flex-col gap-2 bg-purple-600 text-base hover:bg-purple-700 sm:h-36 sm:text-lg"
+            className="flex h-32 flex-col gap-2 bg-card text-foreground border border-border text-base hover:bg-muted hover:border-primary/50 transition-all sm:h-36 sm:text-lg shadow-sm"
             onClick={openTasks}
           >
-            <ClipboardList className="h-10 w-10" />
+            <ClipboardList className="h-10 w-10 text-primary" />
             My Tasks
           </Button>
 
           {/* Request Stock Order */}
           <Button
             data-testid="kiosk-order-stock-btn"
-            className="flex h-32 flex-col gap-2 bg-blue-600 text-base hover:bg-blue-700 sm:h-36 sm:text-lg"
+            className="flex h-32 flex-col gap-2 bg-card text-foreground border border-border text-base hover:bg-muted hover:border-primary/50 transition-all sm:h-36 sm:text-lg shadow-sm"
             onClick={() => setShowStockRequest(true)}
           >
-            <ShoppingCart className="h-10 w-10" />
+            <ShoppingCart className="h-10 w-10 text-secondary" />
             Order Stock
           </Button>
 
           {/* Request Advance */}
           <Button
             data-testid="kiosk-advance-btn"
-            className="flex h-32 flex-col gap-2 bg-yellow-600 text-base hover:bg-yellow-700 sm:h-36 sm:text-lg"
+            className="flex h-32 flex-col gap-2 bg-card text-foreground border border-border text-base hover:bg-muted hover:border-primary/50 transition-all sm:h-36 sm:text-lg shadow-sm"
             onClick={() => setShowAdvanceRequest(true)}
           >
-            <Banknote className="h-10 w-10" />
+            <Banknote className="h-10 w-10 text-accent" />
             Ask Advance
           </Button>
 
           {/* Report Issue */}
           <Button
             data-testid="kiosk-report-issue-btn"
-            className="flex h-32 flex-col gap-2 bg-rose-600 text-base hover:bg-rose-700 sm:h-36 sm:text-lg"
+            className="flex h-32 flex-col gap-2 bg-card text-foreground border border-border text-base hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive transition-all sm:h-36 sm:text-lg shadow-sm group"
             onClick={() => setShowIssueReport(true)}
           >
-            <Wrench className="h-10 w-10" />
+            <Wrench className="h-10 w-10 text-destructive group-hover:text-destructive" />
             Report Issue
           </Button>
 
           {/* My Requests History */}
           <Button
             data-testid="kiosk-history-btn"
-            className="col-span-2 flex h-32 flex-col gap-2 bg-indigo-600 text-base hover:bg-indigo-700 sm:col-span-1 sm:h-36 sm:text-lg"
+            className="col-span-2 flex h-32 flex-col gap-2 bg-muted text-foreground border border-border text-base hover:bg-muted/80 transition-all sm:col-span-1 sm:h-36 sm:text-lg"
             onClick={openHistory}
           >
-            <History className="h-10 w-10" />
+            <History className="h-10 w-10 text-muted-foreground" />
             My Requests
           </Button>
         </div>
@@ -770,7 +770,7 @@ export default function KioskPage() {
         {/* Logout */}
         <Button
           variant="outline"
-          className="mt-6 h-14 border-white/10 text-lg"
+          className="mt-6 h-14 border-border text-foreground hover:bg-muted text-lg shadow-sm"
           onClick={handleLogout}
         >
           <LogOut className="mr-2 h-5 w-5" />
@@ -779,25 +779,25 @@ export default function KioskPage() {
 
         {/* Scanner Dialog */}
         <Dialog open={showScanner} onOpenChange={setShowScanner}>
-          <DialogContent className="max-w-lg border-white/10 bg-[#0d0d12] text-white">
+          <DialogContent className="max-w-lg border-border bg-card text-foreground">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <ScanLine className="h-5 w-5 text-cyan-400" />
+                <ScanLine className="h-5 w-5 text-primary" />
                 Scan Barcode
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="flex aspect-video items-center justify-center rounded-lg bg-black/50">
+              <div className="flex aspect-video items-center justify-center rounded-lg bg-muted/50 border border-border">
                 <div className="text-center">
-                  <ScanLine className="mx-auto mb-4 h-16 w-16 text-white/20" />
-                  <p className="text-white/60">Camera scanner initializing...</p>
-                  <p className="mt-2 text-sm text-white/40">Or enter barcode manually:</p>
+                  <ScanLine className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+                  <p className="text-muted-foreground">Camera scanner initializing...</p>
+                  <p className="mt-2 text-sm text-muted-foreground">Or enter barcode manually:</p>
                 </div>
               </div>
               <Input
                 aria-label="Barcode number"
                 placeholder="Enter barcode number"
-                className="h-14 border-white/10 bg-white/5 text-center text-lg"
+                className="h-14 border-border bg-background text-center text-lg"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && e.currentTarget.value) {
                     handleBarcodeScanned(e.currentTarget.value)
@@ -810,7 +810,7 @@ export default function KioskPage() {
                   <Button
                     key={code}
                     variant="outline"
-                    className="border-white/10 text-sm"
+                    className="border-border text-sm hover:bg-muted"
                     onClick={() => handleBarcodeScanned(code)}
                   >
                     Test: {code.slice(-4)}
@@ -823,11 +823,11 @@ export default function KioskPage() {
 
         {/* Item Action Dialog */}
         <Dialog open={showItemAction} onOpenChange={setShowItemAction}>
-          <DialogContent className="max-w-lg border-white/10 bg-[#0d0d12] text-white">
+          <DialogContent className="max-w-lg border-border bg-card text-foreground">
             <DialogHeader>
               <DialogTitle>
                 {actionSuccess ? (
-                  <span className="flex items-center gap-2 text-green-400">
+                  <span className="flex items-center gap-2 text-secondary">
                     <CheckCircle className="h-5 w-5" />
                     Success!
                   </span>
@@ -839,8 +839,8 @@ export default function KioskPage() {
 
             {actionSuccess ? (
               <div className="py-8 text-center">
-                <CheckCircle className="mx-auto mb-4 h-20 w-20 text-green-400" />
-                <p className="text-xl text-white">
+                <CheckCircle className="mx-auto mb-4 h-20 w-20 text-secondary" />
+                <p className="text-xl text-foreground">
                   {actionType === "consume" ? "Usage recorded" : "Stock added"}
                 </p>
               </div>
@@ -848,30 +848,30 @@ export default function KioskPage() {
               scannedItem && (
                 <div className="space-y-4">
                   {/* Item Info */}
-                  <div className="space-y-2 rounded-lg bg-white/5 p-4">
+                  <div className="space-y-2 rounded-lg bg-muted p-4 border border-border">
                     <div className="flex justify-between">
-                      <span className="text-white/60">Current Stock</span>
-                      <span className="font-semibold text-white">
+                      <span className="text-muted-foreground">Current Stock</span>
+                      <span className="font-semibold text-foreground">
                         {scannedItem.currentStock} {scannedItem.unit}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-white/60">Location</span>
-                      <span className="text-white">{scannedItem.location}</span>
+                      <span className="text-muted-foreground">Location</span>
+                      <span className="text-foreground">{scannedItem.location}</span>
                     </div>
                   </div>
 
                   {/* Action Type Selection */}
                   <div className="grid grid-cols-2 gap-2">
                     <Button
-                      className={`h-16 ${actionType === "consume" ? "bg-orange-600" : "bg-white/10"}`}
+                      className={`h-16 ${actionType === "consume" ? "bg-accent text-accent-foreground hover:bg-accent/90" : "bg-background text-foreground border border-border hover:bg-muted"}`}
                       onClick={() => setActionType("consume")}
                     >
                       <ArrowDown className="mr-2 h-5 w-5" />
                       Use
                     </Button>
                     <Button
-                      className={`h-16 ${actionType === "restock" ? "bg-green-600" : "bg-white/10"}`}
+                      className={`h-16 ${actionType === "restock" ? "bg-secondary text-secondary-foreground hover:bg-secondary/90" : "bg-background text-foreground border border-border hover:bg-muted"}`}
                       onClick={() => setActionType("restock")}
                     >
                       <ArrowUp className="mr-2 h-5 w-5" />
@@ -881,13 +881,13 @@ export default function KioskPage() {
 
                   {/* Quantity */}
                   <div className="space-y-2">
-                    <p className="text-white/60">Quantity ({scannedItem.unit})</p>
+                    <p className="text-muted-foreground">Quantity ({scannedItem.unit})</p>
                     <div className="flex gap-2">
                       {[1, 2, 5, 10].map((q) => (
                         <Button
                           key={q}
                           variant={quantity === String(q) ? "default" : "outline"}
-                          className={`h-14 flex-1 text-xl ${quantity === String(q) ? "bg-blue-600" : "border-white/10"}`}
+                          className={`h-14 flex-1 text-xl ${quantity === String(q) ? "bg-primary text-primary-foreground hover:bg-primary/90" : "border-border text-foreground hover:bg-muted"}`}
                           onClick={() => setQuantity(String(q))}
                         >
                           {q}
@@ -901,7 +901,7 @@ export default function KioskPage() {
                       onChange={(e) =>
                         setQuantity(Math.max(1, parseFloat(e.target.value) || 1).toString())
                       }
-                      className="h-14 border-white/10 bg-white/5 text-center text-xl"
+                      className="h-14 border-border bg-background text-center text-xl"
                     />
                   </div>
 
@@ -911,7 +911,7 @@ export default function KioskPage() {
                       placeholder="Purpose (optional)"
                       value={purpose}
                       onChange={(e) => setPurpose(e.target.value)}
-                      className="h-14 border-white/10 bg-white/5"
+                      className="h-14 border-border bg-background"
                     />
                   )}
                 </div>
@@ -923,17 +923,17 @@ export default function KioskPage() {
                 <Button
                   variant="outline"
                   onClick={() => setShowItemAction(false)}
-                  className="border-white/10"
+                  className="border-border text-foreground hover:bg-muted"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleItemAction}
                   disabled={loading}
-                  className={actionType === "consume" ? "bg-orange-600" : "bg-green-600"}
+                  className={actionType === "consume" ? "bg-accent text-accent-foreground hover:bg-accent/90" : "bg-secondary text-secondary-foreground hover:bg-secondary/90"}
                 >
                   {loading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <Loader2 className="h-5 w-5 animate-spin text-current" />
                   ) : actionType === "consume" ? (
                     <>
                       <ArrowDown className="mr-2 h-5 w-5" />
@@ -953,47 +953,47 @@ export default function KioskPage() {
 
         {/* Tasks Dialog */}
         <Dialog open={showTasks} onOpenChange={setShowTasks}>
-          <DialogContent className="max-h-[80vh] max-w-lg overflow-y-auto border-white/10 bg-[#0d0d12] text-white">
+          <DialogContent className="max-h-[80vh] max-w-lg overflow-y-auto border-border bg-card text-foreground">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-purple-400" />
+                <ClipboardList className="h-5 w-5 text-primary" />
                 My Tasks
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-2">
               {tasks.length === 0 ? (
-                <div className="py-8 text-center text-white/40">
+                <div className="py-8 text-center text-muted-foreground">
                   <ClipboardList className="mx-auto mb-4 h-12 w-12 opacity-50" />
                   <p>No tasks assigned</p>
                 </div>
               ) : (
                 tasks.map((task) => (
-                  <Card key={task.id} className="border-white/10 bg-white/5">
+                  <Card key={task.id} className="border-border bg-muted/50">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           <p
-                            className={`font-medium text-white ${task.status === "completed" ? "line-through opacity-50" : ""}`}
+                            className={`font-medium text-foreground ${task.status === "completed" ? "line-through opacity-50" : ""}`}
                           >
                             {task.title}
                           </p>
                           {task.description && (
-                            <p className="mt-1 line-clamp-2 text-sm text-white/50">
+                            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
                               {task.description}
                             </p>
                           )}
                           {task.dueDate && (
-                            <p className="mt-1 text-sm text-white/40">Due: {task.dueDate}</p>
+                            <p className="mt-1 text-sm text-muted-foreground/80">Due: {task.dueDate}</p>
                           )}
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
                           <Badge
                             className={
                               task.priority === "high"
-                                ? "bg-red-500"
+                                ? "bg-destructive text-destructive-foreground hover:bg-destructive"
                                 : task.priority === "medium"
-                                  ? "bg-yellow-500"
-                                  : "bg-gray-500"
+                                  ? "bg-accent text-accent-foreground hover:bg-accent"
+                                  : "bg-muted-foreground text-background hover:bg-muted-foreground"
                             }
                           >
                             {task.priority}
@@ -1001,7 +1001,7 @@ export default function KioskPage() {
                           {task.status !== "completed" && (
                             <Button
                               size="sm"
-                              className="h-8 w-8 bg-green-600 p-0 hover:bg-green-700"
+                              className="h-8 w-8 bg-secondary p-0 hover:bg-secondary/90 text-secondary-foreground"
                               onClick={() => completeTask(task.id)}
                               data-testid={`complete-task-${task.id}`}
                               aria-label={`Complete task ${task.title}`}
@@ -1021,13 +1021,13 @@ export default function KioskPage() {
 
         {/* Stock Request Dialog */}
         <Dialog open={showStockRequest} onOpenChange={setShowStockRequest}>
-          <DialogContent className="max-w-md border-white/10 bg-[#0d0d12] text-white">
+          <DialogContent className="max-w-md border-border bg-card text-foreground">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5 text-blue-400" />
+                <ShoppingCart className="h-5 w-5 text-secondary" />
                 Request Stock Order
               </DialogTitle>
-              <DialogDescription className="text-white/60">
+              <DialogDescription className="text-muted-foreground">
                 Submit a request for stock that needs to be ordered
               </DialogDescription>
             </DialogHeader>
@@ -1039,7 +1039,7 @@ export default function KioskPage() {
                   value={stockRequest.itemName}
                   onChange={(e) => setStockRequest((s) => ({ ...s, itemName: e.target.value }))}
                   placeholder="e.g., Pool chlorine, Cement bags"
-                  className="border-white/10 bg-white/5"
+                  className="border-border bg-background"
                   data-testid="stock-item-name-input"
                 />
               </div>
@@ -1056,7 +1056,7 @@ export default function KioskPage() {
                       setStockRequest((s) => ({ ...s, quantity: safeValue }))
                     }}
                     min="1"
-                    className="border-white/10 bg-white/5"
+                    className="border-border bg-background"
                     data-testid="stock-quantity-input"
                   />
                 </div>
@@ -1068,7 +1068,7 @@ export default function KioskPage() {
                       setStockRequest((s) => ({ ...s, urgency: v }))
                     }
                   >
-                    <SelectTrigger className="border-white/10 bg-white/5">
+                    <SelectTrigger className="border-border bg-background">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1084,7 +1084,7 @@ export default function KioskPage() {
                   value={stockRequest.notes}
                   onChange={(e) => setStockRequest((s) => ({ ...s, notes: e.target.value }))}
                   placeholder="Any additional details..."
-                  className="min-h-[80px] border-white/10 bg-white/5"
+                  className="min-h-[80px] border-border bg-background"
                 />
               </div>
             </div>
@@ -1092,17 +1092,17 @@ export default function KioskPage() {
               <Button
                 variant="outline"
                 onClick={() => setShowStockRequest(false)}
-                className="border-white/10"
+                className="border-border text-foreground hover:bg-muted"
               >
                 Cancel
               </Button>
               <Button
                 onClick={submitStockRequest}
                 disabled={loading || !stockRequest.itemName}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
                 data-testid="submit-stock-request-btn"
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit Request"}
+                {loading ? <Loader2 className="h-4 w-4 animate-spin text-current" /> : "Submit Request"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1110,13 +1110,13 @@ export default function KioskPage() {
 
         {/* Salary Advance Dialog */}
         <Dialog open={showAdvanceRequest} onOpenChange={setShowAdvanceRequest}>
-          <DialogContent className="max-w-md border-white/10 bg-[#0d0d12] text-white">
+          <DialogContent className="max-w-md border-border bg-card text-foreground">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Banknote className="h-5 w-5 text-yellow-400" />
+                <Banknote className="h-5 w-5 text-accent" />
                 Request Salary Advance
               </DialogTitle>
-              <DialogDescription className="text-white/60">
+              <DialogDescription className="text-muted-foreground">
                 Submit a request for a salary advance (requires approval)
               </DialogDescription>
             </DialogHeader>
@@ -1133,7 +1133,7 @@ export default function KioskPage() {
                   placeholder="Enter amount"
                   min="100"
                   step="100"
-                  className="h-14 border-white/10 bg-white/5 text-xl"
+                  className="h-14 border-border bg-background text-xl"
                   data-testid="advance-amount-input"
                 />
               </div>
@@ -1144,7 +1144,7 @@ export default function KioskPage() {
                   value={advanceRequest.reason}
                   onChange={(e) => setAdvanceRequest((a) => ({ ...a, reason: e.target.value }))}
                   placeholder="Please explain why you need the advance..."
-                  className="min-h-[100px] border-white/10 bg-white/5"
+                  className="min-h-[100px] border-border bg-background"
                   data-testid="advance-reason-input"
                 />
               </div>
@@ -1154,7 +1154,7 @@ export default function KioskPage() {
                   value={advanceRequest.repaymentPlan}
                   onValueChange={(v) => setAdvanceRequest((a) => ({ ...a, repaymentPlan: v }))}
                 >
-                  <SelectTrigger id="advance-repayment" className="border-white/10 bg-white/5">
+                  <SelectTrigger id="advance-repayment" className="border-border bg-background">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1164,7 +1164,7 @@ export default function KioskPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm text-yellow-300">
+              <div className="rounded-lg border border-accent/40 bg-accent/10 p-3 text-sm text-accent-foreground">
                 <AlertTriangle className="mr-2 inline h-4 w-4" />
                 Advances are subject to approval by management and will be deducted from future
                 salary.
@@ -1174,17 +1174,17 @@ export default function KioskPage() {
               <Button
                 variant="outline"
                 onClick={() => setShowAdvanceRequest(false)}
-                className="border-white/10"
+                className="border-border text-foreground hover:bg-muted"
               >
                 Cancel
               </Button>
               <Button
                 onClick={submitAdvanceRequest}
                 disabled={loading || advanceRequest.amount < 100 || !advanceRequest.reason}
-                className="bg-yellow-600 hover:bg-yellow-700"
+                className="bg-accent text-accent-foreground hover:bg-accent/90"
                 data-testid="submit-advance-request-btn"
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit Request"}
+                {loading ? <Loader2 className="h-4 w-4 animate-spin text-current" /> : "Submit Request"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1192,13 +1192,13 @@ export default function KioskPage() {
 
         {/* Report Issue Dialog */}
         <Dialog open={showIssueReport} onOpenChange={setShowIssueReport}>
-          <DialogContent className="max-w-md border-white/10 bg-[#0d0d12] text-white">
+          <DialogContent className="max-w-md border-border bg-card text-foreground">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Wrench className="h-5 w-5 text-rose-400" />
+                <Wrench className="h-5 w-5 text-destructive" />
                 Report Issue / Maintenance
               </DialogTitle>
-              <DialogDescription className="text-white/60">
+              <DialogDescription className="text-muted-foreground">
                 Report a broken item or maintenance issue
               </DialogDescription>
             </DialogHeader>
@@ -1210,7 +1210,7 @@ export default function KioskPage() {
                   value={issueReport.assetName}
                   onChange={(e) => setIssueReport((i) => ({ ...i, assetName: e.target.value }))}
                   placeholder="e.g., Pool pump, Gate motor, Lawnmower"
-                  className="border-white/10 bg-white/5"
+                  className="border-border bg-background"
                   data-testid="issue-asset-name-input"
                 />
               </div>
@@ -1223,7 +1223,7 @@ export default function KioskPage() {
                       setIssueReport((i) => ({ ...i, issueType: v }))
                     }
                   >
-                    <SelectTrigger id="issue-type" className="border-white/10 bg-white/5">
+                    <SelectTrigger id="issue-type" className="border-border bg-background">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1241,7 +1241,7 @@ export default function KioskPage() {
                     value={issueReport.location}
                     onChange={(e) => setIssueReport((i) => ({ ...i, location: e.target.value }))}
                     placeholder="e.g., Pool area"
-                    className="border-white/10 bg-white/5"
+                    className="border-border bg-background"
                   />
                 </div>
               </div>
@@ -1252,12 +1252,12 @@ export default function KioskPage() {
                   value={issueReport.description}
                   onChange={(e) => setIssueReport((i) => ({ ...i, description: e.target.value }))}
                   placeholder="Describe the issue in detail..."
-                  className="min-h-[100px] border-white/10 bg-white/5"
+                  className="min-h-[100px] border-border bg-background"
                   data-testid="issue-description-input"
                 />
               </div>
               {issueReport.issueType === "safety" && (
-                <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                   <AlertTriangle className="mr-2 inline h-4 w-4" />
                   Safety hazards are flagged as high priority and will be reviewed immediately.
                 </div>
@@ -1267,17 +1267,17 @@ export default function KioskPage() {
               <Button
                 variant="outline"
                 onClick={() => setShowIssueReport(false)}
-                className="border-white/10"
+                className="border-border text-foreground hover:bg-muted"
               >
                 Cancel
               </Button>
               <Button
                 onClick={submitIssueReport}
                 disabled={loading || !issueReport.assetName || !issueReport.description}
-                className="bg-rose-600 hover:bg-rose-700"
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 data-testid="submit-issue-report-btn"
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Report Issue"}
+                {loading ? <Loader2 className="h-4 w-4 animate-spin text-current" /> : "Report Issue"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1285,19 +1285,19 @@ export default function KioskPage() {
 
         {/* Request History Dialog */}
         <Dialog open={showHistory} onOpenChange={setShowHistory}>
-          <DialogContent className="flex max-h-[85vh] max-w-lg flex-col overflow-hidden border-white/10 bg-[#0d0d12] text-white">
+          <DialogContent className="flex max-h-[85vh] max-w-lg flex-col overflow-hidden border-border bg-card text-foreground">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <History className="h-5 w-5 text-indigo-400" />
+                <History className="h-5 w-5 text-muted-foreground" />
                 My Requests
               </DialogTitle>
-              <DialogDescription className="text-white/60">
+              <DialogDescription className="text-muted-foreground">
                 Track the status of your submitted requests
               </DialogDescription>
             </DialogHeader>
             <div className="flex-1 space-y-3 overflow-y-auto pr-2">
               {requestHistory.length === 0 ? (
-                <div className="py-8 text-center text-white/40">
+                <div className="py-8 text-center text-muted-foreground">
                   <History className="mx-auto mb-4 h-12 w-12 opacity-50" />
                   <p>No requests submitted yet</p>
                   <p className="mt-1 text-sm">
@@ -1306,30 +1306,30 @@ export default function KioskPage() {
                 </div>
               ) : (
                 requestHistory.map((request) => (
-                  <Card key={request.id} className="border-white/10 bg-white/5">
+                  <Card key={request.id} className="border-border bg-muted/50">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex min-w-0 flex-1 items-start gap-3">
                           <div
                             className={`rounded-lg p-2 ${
                               request.type === "stock_order"
-                                ? "bg-blue-500/20"
+                                ? "bg-secondary/20"
                                 : request.type === "salary_advance"
-                                  ? "bg-yellow-500/20"
-                                  : "bg-rose-500/20"
+                                  ? "bg-accent/20"
+                                  : "bg-destructive/20"
                             }`}
                           >
                             {request.type === "stock_order" ? (
-                              <ShoppingCart className="h-5 w-5 text-blue-400" />
+                              <ShoppingCart className="h-5 w-5 text-secondary" />
                             ) : request.type === "salary_advance" ? (
-                              <Banknote className="h-5 w-5 text-yellow-400" />
+                              <Banknote className="h-5 w-5 text-accent" />
                             ) : (
-                              <Wrench className="h-5 w-5 text-rose-400" />
+                              <Wrench className="h-5 w-5 text-destructive" />
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-sm font-medium text-white">
+                              <span className="text-sm font-medium text-foreground">
                                 {request.type === "stock_order"
                                   ? "Stock Order"
                                   : request.type === "salary_advance"
@@ -1339,12 +1339,12 @@ export default function KioskPage() {
                               <Badge
                                 className={`text-xs ${
                                   request.status === "pending"
-                                    ? "bg-yellow-500"
+                                    ? "bg-accent text-accent-foreground hover:bg-accent"
                                     : request.status === "approved"
-                                      ? "bg-green-500"
+                                      ? "bg-secondary text-secondary-foreground hover:bg-secondary"
                                       : request.status === "rejected"
-                                        ? "bg-red-500"
-                                        : "bg-blue-500"
+                                        ? "bg-destructive text-destructive-foreground hover:bg-destructive"
+                                        : "bg-primary text-primary-foreground hover:bg-primary"
                                 }`}
                               >
                                 {request.status === "pending"
@@ -1356,7 +1356,7 @@ export default function KioskPage() {
                                       : "Completed"}
                               </Badge>
                             </div>
-                            <p className="mt-1 line-clamp-1 text-sm text-white/60">
+                            <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">
                               {request.type === "stock_order" &&
                                 `${request.data.quantity}x ${request.data.itemName}`}
                               {request.type === "salary_advance" &&
@@ -1364,7 +1364,7 @@ export default function KioskPage() {
                               {request.type === "issue_report" &&
                                 `${request.data.assetName} - ${request.data.issueType}`}
                             </p>
-                            <p className="mt-1 text-xs text-white/40">
+                            <p className="mt-1 text-xs text-muted-foreground/80">
                               {new Date(request.timestamp).toLocaleDateString("en-ZA", {
                                 day: "numeric",
                                 month: "short",
@@ -1374,18 +1374,19 @@ export default function KioskPage() {
                             </p>
                             {request.notes && request.status !== "pending" && (
                               <div
-                                className={`mt-2 rounded p-2 text-xs ${
+                                className={`mt-2 rounded p-2 text-xs border ${
                                   request.status === "approved"
-                                    ? "bg-green-500/10 text-green-300"
-                                    : "bg-red-500/10 text-red-300"
+                                    ? "bg-secondary/10 text-secondary border-secondary/20"
+                                    : "bg-destructive/10 text-destructive border-destructive/20"
                                 }`}
                               >
-                                <span className="font-medium">
+                                <span className="font-medium flex items-center gap-1 mb-1">
                                   {request.status === "approved" ? (
-                                    <CheckCircle className="mr-1 inline h-3 w-3" />
+                                    <CheckCircle className="h-3 w-3" />
                                   ) : (
-                                    <XCircle className="mr-1 inline h-3 w-3" />
+                                    <XCircle className="h-3 w-3" />
                                   )}
+                                  Note from Reviewer:
                                 </span>
                                 {request.notes}
                               </div>
@@ -1402,7 +1403,7 @@ export default function KioskPage() {
               <Button
                 variant="outline"
                 onClick={() => setShowHistory(false)}
-                className="w-full border-white/10"
+                className="w-full border-border text-foreground hover:bg-muted"
               >
                 Close
               </Button>
@@ -1412,13 +1413,13 @@ export default function KioskPage() {
 
         {/* Notification Preferences Dialog */}
         <Dialog open={showNotificationPrefs} onOpenChange={setShowNotificationPrefs}>
-          <DialogContent className="max-w-md border-white/10 bg-[#0d0d12] text-white">
+          <DialogContent className="max-w-md border-border bg-card text-foreground">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-blue-400" />
+                <Bell className="h-5 w-5 text-primary" />
                 Notification Preferences
               </DialogTitle>
-              <DialogDescription className="text-white/60">
+              <DialogDescription className="text-muted-foreground">
                 Choose how you want to receive notifications when your requests are processed
               </DialogDescription>
             </DialogHeader>
@@ -1429,21 +1430,21 @@ export default function KioskPage() {
                 disabled={loading}
                 className={`flex w-full items-center gap-4 rounded-xl border p-4 transition-all ${
                   notificationPref === "sms"
-                    ? "border-blue-500 bg-blue-500/10"
-                    : "border-white/10 hover:border-white/20 hover:bg-white/5"
+                    ? "border-primary bg-primary/10"
+                    : "border-border hover:border-primary/30 hover:bg-muted"
                 }`}
                 data-testid="pref-sms"
               >
                 <div
-                  className={`rounded-lg p-3 ${notificationPref === "sms" ? "bg-blue-500/20" : "bg-white/5"}`}
+                  className={`rounded-lg p-3 ${notificationPref === "sms" ? "bg-primary/20" : "bg-muted"}`}
                 >
-                  <Smartphone className="h-6 w-6 text-blue-400" />
+                  <Smartphone className={`h-6 w-6 ${notificationPref === "sms" ? "text-primary" : "text-muted-foreground"}`} />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="font-medium text-white">SMS</p>
-                  <p className="text-sm text-white/60">Receive text messages</p>
+                  <p className="font-medium text-foreground">SMS</p>
+                  <p className="text-sm text-muted-foreground">Receive text messages</p>
                 </div>
-                {notificationPref === "sms" && <CheckCircle className="h-5 w-5 text-blue-400" />}
+                {notificationPref === "sms" && <CheckCircle className="h-5 w-5 text-primary" />}
               </button>
 
               {/* WhatsApp Option */}
@@ -1452,22 +1453,22 @@ export default function KioskPage() {
                 disabled={loading}
                 className={`flex w-full items-center gap-4 rounded-xl border p-4 transition-all ${
                   notificationPref === "whatsapp"
-                    ? "border-green-500 bg-green-500/10"
-                    : "border-white/10 hover:border-white/20 hover:bg-white/5"
+                    ? "border-secondary bg-secondary/10"
+                    : "border-border hover:border-secondary/30 hover:bg-muted"
                 }`}
                 data-testid="pref-whatsapp"
               >
                 <div
-                  className={`rounded-lg p-3 ${notificationPref === "whatsapp" ? "bg-green-500/20" : "bg-white/5"}`}
+                  className={`rounded-lg p-3 ${notificationPref === "whatsapp" ? "bg-secondary/20" : "bg-muted"}`}
                 >
-                  <MessageSquare className="h-6 w-6 text-green-400" />
+                  <MessageSquare className={`h-6 w-6 ${notificationPref === "whatsapp" ? "text-secondary" : "text-muted-foreground"}`} />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="font-medium text-white">WhatsApp</p>
-                  <p className="text-sm text-white/60">Receive WhatsApp messages</p>
+                  <p className="font-medium text-foreground">WhatsApp</p>
+                  <p className="text-sm text-muted-foreground">Receive WhatsApp messages</p>
                 </div>
                 {notificationPref === "whatsapp" && (
-                  <CheckCircle className="h-5 w-5 text-green-400" />
+                  <CheckCircle className="h-5 w-5 text-secondary" />
                 )}
               </button>
 
@@ -1477,28 +1478,28 @@ export default function KioskPage() {
                 disabled={loading}
                 className={`flex w-full items-center gap-4 rounded-xl border p-4 transition-all ${
                   notificationPref === "email"
-                    ? "border-purple-500 bg-purple-500/10"
-                    : "border-white/10 hover:border-white/20 hover:bg-white/5"
+                    ? "border-accent bg-accent/10"
+                    : "border-border hover:border-accent/30 hover:bg-muted"
                 }`}
                 data-testid="pref-email"
               >
                 <div
-                  className={`rounded-lg p-3 ${notificationPref === "email" ? "bg-purple-500/20" : "bg-white/5"}`}
+                  className={`rounded-lg p-3 ${notificationPref === "email" ? "bg-accent/20" : "bg-muted"}`}
                 >
-                  <Mail className="h-6 w-6 text-purple-400" />
+                  <Mail className={`h-6 w-6 ${notificationPref === "email" ? "text-accent" : "text-muted-foreground"}`} />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="font-medium text-white">Email</p>
-                  <p className="text-sm text-white/60">Receive email notifications</p>
+                  <p className="font-medium text-foreground">Email</p>
+                  <p className="text-sm text-muted-foreground">Receive email notifications</p>
                 </div>
                 {notificationPref === "email" && (
-                  <CheckCircle className="h-5 w-5 text-purple-400" />
+                  <CheckCircle className="h-5 w-5 text-accent" />
                 )}
               </button>
             </div>
-            <div className="rounded-lg bg-white/5 p-3 text-sm text-white/60">
+            <div className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
               <p>If delivery fails, we&apos;ll automatically try the next option in order:</p>
-              <p className="mt-1 font-medium text-white/80">
+              <p className="mt-1 font-medium text-foreground/80">
                 {notificationPref === "sms" && "SMS → WhatsApp → Email"}
                 {notificationPref === "whatsapp" && "WhatsApp → SMS → Email"}
                 {notificationPref === "email" && "Email → SMS → WhatsApp"}
@@ -1508,10 +1509,10 @@ export default function KioskPage() {
               <Button
                 variant="outline"
                 onClick={() => setShowNotificationPrefs(false)}
-                className="w-full border-white/10"
+                className="w-full border-border text-foreground hover:bg-muted"
                 disabled={loading}
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Done"}
+                {loading ? <Loader2 className="h-4 w-4 animate-spin text-current" /> : "Done"}
               </Button>
             </DialogFooter>
           </DialogContent>

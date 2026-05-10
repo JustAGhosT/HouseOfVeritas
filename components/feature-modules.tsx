@@ -51,14 +51,14 @@ function ComplianceAlerts() {
           <div
             className={`h-2 w-2 rounded-full ${
               alert.status === "green"
-                ? "bg-green-500"
+                ? "bg-secondary"
                 : alert.status === "yellow"
-                  ? "bg-yellow-500"
-                  : "bg-orange-500"
+                  ? "bg-primary"
+                  : "bg-accent"
             }`}
           />
-          <span className="text-zinc-400">{alert.doc}</span>
-          <span className="ml-auto text-zinc-500">{alert.days}d</span>
+          <span className="text-muted-foreground">{alert.doc}</span>
+          <span className="ml-auto text-muted-foreground">{alert.days}d</span>
         </div>
       ))}
     </div>
@@ -76,21 +76,21 @@ function BudgetChart({ motionEnabled }: { motionEnabled: boolean }) {
 
   return (
     <div ref={ref} className="space-y-3">
-      <div className="mb-2 flex justify-between text-xs text-zinc-500">
+      <div className="mb-2 flex justify-between text-xs text-muted-foreground">
         <span>Budget vs Actual</span>
         <span>85%</span>
       </div>
       {[
-        { label: "Materials", value: 75, color: "bg-blue-500" },
-        { label: "Labor", value: 90, color: "bg-green-500" },
-        { label: "Equipment", value: 60, color: "bg-orange-500" },
+        { label: "Materials", value: 75, color: "bg-primary" },
+        { label: "Labor", value: 90, color: "bg-secondary" },
+        { label: "Equipment", value: 60, color: "bg-accent" },
       ].map((item, i) => (
         <div key={i}>
           <div className="mb-1 flex justify-between text-xs">
-            <span className="text-zinc-400">{item.label}</span>
-            <span className="text-zinc-500">{item.value}%</span>
+            <span className="text-muted-foreground">{item.label}</span>
+            <span className="text-muted-foreground">{item.value}%</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
+          <div className="h-2 overflow-hidden rounded-full bg-border">
             <motion.div
               className={`h-full ${item.color}`}
               initial={{ width: 0 }}
@@ -120,10 +120,10 @@ export function FeatureModules() {
           transition={motionEnabled ? { duration: 0.6 } : { duration: 0 }}
           className="mb-16 text-center"
         >
-          <h2 className="mb-4 [font-family:var(--font-inter)] text-3xl font-bold text-white sm:text-4xl">
+          <h2 className="mb-4 font-serif text-3xl font-bold text-foreground sm:text-4xl">
             Complete Governance Platform
           </h2>
-          <p className="mx-auto max-w-2xl text-zinc-400">
+          <p className="mx-auto max-w-2xl text-muted-foreground">
             Eight integrated modules covering every aspect of estate management, from legally
             enforceable signatures to operational excellence.
           </p>
@@ -134,30 +134,32 @@ export function FeatureModules() {
           variants={containerVariants}
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
-          className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
+          className="relative grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 overflow-hidden rounded-2xl p-1"
         >
+          <div className="vortex-glow opacity-30" />
+
           {/* Large card - Document Management */}
           <motion.div
             variants={itemVariants}
-            className="group relative rounded-2xl border border-blue-800/50 bg-linear-to-br from-blue-950/50 to-zinc-900 p-6 transition-all duration-300 hover:scale-[1.02] hover:border-blue-600/50 md:col-span-2"
+            className="ornate-border group relative rounded-2xl bg-linear-to-b from-card to-background p-6 transition-all duration-300 hover:scale-[1.02] hover:from-card hover:to-muted/20 md:col-span-2"
           >
             <div className="mb-6 flex items-start justify-between">
               <div>
-                <div className="mb-4 w-fit rounded-lg bg-blue-900/50 p-2">
-                  <FileSignature className="h-5 w-5 text-blue-400" strokeWidth={1.5} />
+                <div className="mb-4 w-fit rounded-lg bg-primary/20 p-2">
+                  <FileSignature className="h-5 w-5 text-primary" strokeWidth={1.5} />
                 </div>
-                <h3 className="mb-2 text-xl font-semibold text-white">
+                <h3 className="mb-2 text-xl font-semibold text-foreground">
                   Document Management & E-Signatures
                 </h3>
-                <p className="mb-4 text-sm text-zinc-400">
+                <p className="mb-4 text-sm text-muted-foreground">
                   DocuSeal integration for BCEA-compliant e-signatures with cryptographic audit
                   trails. Full version control and multi-signatory workflows.
                 </p>
                 <div className="flex gap-2">
-                  <span className="rounded bg-blue-900/50 px-2 py-1 text-xs text-blue-300">
+                  <span className="rounded bg-primary/20 px-2 py-1 text-xs text-primary">
                     18 Documents
                   </span>
-                  <span className="rounded bg-blue-900/50 px-2 py-1 text-xs text-blue-300">
+                  <span className="rounded bg-primary/20 px-2 py-1 text-xs text-primary">
                     100% Compliant
                   </span>
                 </div>
@@ -168,13 +170,13 @@ export function FeatureModules() {
           {/* Financial Tracking */}
           <motion.div
             variants={itemVariants}
-            className="group relative rounded-2xl border border-green-800/50 bg-linear-to-br from-green-950/50 to-zinc-900 p-6 transition-all duration-300 hover:scale-[1.02] hover:border-green-600/50"
+            className="group relative rounded-2xl border border-border bg-linear-to-b from-card to-background p-6 transition-all duration-300 hover:scale-[1.02] hover:border-border/80 hover:from-card hover:to-muted/20"
           >
-            <div className="mb-4 w-fit rounded-lg bg-green-900/50 p-2">
-              <DollarSign className="h-5 w-5 text-green-400" strokeWidth={1.5} />
+            <div className="mb-4 w-fit rounded-lg bg-secondary/20 p-2">
+              <DollarSign className="h-5 w-5 text-secondary" strokeWidth={1.5} />
             </div>
-            <h3 className="mb-2 text-lg font-semibold text-white">Financial Tracking</h3>
-            <p className="mb-4 text-sm text-zinc-400">
+            <h3 className="mb-2 text-lg font-semibold text-foreground">Financial Tracking</h3>
+            <p className="mb-4 text-sm text-muted-foreground">
               Dual-mode expense management with contractor milestone payments and budget tracking.
             </p>
             <BudgetChart motionEnabled={motionEnabled} />
@@ -183,13 +185,13 @@ export function FeatureModules() {
           {/* Compliance Alerts */}
           <motion.div
             variants={itemVariants}
-            className="group relative rounded-2xl border border-orange-800/50 bg-linear-to-br from-orange-950/50 to-zinc-900 p-6 transition-all duration-300 hover:scale-[1.02] hover:border-orange-600/50"
+            className="group relative rounded-2xl border border-border bg-linear-to-b from-card to-background p-6 transition-all duration-300 hover:scale-[1.02] hover:border-border/80 hover:from-card hover:to-muted/20"
           >
-            <div className="mb-4 w-fit rounded-lg bg-orange-900/50 p-2">
-              <Bell className="h-5 w-5 text-orange-400" strokeWidth={1.5} />
+            <div className="mb-4 w-fit rounded-lg bg-accent/20 p-2">
+              <Bell className="h-5 w-5 text-accent" strokeWidth={1.5} />
             </div>
-            <h3 className="mb-2 text-lg font-semibold text-white">Automated Compliance</h3>
-            <p className="mb-4 text-sm text-zinc-400">
+            <h3 className="mb-2 text-lg font-semibold text-foreground">Automated Compliance</h3>
+            <p className="mb-4 text-sm text-muted-foreground">
               Multi-stage alerts (60d/30d/7d) for document expiry, leave accruals, and reviews.
             </p>
             <ComplianceAlerts />
@@ -198,23 +200,23 @@ export function FeatureModules() {
           {/* Time Tracking */}
           <motion.div
             variants={itemVariants}
-            className="group relative rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-all duration-300 hover:scale-[1.02] hover:border-zinc-600"
+            className="group relative rounded-2xl border border-border bg-linear-to-b from-card to-background p-6 transition-all duration-300 hover:scale-[1.02] hover:border-border/80 hover:from-card hover:to-muted/20"
           >
-            <div className="mb-4 w-fit rounded-lg bg-zinc-800 p-2">
-              <Clock className="h-5 w-5 text-zinc-400" strokeWidth={1.5} />
+            <div className="mb-4 w-fit rounded-lg bg-muted p-2">
+              <Clock className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
-            <h3 className="mb-2 text-lg font-semibold text-white">Time Tracking</h3>
-            <p className="mb-4 text-sm text-zinc-400">
+            <h3 className="mb-2 text-lg font-semibold text-foreground">Time Tracking</h3>
+            <p className="mb-4 text-sm text-muted-foreground">
               BCEA-compliant clock-in/out with automatic overtime calculation (&gt;9hrs/day).
             </p>
             <div className="text-sm">
-              <div className="mb-1 flex justify-between text-zinc-400">
+              <div className="mb-1 flex justify-between text-muted-foreground">
                 <span>This Week</span>
-                <span className="text-emerald-400">42.5 hrs</span>
+                <span className="text-secondary">42.5 hrs</span>
               </div>
-              <div className="flex justify-between text-zinc-400">
+              <div className="flex justify-between text-muted-foreground">
                 <span>Overtime</span>
-                <span className="text-orange-400">0.5 hrs</span>
+                <span className="text-accent">0.5 hrs</span>
               </div>
             </div>
           </motion.div>
@@ -222,23 +224,23 @@ export function FeatureModules() {
           {/* Task Management */}
           <motion.div
             variants={itemVariants}
-            className="group relative rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-all duration-300 hover:scale-[1.02] hover:border-zinc-600"
+            className="group relative rounded-2xl border border-border bg-linear-to-b from-card to-background p-6 transition-all duration-300 hover:scale-[1.02] hover:border-border/80 hover:from-card hover:to-muted/20"
           >
-            <div className="mb-4 w-fit rounded-lg bg-zinc-800 p-2">
-              <ClipboardList className="h-5 w-5 text-zinc-400" strokeWidth={1.5} />
+            <div className="mb-4 w-fit rounded-lg bg-muted p-2">
+              <ClipboardList className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
-            <h3 className="mb-2 text-lg font-semibold text-white">Task Management</h3>
-            <p className="mb-4 text-sm text-zinc-400">
+            <h3 className="mb-2 text-lg font-semibold text-foreground">Task Management</h3>
+            <p className="mb-4 text-sm text-muted-foreground">
               Daily and recurring task assignments with time logging and completion tracking.
             </p>
             <div className="flex gap-2">
-              <div className="flex-1 rounded bg-zinc-800 p-2 text-center">
-                <div className="text-xl font-bold text-white">38</div>
-                <div className="text-xs text-zinc-500">Complete</div>
+              <div className="flex-1 rounded bg-muted p-2 text-center">
+                <div className="text-xl font-bold text-foreground">38</div>
+                <div className="text-xs text-muted-foreground">Complete</div>
               </div>
-              <div className="flex-1 rounded bg-zinc-800 p-2 text-center">
-                <div className="text-xl font-bold text-blue-400">6</div>
-                <div className="text-xs text-zinc-500">Active</div>
+              <div className="flex-1 rounded bg-muted p-2 text-center">
+                <div className="text-xl font-bold text-primary">6</div>
+                <div className="text-xs text-muted-foreground">Active</div>
               </div>
             </div>
           </motion.div>
@@ -246,57 +248,57 @@ export function FeatureModules() {
           {/* Asset Registry */}
           <motion.div
             variants={itemVariants}
-            className="group relative rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-all duration-300 hover:scale-[1.02] hover:border-zinc-600"
+            className="group relative rounded-2xl border border-border bg-linear-to-b from-card to-background p-6 transition-all duration-300 hover:scale-[1.02] hover:border-border/80 hover:from-card hover:to-muted/20"
           >
-            <div className="mb-4 w-fit rounded-lg bg-zinc-800 p-2">
-              <Package className="h-5 w-5 text-zinc-400" strokeWidth={1.5} />
+            <div className="mb-4 w-fit rounded-lg bg-muted p-2">
+              <Package className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
-            <h3 className="mb-2 text-lg font-semibold text-white">Asset Registry</h3>
-            <p className="mb-4 text-sm text-zinc-400">
+            <h3 className="mb-2 text-lg font-semibold text-foreground">Asset Registry</h3>
+            <p className="mb-4 text-sm text-muted-foreground">
               Complete tracking of tools, vehicles, and equipment with maintenance schedules.
             </p>
-            <div className="text-xs text-zinc-500">6 assets • R434,400 total value</div>
+            <div className="text-xs text-muted-foreground">6 assets • R434,400 total value</div>
           </motion.div>
 
           {/* Incident Reporting */}
           <motion.div
             variants={itemVariants}
-            className="group relative rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-all duration-300 hover:scale-[1.02] hover:border-zinc-600"
+            className="group relative rounded-2xl border border-border bg-linear-to-b from-card to-background p-6 transition-all duration-300 hover:scale-[1.02] hover:border-border/80 hover:from-card hover:to-muted/20"
           >
-            <div className="mb-4 w-fit rounded-lg bg-zinc-800 p-2">
-              <AlertTriangle className="h-5 w-5 text-zinc-400" strokeWidth={1.5} />
+            <div className="mb-4 w-fit rounded-lg bg-muted p-2">
+              <AlertTriangle className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
-            <h3 className="mb-2 text-lg font-semibold text-white">Incident Reporting</h3>
-            <p className="mb-4 text-sm text-zinc-400">
+            <h3 className="mb-2 text-lg font-semibold text-foreground">Incident Reporting</h3>
+            <p className="mb-4 text-sm text-muted-foreground">
               Safety, equipment, and household incident tracking with automated routing.
             </p>
             <div className="flex gap-2 text-xs">
-              <span className="rounded bg-red-900/30 px-2 py-1 text-red-400">0 High</span>
-              <span className="rounded bg-yellow-900/30 px-2 py-1 text-yellow-400">1 Med</span>
-              <span className="rounded bg-green-900/30 px-2 py-1 text-green-400">3 Low</span>
+              <span className="rounded bg-accent/20 px-2 py-1 text-accent">0 High</span>
+              <span className="rounded bg-primary/20 px-2 py-1 text-primary">1 Med</span>
+              <span className="rounded bg-secondary/20 px-2 py-1 text-secondary">3 Low</span>
             </div>
           </motion.div>
 
           {/* Vehicle Logs */}
           <motion.div
             variants={itemVariants}
-            className="group relative rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-all duration-300 hover:scale-[1.02] hover:border-zinc-600"
+            className="group relative rounded-2xl border border-border bg-linear-to-b from-card to-background p-6 transition-all duration-300 hover:scale-[1.02] hover:border-border/80 hover:from-card hover:to-muted/20"
           >
-            <div className="mb-4 w-fit rounded-lg bg-zinc-800 p-2">
-              <Car className="h-5 w-5 text-zinc-400" strokeWidth={1.5} />
+            <div className="mb-4 w-fit rounded-lg bg-muted p-2">
+              <Car className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
-            <h3 className="mb-2 text-lg font-semibold text-white">Vehicle Logs</h3>
-            <p className="mb-4 text-sm text-zinc-400">
+            <h3 className="mb-2 text-lg font-semibold text-foreground">Vehicle Logs</h3>
+            <p className="mb-4 text-sm text-muted-foreground">
               Usage authorization, fuel tracking, and child transport compliance.
             </p>
-            <div className="text-sm text-zinc-400">
+            <div className="text-sm text-muted-foreground">
               <div className="mb-1 flex justify-between">
                 <span>Distance</span>
-                <span className="text-white">171 km</span>
+                <span className="text-foreground">171 km</span>
               </div>
               <div className="flex justify-between">
                 <span>Fuel Cost</span>
-                <span className="text-white">R1,237</span>
+                <span className="text-foreground">R1,237</span>
               </div>
             </div>
           </motion.div>

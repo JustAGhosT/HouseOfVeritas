@@ -31,25 +31,25 @@ export function StatsSection() {
       value: tasks.total,
       label: "Tasks",
       sublabel: `${tasks.completed} completed`,
-      color: "text-blue-400",
+      color: "text-primary",
     },
     {
       value: users.active,
       label: "Active Users",
       sublabel: users.names?.join(", ") ?? "—",
-      color: "text-green-400",
+      color: "text-secondary",
     },
     {
       value: `${budget.percentage}%`,
       label: "Budget Used",
       sublabel: `R${budget.spent?.toLocaleString() ?? 0} of R${budget.allocated?.toLocaleString() ?? 0}`,
-      color: "text-emerald-400",
+      color: "text-accent",
     },
     {
       value: tasks.overdue,
       label: "Overdue Tasks",
       sublabel: "Requires attention",
-      color: tasks.overdue > 0 ? "text-amber-400" : "text-blue-500",
+      color: tasks.overdue > 0 ? "text-accent" : "text-muted-foreground",
     },
   ]
 
@@ -68,12 +68,12 @@ export function StatsSection() {
               initial={motionEnabled ? { opacity: 0, y: 20 } : { opacity: 1, y: 0 }}
               animate={{ opacity: 1, y: 0 }}
               transition={motionEnabled ? { duration: 0.6, delay: index * 0.1 } : { duration: 0 }}
-              className="relative rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 transition-all duration-300 hover:border-zinc-700"
+              className="relative rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-border/80"
             >
               <div className="text-center">
                 <div className={`mb-2 text-4xl font-bold ${stat.color}`}>{stat.value}</div>
-                <div className="mb-1 text-sm font-semibold text-zinc-300">{stat.label}</div>
-                <div className="text-xs text-zinc-500">{stat.sublabel}</div>
+                <div className="mb-1 text-sm font-semibold text-foreground">{stat.label}</div>
+                <div className="text-xs text-muted-foreground">{stat.sublabel}</div>
               </div>
             </motion.div>
           ))}

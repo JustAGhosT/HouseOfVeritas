@@ -3,7 +3,7 @@ House of Veritas - Shared Utilities for Azure Functions
 
 Common utilities used across all Azure Functions including:
 - Baserow API client
-- Email sending (SendGrid)
+- Email sending (Azure Communication Services)
 - SMS sending (Twilio)
 - Logging utilities
 - Configuration management
@@ -18,6 +18,13 @@ from dataclasses import dataclass
 from enum import Enum
 
 import requests
+
+try:
+    # azure-communication-email is the only ACS dep we need; keep it lazy so
+    # local imports / unit tests don't blow up if it isn't installed.
+    from azure.communication.email import EmailClient as _AcsEmailClient  # type: ignore
+except ImportError:  # pragma: no cover
+    _AcsEmailClient = None  # type: ignore
 
 # ============================================
 # Configuration
@@ -45,8 +52,8 @@ class Config:
     docuseal_api_key: str = ""
     docuseal_webhook_secret: str = ""
     
-    # Email (SendGrid)
-    sendgrid_api_key: str = ""
+    # Email (Azure Communication Services)
+    acs_connection_string: str = ""
     email_from: str = "alerts@nexamesh.ai"
     
     # SMS (Twilio)
@@ -80,7 +87,7 @@ class Config:
             docuseal_url=os.environ.get("DOCUSEAL_URL", ""),
             docuseal_api_key=os.environ.get("DOCUSEAL_API_KEY", ""),
             docuseal_webhook_secret=os.environ.get("DOCUSEAL_WEBHOOK_SECRET", ""),
-            sendgrid_api_key=os.environ.get("SENDGRID_API_KEY", ""),
+            acs_connection_string=os.environ.get("ACS_CONNECTION_STRING", ""),
             email_from=os.environ.get("EMAIL_FROM", "alerts@nexamesh.ai"),
             twilio_account_sid=os.environ.get("TWILIO_ACCOUNT_SID", ""),
             twilio_auth_token=os.environ.get("TWILIO_AUTH_TOKEN", ""),
@@ -212,17 +219,28 @@ class BaserowClient:
 
 
 # ============================================
-# Email Client (SendGrid)
+# Email Client (Azure Communication Services)
 # ============================================
 
 class EmailClient:
-    """Client for sending emails via SendGrid."""
-    
-    def __init__(self, api_key: str = None, from_email: str = None):
-        self.api_key = api_key or config.sendgrid_api_key
+    """Client for sending emails via Azure Communication Services.
+
+    Public surface (`send_email`, `send_html_email`, `send_template_email`)
+    is unchanged from the previous SendGrid implementation so all existing
+    Functions keep working.
+    """
+
+    def __init__(self, connection_string: str = None, from_email: str = None):
+        self.connection_string = connection_string or config.acs_connection_string
         self.from_email = from_email or config.email_from
         self.logger = logging.getLogger("email-client")
-    
+        self._client = None
+        if self.connection_string and _AcsEmailClient is not None:
+            try:
+                self._client = _AcsEmailClient.from_connection_string(self.connection_string)
+            except Exception as exc:  # pragma: no cover — defensive
+                self.logger.error(f"ACS EmailClient init failed: {exc}")
+
     def send_email(
         self,
         to_email: str,
@@ -230,44 +248,56 @@ class EmailClient:
         content: str,
         content_type: str = "text/plain",
         cc: List[str] = None,
-        attachments: List[Dict] = None
+        attachments: List[Dict] = None,
     ) -> bool:
-        """Send an email via SendGrid."""
-        if not self.api_key:
-            self.logger.warning("SendGrid API key not configured")
+        """Send an email via Azure Communication Services Email."""
+        if self._client is None:
+            self.logger.warning("ACS EmailClient not configured (ACS_CONNECTION_STRING missing)")
             return False
-        
-        url = "https://api.sendgrid.com/v3/mail/send"
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
+
+        is_html = content_type.lower() == "text/html"
+        body = {"subject": subject}
+        if is_html:
+            body["html"] = content
+        else:
+            body["plainText"] = content
+
+        message: Dict[str, Any] = {
+            "senderAddress": self.from_email,
+            "recipients": {
+                "to": [{"address": to_email}],
+            },
+            "content": body,
         }
-        
-        payload = {
-            "personalizations": [{
-                "to": [{"email": to_email}],
-                "subject": subject
-            }],
-            "from": {"email": self.from_email},
-            "content": [{"type": content_type, "value": content}]
-        }
-        
+
         if cc:
-            payload["personalizations"][0]["cc"] = [{"email": e} for e in cc]
-        
+            message["recipients"]["cc"] = [{"address": e} for e in cc]
+
         if attachments:
-            payload["attachments"] = attachments
-        
+            # ACS attachments expect: { name, contentType, contentInBase64 }.
+            # Translate from the SendGrid-shaped dicts the existing callers
+            # pass in (which look like { filename, type, content }) on a
+            # best-effort basis.
+            message["attachments"] = [
+                {
+                    "name": a.get("name") or a.get("filename") or "attachment",
+                    "contentType": a.get("contentType") or a.get("type") or "application/octet-stream",
+                    "contentInBase64": a.get("contentInBase64") or a.get("content") or "",
+                }
+                for a in attachments
+            ]
+
         try:
-            response = requests.post(url, headers=headers, json=payload)
-            if response.status_code == 202:
+            poller = self._client.begin_send(message)
+            result = poller.result()
+            status = result.get("status") if isinstance(result, dict) else getattr(result, "status", None)
+            if status == "Succeeded":
                 self.logger.info(f"Email sent to {to_email}")
                 return True
-            else:
-                self.logger.error(f"Email send failed: {response.status_code} - {response.text}")
-                return False
-        except requests.RequestException as e:
-            self.logger.error(f"Email send error: {e}")
+            self.logger.error(f"Email send did not succeed: status={status}")
+            return False
+        except Exception as exc:
+            self.logger.error(f"Email send error: {exc}")
             return False
     
     def send_html_email(self, to_email: str, subject: str, html_content: str, **kwargs) -> bool:

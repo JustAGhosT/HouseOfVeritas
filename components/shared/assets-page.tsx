@@ -57,64 +57,64 @@ export function AssetsPage({ personaId, title = "Assets", showAll = false }: Ass
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold text-white">
-          <Package className="h-7 w-7" />
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-foreground">
+          <Package className="h-7 w-7 text-primary" />
           {title}
         </h1>
-        <p className="mt-1 text-white/60">{showAll ? "All assets" : "Assets available to you"}</p>
+        <p className="mt-1 text-muted-foreground">{showAll ? "All assets" : "Assets available to you"}</p>
       </div>
 
       {summary && (
         <div className="grid grid-cols-3 gap-4">
-          <Card className="border-white/10 bg-white/5">
+          <Card className="border-border bg-card">
             <CardContent className="pt-4">
-              <p className="text-sm text-white/50">Total</p>
-              <p className="text-2xl font-semibold text-white">{summary.total}</p>
+              <p className="text-sm text-muted-foreground">Total</p>
+              <p className="text-2xl font-semibold text-foreground">{summary.total}</p>
             </CardContent>
           </Card>
-          <Card className="border-white/10 bg-white/5">
+          <Card className="border-border bg-card">
             <CardContent className="pt-4">
-              <p className="text-sm text-green-400/80">Available</p>
-              <p className="text-2xl font-semibold text-green-400">{summary.available}</p>
+              <p className="text-sm text-secondary/80">Available</p>
+              <p className="text-2xl font-semibold text-secondary">{summary.available}</p>
             </CardContent>
           </Card>
-          <Card className="border-white/10 bg-white/5">
+          <Card className="border-border bg-card">
             <CardContent className="pt-4">
-              <p className="text-sm text-amber-400/80">Checked Out</p>
-              <p className="text-2xl font-semibold text-amber-400">{summary.checkedOut}</p>
+              <p className="text-sm text-accent/80">Checked Out</p>
+              <p className="text-2xl font-semibold text-accent">{summary.checkedOut}</p>
             </CardContent>
           </Card>
         </div>
       )}
 
-      <Card className="border-white/10 bg-[#0d0d12]/80">
+      <Card className="border-border bg-card/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-white">Asset List</CardTitle>
-          <CardDescription className="text-white/60">
+          <CardTitle className="text-foreground">Asset List</CardTitle>
+          <CardDescription className="text-muted-foreground">
             {assets.length} asset{assets.length !== 1 ? "s" : ""}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-white/40" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : assets.length === 0 ? (
-            <p className="py-8 text-center text-white/50">No assets found.</p>
+            <p className="py-8 text-center text-muted-foreground">No assets found.</p>
           ) : (
             <div className="space-y-3">
               {assets.map((a) => (
                 <div
                   key={a.id}
-                  className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4"
+                  className="flex items-center justify-between rounded-xl border border-border bg-muted/50 p-4"
                 >
                   <div>
-                    <p className="font-medium text-white">{a.assetId || a.type}</p>
-                    <p className="text-sm text-white/50">
+                    <p className="font-medium text-foreground">{a.assetId || a.type}</p>
+                    <p className="text-sm text-muted-foreground">
                       {a.type} · {a.location}
                     </p>
                   </div>
-                  <Badge variant="outline" className="border-white/20">
+                  <Badge variant="outline" className="border-border text-foreground">
                     {a.checkedOutBy ? "Checked Out" : "Available"}
                   </Badge>
                 </div>
@@ -122,7 +122,7 @@ export function AssetsPage({ personaId, title = "Assets", showAll = false }: Ass
             </div>
           )}
           <div className="mt-4">
-            <Button variant="outline" className="border-white/10" onClick={fetchAssets}>
+            <Button variant="outline" className="border-border hover:bg-muted text-foreground" onClick={fetchAssets}>
               <RefreshCw className="mr-2 h-4 w-4" />
               Refresh
             </Button>

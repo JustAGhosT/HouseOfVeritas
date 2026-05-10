@@ -28,15 +28,15 @@ export function LogoMarquee() {
         transition={motionEnabled ? { duration: 0.6 } : { duration: 0 }}
         className="mb-10 text-center"
       >
-        <p className="text-sm font-medium tracking-wider text-zinc-500 uppercase">
+        <p className="text-sm font-medium tracking-wider text-muted-foreground uppercase">
           Trusted by industry leaders
         </p>
       </motion.div>
 
       <div className="relative">
         {/* Fade masks */}
-        <div className="pointer-events-none absolute top-0 bottom-0 left-0 z-10 w-32 bg-linear-to-r from-zinc-950 to-transparent" />
-        <div className="pointer-events-none absolute top-0 right-0 bottom-0 z-10 w-32 bg-linear-to-l from-zinc-950 to-transparent" />
+        <div className="pointer-events-none absolute top-0 bottom-0 left-0 z-10 w-32 bg-linear-to-r from-background to-transparent" />
+        <div className="pointer-events-none absolute top-0 right-0 bottom-0 z-10 w-32 bg-linear-to-l from-background to-transparent" />
 
         {/* Marquee container */}
         <div className={`flex ${motionEnabled ? "animate-marquee" : ""}`}>
@@ -45,8 +45,8 @@ export function LogoMarquee() {
               key={index}
               className="mx-8 flex h-16 min-w-[160px] items-center justify-center opacity-50 grayscale transition-all duration-300 hover:opacity-100 hover:grayscale-0"
             >
-              <div className="flex items-center gap-2 text-zinc-400">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
                   <span className="text-xs font-bold">{logo.name[0]}</span>
                 </div>
                 <span className="[font-family:var(--font-inter)] font-medium">{logo.name}</span>

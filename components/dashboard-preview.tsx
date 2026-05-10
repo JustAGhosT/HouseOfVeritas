@@ -36,34 +36,38 @@ function ContractorMilestones({ motionEnabled }: { motionEnabled: boolean }) {
     }).then((d) => setData(Array.isArray(d?.contractors) ? d : EMPTY_CONTRACTORS))
   }, [])
 
-  if (!data) return <div className="text-sm text-zinc-500">Loading...</div>
+  if (!data) return <div className="text-sm text-muted-foreground">Loading...</div>
 
   const contractors = Array.isArray(data.contractors) ? data.contractors : []
-  if (!contractors.length) return <div className="text-sm text-zinc-500">—</div>
   return (
-    <div className="space-y-3">
-      {contractors.slice(0, 3).map((contractor, i) => (
-        <div key={i} className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
-          <div className="mb-2 flex items-start justify-between">
+    <div className="space-y-4">
+      {contractors.length === 0 && <div className="text-sm text-muted-foreground">—</div>}
+      {contractors.map((contractor, i) => (
+        <div key={i} className="rounded-lg border border-border bg-card p-3">
+          <div className="mb-2 flex justify-between">
             <div>
-              <div className="text-sm font-semibold text-white">{contractor.name}</div>
-              <div className="text-xs text-zinc-500">{contractor.project}</div>
+              <div className="text-sm font-medium text-foreground">{contractor.name}</div>
+              <div className="text-xs text-muted-foreground">{contractor.project}</div>
             </div>
-            <div className="text-xs text-green-400">{contractor.progress}%</div>
+            <div className="text-right">
+              <div className="text-sm font-medium text-foreground">
+                {(contractor.progress)}% Complete
+              </div>
+            </div>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-zinc-800">
+          <div className="h-1.5 overflow-hidden rounded-full bg-border">
             <motion.div
-              className="h-full bg-green-500"
+              className="h-full bg-primary"
               initial={{ width: 0 }}
               animate={{ width: `${contractor.progress}%` }}
               transition={motionEnabled ? { duration: 1, delay: i * 0.2 } : { duration: 0 }}
             />
           </div>
           <div className="mt-2 flex justify-between text-xs">
-            <span className="text-zinc-500">
+            <span className="text-muted-foreground">
               Paid: R{(contractor.totalPaid / 1000).toFixed(1)}k
             </span>
-            <span className="text-zinc-400">
+            <span className="text-muted-foreground">
               Remaining: R{(contractor.remaining / 1000).toFixed(1)}k
             </span>
           </div>
@@ -109,30 +113,30 @@ function QuickStats({ motionEnabled }: { motionEnabled: boolean }) {
       icon: CheckCircle2,
       label: "Tasks Completed",
       value: `${stats.tasksCompleted}/${stats.tasksTotal}`,
-      color: "text-green-400",
+      color: "text-primary",
     },
     {
       icon: AlertCircle,
       label: "Docs Expiring Soon",
       value: stats.docsExpiringSoon,
-      color: "text-orange-400",
+      color: "text-accent",
     },
     {
       icon: TrendingUp,
       label: "Budget Used",
       value: `${stats.budgetUsed}%`,
-      color: "text-blue-400",
+      color: "text-secondary",
     },
     {
       icon: Clock,
       label: "Hours This Week",
       value: "86.5",
-      color: "text-emerald-400",
+      color: "text-primary",
     },
   ]
 
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 gap-4">
       {metrics.map((metric, i) => {
         const Icon = metric.icon
         return (
@@ -141,11 +145,11 @@ function QuickStats({ motionEnabled }: { motionEnabled: boolean }) {
             initial={motionEnabled ? { opacity: 0, scale: 0.9 } : { opacity: 1, scale: 1 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={motionEnabled ? { delay: i * 0.1 } : { duration: 0 }}
-            className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4"
+            className="rounded-lg border border-border bg-card p-4"
           >
             <Icon className={`h-5 w-5 ${metric.color} mb-2`} />
-            <div className="text-2xl font-bold text-white">{metric.value}</div>
-            <div className="text-xs text-zinc-500">{metric.label}</div>
+            <div className="mb-1 text-2xl font-bold text-primary">{metric.value}</div>
+            <div className="text-xs text-muted-foreground">{metric.label}</div>
           </motion.div>
         )
       })}
@@ -165,20 +169,20 @@ function DocumentExpiry() {
   return (
     <div className="space-y-2">
       {docs.map((doc, i) => (
-        <div key={i} className="flex items-center justify-between rounded bg-zinc-900/30 p-2">
-          <div className="flex items-center gap-2">
+        <div key={i} className="flex items-center justify-between rounded bg-muted/50 p-2">
+          <div className="flex gap-3">
             <div
-              className={`h-2 w-2 rounded-full ${
-                doc.urgency === "green"
-                  ? "bg-green-500"
-                  : doc.urgency === "yellow"
-                    ? "bg-yellow-500"
-                    : "bg-orange-500"
+              className={`h-2 w-2 rounded-full mt-1.5 ${
+                doc.expiryDays < 15
+                  ? "bg-accent"
+                  : doc.expiryDays < 30
+                    ? "bg-primary"
+                    : "bg-secondary"
               }`}
             />
-            <span className="text-sm text-zinc-300">{doc.name}</span>
+            <span className="text-sm text-foreground">{doc.name}</span>
           </div>
-          <span className="text-xs text-zinc-500">{doc.expiryDays}d</span>
+          <span className="text-xs text-muted-foreground">{doc.expiryDays}d</span>
         </div>
       ))}
     </div>
@@ -191,24 +195,34 @@ export function DashboardPreview() {
   const { openLoginModal } = useLoginModal()
   const { motionEnabled } = useMotion()
 
+  // Dummy roles for demonstration
+  const roles = [
+    { id: "owner", label: "Owner", desc: "Full financial and operational oversight" },
+    { id: "project_manager", label: "Project Manager", desc: "Track project progress and tasks" },
+    { id: "accountant", label: "Accountant", desc: "Manage invoices and budget" },
+  ]
+  const [activeRole, setActiveRole] = useState("owner")
+
   return (
-    <section id="dashboard" className="bg-zinc-950/50 px-4 py-24">
+    <section id="dashboard" className="bg-background px-4 py-24">
       <div className="mx-auto max-w-6xl">
         <motion.div
           initial={motionEnabled ? { opacity: 0, y: 20 } : { opacity: 1, y: 0 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={motionEnabled ? { duration: 0.6 } : { duration: 0 }}
-          className="mb-12 text-center"
+          className="mb-16 text-center"
         >
+          <div className="mb-4 inline-flex items-center rounded-full bg-secondary/10 px-3 py-1 text-sm font-medium text-secondary ring-1 ring-inset ring-secondary/20">
+            Live Preview
+          </div>
           <h2
-            className="mb-4 text-3xl font-bold text-white sm:text-4xl"
-            style={{ fontFamily: "var(--font-inter)" }}
+            className="font-serif mb-4 text-3xl font-bold text-foreground sm:text-4xl"
           >
-            Hans&apos; Admin Dashboard
+            Experience the Platform
           </h2>
-          <p className="mx-auto max-w-2xl text-zinc-400">
-            Real-time visibility into all operations, compliance status, and financial tracking.
-            Everything you need at a glance.
+          <p className="mx-auto max-w-2xl text-muted-foreground">
+            Switch between roles to see how House of Veritas adapts to different responsibilities,
+            providing exactly what each team member needs.
           </p>
         </motion.div>
 
@@ -217,26 +231,52 @@ export function DashboardPreview() {
           initial={motionEnabled ? { opacity: 0, y: 40 } : { opacity: 1, y: 0 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={motionEnabled ? { duration: 0.8, delay: 0.2 } : { duration: 0 }}
-          className="relative rounded-3xl border border-zinc-800 bg-linear-to-br from-zinc-900 to-zinc-950 p-8 shadow-2xl"
+          className="relative rounded-3xl border border-border bg-linear-to-br from-card to-background p-8 shadow-2xl"
         >
           {/* Dashboard Header */}
-          <div className="mb-8 flex items-center justify-between border-b border-zinc-800 pb-4">
+          <div className="mb-8 flex items-center justify-between border-b border-border pb-4">
             <div>
-              <h3 className="text-2xl font-bold text-white">Overview Dashboard</h3>
-              <p className="text-sm text-zinc-500">Real-time operational metrics</p>
+              <h3 className="text-2xl font-bold text-foreground">Overview Dashboard</h3>
+              <p className="text-sm text-muted-foreground">Real-time operational metrics</p>
             </div>
             <div className="flex gap-2">
-              <span className="rounded-full border border-green-800/50 bg-green-900/30 px-3 py-1.5 text-xs text-green-400">
+              <span className="status-badge-parchment">
+                <span className="pulse-glow h-1.5 w-1.5 rounded-full bg-primary" />
                 All Systems Operational
               </span>
             </div>
           </div>
 
           {/* Dashboard Grid */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-3">
+            {/* View selectors */}
+            <div className="space-y-2">
+              <div className="mb-4 px-4">
+                <h4 className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">
+                  Select View
+                </h4>
+              </div>
+              {roles.map((role) => (
+                <button
+                  key={role.id}
+                  onClick={() => setActiveRole(role.id as typeof activeRole)}
+                  className={`w-full rounded-xl px-4 py-3 text-left transition-all ${
+                    activeRole === role.id
+                      ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <div className="font-serif font-medium">{role.label}</div>
+                  <div className={`text-xs ${activeRole === role.id ? "text-primary-foreground/80" : "text-muted-foreground/60"}`}>
+                    {role.desc}
+                  </div>
+                </button>
+              ))}
+            </div>
+
             {/* Quick Stats */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold tracking-wider text-zinc-400 uppercase">
+              <h4 className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">
                 Quick Stats
               </h4>
               <QuickStats motionEnabled={motionEnabled} />
@@ -244,15 +284,15 @@ export function DashboardPreview() {
 
             {/* Contractor Milestones */}
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold tracking-wider text-zinc-400 uppercase">
+              <h4 className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">
                 Contractor Milestones
               </h4>
               <ContractorMilestones motionEnabled={motionEnabled} />
             </div>
 
             {/* Document Expiry */}
-            <div className="space-y-4 lg:col-span-2">
-              <h4 className="text-sm font-semibold tracking-wider text-zinc-400 uppercase">
+            <div className="space-y-4 lg:col-span-3">
+              <h4 className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">
                 Document Expiry Tracking
               </h4>
               <DocumentExpiry />
@@ -260,22 +300,22 @@ export function DashboardPreview() {
           </div>
 
           {/* Bottom Actions */}
-          <div className="mt-8 flex flex-wrap gap-3 border-t border-zinc-800 pt-6">
+          <div className="mt-8 flex flex-wrap gap-3 border-t border-border pt-6">
             <button
               onClick={openLoginModal}
-              className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-700"
+              className="cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground transition-colors hover:bg-primary/90"
             >
               View Full Dashboard
             </button>
             <button
               onClick={openLoginModal}
-              className="cursor-pointer rounded-lg bg-zinc-800 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-700"
+              className="cursor-pointer rounded-lg bg-muted px-4 py-2 text-sm text-foreground transition-colors hover:bg-muted/80"
             >
               Export Report
             </button>
             <button
               onClick={openLoginModal}
-              className="cursor-pointer rounded-lg bg-zinc-800 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-700"
+              className="cursor-pointer rounded-lg bg-muted px-4 py-2 text-sm text-foreground transition-colors hover:bg-muted/80"
             >
               Manage Alerts
             </button>

@@ -92,15 +92,15 @@ export function PredictiveMaintenancePanel() {
   }, [fetchData])
 
   const urgencyColors = {
-    high: "bg-red-500/20 text-red-400 border-red-500/30",
-    medium: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-    low: "bg-green-500/20 text-green-400 border-green-500/30",
+    high: "bg-destructive/20 text-destructive border-destructive/30",
+    medium: "bg-secondary/20 text-secondary border-secondary/30",
+    low: "bg-primary/20 text-primary border-primary/30",
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -114,8 +114,8 @@ export function PredictiveMaintenancePanel() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-purple-500/20 p-2">
-            <Sparkles className="h-5 w-5 text-purple-400" />
+          <div className="rounded-xl bg-secondary/20 p-2">
+            <Sparkles className="h-5 w-5 text-secondary" />
           </div>
           <div>
             <h2 className="font-semibold text-white">Predictive Maintenance</h2>
@@ -142,7 +142,7 @@ export function PredictiveMaintenancePanel() {
           <button
             onClick={autoScheduleMaintenance}
             disabled={scheduling}
-            className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-3 py-2 text-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
             {scheduling ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -164,10 +164,10 @@ export function PredictiveMaintenancePanel() {
 
       {/* Urgent Items Alert */}
       {data.urgentItems.length > 0 && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4">
           <div className="mb-3 flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-red-400" />
-            <span className="font-semibold text-red-400">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <span className="font-semibold text-destructive">
               {data.urgentItems.length} Urgent Item{data.urgentItems.length > 1 ? "s" : ""}
             </span>
           </div>
@@ -175,7 +175,7 @@ export function PredictiveMaintenancePanel() {
             {data.urgentItems.map((item) => (
               <div key={item.assetId} className="flex items-center justify-between text-sm">
                 <span className="text-white">{item.assetName}</span>
-                <span className="text-red-400">{item.recommendedAction}</span>
+                <span className="text-destructive">{item.recommendedAction}</span>
               </div>
             ))}
           </div>
@@ -213,13 +213,13 @@ export function PredictiveMaintenancePanel() {
       {/* AI Insights */}
       <div className="rounded-xl border border-white/10 bg-white/5 p-4">
         <h3 className="mb-3 flex items-center gap-2 font-semibold text-white">
-          <TrendingUp className="h-4 w-4 text-blue-400" />
+          <TrendingUp className="h-4 w-4 text-primary" />
           Key Insights
         </h3>
         <ul className="space-y-2">
           {data.insights.map((insight, index) => (
             <li key={index} className="flex items-start gap-2 text-sm text-white/70">
-              <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-blue-400" />
+              <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               {insight}
             </li>
           ))}
@@ -240,8 +240,8 @@ export function PredictiveMaintenancePanel() {
                     className={`rounded-lg p-2 ${
                       prediction.assetName.includes("Toyota") ||
                       prediction.assetName.includes("Ford")
-                        ? "bg-blue-500/20 text-blue-400"
-                        : "bg-amber-500/20 text-amber-400"
+                        ? "bg-primary/20 text-primary"
+                        : "bg-secondary/20 text-secondary"
                     }`}
                   >
                     {prediction.assetName.includes("Toyota") ||
@@ -284,7 +284,7 @@ export function PredictiveMaintenancePanel() {
             return (
               <div key={index} className="flex flex-1 flex-col items-center gap-2">
                 <div
-                  className="w-full rounded-t-lg bg-linear-to-t from-blue-600 to-blue-400 transition-all hover:from-blue-500 hover:to-blue-300"
+                  className="w-full rounded-t-lg bg-linear-to-t from-primary to-primary/40 transition-all hover:from-primary/90 hover:to-primary/30"
                   style={{ height: `${height}%` }}
                 />
                 <span className="text-xs text-white/40">{forecast.month.split(" ")[0]}</span>
@@ -315,10 +315,10 @@ function SummaryCard({
   color: "blue" | "red" | "purple" | "green"
 }) {
   const colors = {
-    blue: "from-blue-600/20 to-blue-600/5 border-blue-500/30 text-blue-400",
-    red: "from-red-600/20 to-red-600/5 border-red-500/30 text-red-400",
-    purple: "from-purple-600/20 to-purple-600/5 border-purple-500/30 text-purple-400",
-    green: "from-green-600/20 to-green-600/5 border-green-500/30 text-green-400",
+    blue: "from-primary/20 to-primary/5 border-primary/30 text-primary",
+    red: "from-destructive/20 to-destructive/5 border-destructive/30 text-destructive",
+    purple: "from-secondary/20 to-secondary/5 border-secondary/30 text-secondary",
+    green: "from-accent/20 to-accent/5 border-accent/30 text-accent",
   }
 
   return (

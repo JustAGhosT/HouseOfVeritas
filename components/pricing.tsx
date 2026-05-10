@@ -96,7 +96,7 @@ export default function PricingSection() {
           </p>
 
           {/* Billing Toggle */}
-          <div className="inline-flex items-center rounded-full border border-zinc-800 bg-zinc-900 p-1">
+          <div className="inline-flex items-center rounded-full border border-border bg-muted p-1">
             <button
               onClick={() => setBillingCycle("monthly")}
               className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
@@ -119,13 +119,13 @@ export default function PricingSection() {
             <button
               onClick={() => setBillingCycle("yearly")}
               className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                billingCycle === "yearly" ? "text-white" : "text-zinc-400"
+                billingCycle === "yearly" ? "text-foreground" : "text-muted-foreground"
               }`}
             >
               {billingCycle === "yearly" && (
                 <motion.div
                   layoutId={motionEnabled ? "billing-toggle" : undefined}
-                  className="absolute inset-0 rounded-full bg-zinc-800"
+                  className="absolute inset-0 rounded-full bg-card shadow-sm border border-border"
                   transition={
                     motionEnabled
                       ? { type: "spring", stiffness: 500, damping: 30 }
@@ -134,7 +134,7 @@ export default function PricingSection() {
                 />
               )}
               <span className="relative z-10">Yearly</span>
-              <span className="relative z-10 ml-2 rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs text-emerald-400">
+              <span className="relative z-10 ml-2 rounded-full border border-secondary/50 bg-secondary/20 px-2 py-0.5 text-xs text-secondary">
                 -20%
               </span>
             </button>
@@ -158,8 +158,8 @@ export default function PricingSection() {
               }
               className={`relative rounded-2xl border p-6 transition-all duration-300 hover:scale-[1.02] ${
                 plan.highlighted
-                  ? "border-zinc-700 bg-zinc-900"
-                  : "border-zinc-800 bg-zinc-900/50 hover:border-zinc-600"
+                  ? "border-primary bg-background shadow-lg shadow-primary/10"
+                  : "border-border bg-card hover:border-border/80"
               }`}
             >
               {plan.highlighted && <BorderBeam />}
@@ -171,17 +171,17 @@ export default function PricingSection() {
               )}
 
               <div className="mb-6">
-                <h3 className="mb-2 text-xl font-semibold text-white">{plan.name}</h3>
-                <p className="text-sm text-zinc-400">{plan.description}</p>
+                <h3 className="mb-2 text-xl font-semibold text-foreground">{plan.name}</h3>
+                <p className="text-sm text-muted-foreground">{plan.description}</p>
               </div>
 
               <div className="mb-6">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-white">${plan.price[billingCycle]}</span>
-                  {plan.price.monthly > 0 && <span className="text-sm text-zinc-400">/month</span>}
+                  <span className="text-4xl font-bold text-foreground">${plan.price[billingCycle]}</span>
+                  {plan.price.monthly > 0 && <span className="text-sm text-muted-foreground">/month</span>}
                 </div>
                 {billingCycle === "yearly" && plan.price.yearly > 0 && (
-                  <p className="mt-1 text-xs text-zinc-500">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Billed annually (${plan.price.yearly * 12}/year)
                   </p>
                 )}
@@ -189,8 +189,8 @@ export default function PricingSection() {
 
               <ul className="mb-8 space-y-3">
                 {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-3 text-sm text-zinc-300">
-                    <Check className="h-4 w-4 shrink-0 text-emerald-500" strokeWidth={1.5} />
+                  <li key={feature} className="flex items-center gap-3 text-sm text-foreground/80">
+                    <Check className="h-4 w-4 shrink-0 text-secondary" strokeWidth={1.5} />
                     {feature}
                   </li>
                 ))}
@@ -199,8 +199,8 @@ export default function PricingSection() {
               <Button
                 className={`w-full rounded-full ${
                   plan.highlighted
-                    ? "shimmer-btn bg-white text-zinc-950 hover:bg-zinc-200"
-                    : "border border-zinc-700 bg-zinc-800 text-white hover:bg-zinc-700"
+                    ? "shimmer-btn bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "border border-border bg-muted text-foreground hover:bg-muted/80"
                 }`}
                 onClick={() => {
                   if (plan.name === "Starter") {

@@ -201,8 +201,8 @@ variable "docuseal_webhook_secret" {
   default     = ""
 }
 
-variable "sendgrid_api_key" {
-  description = "SendGrid API key for email notifications"
+variable "acs_connection_string" {
+  description = "Azure Communication Services connection string for email"
   type        = string
   sensitive   = true
   default     = ""
@@ -223,9 +223,9 @@ variable "domain_name" {
 
 # SMTP variables
 variable "smtp_host" {
-  description = "SMTP server host"
+  description = "SMTP server host (used by DocuSeal — ACS Email exposes SMTP relay at smtp.azurecomm.net)"
   type        = string
-  default     = "smtp.sendgrid.net"
+  default     = "smtp.azurecomm.net"
 }
 
 variable "smtp_port" {

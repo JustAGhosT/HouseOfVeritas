@@ -23,15 +23,15 @@ export function FinalCTA() {
         transition={
           motionEnabled ? { duration: 0.8, ease: [0.22, 1, 0.36, 1] as const } : { duration: 0 }
         }
-        className="mx-auto max-w-4xl text-center"
+        className="relative mx-auto max-w-4xl text-center overflow-hidden rounded-3xl p-8"
       >
+        <div className="vortex-glow opacity-50" />
         <h2
-          className="mb-6 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl"
-          style={{ fontFamily: "var(--font-inter)" }}
+          className="font-serif ornate-border mb-6 inline-block rounded-2xl px-6 py-4 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl"
         >
           Ready to transform your governance?
         </h2>
-        <p className="mx-auto mb-10 max-w-2xl text-lg text-zinc-400 sm:text-xl">
+        <p className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground sm:text-xl">
           Join House of Veritas in achieving 100% digital compliance with legally enforceable
           e-signatures and complete operational transparency.
         </p>
@@ -39,7 +39,7 @@ export function FinalCTA() {
         <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
           <Button
             size="lg"
-            className="shimmer-btn h-14 cursor-pointer rounded-full bg-blue-600 px-8 text-base font-medium text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700"
+            className="shimmer-btn h-14 cursor-pointer rounded-full px-8 text-base font-medium text-primary-foreground shadow-lg shadow-primary/20"
             data-testid="final-cta-access-btn"
             onClick={openLoginModal}
           >
@@ -49,7 +49,7 @@ export function FinalCTA() {
           <Button
             variant="outline"
             size="lg"
-            className="h-14 cursor-pointer rounded-full border-zinc-700 bg-transparent px-8 text-base font-medium text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800 hover:text-white"
+            className="h-14 cursor-pointer rounded-full border-border bg-transparent px-8 text-base font-medium text-muted-foreground hover:border-border/80 hover:bg-muted hover:text-foreground"
             data-testid="final-cta-contact-btn"
             asChild
           >
@@ -57,7 +57,7 @@ export function FinalCTA() {
           </Button>
         </div>
 
-        <p className="mt-8 text-sm text-zinc-500">
+        <p className="mt-8 text-sm text-muted-foreground">
           Azure-powered • BCEA Compliant • 99.9% Uptime SLA
         </p>
       </motion.div>

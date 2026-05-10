@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   DropdownMenu,
@@ -20,16 +20,17 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { LogOut, User, Phone, Key, RotateCcw, ChevronDown, Settings } from "lucide-react"
+import { LogOut, User, Phone, Key, RotateCcw, ChevronDown, Settings, Shield } from "lucide-react"
 import Image from "next/image"
 import { apiFetch, ApiError } from "@/lib/api-client"
+import { generateCrest } from "@/lib/design/crest"
 
 const colorClasses: Record<string, string> = {
-  blue: "from-blue-500 to-blue-700",
-  amber: "from-amber-500 to-amber-700",
-  green: "from-green-500 to-green-700",
-  purple: "from-purple-500 to-purple-700",
-  gray: "from-gray-500 to-gray-700",
+  blue: "bg-primary text-primary-foreground",
+  amber: "bg-muted text-foreground",
+  green: "bg-secondary text-secondary-foreground",
+  purple: "bg-accent text-accent-foreground",
+  gray: "bg-muted text-muted-foreground",
 }
 
 interface UserProfileDropdownProps {
@@ -131,50 +132,63 @@ export function UserProfileDropdown({
     router.push(`/dashboard/${user.id}?tutorial=1`)
   }
 
+  const crestCore = useMemo(
+    () => generateCrest(user.name || personaInfo.name).core,
+    [user.name, personaInfo.name]
+  )
+
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
-            className={`flex items-center gap-3 rounded-xl p-2 transition-all ${compact ? "w-full" : ""} text-left hover:bg-white/10`}
+            className={`flex items-center gap-3 rounded-xl p-2 transition-all ${compact ? "w-full" : ""} text-left hover:bg-muted`}
             data-testid="user-profile-trigger"
           >
             <div
-              className={`relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full ${user.photoUrl ? "bg-transparent" : `bg-linear-to-br ${colorClasses[color] || colorClasses.blue}`}`}
+              className={`relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full ${user.photoUrl ? "bg-transparent" : `${colorClasses[color] || colorClasses.blue}`}`}
             >
               {user.photoUrl ? (
                 <Image src={user.photoUrl} alt="" fill className="object-cover" unoptimized />
               ) : (
-                <span className="text-lg">{icon}</span>
+                <span className="text-xl leading-none">{crestCore}</span>
               )}
             </div>
             <div className="hidden min-w-0 flex-1 sm:block">
-              <p className="truncate text-sm font-medium text-white">
+              <p className="font-serif truncate text-sm font-medium text-foreground">
                 {user.name || personaInfo.name}
               </p>
-              <p className="truncate text-xs text-white/50">{user.role || personaInfo.role}</p>
+              <p className="truncate text-xs text-muted-foreground">{user.role || personaInfo.role}</p>
             </div>
-            <ChevronDown className="h-4 w-4 shrink-0 text-white/50" />
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 border-white/10 bg-[#0d0d12]">
+        <DropdownMenuContent align="end" className="w-56 border-border bg-card">
+          <DropdownMenuItem
+            onClick={() => router.push(`/sigil-builder`)}
+            className="text-primary font-medium focus:bg-primary/20 focus:text-primary"
+          >
+            <Shield className="mr-2 h-4 w-4" />
+            Forge Identity
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-border" />
           <DropdownMenuItem
             onClick={() => router.push(`/dashboard/${user.id}/settings`)}
-            className="text-white/80 focus:bg-white/10 focus:text-white"
+            className="text-foreground focus:bg-muted focus:text-foreground"
           >
             <Settings className="mr-2 h-4 w-4" />
             Settings
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => setEditOpen(true)}
-            className="text-white/80 focus:bg-white/10 focus:text-white"
+            className="text-foreground focus:bg-muted focus:text-foreground"
           >
             <User className="mr-2 h-4 w-4" />
             Edit profile
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => setPasswordOpen(true)}
-            className="text-white/80 focus:bg-white/10 focus:text-white"
+            className="text-foreground focus:bg-muted focus:text-foreground"
           >
             <Key className="mr-2 h-4 w-4" />
             Change password
@@ -182,16 +196,16 @@ export function UserProfileDropdown({
           {onRepeatTutorial && (
             <DropdownMenuItem
               onClick={handleRepeatTutorial}
-              className="text-white/80 focus:bg-white/10 focus:text-white"
+              className="text-foreground focus:bg-muted focus:text-foreground"
             >
               <RotateCcw className="mr-2 h-4 w-4" />
               Repeat tutorial
             </DropdownMenuItem>
           )}
-          <DropdownMenuSeparator className="bg-white/10" />
+          <DropdownMenuSeparator className="bg-border" />
           <DropdownMenuItem
             onClick={onLogout}
-            className="text-red-400 focus:bg-red-500/20 focus:text-red-400"
+            className="text-destructive focus:bg-destructive/20 focus:text-destructive"
             data-testid="header-logout"
           >
             <LogOut className="mr-2 h-4 w-4" />
@@ -201,38 +215,38 @@ export function UserProfileDropdown({
       </DropdownMenu>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="border-white/10 bg-[#0d0d12] text-white">
+        <DialogContent className="border-border bg-card text-foreground">
           <DialogHeader>
             <DialogTitle>Edit profile</DialogTitle>
-            <DialogDescription className="text-white/60">
+            <DialogDescription className="text-muted-foreground">
               Update your phone number and other details.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label className="text-white/80">Phone</Label>
+              <Label className="text-foreground">Phone</Label>
               <Input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="mt-2 border-white/10 bg-white/5"
+                className="mt-2 border-border bg-muted/50"
                 placeholder="+27..."
               />
             </div>
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setEditOpen(false)}
-              className="border-white/10"
+              className="border-border hover:bg-muted"
             >
               Cancel
             </Button>
             <Button
               onClick={handleSaveProfile}
               disabled={saving}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {saving ? "Saving..." : "Save"}
             </Button>
@@ -251,48 +265,48 @@ export function UserProfileDropdown({
           }
         }}
       >
-        <DialogContent className="border-white/10 bg-[#0d0d12] text-white">
+        <DialogContent className="border-border bg-card text-foreground">
           <DialogHeader>
             <DialogTitle>Change password</DialogTitle>
-            <DialogDescription className="text-white/60">
+            <DialogDescription className="text-muted-foreground">
               Enter your new password. Must be at least 6 characters.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label className="text-white/80">New password</Label>
+              <Label className="text-foreground">New password</Label>
               <Input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-2 border-white/10 bg-white/5"
+                className="mt-2 border-border bg-muted/50"
                 placeholder="••••••••"
               />
             </div>
             <div>
-              <Label className="text-white/80">Confirm password</Label>
+              <Label className="text-foreground">Confirm password</Label>
               <Input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="mt-2 border-white/10 bg-white/5"
+                className="mt-2 border-border bg-muted/50"
                 placeholder="••••••••"
               />
             </div>
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setPasswordOpen(false)}
-              className="border-white/10"
+              className="border-border hover:bg-muted"
             >
               Cancel
             </Button>
             <Button
               onClick={handleSavePassword}
               disabled={saving}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {saving ? "Saving..." : "Update"}
             </Button>

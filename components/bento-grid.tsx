@@ -43,7 +43,7 @@ function SystemStatus({ motionEnabled }: { motionEnabled: boolean }) {
       {dots.map((active, i) => (
         <motion.div
           key={i}
-          className={`h-2 w-2 rounded-full ${active ? "bg-emerald-500" : "bg-zinc-700"}`}
+          className={`h-2 w-2 rounded-full ${active ? "bg-primary" : "bg-muted"}`}
           animate={active && motionEnabled ? { scale: [1, 1.2, 1] } : { scale: 1 }}
           transition={
             motionEnabled
@@ -72,14 +72,14 @@ function KeyboardCommand({ motionEnabled }: { motionEnabled: boolean }) {
       <motion.kbd
         animate={pressed && motionEnabled ? { scale: 0.95, y: 2 } : { scale: 1, y: 0 }}
         transition={motionEnabled ? { duration: 0.1 } : { duration: 0 }}
-        className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1 font-mono text-xs text-zinc-300"
+        className="rounded border border-border bg-muted px-2 py-1 font-mono text-xs text-muted-foreground"
       >
         ⌘
       </motion.kbd>
       <motion.kbd
         animate={pressed && motionEnabled ? { scale: 0.95, y: 2 } : { scale: 1, y: 0 }}
         transition={motionEnabled ? { delay: 0.05, duration: 0.1 } : { duration: 0 }}
-        className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1 font-mono text-xs text-zinc-300"
+        className="rounded border border-border bg-muted px-2 py-1 font-mono text-xs text-muted-foreground"
       >
         K
       </motion.kbd>
@@ -157,12 +157,11 @@ export function BentoGrid() {
           className="mb-16 text-center"
         >
           <h2
-            className="mb-4 text-3xl font-bold text-white sm:text-4xl"
-            style={{ fontFamily: "var(--font-inter)" }}
+            className="mb-4 text-3xl font-bold font-serif text-foreground sm:text-4xl"
           >
             Everything you need to ship
           </h2>
-          <p className="mx-auto max-w-2xl text-zinc-400">
+          <p className="mx-auto max-w-2xl text-muted-foreground">
             Built for modern teams. Powerful features that help you build, deploy, and scale faster
             than ever.
           </p>
@@ -178,15 +177,15 @@ export function BentoGrid() {
           {/* Large card - System Status */}
           <motion.div
             variants={itemVariants}
-            className="group relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-all duration-300 hover:scale-[1.02] hover:border-zinc-600 md:col-span-2"
+            className="group relative overflow-hidden rounded-2xl border border-border bg-linear-to-b from-card to-background p-6 transition-all duration-300 hover:scale-[1.02] hover:border-primary/50 md:col-span-2"
           >
             <div className="mb-8 flex items-start justify-between">
               <div>
-                <div className="mb-4 w-fit rounded-lg bg-zinc-800 p-2">
-                  <Activity className="h-5 w-5 text-zinc-400" strokeWidth={1.5} />
+                <div className="mb-4 w-fit rounded-lg bg-muted p-2">
+                  <Activity className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
                 </div>
-                <h3 className="mb-2 text-xl font-semibold text-white">Real-time Monitoring</h3>
-                <p className="text-sm text-zinc-400">
+                <h3 className="mb-2 text-xl font-semibold text-foreground">Real-time Monitoring</h3>
+                <p className="text-sm text-muted-foreground">
                   Track system health, performance metrics, and alerts in real-time across all your
                   deployments.
                 </p>
@@ -196,8 +195,8 @@ export function BentoGrid() {
             <div className="grid grid-cols-4 gap-4">
               {metricValues.map(({ name, value }) => (
                 <div key={name} className="text-center">
-                  <div className="mb-1 text-2xl font-bold text-white">{value}%</div>
-                  <div className="text-xs text-zinc-500">{name}</div>
+                  <div className="mb-1 text-2xl font-bold text-foreground">{value}%</div>
+                  <div className="text-xs text-muted-foreground">{name}</div>
                 </div>
               ))}
             </div>
@@ -206,13 +205,13 @@ export function BentoGrid() {
           {/* Command Palette */}
           <motion.div
             variants={itemVariants}
-            className="group relative rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-all duration-300 hover:scale-[1.02] hover:border-zinc-600"
+            className="group relative rounded-2xl border border-border bg-linear-to-b from-card to-background p-6 transition-all duration-300 hover:scale-[1.02] hover:border-primary/50"
           >
-            <div className="mb-4 w-fit rounded-lg bg-zinc-800 p-2">
-              <Command className="h-5 w-5 text-zinc-400" strokeWidth={1.5} />
+            <div className="mb-4 w-fit rounded-lg bg-muted p-2">
+              <Command className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
-            <h3 className="mb-2 text-lg font-semibold text-white">Command Palette</h3>
-            <p className="mb-6 text-sm text-zinc-400">
+            <h3 className="mb-2 text-lg font-semibold text-foreground">Command Palette</h3>
+            <p className="mb-6 text-sm text-muted-foreground">
               Navigate anywhere instantly with powerful keyboard shortcuts.
             </p>
             <KeyboardCommand motionEnabled={motionEnabled} />
@@ -221,13 +220,13 @@ export function BentoGrid() {
           {/* Analytics */}
           <motion.div
             variants={itemVariants}
-            className="group relative rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-all duration-300 hover:scale-[1.02] hover:border-zinc-600"
+            className="group relative rounded-2xl border border-border bg-linear-to-b from-card to-background p-6 transition-all duration-300 hover:scale-[1.02] hover:border-primary/50"
           >
-            <div className="mb-4 w-fit rounded-lg bg-zinc-800 p-2">
-              <BarChart3 className="h-5 w-5 text-zinc-400" strokeWidth={1.5} />
+            <div className="mb-4 w-fit rounded-lg bg-muted p-2">
+              <BarChart3 className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
-            <h3 className="mb-2 text-lg font-semibold text-white">Analytics</h3>
-            <p className="mb-4 text-sm text-zinc-400">
+            <h3 className="mb-2 text-lg font-semibold text-foreground">Analytics</h3>
+            <p className="mb-4 text-sm text-muted-foreground">
               Deep insights into your application performance.
             </p>
             <AnimatedChart />
@@ -236,37 +235,37 @@ export function BentoGrid() {
           {/* Performance */}
           <motion.div
             variants={itemVariants}
-            className="group relative rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-all duration-300 hover:scale-[1.02] hover:border-zinc-600"
+            className="group relative rounded-2xl border border-border bg-linear-to-b from-card to-background p-6 transition-all duration-300 hover:scale-[1.02] hover:border-primary/50"
           >
-            <div className="mb-4 w-fit rounded-lg bg-zinc-800 p-2">
-              <Zap className="h-5 w-5 text-zinc-400" strokeWidth={1.5} />
+            <div className="mb-4 w-fit rounded-lg bg-muted p-2">
+              <Zap className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
-            <h3 className="mb-2 text-lg font-semibold text-white">Blazing Fast</h3>
-            <p className="mb-4 text-sm text-zinc-400">
+            <h3 className="mb-2 text-lg font-semibold text-foreground">Blazing Fast</h3>
+            <p className="mb-4 text-sm text-muted-foreground">
               Edge-optimized infrastructure for sub-50ms response times globally.
             </p>
-            <div className="flex items-center gap-2 text-sm text-emerald-500">
+            <div className="flex items-center gap-2 text-sm text-primary">
               <span className="font-mono">~32ms</span>
-              <span className="text-zinc-500">avg response</span>
+              <span className="text-muted-foreground">avg response</span>
             </div>
           </motion.div>
 
           {/* Security */}
           <motion.div
             variants={itemVariants}
-            className="group relative rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition-all duration-300 hover:scale-[1.02] hover:border-zinc-600"
+            className="group relative rounded-2xl border border-border bg-linear-to-b from-card to-background p-6 transition-all duration-300 hover:scale-[1.02] hover:border-primary/50"
           >
-            <div className="mb-4 w-fit rounded-lg bg-zinc-800 p-2">
-              <Shield className="h-5 w-5 text-zinc-400" strokeWidth={1.5} />
+            <div className="mb-4 w-fit rounded-lg bg-muted p-2">
+              <Shield className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
-            <h3 className="mb-2 text-lg font-semibold text-white">Enterprise Security</h3>
-            <p className="mb-4 text-sm text-zinc-400">
+            <h3 className="mb-2 text-lg font-semibold text-foreground">Enterprise Security</h3>
+            <p className="mb-4 text-sm text-muted-foreground">
               SOC2 compliant with end-to-end encryption and SSO support.
             </p>
             <div className="flex items-center gap-2">
-              <span className="rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-400">SOC2</span>
-              <span className="rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-400">GDPR</span>
-              <span className="rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-400">HIPAA</span>
+              <span className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground">SOC2</span>
+              <span className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground">GDPR</span>
+              <span className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground">HIPAA</span>
             </div>
           </motion.div>
         </motion.div>

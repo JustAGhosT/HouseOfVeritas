@@ -92,8 +92,8 @@ See `.env.local` for the full list of environment variables and secrets.
 Create the storage account for remote Terraform state.
 
 ```powershell
-$RESOURCE_GROUP = "rg-houseofveritas-tfstate"
-$STORAGE_ACCOUNT = "sthoveritastfstate"
+$RESOURCE_GROUP = "hov-shared-tfstate-rg"
+$STORAGE_ACCOUNT = "hovsharedtfstatesa"
 $CONTAINER = "tfstate"
 $LOCATION = "southafricanorth"
 
@@ -134,8 +134,8 @@ az storage account blob-service-properties update `
 File: `terraform/environments/production/backend.hcl`
 
 ```hcl
-resource_group_name  = "rg-houseofveritas-tfstate"
-storage_account_name = "sthoveritastfstate"
+resource_group_name  = "hov-shared-tfstate-rg"
+storage_account_name = "hovsharedtfstatesa"
 container_name       = "tfstate"
 key                  = "production.terraform.tfstate"
 ```
@@ -707,7 +707,7 @@ az container restart --resource-group nl-prod-hov-rg-san --name prod-baserow
 
 ```powershell
 az storage blob lease break `
-  --account-name sthoveritastfstate `
+  --account-name hovsharedtfstatesa `
   --container-name tfstate `
   --blob-name production.terraform.tfstate
 ```

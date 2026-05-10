@@ -7,8 +7,8 @@ Subscription: 22f9eb18-6553-4b7d-9451-47d0195085fe
 Region: South Africa North
 
 Resource Groups
-├── rg-houseofveritas-tfstate        (Terraform state backend)
-│   └── sthoveritastfstate           Storage Account (LRS)
+├── hov-shared-tfstate-rg           (Terraform state backend)
+│   └── hovsharedtfstatesa           Storage Account (LRS)
 │       └── tfstate                  Blob Container
 │
 └── nl-prod-hov-rg-san               (Production workload)

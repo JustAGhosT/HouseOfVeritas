@@ -94,8 +94,8 @@ Terraform state is stored in Azure Blob Storage with versioning enabled (`terraf
 ### Restore Previous State
 
 ```powershell
-$RESOURCE_GROUP = "rg-houseofveritas-tfstate"
-$STORAGE_ACCOUNT = "sthoveritastfstate"
+$RESOURCE_GROUP = "hov-shared-tfstate-rg"
+$STORAGE_ACCOUNT = "hovsharedtfstatesa"
 $CONTAINER = "tfstate"
 $BLOB = "production.terraform.tfstate"
 

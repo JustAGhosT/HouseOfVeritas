@@ -30,19 +30,19 @@ const typeIcons: Record<string, any> = {
 }
 
 const typeColors: Record<string, string> = {
-  task: "bg-blue-500/20 text-blue-400",
-  approval: "bg-purple-500/20 text-purple-400",
-  document: "bg-cyan-500/20 text-cyan-400",
-  expense: "bg-green-500/20 text-green-400",
-  alert: "bg-red-500/20 text-red-400",
-  system: "bg-gray-500/20 text-gray-400",
-  leave_balance_updated: "bg-teal-500/20 text-teal-400",
+  task: "bg-primary/20 text-primary",
+  approval: "bg-secondary/20 text-secondary",
+  document: "bg-secondary/20 text-secondary",
+  expense: "bg-primary/20 text-primary",
+  alert: "bg-destructive/20 text-destructive",
+  system: "bg-muted/50 text-muted-foreground",
+  leave_balance_updated: "bg-primary/20 text-primary",
 }
 
 const priorityColors: Record<string, string> = {
-  high: "bg-red-500",
-  medium: "bg-amber-500",
-  low: "bg-green-500",
+  high: "bg-destructive",
+  medium: "bg-secondary",
+  low: "bg-primary",
 }
 
 export function NotificationPanel() {
@@ -84,7 +84,7 @@ export function NotificationPanel() {
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-medium text-white">
+          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-medium text-destructive-foreground">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -93,7 +93,7 @@ export function NotificationPanel() {
       {/* Notification Panel */}
       {isOpen && (
         <div
-          className="absolute top-full right-0 z-50 mt-2 max-h-[500px] w-96 overflow-hidden rounded-2xl border border-white/10 bg-[#0d0d12] shadow-2xl"
+          className="absolute top-full right-0 z-50 mt-2 max-h-[500px] w-96 overflow-hidden rounded-2xl border border-border bg-background shadow-2xl"
           data-testid="notification-panel"
         >
           {/* Header */}
@@ -165,8 +165,8 @@ function NotificationItem({
 
   return (
     <div
-      className={`group cursor-pointer p-4 transition-colors hover:bg-white/5 ${
-        !notification.read ? "bg-blue-500/5" : ""
+      className={`group cursor-pointer p-4 transition-colors hover:bg-muted/50 ${
+        !notification.read ? "bg-primary/5" : ""
       }`}
       onClick={onMarkRead}
       data-testid={`notification-${notification.id}`}
@@ -221,7 +221,7 @@ function NotificationItem({
               e.stopPropagation()
               onClear()
             }}
-            className="rounded-lg p-1.5 text-white/40 transition-colors hover:bg-red-500/20 hover:text-red-400"
+            className="rounded-lg p-1.5 text-foreground/40 transition-colors hover:bg-destructive/20 hover:text-destructive"
             title="Remove"
           >
             <Trash2 className="h-4 w-4" />
@@ -231,7 +231,7 @@ function NotificationItem({
 
       {/* Unread indicator */}
       {!notification.read && (
-        <div className="absolute top-1/2 left-0 h-8 w-1 -translate-y-1/2 rounded-r bg-blue-500" />
+        <div className="absolute top-1/2 left-0 h-8 w-1 -translate-y-1/2 rounded-r bg-primary" />
       )}
     </div>
   )

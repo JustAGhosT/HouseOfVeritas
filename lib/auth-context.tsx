@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation"
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from "react"
+import { getDashboardPath, isPersonaId } from "@/lib/auth/dashboard-path"
 
 interface User {
   id: string
@@ -75,15 +76,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (user && isAuthPage) {
-      router.push(`/dashboard/${user.id}`)
+      router.push(getDashboardPath(user.id, user.role))
     } else if (user && isOnboardingPage && user.onboardingStatus === "completed") {
-      router.push(`/dashboard/${user.id}`)
+      router.push(getDashboardPath(user.id, user.role))
     } else if (user && isDashboardPage) {
       const dashboardUser = pathname?.split("/")[2]
-      if (dashboardUser && dashboardUser !== user.id) {
-        if (user.role !== "admin") {
-          router.push(`/dashboard/${user.id}`)
-        }
+      if (dashboardUser && !isPersonaId(dashboardUser) && user.role !== "admin") {
+        router.push(getDashboardPath(user.id, user.role))
       }
     }
   }, [user, isLoading, pathname, router])

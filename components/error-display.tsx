@@ -89,66 +89,96 @@ export function ErrorDisplay({ errors, onRetry, variant = "page", className }: E
   return (
     <div
       className={cn(
-        "flex flex-col",
+        "flex flex-col relative overflow-hidden",
         isPage
-          ? "min-h-screen items-center justify-center bg-[#0a0a0f] p-6"
-          : "min-h-[200px] rounded-lg border border-red-500/20 bg-red-500/5 p-6",
+          ? "min-h-screen items-center justify-center bg-obsidian p-6"
+          : "min-h-[200px] rounded-sm border border-veritasCrimson/20 bg-veritasCrimson/5 p-6 glass-morphism-dark",
         className
       )}
     >
-      <div className={cn("text-center", isPage ? "w-full max-w-2xl" : "w-full")}>
+      {isPage && (
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-secondary/10 rounded-full blur-[120px] opacity-30" />
+          <div className="absolute inset-0 bg-linear-to-b from-transparent via-obsidian/40 to-obsidian" />
+        </div>
+      )}
+
+      <div className={cn("text-center z-10", isPage ? "w-full max-w-2xl" : "w-full")}>
         <div
           className={cn(
-            "mb-6 inline-flex items-center justify-center rounded-2xl border border-red-500/30 bg-red-500/20",
-            isPage ? "h-16 w-16" : "mb-4 h-12 w-12"
+            "mb-6 inline-flex items-center justify-center rounded-sm border border-veritasCrimson/30 bg-veritasCrimson/20 shadow-[0_0_30px_rgba(139,30,45,0.2)]",
+            isPage ? "h-20 w-20" : "mb-4 h-12 w-12"
           )}
         >
-          <AlertTriangle className={cn("text-red-400", isPage ? "h-8 w-8" : "h-6 w-6")} />
+          <AlertTriangle className={cn("text-veritasCrimson shadow-lg", isPage ? "h-10 w-10" : "h-6 w-6")} />
         </div>
-        <h1 className={cn("mb-2 font-semibold text-white", isPage ? "text-2xl" : "text-lg")}>
-          Something went wrong
+        
+        {isPage && (
+          <p className="ceremonial-text text-[10px] text-veritasCrimson mb-4 tracking-[0.6em] font-bold">SYSTEM FALSIFICATION</p>
+        )}
+        
+        <h1 className={cn("mb-4 font-serif font-bold text-parchment text-shadow-sm", isPage ? "text-4xl tracking-tight" : "text-lg")}>
+          Ritual Interrupted
         </h1>
-        <p className="mb-4 text-white/60">
+        <p className="mb-8 manuscript-body text-parchment/60 italic leading-relaxed">
           {errors.length === 1
-            ? errors[0]?.message || "An unexpected error occurred."
-            : `${errors.length} errors occurred.`}
+            ? errors[0]?.message || "An unexpected rift has appeared in the sanctum."
+            : `Multiple disturbances (${errors.length}) have compromised the registry.`}
         </p>
 
         {errors.length > 1 && (
-          <div className="mb-4 text-left">
-            <p className="mb-2 text-sm font-medium text-white/80">Errors:</p>
-            <ul className="list-inside list-disc space-y-1 text-sm text-white/60">
+          <div className="mb-8 p-4 rounded-sm border border-veritasCrimson/10 bg-black/20 text-left">
+            <p className="ceremonial-text text-[10px] text-veritasCrimson mb-3 font-bold uppercase tracking-widest">Compromised Assets:</p>
+            <ul className="space-y-2 manuscript-body text-sm text-parchment/60">
               {errors.map((e, i) => (
-                <li key={i}>{e.message || "Unknown error"}</li>
+                <li key={i} className="flex gap-2">
+                  <span className="text-veritasCrimson tracking-tighter">✦</span>
+                  {e.message || "Unknown disturbance"}
+                </li>
               ))}
             </ul>
           </div>
         )}
 
-        <div className="mb-6 space-y-4 text-left">
+        <div className="mb-8 space-y-4 text-left">
           {errors.map((error, idx) => (
             <ErrorDetails key={idx} error={error} index={idx} total={errors.length} />
           ))}
         </div>
 
         {errors.length > 0 && (
-          <div className="mb-6 text-left">
-            <p className="mb-2 text-sm font-medium text-white/80">Suggestions:</p>
-            <ul className="list-inside list-disc space-y-1 text-sm text-white/60">
+          <div className="mb-10 text-left p-6 border-l-2 border-sigilGold/20 bg-sigilGold/[0.02]">
+            <p className="ceremonial-text text-[10px] text-sigilGold mb-4 font-bold tracking-[0.2em]">Archival Suggestions:</p>
+            <ul className="space-y-3 manuscript-body text-sm text-parchment/50">
               {getHelpfulTips(errors[0]).map((tip, i) => (
-                <li key={i}>{tip}</li>
+                <li key={i} className="flex gap-3">
+                  <ChevronRight className="h-4 w-4 text-sigilGold/40 shrink-0" />
+                  {tip}
+                </li>
               ))}
             </ul>
           </div>
         )}
 
         {onRetry && (
-          <Button onClick={onRetry} className="inline-flex gap-2" size={isPage ? "default" : "sm"}>
-            <RefreshCw className="h-4 w-4" />
-            Try again
+          <Button 
+            onClick={onRetry} 
+            className="shimmer-btn bg-veritasCrimson text-parchment hover:bg-veritasCrimson/90 ceremonial-text text-xs tracking-widest font-bold px-8 py-6 rounded-sm" 
+            size={isPage ? "lg" : "sm"}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Recite the Oath
           </Button>
         )}
       </div>
+
+      {isPage && (
+        <div className="absolute bottom-8 text-center w-full">
+          <p className="ceremonial-text text-[8px] text-sigilGold/10 tracking-[0.5em]">
+            RITUAL INTEGRITY PROTOCOL NO. 814
+          </p>
+        </div>
+      )}
     </div>
   )
 }

@@ -65,6 +65,22 @@ const PERSONA_OPTIONS = [
 ]
 const PERSONA_TO_ID: Record<string, number> = { hans: 1, charl: 2, lucky: 3, irma: 4 }
 
+type TaskFilter = "today" | "open" | "overdue" | "all"
+
+const localDayKey = (date: Date) => {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${y}-${m}-${day}`
+}
+const todayKey = () => localDayKey(new Date())
+const dueDateKey = (d?: string) => {
+  if (!d) return ""
+  // Treat "YYYY-MM-DD" inputs as local dates so timezone doesn't roll them.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d
+  return localDayKey(new Date(d))
+}
+
 export function TasksPage({
   personaId,
   title = "Tasks",
@@ -80,6 +96,7 @@ export function TasksPage({
     overdue: number
   } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState<TaskFilter>("today")
   const [addOpen, setAddOpen] = useState(false)
   const [projectOptions, setProjectOptions] = useState<string[]>([])
   const [refineLoading, setRefineLoading] = useState(false)
@@ -187,15 +204,15 @@ export function TasksPage({
   }
 
   const getStatusIcon = (status: string) => {
-    if (status === "Completed") return <CheckCircle className="h-5 w-5 text-green-400" />
-    if (status === "In Progress") return <AlertCircle className="h-5 w-5 text-amber-400" />
-    return <Circle className="h-5 w-5 text-white/40" />
+    if (status === "Completed") return <CheckCircle className="h-5 w-5 text-secondary" />
+    if (status === "In Progress") return <AlertCircle className="h-5 w-5 text-accent" />
+    return <Circle className="h-5 w-5 text-muted-foreground/50" />
   }
 
   const getPriorityColor = (p: string) => {
-    if (p === "High" || p === "Urgent") return "bg-red-500/20 text-red-400"
-    if (p === "Medium") return "bg-amber-500/20 text-amber-400"
-    return "bg-green-500/20 text-green-400"
+    if (p === "High" || p === "Urgent") return "bg-destructive/20 text-destructive"
+    if (p === "Medium") return "bg-accent/20 text-accent"
+    return "bg-secondary/20 text-secondary"
   }
 
   const formatDate = (d?: string) =>
@@ -203,30 +220,53 @@ export function TasksPage({
       ? new Date(d).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })
       : "-"
 
+  const filteredTasks = (() => {
+    const today = todayKey()
+    if (filter === "all") return tasks
+    if (filter === "today") {
+      return tasks.filter((t) => dueDateKey(t.dueDate) === today && t.status !== "Completed")
+    }
+    if (filter === "overdue") {
+      return tasks.filter(
+        (t) => t.dueDate && dueDateKey(t.dueDate) < today && t.status !== "Completed"
+      )
+    }
+    return tasks.filter((t) => t.status !== "Completed")
+  })()
+
+  const filterCounts = {
+    today: tasks.filter(
+      (t) => dueDateKey(t.dueDate) === todayKey() && t.status !== "Completed"
+    ).length,
+    open: tasks.filter((t) => t.status !== "Completed").length,
+    overdue: summary?.overdue ?? 0,
+    all: tasks.length,
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-semibold text-white">
-            <ClipboardList className="h-7 w-7" />
+          <h1 className="flex items-center gap-2 text-2xl font-semibold text-foreground">
+            <ClipboardList className="h-7 w-7 text-primary" />
             {title}
           </h1>
-          <p className="mt-1 text-white/60">
+          <p className="mt-1 text-muted-foreground">
             {showAll ? "All tasks across the estate" : "Your assigned tasks"}
           </p>
         </div>
         {canAddTask && (
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700">
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
                 <Plus className="mr-2 h-4 w-4" />
                 Add Task
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md border-white/10 bg-[#0d0d12] text-white">
+            <DialogContent className="max-w-md border-border bg-card text-foreground">
               <DialogHeader>
                 <DialogTitle>Add Task</DialogTitle>
-                <DialogDescription className="text-white/60">
+                <DialogDescription className="text-muted-foreground">
                   Create a task. Use AI to refine the description.
                 </DialogDescription>
               </DialogHeader>
@@ -236,7 +276,7 @@ export function TasksPage({
                   <Input
                     value={taskForm.title}
                     onChange={(e) => setTaskForm((p) => ({ ...p, title: e.target.value }))}
-                    className="mt-1 border-white/10 bg-white/5"
+                    className="mt-1 border-border bg-background"
                     placeholder="e.g. Repair gate motor"
                     required
                   />
@@ -248,7 +288,7 @@ export function TasksPage({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-7 text-blue-400 hover:text-blue-300"
+                      className="h-7 text-primary hover:text-primary/80"
                       onClick={handleRefineDescription}
                       disabled={refineLoading || !taskForm.title}
                     >
@@ -259,7 +299,7 @@ export function TasksPage({
                   <Textarea
                     value={taskForm.description}
                     onChange={(e) => setTaskForm((p) => ({ ...p, description: e.target.value }))}
-                    className="mt-1 border-white/10 bg-white/5"
+                    className="mt-1 border-border bg-background"
                     rows={2}
                   />
                 </div>
@@ -271,7 +311,7 @@ export function TasksPage({
                       setTaskForm((p) => ({ ...p, project: v === "_none" ? "" : v }))
                     }
                   >
-                    <SelectTrigger className="mt-1 border-white/10 bg-white/5">
+                    <SelectTrigger className="mt-1 border-border bg-background">
                       <SelectValue placeholder="Select project" />
                     </SelectTrigger>
                     <SelectContent>
@@ -290,7 +330,7 @@ export function TasksPage({
                     value={taskForm.priority}
                     onValueChange={(v) => setTaskForm((p) => ({ ...p, priority: v }))}
                   >
-                    <SelectTrigger className="mt-1 border-white/10 bg-white/5">
+                    <SelectTrigger className="mt-1 border-border bg-background">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -308,7 +348,7 @@ export function TasksPage({
                       setTaskForm((p) => ({ ...p, assignee: v === "_none" ? "" : v }))
                     }
                   >
-                    <SelectTrigger className="mt-1 border-white/10 bg-white/5">
+                    <SelectTrigger className="mt-1 border-border bg-background">
                       <SelectValue placeholder="Unassigned" />
                     </SelectTrigger>
                     <SelectContent>
@@ -327,14 +367,14 @@ export function TasksPage({
                     type="date"
                     value={taskForm.dueDate}
                     onChange={(e) => setTaskForm((p) => ({ ...p, dueDate: e.target.value }))}
-                    className="mt-1 border-white/10 bg-white/5"
+                    className="mt-1 border-border bg-background"
                   />
                 </div>
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
+                  <Button type="button" variant="outline" className="border-border hover:bg-muted text-foreground" onClick={() => setAddOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                  <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground">
                     Create
                   </Button>
                 </DialogFooter>
@@ -346,93 +386,130 @@ export function TasksPage({
 
       {summary && (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-          <Card className="border-white/10 bg-white/5">
+          <Card className="border-border bg-card">
             <CardContent className="pt-4">
-              <p className="text-sm text-white/50">Total</p>
-              <p className="text-2xl font-semibold text-white">{summary.total}</p>
+              <p className="text-sm text-muted-foreground">Total</p>
+              <p className="text-2xl font-semibold text-foreground">{summary.total}</p>
             </CardContent>
           </Card>
-          <Card className="border-white/10 bg-white/5">
+          <Card className="border-border bg-card">
             <CardContent className="pt-4">
-              <p className="text-sm text-green-400/80">Completed</p>
-              <p className="text-2xl font-semibold text-green-400">{summary.completed}</p>
+              <p className="text-sm text-secondary/80">Completed</p>
+              <p className="text-2xl font-semibold text-secondary">{summary.completed}</p>
             </CardContent>
           </Card>
-          <Card className="border-white/10 bg-white/5">
+          <Card className="border-border bg-card">
             <CardContent className="pt-4">
-              <p className="text-sm text-amber-400/80">In Progress</p>
-              <p className="text-2xl font-semibold text-amber-400">{summary.inProgress}</p>
+              <p className="text-sm text-accent/80">In Progress</p>
+              <p className="text-2xl font-semibold text-accent">{summary.inProgress}</p>
             </CardContent>
           </Card>
-          <Card className="border-white/10 bg-white/5">
+          <Card className="border-border bg-card">
             <CardContent className="pt-4">
-              <p className="text-sm text-white/60">Not Started</p>
-              <p className="text-2xl font-semibold text-white">{summary.notStarted}</p>
+              <p className="text-sm text-muted-foreground">Not Started</p>
+              <p className="text-2xl font-semibold text-foreground">{summary.notStarted}</p>
             </CardContent>
           </Card>
-          <Card className="border-white/10 bg-white/5">
+          <Card className="border-border bg-card">
             <CardContent className="pt-4">
-              <p className="text-sm text-red-400/80">Overdue</p>
-              <p className="text-2xl font-semibold text-red-400">{summary.overdue}</p>
+              <p className="text-sm text-destructive/80">Overdue</p>
+              <p className="text-2xl font-semibold text-destructive">{summary.overdue}</p>
             </CardContent>
           </Card>
         </div>
       )}
 
-      <Card className="border-white/10 bg-[#0d0d12]/80">
+      <Card className="border-border bg-card/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-white">Task List</CardTitle>
-          <CardDescription className="text-white/60">
-            {tasks.length} task{tasks.length !== 1 ? "s" : ""}
-          </CardDescription>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-foreground">Task List</CardTitle>
+              <CardDescription className="text-muted-foreground">
+                {filteredTasks.length} task{filteredTasks.length !== 1 ? "s" : ""}
+                {filter === "today" && " due today"}
+                {filter === "overdue" && " overdue"}
+                {filter === "open" && " open"}
+              </CardDescription>
+            </div>
+            <div className="flex flex-wrap gap-1" role="tablist" aria-label="Task filter">
+              {(["today", "open", "overdue", "all"] as TaskFilter[]).map((f) => (
+                <Button
+                  key={f}
+                  type="button"
+                  size="sm"
+                  variant={filter === f ? "default" : "outline"}
+                  className={
+                    filter === f
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "border-border text-muted-foreground hover:bg-muted"
+                  }
+                  onClick={() => setFilter(f)}
+                  data-testid={`task-filter-${f}`}
+                  role="tab"
+                  aria-selected={filter === f}
+                >
+                  {f === "today" && "Today"}
+                  {f === "open" && "Open"}
+                  {f === "overdue" && "Overdue"}
+                  {f === "all" && "All"}
+                  <span className="ml-1.5 text-xs opacity-70">{filterCounts[f]}</span>
+                </Button>
+              ))}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-white/40" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : tasks.length === 0 ? (
-            <p className="py-8 text-center text-white/50">No tasks found.</p>
+          ) : filteredTasks.length === 0 ? (
+            <p className="py-8 text-center text-muted-foreground">
+              {filter === "today" && "Nothing due today. Nice."}
+              {filter === "overdue" && "Nothing overdue."}
+              {filter === "open" && "No open tasks."}
+              {filter === "all" && "No tasks found."}
+            </p>
           ) : (
-            <div className="space-y-3">
-              {tasks.map((task) => (
+            <div className="space-y-3" data-testid="task-list">
+              {filteredTasks.map((task) => (
                 <div
                   key={task.id}
-                  className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 p-4 transition-colors hover:bg-white/7"
+                  className="flex items-center gap-4 rounded-xl border border-border bg-muted/50 p-4 transition-colors hover:bg-muted"
                 >
                   {getStatusIcon(task.status)}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-white">{task.title}</p>
+                    <p className="truncate font-medium text-foreground">{task.title}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
-                      <Badge className={getPriorityColor(task.priority)}>{task.priority}</Badge>
-                      <Badge variant="outline" className="border-white/20 text-white/60">
+                       <Badge className={getPriorityColor(task.priority)}>{task.priority}</Badge>
+                      <Badge variant="outline" className="border-border text-muted-foreground">
                         {task.status}
                       </Badge>
                       {task.dueDate && (
-                        <span className="text-sm text-white/40">
+                        <span className="text-sm text-muted-foreground/70">
                           Due {formatDate(task.dueDate)}
                         </span>
                       )}
                       {task.assignedToName && showAll && (
-                        <span className="text-sm text-white/40">{task.assignedToName}</span>
+                        <span className="text-sm text-muted-foreground/70">{task.assignedToName}</span>
                       )}
                       {task.project && (
                         <Badge
                           variant="outline"
-                          className="border-blue-500/30 text-xs text-blue-400/80"
+                          className="border-primary/30 text-xs text-primary/80"
                         >
                           {task.project}
                         </Badge>
                       )}
                     </div>
                   </div>
-                  <ChevronRight className="h-5 w-5 shrink-0 text-white/30" />
+                  <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground/30" />
                 </div>
               ))}
             </div>
           )}
           <div className="mt-4">
-            <Button variant="outline" className="border-white/10" onClick={fetchTasks}>
+            <Button variant="outline" className="border-border hover:bg-muted text-foreground" onClick={fetchTasks}>
               <RefreshCw className="mr-2 h-4 w-4" />
               Refresh
             </Button>

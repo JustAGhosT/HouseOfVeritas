@@ -194,7 +194,7 @@ module "functions" {
   baserow_api_token              = var.baserow_api_token
   docuseal_api_key               = var.docuseal_api_key
   docuseal_webhook_secret        = var.docuseal_webhook_secret
-  sendgrid_api_key               = var.sendgrid_api_key
+  acs_connection_string          = var.acs_connection_string
   admin_phone                    = var.admin_phone
 
   tags = local.common_tags

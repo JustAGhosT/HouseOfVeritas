@@ -82,29 +82,35 @@ export default function LoginPage() {
 
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0f]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500/30 border-t-blue-500" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
       </div>
     )
   }
 
   return (
     <ErrorBoundary>
-      <div className="flex min-h-screen flex-col bg-[#0a0a0f]">
+      <div className="flex min-h-screen flex-col bg-background">
         {/* Background Pattern */}
-        <div className="fixed inset-0 -z-10 bg-linear-to-br from-blue-950/30 via-[#0a0a0f] to-purple-950/20" />
-        <div className="fixed inset-0 -z-10 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:50px_50px]" />
+        <div className="fixed inset-0 -z-10 bg-linear-to-br from-background via-background/90 to-card/50" />
+        <div
+          className="fixed inset-0 -z-10 bg-[size:50px_50px]"
+          style={{
+            backgroundImage:
+              "linear-gradient(color-mix(in srgb, var(--primary) 3%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--primary) 3%, transparent) 1px, transparent 1px)",
+          }}
+        />
 
         {/* Header */}
-        <header className="border-b border-white/10 bg-black/40 backdrop-blur-xl">
+        <header className="border-b border-border bg-background/40 backdrop-blur-xl">
           <div className="container mx-auto px-6 py-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-blue-600 to-blue-800">
-                <span className="text-lg font-bold text-white">HV</span>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-primary to-primary/80">
+                <span className="font-serif text-lg font-bold text-primary-foreground">HV</span>
               </div>
               <div>
-                <h1 className="font-semibold text-white">House of Veritas</h1>
-                <p className="text-xs text-white/50">Digital Governance Platform</p>
+                <h1 className="font-serif font-semibold text-foreground">House of Veritas</h1>
+                <p className="text-xs text-muted-foreground">Digital Governance Platform</p>
               </div>
             </div>
           </div>
@@ -116,33 +122,33 @@ export default function LoginPage() {
             {/* Login View */}
             {view === "login" && (
               <div
-                className="rounded-2xl border border-white/10 bg-[#0d0d12]/80 p-8 backdrop-blur-xl"
+                className="rounded-2xl border border-border bg-card/80 p-8 backdrop-blur-xl shadow-lg"
                 data-testid="login-card"
               >
                 {/* Header */}
                 <div className="mb-8 text-center">
-                  <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-500/30 bg-blue-500/20">
-                    <Shield className="h-8 w-8 text-blue-400" />
+                  <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10">
+                    <Shield className="h-8 w-8 text-primary" />
                   </div>
-                  <h2 className="mb-2 text-2xl font-bold text-white">Welcome Back</h2>
-                  <p className="text-white/60">Sign in to access your dashboard</p>
+                  <h2 className="mb-2 font-serif text-2xl font-bold text-foreground">Welcome Back</h2>
+                  <p className="text-muted-foreground">Sign in to access your dashboard</p>
                 </div>
 
                 {/* Form */}
                 <form onSubmit={handleLogin} className="space-y-5" data-testid="login-form">
                   <div>
-                    <label htmlFor="email" className="mb-2 block text-sm font-medium text-white/80">
+                    <label htmlFor="email" className="mb-2 block text-sm font-medium text-foreground/80">
                       Email Address
                     </label>
                     <div className="relative">
-                      <Mail className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-white/40" />
+                      <Mail className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                       <input
                         id="email"
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@houseofv.com"
-                        className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pr-4 pl-12 text-white placeholder-white/40 transition-all focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                        className="w-full rounded-xl border border-border bg-background py-3 pr-4 pl-12 text-foreground placeholder-muted-foreground transition-all focus:border-primary/50 focus:ring-2 focus:ring-primary/20 focus:outline-none"
                         data-testid="email-input"
                         required
                       />
@@ -152,26 +158,26 @@ export default function LoginPage() {
                   <div>
                     <label
                       htmlFor="password"
-                      className="mb-2 block text-sm font-medium text-white/80"
+                      className="mb-2 block text-sm font-medium text-foreground/80"
                     >
                       Password
                     </label>
                     <div className="relative">
-                      <Lock className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-white/40" />
+                      <Lock className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                       <input
                         id="password"
                         type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Enter your password"
-                        className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pr-12 pl-12 text-white placeholder-white/40 transition-all focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                        className="w-full rounded-xl border border-border bg-background py-3 pr-12 pl-12 text-foreground placeholder-muted-foreground transition-all focus:border-primary/50 focus:ring-2 focus:ring-primary/20 focus:outline-none"
                         data-testid="password-input"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute top-1/2 right-4 -translate-y-1/2 text-white/40 transition-colors hover:text-white/60"
+                        className="absolute top-1/2 right-4 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                         data-testid="toggle-password"
                         aria-label={showPassword ? "Hide password" : "Show password"}
                         aria-pressed={showPassword ? "true" : "false"}
@@ -187,7 +193,7 @@ export default function LoginPage() {
 
                   {error && (
                     <div
-                      className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400"
+                      className="rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive"
                       data-testid="login-error"
                     >
                       {error}
@@ -199,13 +205,13 @@ export default function LoginPage() {
                     disabled={isLoading || !email || !password}
                     className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 font-medium transition-all ${
                       isLoading || !email || !password
-                        ? "cursor-not-allowed bg-white/10 text-white/40"
-                        : "bg-linear-to-r from-blue-600 to-blue-700 text-white hover:from-blue-500 hover:to-blue-600"
+                        ? "cursor-not-allowed bg-muted text-muted-foreground"
+                        : "bg-primary text-primary-foreground hover:bg-primary/90"
                     }`}
                     data-testid="login-submit"
                   >
                     {isLoading ? (
-                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
                     ) : (
                       <>
                         <span>Sign In</span>
@@ -221,7 +227,7 @@ export default function LoginPage() {
                       setError("")
                       setResetEmail(email)
                     }}
-                    className="w-full text-center text-sm text-white/50 transition-colors hover:text-white"
+                    className="w-full text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
                     data-testid="forgot-password"
                   >
                     Forgot your password?
@@ -230,28 +236,28 @@ export default function LoginPage() {
 
                 {/* Demo Credentials - only shown in non-production environments */}
                 {process.env.NODE_ENV !== "production" && (
-                  <div className="mt-8 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4">
-                    <p className="mb-2 text-sm font-medium text-amber-400">Demo Credentials</p>
-                    <div className="grid grid-cols-2 gap-2 text-xs text-white/60">
+                  <div className="mt-8 rounded-xl border border-muted/20 bg-muted/10 p-4">
+                    <p className="mb-2 text-sm font-medium text-foreground">Demo Credentials</p>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                       {process.env.NEXT_PUBLIC_DEMO_USERS ? (
                         safeParseDemoUsers(process.env.NEXT_PUBLIC_DEMO_USERS).map(
                           (user: { email: string; password: string }, index: number) => (
                             <Fragment key={index}>
                               <div>{user.email}</div>
-                              <div className="text-white/40">{user.password}</div>
+                              <div className="opacity-70">{user.password}</div>
                             </Fragment>
                           )
                         )
                       ) : (
                         <>
                           <div>hans@houseofv.com</div>
-                          <div className="text-white/40">hans123</div>
+                          <div className="opacity-70">hans123</div>
                           <div>charl@houseofv.com</div>
-                          <div className="text-white/40">charl123</div>
+                          <div className="opacity-70">charl123</div>
                           <div>lucky@houseofv.com</div>
-                          <div className="text-white/40">lucky123</div>
+                          <div className="opacity-70">lucky123</div>
                           <div>irma@houseofv.com</div>
-                          <div className="text-white/40">irma123</div>
+                          <div className="opacity-70">irma123</div>
                         </>
                       )}
                     </div>
@@ -263,7 +269,7 @@ export default function LoginPage() {
             {/* Password Reset View */}
             {view === "reset" && (
               <div
-                className="rounded-2xl border border-white/10 bg-[#0d0d12]/80 p-8 backdrop-blur-xl"
+                className="rounded-2xl border border-border bg-card/80 p-8 backdrop-blur-xl shadow-lg"
                 data-testid="reset-card"
               >
                 {/* Back Button */}
@@ -273,7 +279,7 @@ export default function LoginPage() {
                     setResetSuccess(null)
                     setError("")
                   }}
-                  className="mb-6 flex items-center gap-2 text-white/60 transition-colors hover:text-white"
+                  className="mb-6 flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
                   data-testid="back-to-login"
                 >
                   <ArrowLeft className="h-4 w-4" />
@@ -282,11 +288,11 @@ export default function LoginPage() {
 
                 {/* Header */}
                 <div className="mb-8 text-center">
-                  <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/20">
-                    <Lock className="h-8 w-8 text-amber-400" />
+                  <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl border border-secondary/30 bg-secondary/10">
+                    <Lock className="h-8 w-8 text-secondary" />
                   </div>
-                  <h2 className="mb-2 text-2xl font-bold text-white">Reset Password</h2>
-                  <p className="text-white/60">
+                  <h2 className="mb-2 font-serif text-2xl font-bold text-foreground">Reset Password</h2>
+                  <p className="text-muted-foreground">
                     We&apos;ll send a new password to your phone or email
                   </p>
                 </div>
@@ -295,19 +301,19 @@ export default function LoginPage() {
                 <div className="mb-6">
                   <label
                     htmlFor="reset-email"
-                    className="mb-2 block text-sm font-medium text-white/80"
+                    className="mb-2 block text-sm font-medium text-foreground/80"
                   >
                     Email Address
                   </label>
                   <div className="relative">
-                    <Mail className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-white/40" />
+                    <Mail className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                     <input
                       id="reset-email"
                       type="email"
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
                       placeholder="you@houseofv.com"
-                      className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pr-4 pl-12 text-white placeholder-white/40 transition-all focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 focus:outline-none"
+                      className="w-full rounded-xl border border-border bg-background py-3 pr-4 pl-12 text-foreground placeholder-muted-foreground transition-all focus:border-secondary/50 focus:ring-2 focus:ring-secondary/20 focus:outline-none"
                       data-testid="reset-email-input"
                       required
                     />
@@ -316,37 +322,37 @@ export default function LoginPage() {
 
                 {/* Reset Method Selection */}
                 <div className="mb-6 space-y-3" data-testid="reset-method-selection">
-                  <p className="mb-2 text-sm text-white/60">Delivery method:</p>
+                  <p className="mb-2 text-sm text-muted-foreground">Delivery method:</p>
                   <button
                     type="button"
                     onClick={() => setResetMethod("sms")}
                     className={`flex w-full items-center gap-4 rounded-xl border p-4 transition-all ${
                       resetMethod === "sms"
-                        ? "border-blue-500/30 bg-blue-500/10"
-                        : "border-white/10 bg-white/5 hover:border-white/20"
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-background hover:border-primary/50"
                     }`}
                     data-testid="reset-method-sms"
                   >
                     <div
                       className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                        resetMethod === "sms" ? "bg-blue-500/20" : "bg-white/10"
+                        resetMethod === "sms" ? "bg-primary/20" : "bg-muted"
                       }`}
                     >
                       <Smartphone
-                        className={`h-5 w-5 ${resetMethod === "sms" ? "text-blue-400" : "text-white/60"}`}
+                        className={`h-5 w-5 ${resetMethod === "sms" ? "text-primary" : "text-muted-foreground"}`}
                       />
                     </div>
                     <div className="flex-1 text-left">
                       <p
-                        className={`font-medium ${resetMethod === "sms" ? "text-white" : "text-white/80"}`}
+                        className={`font-medium ${resetMethod === "sms" ? "text-foreground" : "text-foreground/80"}`}
                       >
                         SMS
                       </p>
-                      <p className="text-sm text-white/50">Send to registered cellphone</p>
+                      <p className="text-sm text-muted-foreground">Send to registered cellphone</p>
                     </div>
                     <div
                       className={`h-4 w-4 rounded-full border-2 ${
-                        resetMethod === "sms" ? "border-blue-400 bg-blue-400" : "border-white/30"
+                        resetMethod === "sms" ? "border-primary bg-primary" : "border-muted"
                       }`}
                     />
                   </button>
@@ -356,31 +362,31 @@ export default function LoginPage() {
                     onClick={() => setResetMethod("email")}
                     className={`flex w-full items-center gap-4 rounded-xl border p-4 transition-all ${
                       resetMethod === "email"
-                        ? "border-blue-500/30 bg-blue-500/10"
-                        : "border-white/10 bg-white/5 hover:border-white/20"
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-background hover:border-primary/50"
                     }`}
                     data-testid="reset-method-email"
                   >
                     <div
                       className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                        resetMethod === "email" ? "bg-blue-500/20" : "bg-white/10"
+                        resetMethod === "email" ? "bg-primary/20" : "bg-muted"
                       }`}
                     >
                       <Mail
-                        className={`h-5 w-5 ${resetMethod === "email" ? "text-blue-400" : "text-white/60"}`}
+                        className={`h-5 w-5 ${resetMethod === "email" ? "text-primary" : "text-muted-foreground"}`}
                       />
                     </div>
                     <div className="flex-1 text-left">
                       <p
-                        className={`font-medium ${resetMethod === "email" ? "text-white" : "text-white/80"}`}
+                        className={`font-medium ${resetMethod === "email" ? "text-foreground" : "text-foreground/80"}`}
                       >
                         Email
                       </p>
-                      <p className="text-sm text-white/50">Send to registered email</p>
+                      <p className="text-sm text-muted-foreground">Send to registered email</p>
                     </div>
                     <div
                       className={`h-4 w-4 rounded-full border-2 ${
-                        resetMethod === "email" ? "border-blue-400 bg-blue-400" : "border-white/30"
+                        resetMethod === "email" ? "border-primary bg-primary" : "border-muted"
                       }`}
                     />
                   </button>
@@ -388,7 +394,7 @@ export default function LoginPage() {
 
                 {error && (
                   <div
-                    className="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400"
+                    className="mb-6 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive"
                     data-testid="reset-error"
                   >
                     {error}
@@ -397,10 +403,10 @@ export default function LoginPage() {
 
                 {resetSuccess && (
                   <div
-                    className="mb-6 rounded-xl border border-green-500/20 bg-green-500/10 p-4"
+                    className="mb-6 rounded-xl border border-secondary/20 bg-secondary/10 p-4"
                     data-testid="reset-success"
                   >
-                    <p className="font-medium text-green-400">{resetSuccess}</p>
+                    <p className="font-medium text-secondary">{resetSuccess}</p>
                   </div>
                 )}
 
@@ -409,13 +415,13 @@ export default function LoginPage() {
                   disabled={isLoading || !resetEmail || !!resetSuccess}
                   className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 font-medium transition-all ${
                     isLoading || !resetEmail || !!resetSuccess
-                      ? "cursor-not-allowed bg-white/10 text-white/40"
-                      : "bg-linear-to-r from-amber-600 to-amber-700 text-white hover:from-amber-500 hover:to-amber-600"
+                      ? "cursor-not-allowed bg-muted text-muted-foreground"
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/90"
                   }`}
                   data-testid="reset-submit"
                 >
                   {isLoading ? (
-                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-secondary-foreground/30 border-t-secondary-foreground" />
                   ) : (
                     <>
                       <span>Send New Password</span>
@@ -430,7 +436,7 @@ export default function LoginPage() {
                       setView("login")
                       setResetSuccess(null)
                     }}
-                    className="mt-4 w-full rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 font-medium text-blue-400 transition-all hover:bg-blue-500/20"
+                    className="mt-4 w-full rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 font-medium text-primary transition-all hover:bg-primary/20"
                     data-testid="return-to-login"
                   >
                     Return to Login
@@ -442,9 +448,9 @@ export default function LoginPage() {
         </main>
 
         {/* Footer */}
-        <footer className="border-t border-white/10 py-6">
+        <footer className="border-t border-border py-6">
           <div className="container mx-auto px-6 text-center">
-            <p className="text-sm text-white/40">© 2026 House of Veritas. All rights reserved.</p>
+            <p className="text-sm text-muted-foreground">© 2026 House of Veritas. All rights reserved.</p>
           </div>
         </footer>
       </div>

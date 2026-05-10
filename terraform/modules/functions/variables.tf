@@ -55,8 +55,8 @@ variable "docuseal_webhook_secret" {
   default     = ""
 }
 
-variable "sendgrid_api_key" {
-  description = "SendGrid API key for email notifications"
+variable "acs_connection_string" {
+  description = "Azure Communication Services connection string for email"
   type        = string
   sensitive   = true
   default     = ""

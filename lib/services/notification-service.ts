@@ -2,7 +2,27 @@
 // Supports SMS (Twilio), WhatsApp (Twilio), Email, and Push notifications
 
 import twilio from "twilio"
+import { EmailClient as AcsEmailClient } from "@azure/communication-email"
 import { logger } from "@/lib/logger"
+
+let _acsEmailClient: AcsEmailClient | null | undefined
+function getAcsEmailClient(): AcsEmailClient | null {
+  if (_acsEmailClient !== undefined) return _acsEmailClient
+  const connectionString = process.env.ACS_CONNECTION_STRING
+  if (!connectionString) {
+    _acsEmailClient = null
+    return null
+  }
+  try {
+    _acsEmailClient = new AcsEmailClient(connectionString)
+  } catch (error) {
+    logger.error("Failed to initialise ACS EmailClient", {
+      error: error instanceof Error ? error.message : String(error),
+    })
+    _acsEmailClient = null
+  }
+  return _acsEmailClient
+}
 
 export type NotificationChannel = "sms" | "whatsapp" | "email" | "push" | "in_app"
 
@@ -175,18 +195,44 @@ export async function sendWhatsApp(
   }
 }
 
-// Send Email (placeholder - integrate with SendGrid/Resend)
+// Send Email via Azure Communication Services. When ACS isn't configured the
+// call is a no-op success — that keeps test envs (and local dev without an
+// ACS resource) from failing notification flows that include an email step.
 export async function sendEmail(
   to: string,
   subject: string,
   body: string,
   html?: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  logger.info("Email simulated", { to, subject })
-  // In production, integrate with SendGrid, Resend, or SES
-  return {
-    success: true,
-    messageId: `email_${Date.now()}`,
+  const client = getAcsEmailClient()
+  const sender = process.env.EMAIL_FROM || "alerts@nexamesh.ai"
+
+  if (!client) {
+    logger.info("Email simulated (ACS_CONNECTION_STRING not set)", { to, subject })
+    return { success: true, messageId: `email_${Date.now()}` }
+  }
+
+  try {
+    const poller = await client.beginSend({
+      senderAddress: sender,
+      recipients: { to: [{ address: to }] },
+      content: {
+        subject,
+        plainText: body,
+        ...(html ? { html } : {}),
+      },
+    })
+    const result = await poller.pollUntilDone()
+    if (result.status === "Succeeded") {
+      return { success: true, messageId: result.id }
+    }
+    const message = `ACS send finished with status=${result.status}`
+    logger.error(message, { to, subject })
+    return { success: false, error: message }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    logger.error("ACS email send failed", { to, subject, error: message })
+    return { success: false, error: message }
   }
 }
 

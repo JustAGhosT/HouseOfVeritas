@@ -19,6 +19,64 @@ export type UserRole = "admin" | "resident" | "operator" | "employee"
 
 const BCRYPT_ROUNDS = 10
 
+// Demo accounts (predictable passwords). Only present outside production
+// unless ALLOW_DEMO_USERS=true is set explicitly.
+const DEMO_USERS_ENABLED =
+  process.env.NODE_ENV !== "production" || process.env.ALLOW_DEMO_USERS === "true"
+
+const DEMO_SEED_USERS: Record<string, User> = DEMO_USERS_ENABLED
+  ? {
+      "demo-user-1": {
+        id: "demo-user-1",
+        name: "Demo Admin",
+        email: "demo-user-1@example.com",
+        phone: "+27000000001",
+        passwordHash: hashSync("password123", BCRYPT_ROUNDS),
+        role: "admin",
+        description: "Demo Administrator account",
+        color: "blue",
+        icon: "🛡️",
+        specialty: ["Administration", "Compliance"],
+      },
+      "demo-user-2": {
+        id: "demo-user-2",
+        name: "Demo Operator",
+        email: "demo-user-2@example.com",
+        phone: "+27000000002",
+        passwordHash: hashSync("password123", BCRYPT_ROUNDS),
+        role: "operator",
+        description: "Demo Operator account",
+        color: "amber",
+        icon: "🔧",
+        specialty: ["Operations", "Maintenance"],
+      },
+      "demo-user-3": {
+        id: "demo-user-3",
+        name: "Demo Resident",
+        email: "demo-user-3@example.com",
+        phone: "+27000000003",
+        passwordHash: hashSync("password123", BCRYPT_ROUNDS),
+        role: "resident",
+        description: "Demo Resident account",
+        color: "purple",
+        icon: "🏠",
+        specialty: ["Household", "Management"],
+      },
+      "demo-user-4": {
+        id: "demo-user-4",
+        name: "Demo Employee",
+        email: "demo-user-4@example.com",
+        phone: "+27000000004",
+        passwordHash: hashSync("password123", BCRYPT_ROUNDS),
+        role: "employee",
+        description: "Demo Employee account",
+        color: "green",
+        icon: "👤",
+        specialty: ["Tasks", "Support"],
+      },
+    }
+  : {}
+
 export const USERS: Record<string, User> = {
   hans: {
     id: "hans",
@@ -68,6 +126,7 @@ export const USERS: Record<string, User> = {
     icon: "🌿",
     specialty: ["Gardening", "Painting", "Manual Labour"],
   },
+  ...DEMO_SEED_USERS,
 }
 
 let usersSchemaEnsured = false

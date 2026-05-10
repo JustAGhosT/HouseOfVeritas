@@ -25,17 +25,17 @@ interface RealTimeProviderProps {
 
 // Event type icons and colors
 const eventConfig: Record<string, { icon: any; color: string; label: string }> = {
-  task_created: { icon: ClipboardList, color: "text-blue-400", label: "New Task" },
-  task_updated: { icon: ClipboardList, color: "text-amber-400", label: "Task Updated" },
-  task_completed: { icon: CheckCircle, color: "text-green-400", label: "Task Completed" },
-  expense_created: { icon: DollarSign, color: "text-purple-400", label: "New Expense" },
-  expense_approved: { icon: DollarSign, color: "text-green-400", label: "Expense Approved" },
-  expense_rejected: { icon: DollarSign, color: "text-red-400", label: "Expense Rejected" },
-  clock_in: { icon: Clock, color: "text-green-400", label: "Clocked In" },
-  clock_out: { icon: Clock, color: "text-amber-400", label: "Clocked Out" },
-  notification: { icon: Bell, color: "text-blue-400", label: "Notification" },
-  approval_required: { icon: AlertTriangle, color: "text-amber-400", label: "Approval Required" },
-  system_alert: { icon: AlertTriangle, color: "text-red-400", label: "System Alert" },
+  task_created: { icon: ClipboardList, color: "text-secondary", label: "New Task" },
+  task_updated: { icon: ClipboardList, color: "text-primary", label: "Task Updated" },
+  task_completed: { icon: CheckCircle, color: "text-primary", label: "Task Completed" },
+  expense_created: { icon: DollarSign, color: "text-secondary", label: "New Expense" },
+  expense_approved: { icon: DollarSign, color: "text-primary", label: "Expense Approved" },
+  expense_rejected: { icon: DollarSign, color: "text-destructive", label: "Expense Rejected" },
+  clock_in: { icon: Clock, color: "text-primary", label: "Clocked In" },
+  clock_out: { icon: Clock, color: "text-secondary", label: "Clocked Out" },
+  notification: { icon: Bell, color: "text-secondary", label: "Notification" },
+  approval_required: { icon: AlertTriangle, color: "text-accent", label: "Approval Required" },
+  system_alert: { icon: AlertTriangle, color: "text-destructive", label: "System Alert" },
 }
 
 export function RealTimeIndicator() {
@@ -94,7 +94,7 @@ export function RealTimeIndicator() {
       <div className="flex items-center gap-2">
         <div
           className={`flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs ${
-            isConnected ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
+            isConnected ? "bg-primary/20 text-primary" : "bg-destructive/20 text-destructive"
           }`}
           title={
             isConnected ? "Real-time updates active" : "Disconnected - attempting to reconnect"
@@ -104,7 +104,7 @@ export function RealTimeIndicator() {
             <>
               <Wifi className="h-3 w-3" />
               <span className="hidden sm:inline">Live</span>
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" />
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
             </>
           ) : (
             <>

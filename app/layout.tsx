@@ -1,8 +1,9 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Manrope, Inter } from "next/font/google"
+import { Manrope, Inter, Cinzel, Source_Serif_4 } from "next/font/google"
 import { Providers } from "@/components/providers"
 import { ErrorBoundary } from "@/components/error-boundary"
+import { CustomCursor } from "@/components/custom-cursor"
 import "./globals.css"
 
 const manrope = Manrope({
@@ -15,8 +16,18 @@ const inter = Inter({
   variable: "--font-inter",
 })
 
+const cinzel = Cinzel({
+  subsets: ["latin"],
+  variable: "--font-serif",
+})
+
+const sourceSerif = Source_Serif_4({
+  subsets: ["latin"],
+  variable: "--font-serif-body",
+})
+
 export const viewport = {
-  themeColor: "#1E40AF",
+  themeColor: "#0F0F12",
   width: "device-width",
   initialScale: 1,
 }
@@ -47,8 +58,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${manrope.variable} ${inter.variable} font-sans antialiased`}>
+      <body className={`${manrope.variable} ${inter.variable} ${cinzel.variable} ${sourceSerif.variable} font-sans antialiased`}>
         <div className="noise-overlay" aria-hidden="true" />
+        <div className="ritual-glow" aria-hidden="true" />
+        <CustomCursor />
         <Providers>
           <ErrorBoundary>{children}</ErrorBoundary>
         </Providers>

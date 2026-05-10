@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest"
+import { NextResponse } from "next/server"
 import {
   getAuthContext,
   isAdminOrOperator,
@@ -6,6 +7,8 @@ import {
   withResponsibility,
   withAuth,
 } from "@/lib/auth/rbac"
+
+const ok = () => new NextResponse("ok")
 
 function makeRequest(headers: Record<string, string> = {}): Request {
   const h = new Headers()
@@ -74,13 +77,13 @@ describe("RBAC", () => {
 
   describe("withRole", () => {
     it("returns 401 when no auth", async () => {
-      const handler = withRole("admin")(async () => new Response("ok"))
+      const handler = withRole("admin")(async () => ok())
       const res = await handler(makeRequest())
       expect(res.status).toBe(401)
     })
 
     it("calls handler when role allowed", async () => {
-      const handler = withRole("admin")(async () => new Response("ok"))
+      const handler = withRole("admin")(async () => ok())
       const res = await handler(
         makeRequest({
           "x-user-id": "hans",
@@ -93,7 +96,7 @@ describe("RBAC", () => {
     })
 
     it("returns 403 when role not allowed", async () => {
-      const handler = withRole("admin")(async () => new Response("ok"))
+      const handler = withRole("admin")(async () => ok())
       const res = await handler(
         makeRequest({
           "x-user-id": "irma",
@@ -107,13 +110,13 @@ describe("RBAC", () => {
 
   describe("withResponsibility", () => {
     it("returns 401 when no auth", async () => {
-      const handler = withResponsibility("Projects")(async () => new Response("ok"))
+      const handler = withResponsibility("Projects")(async () => ok())
       const res = await handler(makeRequest())
       expect(res.status).toBe(401)
     })
 
     it("allows admin without responsibility", async () => {
-      const handler = withResponsibility("Expenses")(async () => new Response("ok"))
+      const handler = withResponsibility("Expenses")(async () => ok())
       const res = await handler(
         makeRequest({
           "x-user-id": "hans",
@@ -125,7 +128,7 @@ describe("RBAC", () => {
     })
 
     it("returns 403 when responsibility missing", async () => {
-      const handler = withResponsibility("Expenses")(async () => new Response("ok"))
+      const handler = withResponsibility("Expenses")(async () => ok())
       const res = await handler(
         makeRequest({
           "x-user-id": "irma",
@@ -140,13 +143,13 @@ describe("RBAC", () => {
 
   describe("withAuth", () => {
     it("returns 401 when no auth", async () => {
-      const handler = withAuth(async () => new Response("ok"))
+      const handler = withAuth(async () => ok())
       const res = await handler(makeRequest())
       expect(res.status).toBe(401)
     })
 
     it("calls handler when authenticated", async () => {
-      const handler = withAuth(async () => new Response("ok"))
+      const handler = withAuth(async () => ok())
       const res = await handler(
         makeRequest({
           "x-user-id": "charl",
