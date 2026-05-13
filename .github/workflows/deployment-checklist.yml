@@ -29,6 +29,9 @@ jobs:
   # ============================================
   deployment-checklist:
     name: "Infrastructure Verification"
+    # Dependabot PRs run without repo secrets, so fromJSON(secrets.AZURE_CREDENTIALS)
+    # fails at template-parse time. Skip the infra job for them — Build/Test/E2E still run.
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
