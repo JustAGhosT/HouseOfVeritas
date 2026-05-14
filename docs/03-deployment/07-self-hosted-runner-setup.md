@@ -1,6 +1,12 @@
-# Self-Hosted Runner Setup (JustAGhosT Repos)
+# Self-Hosted Runner Setup (Historical)
 
-HouseOfVeritas runs on the **JustAGhosT** account but uses a self-hosted runner hosted in **phoenixvc** Azure infrastructure. This avoids Key Vault and Storage 403 errors that occur when using GitHub-hosted runners (`ubuntu-latest`).
+> **Status: Historical — no longer in use as of 2026-05-14.**
+> After the transfer to `neuralliquid/house-of-veritas`, all workflows run on `ubuntu-latest`.
+> The `azure-vnet-ghost` runner was deregistered and the runner subnet allowlisting on
+> Key Vault / Storage is being kept for now (re-evaluate when next touched).
+> This page is retained for archaeology only.
+
+This describes the previous architecture: the repo lived under the **JustAGhosT** account but used a self-hosted runner hosted in **phoenixvc** Azure infrastructure. This avoided Key Vault and Storage 403 errors that can occur when using GitHub-hosted runners (`ubuntu-latest`).
 
 ---
 

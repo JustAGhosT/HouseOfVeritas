@@ -1,6 +1,5 @@
-# actionlint config - allow custom self-hosted runner labels
-# Used by: terraform-apply, terraform-destroy, terraform-plan, deploy (deploy-infrastructure)
+# actionlint config
+# Self-hosted runner labels removed 2026-05-14: all workflows use ubuntu-latest
+# after transfer to neuralliquid (see docs/03-deployment/07-self-hosted-runner-setup.md).
 self-hosted-runner:
-  labels:
-    - self-hosted
-    - azure-vnet-ghost
+  labels: []
