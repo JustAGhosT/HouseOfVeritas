@@ -1,13 +1,20 @@
 name: "Terraform Apply"
 
+# Gated on manual dispatch only. Auto-apply on push was removed because the
+# config currently defines ~43 resources that have never been built (database,
+# compute, gateway, functions, webapp, dns, monitoring modules) — an
+# accidental push to terraform/** would build a real production stack. Plan
+# visibility for PRs is provided by terraform-plan.yml. See
+# org-meta/docs/handoffs/2026-05-14-hov-state-drift-inventory.md for context.
+# Until the overhang is resolved, prefer local `terraform apply -target=...`
+# for surgical changes.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "terraform/**"
-      - ".github/workflows/terraform-apply.yml"
   workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type APPLY to confirm. Any other value aborts.'
+        required: true
+        default: ''
 
 permissions:
   contents: write
@@ -21,6 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment: production
+    if: inputs.confirm == 'APPLY'
 
     steps:
       - name: Checkout
