@@ -53,7 +53,7 @@ TF_STORAGE="${TF_STORAGE:-hovsharedtfstatesa}"
 TF_CONTAINER="${TF_CONTAINER:-tfstate}"
 TF_LOCATION="${TF_LOCATION:-southafricanorth}"
 TF_STATE_KEY="${TF_STATE_KEY:-production.terraform.tfstate}"
-REPO="${REPO:-JustAGhosT/house-of-veritas}"
+REPO="${REPO:-neuralliquid/house-of-veritas}"
 
 # ── Sanity checks ────────────────────────────────────────────────────────────
 need() { command -v "$1" >/dev/null 2>&1 || { echo "Missing required command: $1" >&2; exit 1; }; }

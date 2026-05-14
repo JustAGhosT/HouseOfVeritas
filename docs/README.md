@@ -54,7 +54,7 @@
 | [03-ci-cd-workflows.md](03-deployment/03-ci-cd-workflows.md)                                       | GitHub Actions workflows: plan, apply, deploy, destroy, checklist                |
 | [04-rollback-procedure.md](03-deployment/04-rollback-procedure.md)                                 | Rollback procedure for Next.js, Functions, Terraform, containers                 |
 | [05-terraform-firewall-troubleshooting.md](03-deployment/05-terraform-firewall-troubleshooting.md) | Key Vault/Storage 403, container IP type, consumption budget, self-hosted runner |
-| [07-self-hosted-runner-setup.md](03-deployment/07-self-hosted-runner-setup.md)                     | Self-hosted runner setup for JustAGhosT repos (cross-account with phoenixvc)     |
+| [07-self-hosted-runner-setup.md](03-deployment/07-self-hosted-runner-setup.md)                     | _Historical:_ self-hosted runner setup (no longer in use — workflows use `ubuntu-latest`) |
 
 _Note: 06 reserved for future deployment documentation._
 
