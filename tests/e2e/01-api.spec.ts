@@ -25,44 +25,10 @@ test.describe("API Routes", () => {
     }
   })
 
-  test("login returns JWT cookie", async ({ request }) => {
-    const res = await request.post("/api/auth/login", {
-      data: { email: "hans@houseofv.com", password: "hans123" },
-    })
-    expect(res.ok()).toBeTruthy()
-    const body = await res.json()
-    expect(body.success).toBe(true)
-    expect(body.user.id).toBe("hans")
-
-    const cookies = await res.headersArray()
-    const setCookie = cookies.find((h) => h.name.toLowerCase() === "set-cookie")
-    expect(setCookie?.value).toContain("hov_session")
-  })
-
-  test("authenticated requests succeed", async ({ request }) => {
-    const loginRes = await request.post("/api/auth/login", {
-      data: { email: "hans@houseofv.com", password: "hans123" },
-    })
-    expect(loginRes.ok()).toBeTruthy()
-
-    const statsRes = await request.get("/api/stats")
-    expect(statsRes.ok()).toBeTruthy()
-    const stats = await statsRes.json()
-    expect(stats.tasks).toBeDefined()
-  })
-
-  test("rate limiting blocks excessive login attempts", async ({ request }) => {
-    test.skip(!!process.env.E2E_TEST, "Skipped in E2E - limit is relaxed for test throughput")
-    const attempts = []
-    for (let i = 0; i < 7; i++) {
-      attempts.push(
-        request.post("/api/auth/login", {
-          data: { email: "hans@houseofv.com", password: "wrong" },
-        })
-      )
-    }
-    const results = await Promise.all(attempts)
-    const rateLimited = results.some((r) => r.status() === 429)
-    expect(rateLimited).toBe(true)
-  })
+  // The bcrypt /api/auth/login endpoint (JWT cookie, login rate-limiting) was
+  // removed by the Auth.js v5 + Mystira OIDC migration (PR #62) — Auth.js owns
+  // /api/auth/* now and rejects the old `login` action. Establishing an
+  // authenticated session requires the OIDC IdP, so these need a live/mocked
+  // Mystira provider; tracked under baton 7ad9342d + /team-testing.
+  test.fixme("authenticated requests succeed (requires Mystira OIDC session)", async () => {})
 })

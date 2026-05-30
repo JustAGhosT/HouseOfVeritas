@@ -32,23 +32,11 @@ async function postKioskRequest(request: import("@playwright/test").APIRequestCo
 }
 
 test.describe("Kiosk approval flow", () => {
-  test("Hans can view approvals page", async ({ page }) => {
-    await page.goto("/login")
-    await page.getByTestId("email-input").fill("hans@houseofv.com")
-    await page.getByTestId("password-input").fill("hans123")
-    await page.getByTestId("login-submit").click()
-
-    // Increased timeout and wait for load state to be more resilient
-    await page.waitForURL("**/dashboard/hans**", { timeout: 30000, waitUntil: "load" })
-
-    // Use a direct page object check if navigation is slow
-    await page.goto("/dashboard/hans/approvals", { timeout: 30000 })
-    await expect(
-      page.getByRole("heading", { name: /Approval Center|Approvals|Pending/i })
-    ).toBeVisible({
-      timeout: 20000,
-    })
-  })
+  // Viewing the (auth-gated) approvals page requires a signed-in admin session.
+  // The local password login this used was removed by the Auth.js v5 + Mystira
+  // OIDC migration (PR #62); a live/mocked IdP is needed — baton 7ad9342d +
+  // /team-testing.
+  test.fixme("Hans can view approvals page (requires Mystira OIDC session)", async () => {})
 
   test("POST kiosk request creates request when authenticated", async ({ request }) => {
     test.setTimeout(60000) // Double the timeout for this test
