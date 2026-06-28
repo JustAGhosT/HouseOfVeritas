@@ -4,7 +4,6 @@ import { ErrorBoundary } from "@/components/error-boundary"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RESPONSIBILITIES } from "@/lib/access-config"
 import { apiFetch, apiFetchSafe } from "@/lib/api-client"
@@ -17,7 +16,6 @@ import {
   CheckCircle,
   ChevronDown,
   FileSignature,
-  Key,
   Loader2,
   Shield,
   User,
@@ -64,10 +62,6 @@ export default function OnboardingPage() {
   const [roleRequestOpen, setRoleRequestOpen] = useState(false)
   const [requestedRole, setRequestedRole] = useState("")
   const [roleRequestSent, setRoleRequestSent] = useState(false)
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [passwordSet, setPasswordSet] = useState(false)
-  const [settingPassword, setSettingPassword] = useState(false)
   const [documentsSigned, setDocumentsSigned] = useState(false)
   const [onboardingDocs, setOnboardingDocs] = useState<{ id: string; name: string }[]>([])
   const [signingDoc, setSigningDoc] = useState<string | null>(null)
@@ -127,22 +121,6 @@ export default function OnboardingPage() {
       { label: "OnboardingDocs" }
     ).then((data) => setOnboardingDocs(data?.documents || []))
   }, [profileUser])
-
-  const handleSetPassword = async () => {
-    if (password.length < 6) return
-    if (password !== confirmPassword) return
-    setSettingPassword(true)
-    try {
-      await apiFetch("/api/users/me/password", {
-        method: "POST",
-        body: { password },
-        label: "SetPassword",
-      })
-      setPasswordSet(true)
-    } finally {
-      setSettingPassword(false)
-    }
-  }
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -390,51 +368,6 @@ export default function OnboardingPage() {
                     I confirm I understand my responsibilities
                   </Label>
                 </div>
-              </div>
-
-              <div>
-                <p className="mb-2 flex items-center gap-2 text-sm font-medium text-white/80">
-                  <Key className="h-4 w-4" />
-                  Set your password
-                </p>
-                <p className="mb-2 text-xs text-white/50">
-                  Choose a password for future logins (min 6 characters). You can skip and set it
-                  later from your profile.
-                </p>
-                {!passwordSet ? (
-                  <div className="space-y-2">
-                    <Input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="New password"
-                      className="border-white/10 bg-white/5 text-white"
-                    />
-                    <Input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Confirm password"
-                      className="border-white/10 bg-white/5 text-white"
-                    />
-                    <Button
-                      onClick={handleSetPassword}
-                      disabled={
-                        password.length < 6 || password !== confirmPassword || settingPassword
-                      }
-                      variant="outline"
-                      size="sm"
-                      className="border-white/20"
-                    >
-                      {settingPassword ? "Setting..." : "Set password"}
-                    </Button>
-                  </div>
-                ) : (
-                  <p className="flex items-center gap-1 text-sm text-green-400">
-                    <CheckCircle className="h-4 w-4" />
-                    Password set successfully
-                  </p>
-                )}
               </div>
 
               <div>

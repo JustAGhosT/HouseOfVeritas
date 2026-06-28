@@ -1,4 +1,3 @@
-import { hashSync, compareSync } from "bcryptjs"
 import { isPostgresConfigured, query, withClient, ensureSchema } from "@/lib/db/postgres"
 
 export interface User {
@@ -6,7 +5,6 @@ export interface User {
   name: string
   email: string
   phone: string
-  passwordHash: string
   role: UserRole
   description: string
   color: string
@@ -17,10 +15,6 @@ export interface User {
 
 export type UserRole = "admin" | "resident" | "operator" | "employee"
 
-const BCRYPT_ROUNDS = 10
-
-// Demo accounts (predictable passwords). Only present outside production
-// unless ALLOW_DEMO_USERS=true is set explicitly.
 const DEMO_USERS_ENABLED =
   process.env.NODE_ENV !== "production" || process.env.ALLOW_DEMO_USERS === "true"
 
@@ -31,7 +25,6 @@ const DEMO_SEED_USERS: Record<string, User> = DEMO_USERS_ENABLED
         name: "Demo Admin",
         email: "demo-user-1@example.com",
         phone: "+27000000001",
-        passwordHash: hashSync("password123", BCRYPT_ROUNDS),
         role: "admin",
         description: "Demo Administrator account",
         color: "blue",
@@ -43,7 +36,6 @@ const DEMO_SEED_USERS: Record<string, User> = DEMO_USERS_ENABLED
         name: "Demo Operator",
         email: "demo-user-2@example.com",
         phone: "+27000000002",
-        passwordHash: hashSync("password123", BCRYPT_ROUNDS),
         role: "operator",
         description: "Demo Operator account",
         color: "amber",
@@ -55,7 +47,6 @@ const DEMO_SEED_USERS: Record<string, User> = DEMO_USERS_ENABLED
         name: "Demo Resident",
         email: "demo-user-3@example.com",
         phone: "+27000000003",
-        passwordHash: hashSync("password123", BCRYPT_ROUNDS),
         role: "resident",
         description: "Demo Resident account",
         color: "purple",
@@ -67,7 +58,6 @@ const DEMO_SEED_USERS: Record<string, User> = DEMO_USERS_ENABLED
         name: "Demo Employee",
         email: "demo-user-4@example.com",
         phone: "+27000000004",
-        passwordHash: hashSync("password123", BCRYPT_ROUNDS),
         role: "employee",
         description: "Demo Employee account",
         color: "green",
@@ -81,9 +71,8 @@ export const USERS: Record<string, User> = {
   hans: {
     id: "hans",
     name: "Hans",
-    email: "hans@houseofv.com",
+    email: "smit.jurie@gmail.com",
     phone: "+27692381255",
-    passwordHash: hashSync("hans123", BCRYPT_ROUNDS),
     role: "admin",
     description: "Full platform access, approvals, and oversight",
     color: "blue",
@@ -95,7 +84,6 @@ export const USERS: Record<string, User> = {
     name: "Irma",
     email: "irma@houseofv.com",
     phone: "+27711488390",
-    passwordHash: hashSync("irma123", BCRYPT_ROUNDS),
     role: "resident",
     description: "Household tasks, documents, limited access",
     color: "purple",
@@ -107,7 +95,6 @@ export const USERS: Record<string, User> = {
     name: "Charl",
     email: "charl@houseofv.com",
     phone: "+27711488390",
-    passwordHash: hashSync("charl123", BCRYPT_ROUNDS),
     role: "operator",
     description: "Tasks, assets, time tracking, vehicle logs",
     color: "amber",
@@ -119,7 +106,6 @@ export const USERS: Record<string, User> = {
     name: "Lucky",
     email: "lucky@houseofv.com",
     phone: "+27794142410",
-    passwordHash: hashSync("lucky123", BCRYPT_ROUNDS),
     role: "employee",
     description: "Tasks, expenses, vehicle logs, time tracking",
     color: "green",
@@ -138,25 +124,25 @@ async function ensureUsersSchemaOnce(): Promise<void> {
   }
 }
 
-function rowToUser(row: {
+type UserRow = {
   id: string
   name: string
   email: string
   phone: string
-  password_hash: string
   role: string
   description: string
   color: string
   icon: string
   specialty: string[]
   photo_url?: string
-}): User {
+}
+
+function rowToUser(row: UserRow): User {
   return {
     id: row.id,
     name: row.name,
     email: row.email,
     phone: row.phone,
-    passwordHash: row.password_hash,
     role: row.role as UserRole,
     description: row.description || "",
     color: row.color || "gray",
@@ -172,19 +158,8 @@ export async function findUserByEmailAsync(email: string): Promise<User | undefi
   }
   await ensureUsersSchemaOnce()
   await seedUsersIfEmpty()
-  const { rows } = await query<{
-    id: string
-    name: string
-    email: string
-    phone: string
-    password_hash: string
-    role: string
-    description: string
-    color: string
-    icon: string
-    specialty: string[]
-  }>(
-    `SELECT id, name, email, phone, password_hash, role, description, color, icon, specialty
+  const { rows } = await query<UserRow>(
+    `SELECT id, name, email, phone, role, description, color, icon, specialty
      FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1`,
     [email]
   )
@@ -197,19 +172,8 @@ export async function getAllUsersAsync(): Promise<User[]> {
   }
   await ensureUsersSchemaOnce()
   await seedUsersIfEmpty()
-  const { rows } = await query<{
-    id: string
-    name: string
-    email: string
-    phone: string
-    password_hash: string
-    role: string
-    description: string
-    color: string
-    icon: string
-    specialty: string[]
-  }>(
-    `SELECT id, name, email, phone, password_hash, role, description, color, icon, specialty FROM users`
+  const { rows } = await query<UserRow>(
+    `SELECT id, name, email, phone, role, description, color, icon, specialty FROM users`
   )
   return rows.map(rowToUser)
 }
@@ -220,20 +184,8 @@ export async function findUserByIdAsync(id: string): Promise<User | undefined> {
   }
   await ensureUsersSchemaOnce()
   await seedUsersIfEmpty()
-  const { rows } = await query<{
-    id: string
-    name: string
-    email: string
-    phone: string
-    password_hash: string
-    role: string
-    description: string
-    color: string
-    icon: string
-    specialty: string[]
-    photo_url?: string
-  }>(
-    `SELECT id, name, email, phone, password_hash, role, description, color, icon, specialty, photo_url
+  const { rows } = await query<UserRow>(
+    `SELECT id, name, email, phone, role, description, color, icon, specialty, photo_url
      FROM users WHERE LOWER(id) = LOWER($1) LIMIT 1`,
     [id]
   )
@@ -246,6 +198,8 @@ export async function seedUsersIfEmpty(): Promise<void> {
   const { rowCount } = await query("SELECT 1 FROM users LIMIT 1")
   if (rowCount > 0) return
 
+  // password_hash column still exists in legacy schema but is unused after
+  // the OIDC migration; seed with empty string until the column is dropped.
   await withClient(async (client) => {
     for (const user of Object.values(USERS)) {
       await client.query(
@@ -257,7 +211,7 @@ export async function seedUsersIfEmpty(): Promise<void> {
           user.name,
           user.email,
           user.phone,
-          user.passwordHash,
+          "",
           user.role,
           user.description,
           user.color,
@@ -280,37 +234,6 @@ export function findUserById(id: string): User | undefined {
 export function findUserByPhone(phone: string): User | undefined {
   const normalizedPhone = phone.replace(/\s/g, "")
   return Object.values(USERS).find((user) => user.phone === normalizedPhone)
-}
-
-export function verifyPassword(plaintext: string, hash: string): boolean {
-  return compareSync(plaintext, hash)
-}
-
-export function generateRandomPassword(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789"
-  let password = ""
-  for (let i = 0; i < 8; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return password
-}
-
-const passwordOverrides: Record<string, string> = {}
-
-export async function getPasswordHashAsync(userId: string): Promise<string> {
-  if (isPostgresConfigured()) {
-    const user = await findUserByIdAsync(userId)
-    return user?.passwordHash ?? ""
-  }
-  return passwordOverrides[userId] || USERS[userId]?.passwordHash || ""
-}
-
-export function getPasswordHash(userId: string): string {
-  return passwordOverrides[userId] || USERS[userId]?.passwordHash || ""
-}
-
-export function setPassword(userId: string, newPassword: string): void {
-  passwordOverrides[userId] = hashSync(newPassword, BCRYPT_ROUNDS)
 }
 
 export async function updateUserProfileAsync(
@@ -351,21 +274,6 @@ export async function updateUserProfileAsync(
   return user
 }
 
-export async function setPasswordAsync(userId: string, newPassword: string): Promise<boolean> {
-  const hash = hashSync(newPassword, BCRYPT_ROUNDS)
-  if (isPostgresConfigured()) {
-    await ensureUsersSchemaOnce()
-    const { rowCount } = await query(
-      `UPDATE users SET password_hash = $1, updated_at = NOW() WHERE LOWER(id) = LOWER($2)`,
-      [hash, userId]
-    )
-    return rowCount > 0
-  }
-  setPassword(userId, newPassword)
-  return true
-}
-
-export function safeUser(user: User): Omit<User, "passwordHash"> {
-  const { passwordHash: _, ...safe } = user
-  return safe
+export function safeUser(user: User): User {
+  return user
 }

@@ -193,7 +193,8 @@ jobs:
         run: pnpm test:e2e
         env:
           CI: true
-          JWT_SECRET: e2e-test-secret-do-not-use-in-production
+          # Auth.js v5 reads AUTH_SECRET (the bcrypt-era JWT_SECRET is dead post-OIDC migration).
+          AUTH_SECRET: e2e-test-secret-do-not-use-in-production
 
   # ============================================
   # Job 3: Deploy Infrastructure

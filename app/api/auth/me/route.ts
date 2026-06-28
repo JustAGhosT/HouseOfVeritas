@@ -1,28 +1,22 @@
 import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
-import { verifyToken, COOKIE_NAME } from "@/lib/auth/jwt"
+import { auth } from "@/auth"
 import { findUserByIdAsync, safeUser } from "@/lib/users"
 import { getUserWithManagement } from "@/lib/user-management"
 
 export async function GET() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get(COOKIE_NAME)?.value
+  const session = await auth()
+  const userId = session?.user?.userId
 
-  if (!token) {
+  if (!userId) {
     return NextResponse.json({ user: null }, { status: 401 })
   }
 
-  const payload = await verifyToken(token)
-  if (!payload) {
-    return NextResponse.json({ user: null }, { status: 401 })
-  }
-
-  const withMgmt = await getUserWithManagement(payload.userId)
+  const withMgmt = await getUserWithManagement(userId)
   if (withMgmt) {
     return NextResponse.json({ user: withMgmt })
   }
 
-  const user = await findUserByIdAsync(payload.userId)
+  const user = await findUserByIdAsync(userId)
   if (!user) {
     return NextResponse.json({ user: null }, { status: 401 })
   }

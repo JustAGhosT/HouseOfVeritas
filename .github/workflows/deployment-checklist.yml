@@ -346,7 +346,8 @@ jobs:
         env:
           CI: true
           BASE_URL: http://localhost:3000
-          JWT_SECRET: e2e-test-secret-do-not-use-in-production
+          # Auth.js v5 reads AUTH_SECRET (the bcrypt-era JWT_SECRET is dead post-OIDC migration).
+          AUTH_SECRET: e2e-test-secret-do-not-use-in-production
 
   # ============================================
   # Job 5: Summary Report

@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { LogOut, User, Phone, Key, RotateCcw, ChevronDown, Settings, Shield } from "lucide-react"
+import { LogOut, User, RotateCcw, ChevronDown, Settings, Shield } from "lucide-react"
 import Image from "next/image"
 import { apiFetch, ApiError } from "@/lib/api-client"
 import { generateCrest } from "@/lib/design/crest"
@@ -59,10 +59,7 @@ export function UserProfileDropdown({
 }: UserProfileDropdownProps) {
   const router = useRouter()
   const [editOpen, setEditOpen] = useState(false)
-  const [passwordOpen, setPasswordOpen] = useState(false)
   const [phone, setPhone] = useState(user.phone || "")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
@@ -89,38 +86,6 @@ export function UserProfileDropdown({
         err instanceof ApiError && typeof err.body === "object" && err.body && "error" in err.body
           ? String((err.body as { error?: string }).error)
           : "Failed to save"
-      )
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleSavePassword = async () => {
-    if (password !== confirmPassword) {
-      setError("Passwords do not match")
-      return
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters")
-      return
-    }
-    setSaving(true)
-    setError("")
-    try {
-      await apiFetch("/api/users/me/password", {
-        method: "POST",
-        body: { password },
-        label: "SavePassword",
-      })
-      setPasswordOpen(false)
-      setPassword("")
-      setConfirmPassword("")
-      router.refresh()
-    } catch (err) {
-      setError(
-        err instanceof ApiError && typeof err.body === "object" && err.body && "error" in err.body
-          ? String((err.body as { error?: string }).error)
-          : "Failed to update password"
       )
     } finally {
       setSaving(false)
@@ -186,13 +151,6 @@ export function UserProfileDropdown({
             <User className="mr-2 h-4 w-4" />
             Edit profile
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => setPasswordOpen(true)}
-            className="text-foreground focus:bg-muted focus:text-foreground"
-          >
-            <Key className="mr-2 h-4 w-4" />
-            Change password
-          </DropdownMenuItem>
           {onRepeatTutorial && (
             <DropdownMenuItem
               onClick={handleRepeatTutorial}
@@ -254,65 +212,6 @@ export function UserProfileDropdown({
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={passwordOpen}
-        onOpenChange={(open) => {
-          setPasswordOpen(open)
-          if (!open) {
-            setPassword("")
-            setConfirmPassword("")
-            setError("")
-          }
-        }}
-      >
-        <DialogContent className="border-border bg-card text-foreground">
-          <DialogHeader>
-            <DialogTitle>Change password</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Enter your new password. Must be at least 6 characters.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label className="text-foreground">New password</Label>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-2 border-border bg-muted/50"
-                placeholder="••••••••"
-              />
-            </div>
-            <div>
-              <Label className="text-foreground">Confirm password</Label>
-              <Input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="mt-2 border-border bg-muted/50"
-                placeholder="••••••••"
-              />
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setPasswordOpen(false)}
-              className="border-border hover:bg-muted"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSavePassword}
-              disabled={saving}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              {saving ? "Saving..." : "Update"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   )
 }
