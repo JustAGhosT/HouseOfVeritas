@@ -8,6 +8,7 @@ export type WorkflowEventName =
   | "house-of-veritas/employee.created"
   | "house-of-veritas/onboarding.checklist.progressed"
   | "house-of-veritas/kitchen.cross.contamination"
+  | "house-of-veritas/kitchen.meal.feedback"
   | "house-of-veritas/succession.live.test"
   | "house-of-veritas/document.expiry.check"
   | "house-of-veritas/recurring.tasks.create"
@@ -59,6 +60,15 @@ export interface KitchenCrossContaminationPayload {
   taskId: number
   description: string
   location: string
+}
+
+export interface KitchenMealFeedbackPayload {
+  taskId: number
+  description: string
+  mealName?: string
+  servedBy?: string
+  location: string
+  severity: "low" | "medium" | "high"
 }
 
 export interface IncidentPayload {
@@ -167,6 +177,7 @@ export type WorkflowEvent =
       data: { checklistId?: number; employeeId?: number }
     }
   | { name: "house-of-veritas/kitchen.cross.contamination"; data: KitchenCrossContaminationPayload }
+  | { name: "house-of-veritas/kitchen.meal.feedback"; data: KitchenMealFeedbackPayload }
   | { name: "house-of-veritas/document.expiry.check"; data?: Record<string, unknown> }
   | { name: "house-of-veritas/recurring.tasks.create"; data?: Record<string, unknown> }
   | { name: "house-of-veritas/overtime.calculate"; data?: Record<string, unknown> }
