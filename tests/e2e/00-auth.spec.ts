@@ -1,89 +1,42 @@
 import { test, expect } from "@playwright/test"
 import type { Page } from "@playwright/test"
 
-const LOGIN_FORM_TIMEOUT = 15000
+const LOGIN_RENDER_TIMEOUT = 15000
 
-async function waitForLoginForm(page: Page) {
-  await expect(page.locator('[data-testid="email-input"]')).toBeVisible({
-    timeout: LOGIN_FORM_TIMEOUT,
-  })
-}
-
-async function fillLoginAndSubmit(page: Page, email: string, password: string) {
-  await page.getByTestId("email-input").fill(email)
-  await page.getByTestId("password-input").fill(password)
-  await page.getByTestId("login-submit").click()
+// The Auth.js v5 + Mystira OIDC migration (PR #62) removed the local
+// bcrypt/JWT password form. /login is now a single "Continue with Mystira"
+// button that redirects to the Mystira OIDC provider. Only the cases that
+// don't require completing a sign-in can run in CI; the credential round-trip
+// cases need a live (or mocked) Mystira IdP and are test.fixme()'d below —
+// tracked under baton 7ad9342d (browser sign-in flow) + /team-testing for
+// mocked-IdP OIDC E2E coverage.
+async function waitForLoginButton(page: Page) {
+  await expect(page.getByTestId("login-card")).toBeVisible({ timeout: LOGIN_RENDER_TIMEOUT })
+  await expect(page.getByTestId("login-submit")).toBeVisible({ timeout: LOGIN_RENDER_TIMEOUT })
 }
 
 test.describe.configure({ timeout: 60000 })
 
 test.describe("Authentication", () => {
-  test("should show login page", async ({ page }) => {
+  test("login page renders the Mystira sign-in button", async ({ page }) => {
     await page.goto("/login")
-    await waitForLoginForm(page)
+    await waitForLoginButton(page)
     await expect(page.getByRole("heading", { name: "House of Veritas" })).toBeVisible()
+    await expect(page.getByTestId("login-submit")).toContainText("Continue with Mystira")
   })
 
-  test("should reject invalid credentials", async ({ page }) => {
-    await page.goto("/login")
-    await waitForLoginForm(page)
-    await fillLoginAndSubmit(page, "hans@houseofv.com", "wrongpassword")
-    await expect(page.getByTestId("login-error")).toContainText(
-      /Invalid credentials|Login failed|Connection error|Too many login attempts/,
-      { timeout: 5000 }
-    )
-  })
-
-  test("should login as Hans and see admin dashboard", async ({ page }) => {
-    await page.goto("/login")
-    await waitForLoginForm(page)
-    await fillLoginAndSubmit(page, "hans@houseofv.com", "hans123")
-    await page.waitForURL("**/dashboard/hans**", { timeout: 10000 })
-    await expect(page.locator("text=Welcome back")).toBeVisible()
-  })
-
-  test("should logout successfully", async ({ page }) => {
-    await page.goto("/login")
-    await waitForLoginForm(page)
-    await fillLoginAndSubmit(page, "hans@houseofv.com", "hans123")
-    await page.waitForURL("**/dashboard/hans**", { timeout: 10000 })
-
-    await page.getByTestId("user-profile-trigger").first().click()
-    await page.getByTestId("header-logout").click()
-    await expect(page.locator('[data-testid="email-input"]')).toBeVisible({
-      timeout: 15000,
-    })
-  })
-
-  test("should redirect unauthenticated users to login", async ({ page }) => {
+  test("redirects unauthenticated users to the login page", async ({ page }) => {
     await page.goto("/dashboard/hans")
-    await expect(page.locator('[data-testid="email-input"]')).toBeVisible({
-      timeout: 15000,
-    })
+    await page.waitForURL("**/login**", { timeout: LOGIN_RENDER_TIMEOUT })
+    await waitForLoginButton(page)
   })
 
-  test("should login as each user and see correct dashboard", async ({ page }) => {
-    const users = [
-      { email: "charl@houseofv.com", password: "charl123", id: "charl" },
-      { email: "lucky@houseofv.com", password: "lucky123", id: "lucky" },
-      { email: "irma@houseofv.com", password: "irma123", id: "irma" },
-    ]
-
-    for (const u of users) {
-      await page.goto("/login")
-      await waitForLoginForm(page)
-      await fillLoginAndSubmit(page, u.email, u.password)
-      await page.waitForURL(
-        (url) => url.pathname === `/dashboard/${u.id}` || url.pathname === "/onboarding",
-        { timeout: 10000 }
-      )
-
-      const logoutResponse = await page.request.post("/api/auth/logout")
-      expect(
-        logoutResponse.ok(),
-        `Logout failed with status ${logoutResponse.status()}`
-      ).toBeTruthy()
-      await page.goto("/login")
-    }
-  })
+  // Round-trip auth requires a live/mocked Mystira OIDC provider — the local
+  // password flow these used to cover no longer exists. See baton 7ad9342d
+  // (next-action: browser sign-in against the live IdP) and /team-testing for
+  // OIDC E2E coverage with a mocked IdP (sign-in success per persona, sign-out,
+  // and the ?error= callback surface on the login page).
+  test.fixme("signs in via Mystira and lands on the matching dashboard", async () => {})
+  test.fixme("signs out and returns to the login page", async () => {})
+  test.fixme("surfaces OIDC auth errors on the login page", async () => {})
 })

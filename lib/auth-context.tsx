@@ -1,6 +1,7 @@
 "use client"
 
 import { usePathname, useRouter } from "next/navigation"
+import { signOut as nextAuthSignOut } from "next-auth/react"
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from "react"
 import { getDashboardPath, isPersonaId } from "@/lib/auth/dashboard-path"
 
@@ -22,12 +23,12 @@ interface User {
 interface AuthContextType {
   user: User | null
   isLoading: boolean
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
-  logout: () => void
+  logout: () => Promise<void>
   isAuthenticated: boolean
   requiresAuth: boolean
   setRequiresAuth: (value: boolean) => void
   clearRequiresAuth: () => void
+  refresh: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -87,57 +88,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user, isLoading, pathname, router])
 
-  const login = async (
-    email: string,
-    password: string
-  ): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        return { success: false, error: data.error || "Login failed" }
-      }
-
-      setUser(data.user)
-      setRequiresAuth(false)
-      router.push(data.redirectTo)
-      return { success: true }
-    } catch {
-      return { success: false, error: "Connection error. Please try again." }
-    }
-  }
-
-  const logout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" })
-    } catch {
-      // Clear state even if server call fails
-    }
+  const logout = useCallback(async () => {
     setUser(null)
     setRequiresAuth(true)
-  }
+    await nextAuthSignOut({ callbackUrl: "/login" })
+  }, [])
 
-  const clearRequiresAuth = () => {
+  const clearRequiresAuth = useCallback(() => {
     setRequiresAuth(false)
-  }
+  }, [])
 
   return (
     <AuthContext.Provider
       value={{
         user,
         isLoading,
-        login,
         logout,
         isAuthenticated: !!user,
         requiresAuth,
         setRequiresAuth,
         clearRequiresAuth,
+        refresh: checkSession,
       }}
     >
       {children}
@@ -169,7 +140,6 @@ export function withAuth<P extends object>(
       }
     }, [isLoading, user, router])
 
-    // Handle navigation in useEffect to avoid side effects in render
     useEffect(() => {
       if (!isLoading && requiresAuth && !isAuthenticated && !options?.fallback) {
         router.push("/login")
@@ -184,9 +154,7 @@ export function withAuth<P extends object>(
       )
     }
 
-    // Only block rendering when user is not authenticated
     if (!isAuthenticated) {
-      // Render fallback if provided, otherwise return null and let useEffect handle navigation
       if (options?.fallback) {
         return <>{options.fallback}</>
       }

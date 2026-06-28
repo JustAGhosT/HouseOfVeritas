@@ -47,6 +47,7 @@ import { taskHandoverAbsence } from "@/lib/workflows/task-handover-absence"
 import { taskAssignmentRotate } from "@/lib/workflows/task-assignment-rotate"
 import { taskFailurePropagate } from "@/lib/workflows/task-failure-propagate"
 import { kitchenCrossContamination } from "@/lib/workflows/kitchen-cross-contamination"
+import { kitchenMealFeedback } from "@/lib/workflows/kitchen-meal-feedback"
 import { kitchenLockerAudit } from "@/lib/workflows/kitchen-locker-audit"
 import { kitchenForcedDeepClean } from "@/lib/workflows/kitchen-forced-deep-clean"
 import { assetMiniAudit } from "@/lib/workflows/asset-mini-audit"
@@ -114,6 +115,7 @@ export const { GET, POST, PUT } = serve({
     taskAssignmentRotate,
     taskFailurePropagate,
     kitchenCrossContamination,
+    kitchenMealFeedback,
     kitchenLockerAudit,
     kitchenForcedDeepClean,
     assetMiniAudit,

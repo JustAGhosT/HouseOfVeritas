@@ -7,7 +7,7 @@ export type OnboardingStatus = "pending" | "in_progress" | "completed"
 
 export type OffboardingStatus = "none" | "initiated" | "in_progress" | "completed"
 
-export interface UserWithManagement extends Omit<User, "passwordHash"> {
+export interface UserWithManagement extends User {
   status: UserStatus
   responsibilities: string[]
   onboardingStatus: OnboardingStatus
@@ -114,7 +114,6 @@ export async function getAllUsersWithManagement(): Promise<UserWithManagement[]>
     const users = await getAllUsersAsync()
     return users.map((u) => ({
       ...u,
-      passwordHash: undefined as never,
       status: "active" as UserStatus,
       responsibilities: u.specialty || [],
       onboardingStatus: u.id === "hans" ? "completed" : ("pending" as OnboardingStatus),
@@ -143,7 +142,6 @@ export async function getUserWithManagement(id: string): Promise<UserWithManagem
     if (!user) return null
     return {
       ...user,
-      passwordHash: undefined as never,
       status: "active" as UserStatus,
       responsibilities: user.specialty || [],
       onboardingStatus: user.id === "hans" ? "completed" : ("pending" as OnboardingStatus),
