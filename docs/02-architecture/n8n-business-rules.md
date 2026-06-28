@@ -79,16 +79,17 @@ See [10-workflow-specifications.md](10-workflow-specifications.md) for full work
 
 Events emitted by Inngest/Next.js that n8n can consume:
 
-| Event                                              | Payload                                        | Use Case                                |
-| -------------------------------------------------- | ---------------------------------------------- | --------------------------------------- |
-| `house-of-veritas/leave.request.submitted`         | id, employeeId, startDate, endDate, type, days | Leave 48h escalation                    |
-| `house-of-veritas/loan.request.submitted`          | id, employeeId, amount, purpose                | Loan approval flow                      |
-| `house-of-veritas/petty.cash.request.submitted`    | id, requesterId, amount, purpose               | Petty cash approval                     |
-| `house-of-veritas/petty.cash.policy.violation`     | requesterId, amount, reason                    | Policy violation alert                  |
-| `house-of-veritas/kitchen.cross.contamination`     | taskId, description, location                  | Cross-contamination escalation          |
-| `house-of-veritas/employee.created`                | employeeId, name, email                        | Welcome email, checklist, ID doc upload |
-| `house-of-veritas/onboarding.checklist.progressed` | checklistId, employeeId                        | IT provisioning trigger                 |
-| `house-of-veritas/succession.live.test`            | successorId, duration                          | Live succession test                    |
+| Event                                              | Payload                                                     | Use Case                                |
+| -------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------- |
+| `house-of-veritas/leave.request.submitted`         | id, employeeId, startDate, endDate, type, days              | Leave 48h escalation                    |
+| `house-of-veritas/loan.request.submitted`          | id, employeeId, amount, purpose                             | Loan approval flow                      |
+| `house-of-veritas/petty.cash.request.submitted`    | id, requesterId, amount, purpose                            | Petty cash approval                     |
+| `house-of-veritas/petty.cash.policy.violation`     | requesterId, amount, reason                                 | Policy violation alert                  |
+| `house-of-veritas/kitchen.cross.contamination`     | taskId, description, location                               | Cross-contamination escalation          |
+| `house-of-veritas/kitchen.meal.feedback`           | taskId, description, mealName, servedBy, location, severity | Meal quality review escalation          |
+| `house-of-veritas/employee.created`                | employeeId, name, email                                     | Welcome email, checklist, ID doc upload |
+| `house-of-veritas/onboarding.checklist.progressed` | checklistId, employeeId                                     | IT provisioning trigger                 |
+| `house-of-veritas/succession.live.test`            | successorId, duration                                       | Live succession test                    |
 
 ## Webhook Integration
 

@@ -14,7 +14,7 @@ export const POST = withRole(
 )(async (request) => {
   try {
     const body = await request.json()
-    const { type, description, location } = body
+    const { type, description, location, mealName, servedBy, severity } = body
 
     if (!type || !description) {
       return NextResponse.json({ error: "Type and description are required" }, { status: 400 })
@@ -42,6 +42,45 @@ export const POST = withRole(
       }
 
       return withDataSource({ task, type: "cross_contamination" })
+    }
+
+    if (type === "meal_feedback") {
+      const safeSeverity =
+        severity === "low" || severity === "medium" || severity === "high" ? severity : "medium"
+      const titleMeal = mealName ? `: ${mealName}` : ""
+      const detailLines = [
+        `Meal feedback${titleMeal}`,
+        servedBy ? `Served by: ${servedBy}` : undefined,
+        location ? `Location: ${location}` : undefined,
+        `Severity: ${safeSeverity}`,
+        "",
+        description,
+      ].filter(Boolean)
+
+      const task = await createTask({
+        title: `Meal Quality Review${titleMeal}`,
+        description: detailLines.join("\n"),
+        priority: safeSeverity === "high" ? "High" : safeSeverity === "low" ? "Low" : "Medium",
+        status: "Not Started",
+        dueDate: toISODateString(),
+        project: "Kitchen",
+      })
+
+      if (task) {
+        await routeToInngest({
+          name: "house-of-veritas/kitchen.meal.feedback",
+          data: {
+            taskId: task.id,
+            description,
+            mealName,
+            servedBy,
+            location: location || "Kitchen",
+            severity: safeSeverity,
+          },
+        })
+      }
+
+      return withDataSource({ task, type: "meal_feedback" })
     }
 
     return NextResponse.json({ error: "Unknown report type" }, { status: 400 })
