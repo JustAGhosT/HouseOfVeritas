@@ -17,10 +17,12 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files
+# NOTE: the un-ignore for .env.example must come AFTER the broad patterns —
+# later rules win in gitignore, so placing it first silently re-ignored it.
 .env*
-!.env.example
 *.env
 *.env.*
+!.env.example
 
 # vercel
 .vercel
