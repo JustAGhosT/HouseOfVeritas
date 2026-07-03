@@ -67,6 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isLoading) return
 
     const isAuthPage = pathname === "/login"
+    // The public landing page has no authenticated view (the navbar always shows
+    // "Login"), and OIDC sign-in lands here via callbackUrl "/". Forward a logged-in
+    // user to their dashboard so a successful login doesn't look like a no-op.
+    const isHomePage = pathname === "/"
     const isDashboardPage = pathname?.startsWith("/dashboard")
     const isOnboardingPage = pathname === "/onboarding"
 
@@ -76,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRequiresAuth(false)
     }
 
-    if (user && isAuthPage) {
+    if (user && (isAuthPage || isHomePage)) {
       router.push(getDashboardPath(user.id, user.role))
     } else if (user && isOnboardingPage && user.onboardingStatus === "completed") {
       router.push(getDashboardPath(user.id, user.role))

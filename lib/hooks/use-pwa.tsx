@@ -16,19 +16,32 @@ export function usePWA() {
   const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null)
 
   useEffect(() => {
-    // Register service worker
+    // Register the service worker in production only. In development the SW caches
+    // hashed build chunks that Turbopack regenerates on every rebuild, which causes
+    // ChunkLoadError and stale-content bugs. In dev we instead unregister any SW a
+    // previous prod-like session left behind and clear its caches, so the browser
+    // self-heals rather than serving stale assets.
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/sw.js")
-        .then((registration) => {
-          logger.info("[PWA] Service Worker registered", { scope: registration.scope })
-          setSwRegistration(registration)
-        })
-        .catch((error) => {
-          logger.error("[PWA] Service Worker registration failed", {
-            error: error instanceof Error ? error.message : String(error),
+      if (process.env.NODE_ENV === "production") {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .then((registration) => {
+            logger.info("[PWA] Service Worker registered", { scope: registration.scope })
+            setSwRegistration(registration)
           })
-        })
+          .catch((error) => {
+            logger.error("[PWA] Service Worker registration failed", {
+              error: error instanceof Error ? error.message : String(error),
+            })
+          })
+      } else {
+        navigator.serviceWorker
+          .getRegistrations()
+          .then((regs) => regs.forEach((reg) => reg.unregister()))
+        if (typeof caches !== "undefined") {
+          caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)))
+        }
+      }
     }
 
     // Handle install prompt

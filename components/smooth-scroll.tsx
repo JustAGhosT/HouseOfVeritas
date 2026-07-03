@@ -7,18 +7,27 @@ import Lenis from "lenis"
 
 export function SmoothScroll({ children }: { children: React.ReactNode }) {
   useEffect(() => {
+    // Respect reduced-motion: skip the smooth-scroll hijack and use native scroll.
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return
+    }
+
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
     })
 
+    let rafId = 0
     function raf(time: number) {
       lenis.raf(time)
-      requestAnimationFrame(raf)
+      rafId = requestAnimationFrame(raf)
     }
 
-    requestAnimationFrame(raf)
+    rafId = requestAnimationFrame(raf)
 
     const handleAnchorClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement
@@ -38,6 +47,7 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
 
     return () => {
       document.removeEventListener("click", handleAnchorClick, true)
+      cancelAnimationFrame(rafId)
       lenis.destroy()
     }
   }, [])
