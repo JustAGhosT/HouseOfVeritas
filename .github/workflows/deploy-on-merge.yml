@@ -17,6 +17,7 @@ on:
       - "next.config.mjs"
       - "package.json"
       - "pnpm-lock.yaml"
+      - ".npmrc"
       - "tsconfig.json"
       - "tailwind.config*"
       - "postcss.config*"
