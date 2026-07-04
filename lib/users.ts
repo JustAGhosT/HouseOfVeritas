@@ -166,6 +166,51 @@ export async function findUserByEmailAsync(email: string): Promise<User | undefi
   return rows[0] ? rowToUser(rows[0]) : undefined
 }
 
+/**
+ * Find a user by email, or create a minimal record for a newly-seen,
+ * IdP-verified user. Used by the OIDC signIn callback (gated on
+ * OIDC_AUTO_PROVISION) so users can sign in without being pre-provisioned;
+ * they complete their profile (name/phone) during onboarding. New users get
+ * the least-privileged "resident" role.
+ *
+ * In static (no-Postgres) mode the new user is held in-memory only and does
+ * not survive a restart — acceptable for demo onboarding, not durable accounts.
+ */
+export async function findOrCreateOidcUserAsync(
+  email: string,
+  name?: string | null
+): Promise<User> {
+  const existing = await findUserByEmailAsync(email)
+  if (existing) return existing
+
+  const normalizedEmail = email.toLowerCase()
+  const id = `oidc-${normalizedEmail.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`
+  const user: User = {
+    id,
+    name: name?.trim() || normalizedEmail.split("@")[0],
+    email: normalizedEmail,
+    phone: "",
+    role: "resident",
+    description: "Self-provisioned via Mystira sign-in",
+    color: "gray",
+    icon: "👤",
+    specialty: [],
+  }
+
+  if (isPostgresConfigured()) {
+    await ensureUsersSchemaOnce()
+    await query(
+      `INSERT INTO users (id, name, email, phone, password_hash, role, description, color, icon, specialty)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       ON CONFLICT (id) DO NOTHING`,
+      [user.id, user.name, user.email, user.phone, "", user.role, user.description, user.color, user.icon, user.specialty]
+    )
+  } else {
+    USERS[user.id] = user
+  }
+  return user
+}
+
 export async function getAllUsersAsync(): Promise<User[]> {
   if (!isPostgresConfigured()) {
     return Object.values(USERS)
