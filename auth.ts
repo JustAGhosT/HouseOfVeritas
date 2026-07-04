@@ -1,6 +1,6 @@
 import NextAuth from "next-auth"
 import authConfig from "./auth.config"
-import { findUserByEmailAsync } from "@/lib/users"
+import { findUserByEmailAsync, findOrCreateOidcUserAsync } from "@/lib/users"
 import { logger } from "@/lib/logger"
 
 /**
@@ -33,10 +33,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         logger.warn("OIDC sign-in rejected: no email claim")
         return false
       }
-      const local = await findUserByEmailAsync(email)
+      let local = await findUserByEmailAsync(email)
       if (!local) {
-        logger.warn("OIDC sign-in rejected: email not in local user store", { email })
-        return false
+        // When auto-provisioning is enabled, admit any IdP-verified user and
+        // create a minimal record on first sign-in (profile completed during
+        // onboarding). Otherwise fail closed to pre-provisioned users only.
+        if (process.env.OIDC_AUTO_PROVISION !== "true") {
+          logger.warn("OIDC sign-in rejected: email not in local user store", { email })
+          return false
+        }
+        const displayName =
+          typeof claims.name === "string"
+            ? claims.name
+            : typeof claims.given_name === "string"
+              ? claims.given_name
+              : null
+        local = await findOrCreateOidcUserAsync(email, displayName)
+        logger.info("OIDC sign-in auto-provisioned new user", { email, userId: local.id })
       }
       const enriched = user as {
         userId?: string
