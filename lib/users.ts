@@ -180,13 +180,15 @@ export async function findOrCreateOidcUserAsync(
   email: string,
   name?: string | null
 ): Promise<User> {
-  const existing = await findUserByEmailAsync(email)
+  const normalizedEmail = email.toLowerCase()
+  const existing = await findUserByEmailAsync(normalizedEmail)
   if (existing) return existing
 
-  const normalizedEmail = email.toLowerCase()
-  const id = `oidc-${normalizedEmail.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`
+  // Email is the identity key (unique in the schema / deduped above). The id is
+  // a random UUID — never derived from the email — so distinct emails can never
+  // collide onto the same id (which would let one user be admitted as another).
   const user: User = {
-    id,
+    id: `oidc-${globalThis.crypto.randomUUID()}`,
     name: name?.trim() || normalizedEmail.split("@")[0],
     email: normalizedEmail,
     phone: "",
@@ -202,12 +204,15 @@ export async function findOrCreateOidcUserAsync(
     await query(
       `INSERT INTO users (id, name, email, phone, password_hash, role, description, color, icon, specialty)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       ON CONFLICT (id) DO NOTHING`,
+       ON CONFLICT (email) DO NOTHING`,
       [user.id, user.name, user.email, user.phone, "", user.role, user.description, user.color, user.icon, user.specialty]
     )
-  } else {
-    USERS[user.id] = user
+    // Return the canonical persisted row so a concurrent create that won the
+    // race (same email) yields the same account rather than a divergent object.
+    return (await findUserByEmailAsync(normalizedEmail)) ?? user
   }
+
+  USERS[user.id] = user
   return user
 }
 
