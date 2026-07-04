@@ -81,7 +81,7 @@ vi.mock("@/lib/db/kiosk-store", async (importOriginal) => {
 const adminHeaders = {
   "x-user-id": "hans",
   "x-user-role": "admin",
-  "x-user-email": "hans@houseofv.com",
+  "x-user-email": "smit.jurie@gmail.com",
 }
 
 describe("GET /api/kiosk/requests", () => {

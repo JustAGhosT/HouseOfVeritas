@@ -6,7 +6,7 @@ vi.mock("@/lib/workflows", () => ({ routeToInngest: vi.fn().mockResolvedValue(un
 const authHeaders = {
   "x-user-id": "hans",
   "x-user-role": "admin",
-  "x-user-email": "hans@houseofv.com",
+  "x-user-email": "smit.jurie@gmail.com",
 }
 
 describe("GET /api/tasks", () => {

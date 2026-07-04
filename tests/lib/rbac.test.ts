@@ -24,13 +24,13 @@ describe("RBAC", () => {
       const req = makeRequest({
         "x-user-id": "hans",
         "x-user-role": "admin",
-        "x-user-email": "hans@houseofv.com",
+        "x-user-email": "smit.jurie@gmail.com",
       })
       const ctx = getAuthContext(req)
       expect(ctx).toMatchObject({
         userId: "hans",
         role: "admin",
-        email: "hans@houseofv.com",
+        email: "smit.jurie@gmail.com",
       })
       expect(Array.isArray(ctx?.responsibilities)).toBe(true)
     })
@@ -88,7 +88,7 @@ describe("RBAC", () => {
         makeRequest({
           "x-user-id": "hans",
           "x-user-role": "admin",
-          "x-user-email": "hans@houseofv.com",
+          "x-user-email": "smit.jurie@gmail.com",
         })
       )
       expect(res.status).toBe(200)
@@ -121,7 +121,7 @@ describe("RBAC", () => {
         makeRequest({
           "x-user-id": "hans",
           "x-user-role": "admin",
-          "x-user-email": "hans@houseofv.com",
+          "x-user-email": "smit.jurie@gmail.com",
         })
       )
       expect(res.status).toBe(200)
