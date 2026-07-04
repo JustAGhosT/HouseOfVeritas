@@ -7,11 +7,32 @@ import { ArrowRight, Shield } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { Suspense, useState } from "react"
 
+// Auth.js redirects a failed sign-in back to the configured sign-in page as
+// `/login?error=<code>`. Map the codes we can meaningfully act on to friendly
+// copy; anything else falls back to a generic message. `AccessDenied` is the
+// one users hit most here — it's what our `signIn` callback returns when the
+// Mystira identity is unverified or not present in the estate registry.
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
+  AccessDenied:
+    "Your Mystira account isn't recognized by the estate registry. Contact an administrator to be granted access.",
+  Configuration: "Sign-in is temporarily unavailable. Please try again in a moment.",
+  Verification: "That sign-in link has expired. Please try signing in again.",
+  OAuthAccountNotLinked: "This email is already linked to a different sign-in method.",
+}
+const DEFAULT_AUTH_ERROR = "Sign-in failed. Please try again."
+
+function messageForErrorCode(code: string | null): string {
+  if (!code) return ""
+  return AUTH_ERROR_MESSAGES[code] ?? DEFAULT_AUTH_ERROR
+}
+
 function LoginPageContent() {
   const { isLoading: authLoading } = useAuth()
   const searchParams = useSearchParams()
   const [isSigningIn, setIsSigningIn] = useState(false)
-  const [error, setError] = useState("")
+  // Seed the error from the `?error=` code Auth.js appends on a failed sign-in
+  // redirect, so a rejected user sees why instead of a silent bounce to /login.
+  const [error, setError] = useState(() => messageForErrorCode(searchParams.get("error")))
 
   const callbackUrl = searchParams.get("redirect") ?? "/"
 

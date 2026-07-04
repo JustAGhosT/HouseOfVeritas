@@ -4,7 +4,7 @@ import { GET } from "@/app/api/payroll/route"
 const adminHeaders = {
   "x-user-id": "hans",
   "x-user-role": "admin",
-  "x-user-email": "hans@houseofv.com",
+  "x-user-email": "smit.jurie@gmail.com",
 }
 
 const operatorHeaders = {
