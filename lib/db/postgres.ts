@@ -79,7 +79,6 @@ export async function ensureSchema(): Promise<void> {
           name TEXT NOT NULL,
           email TEXT NOT NULL UNIQUE,
           phone TEXT NOT NULL,
-          password_hash TEXT NOT NULL,
           role TEXT NOT NULL,
           description TEXT DEFAULT '',
           color TEXT DEFAULT 'gray',
@@ -91,6 +90,13 @@ export async function ensureSchema(): Promise<void> {
         CREATE INDEX IF NOT EXISTS idx_users_email ON users(LOWER(email));
         CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
       `)
+
+      // Legacy column drop: pre-OIDC databases created `users` with a NOT NULL
+      // `password_hash` column. The bcrypt+JWT auth it backed was fully removed
+      // in the Auth.js/Mystira OIDC migration, so the column is now dead weight
+      // (and its NOT NULL constraint blocks inserts that omit it). Idempotent —
+      // a no-op on fresh databases where the column was never created.
+      await client.query(`ALTER TABLE users DROP COLUMN IF EXISTS password_hash;`)
 
       await client.query(`
         CREATE TABLE IF NOT EXISTS file_uploads (

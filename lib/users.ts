@@ -202,10 +202,10 @@ export async function findOrCreateOidcUserAsync(
   if (isPostgresConfigured()) {
     await ensureUsersSchemaOnce()
     await query(
-      `INSERT INTO users (id, name, email, phone, password_hash, role, description, color, icon, specialty)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO users (id, name, email, phone, role, description, color, icon, specialty)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        ON CONFLICT (email) DO NOTHING`,
-      [user.id, user.name, user.email, user.phone, "", user.role, user.description, user.color, user.icon, user.specialty]
+      [user.id, user.name, user.email, user.phone, user.role, user.description, user.color, user.icon, user.specialty]
     )
     // Return the canonical persisted row so a concurrent create that won the
     // race (same email) yields the same account rather than a divergent object.
@@ -248,20 +248,17 @@ export async function seedUsersIfEmpty(): Promise<void> {
   const { rowCount } = await query("SELECT 1 FROM users LIMIT 1")
   if (rowCount > 0) return
 
-  // password_hash column still exists in legacy schema but is unused after
-  // the OIDC migration; seed with empty string until the column is dropped.
   await withClient(async (client) => {
     for (const user of Object.values(USERS)) {
       await client.query(
-        `INSERT INTO users (id, name, email, phone, password_hash, role, description, color, icon, specialty)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        `INSERT INTO users (id, name, email, phone, role, description, color, icon, specialty)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          ON CONFLICT (id) DO NOTHING`,
         [
           user.id,
           user.name,
           user.email,
           user.phone,
-          "",
           user.role,
           user.description,
           user.color,
