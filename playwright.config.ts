@@ -1,6 +1,18 @@
 import { defineConfig, devices } from "@playwright/test"
+import { loadEnvConfig } from "@next/env"
 
 process.env.E2E_TEST = "1"
+
+// Resolve AUTH_SECRET the same way the dev server (booted below) will — Next
+// loads .env.local via @next/env — so the session cookie the auth helper mints
+// (tests/e2e/helpers/auth.ts) decrypts with the identical key. Loading it here
+// pins the value into the inherited env before the server starts, guaranteeing
+// both sides agree whether or not a .env.local is present (e.g. CI has none, so
+// the fallback below applies on both sides). Keep the fallback in sync with the
+// helper.
+loadEnvConfig(process.cwd())
+process.env.AUTH_SECRET =
+  process.env.AUTH_SECRET ?? "e2e-insecure-test-secret-do-not-use-in-production"
 
 export default defineConfig({
   testDir: "./tests/e2e",
