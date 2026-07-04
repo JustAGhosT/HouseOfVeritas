@@ -95,6 +95,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     setUser(null)
     setRequiresAuth(true)
+    // Fetch the IdP RP-initiated-logout URL (built from the current session's
+    // id_token) BEFORE clearing the local cookie — signOut destroys the cookie
+    // the id_token lives in. With a URL, clear locally then hand off to Mystira
+    // so its SSO session ends too; otherwise fall back to a local-only sign-out.
+    let endSessionUrl: string | null = null
+    try {
+      const res = await fetch("/api/auth/federated-logout")
+      if (res.ok) {
+        const data = (await res.json()) as { url?: string | null }
+        endSessionUrl = data.url ?? null
+      }
+    } catch {
+      // Network hiccup — fall through to the local-only sign-out below.
+    }
+    if (endSessionUrl) {
+      await nextAuthSignOut({ redirect: false })
+      window.location.href = endSessionUrl
+      return
+    }
     await nextAuthSignOut({ callbackUrl: "/login" })
   }, [])
 
