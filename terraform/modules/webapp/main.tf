@@ -38,10 +38,36 @@ resource "azurerm_linux_web_app" "main" {
     NODE_ENV                     = "production"
     NEXT_PUBLIC_APP_URL          = "https://${var.domain_name}"
 
-    BASEROW_URL   = "https://ops.${var.domain_name}"
-    BASEROW_TOKEN = var.baserow_api_token
-    DOCUSEAL_URL  = "https://docs.${var.domain_name}"
-    DOCUSEAL_KEY  = var.docuseal_api_key
+    BASEROW_URL             = "https://ops.${var.domain_name}"
+    BASEROW_TOKEN           = var.baserow_api_token
+    BASEROW_API_URL         = "https://ops.${var.domain_name}/api"
+    BASEROW_API_TOKEN       = var.baserow_api_token
+    BASEROW_DATABASE_ID     = var.baserow_database_id
+    NEXT_PUBLIC_BASEROW_URL = "https://ops.${var.domain_name}"
+
+    BASEROW_TABLE_EMPLOYEES            = var.baserow_table_employees
+    BASEROW_TABLE_ASSETS               = var.baserow_table_assets
+    BASEROW_TABLE_TASKS                = var.baserow_table_tasks
+    BASEROW_TABLE_TIME_CLOCK           = var.baserow_table_time_clock
+    BASEROW_TABLE_INCIDENTS            = var.baserow_table_incidents
+    BASEROW_TABLE_VEHICLE_LOGS         = var.baserow_table_vehicle_logs
+    BASEROW_TABLE_EXPENSES             = var.baserow_table_expenses
+    BASEROW_TABLE_DOCUMENT_EXPIRY      = var.baserow_table_document_expiry
+    BASEROW_TABLE_LEAVE_REQUESTS       = var.baserow_table_leave_requests
+    BASEROW_TABLE_LOANS                = var.baserow_table_loans
+    BASEROW_TABLE_PETTY_CASH           = var.baserow_table_petty_cash
+    BASEROW_TABLE_ONBOARDING_CHECKLIST = var.baserow_table_onboarding_checklist
+    BASEROW_TABLE_BUDGET               = var.baserow_table_budget
+    BASEROW_TABLE_PPE                  = var.baserow_table_ppe
+    BASEROW_TABLE_POLICY_VERSIONS      = var.baserow_table_policy_versions
+    BASEROW_TABLE_CONTRACTOR_CONTRACTS = var.baserow_table_contractor_contracts
+    BASEROW_TABLE_INSURANCE_CLAIMS     = var.baserow_table_insurance_claims
+
+    DOCUSEAL_URL             = "https://docs.${var.domain_name}"
+    DOCUSEAL_KEY             = var.docuseal_api_key
+    DOCUSEAL_API_URL         = "https://docs.${var.domain_name}/api"
+    DOCUSEAL_API_KEY         = var.docuseal_api_key
+    NEXT_PUBLIC_DOCUSEAL_URL = "https://docs.${var.domain_name}"
 
     JWT_SECRET = var.jwt_secret
 

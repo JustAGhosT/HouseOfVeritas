@@ -20,14 +20,22 @@ async function checkService(
   }
 }
 
+function serviceBaseUrl(url: string | undefined): string | undefined {
+  return url?.replace(/\/api\/?$/, "").replace(/\/$/, "")
+}
+
 export async function GET() {
   const checks = await Promise.all([
     checkService(
       "baserow",
-      process.env.BASEROW_API_URL || process.env.NEXT_PUBLIC_BASEROW_URL,
+      serviceBaseUrl(process.env.BASEROW_API_URL || process.env.NEXT_PUBLIC_BASEROW_URL),
       "/api/_health/"
     ),
-    checkService("docuseal", process.env.NEXT_PUBLIC_DOCUSEAL_URL, "/health"),
+    checkService(
+      "docuseal",
+      serviceBaseUrl(process.env.NEXT_PUBLIC_DOCUSEAL_URL || process.env.DOCUSEAL_API_URL),
+      "/health"
+    ),
   ])
 
   const overall = checks.every((c) => c.status === "up" || c.status === "unconfigured")
