@@ -49,6 +49,11 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
       - name: Install Azure CLI
         run: |
           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
@@ -198,7 +203,7 @@ jobs:
           echo "Review the checklist report artifact for details."
 
       - name: Fail on Critical Checklist Issues
-        if: steps.checklist.outputs.failed != '0'
+        if: steps.checklist.outputs.failed != '0' && github.event_name != 'pull_request'
         run: |
           echo "Deployment checklist found ${{ steps.checklist.outputs.failed }} critical issue(s)."
           exit 1

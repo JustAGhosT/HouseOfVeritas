@@ -29,6 +29,7 @@ import subprocess
 import json
 import sys
 import os
+from pathlib import Path
 from dataclasses import dataclass, field, asdict
 from typing import List, Optional, Dict, Any
 from datetime import datetime
@@ -78,6 +79,7 @@ class DeploymentChecker:
     def __init__(self, verbose: bool = False):
         self.verbose = verbose
         self.categories: List[CheckCategory] = []
+        self.repo_root = Path(__file__).resolve().parents[2]
         
         # Configuration
         self.subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID", "")
@@ -251,21 +253,21 @@ class DeploymentChecker:
             )
         
         # Check if terraform is initialized in the project
-        terraform_dir = "/app/terraform/environments/production"
-        if not os.path.exists(terraform_dir):
-            terraform_dir = "/app/terraform/prod"
+        terraform_dir = self.repo_root / "terraform" / "environments" / "production"
+        if not terraform_dir.exists():
+            terraform_dir = self.repo_root / "terraform" / "prod"
         
-        if not os.path.exists(terraform_dir):
+        if not terraform_dir.exists():
             return CheckResult(
                 name="Terraform Configuration",
                 status=Status.WARN,
                 message="Terraform directory not found",
-                details="Expected at /app/terraform/environments/production or /app/terraform/prod",
+                details="Expected at terraform/environments/production or terraform/prod",
                 fix_command="Check terraform directory structure"
             )
         
         # Check for .terraform directory (initialized)
-        if not os.path.exists(os.path.join(terraform_dir, ".terraform")):
+        if not (terraform_dir / ".terraform").exists():
             return CheckResult(
                 name="Terraform State",
                 status=Status.WARN,
@@ -627,14 +629,14 @@ class DeploymentChecker:
     def check_local_config(self) -> CheckResult:
         """Check if local configuration files exist."""
         required_files = [
-            "/app/config/docker-compose.yml",
-            "/app/config/.env.template",
-            "/app/docs/04-configuration/01-docuseal-setup.md",
-            "/app/docs/04-configuration/02-baserow-setup.md",
-            "/app/config/scripts/seed-baserow.py"
+            self.repo_root / "config" / "docker-compose.yml",
+            self.repo_root / ".env.example",
+            self.repo_root / "docs" / "04-configuration" / "01-docuseal-setup.md",
+            self.repo_root / "docs" / "04-configuration" / "02-baserow-setup.md",
+            self.repo_root / "config" / "scripts" / "seed-baserow.py"
         ]
         
-        missing = [f for f in required_files if not os.path.exists(f)]
+        missing = [str(f.relative_to(self.repo_root)) for f in required_files if not f.exists()]
         
         if missing:
             return CheckResult(
@@ -654,16 +656,16 @@ class DeploymentChecker:
     
     def check_env_file(self) -> CheckResult:
         """Check if .env file exists and has required variables."""
-        env_file = "/app/config/.env"
-        template_file = "/app/config/.env.template"
+        env_file = self.repo_root / ".env.local"
+        template_file = self.repo_root / ".env.example"
         
-        if not os.path.exists(env_file):
+        if not env_file.exists():
             return CheckResult(
                 name="Environment File",
                 status=Status.WARN,
-                message=".env file not created",
-                details="Copy .env.template to .env and fill in values",
-                fix_command="cp /app/config/.env.template /app/config/.env && nano /app/config/.env"
+                message=".env.local file not created",
+                details="Local development can copy .env.example to .env.local; CI/CD should use GitHub secrets",
+                fix_command="Copy .env.example to .env.local and fill in values"
             )
         
         # Check for placeholder values
@@ -679,7 +681,7 @@ class DeploymentChecker:
                 status=Status.WARN,
                 message=".env file exists but contains placeholder values",
                 details="Replace all placeholder values with actual credentials",
-                fix_command="nano /app/config/.env"
+                fix_command="Edit .env.local"
             )
         
         return CheckResult(
@@ -874,7 +876,7 @@ class DeploymentChecker:
             },
             {
                 "name": "Initialize Terraform",
-                "complete": os.path.exists("/app/terraform/environments/production/.terraform"),
+                "complete": (self.repo_root / "terraform" / "environments" / "production" / ".terraform").exists(),
                 "command": "cd /app/terraform/environments/production && terraform init"
             },
             {
