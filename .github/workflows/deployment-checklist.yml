@@ -58,12 +58,10 @@ jobs:
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-        continue-on-error: true
 
       - name: Set Azure Subscription
         run: |
-          az account set --subscription "${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}" || echo "Could not set subscription"
-        continue-on-error: true
+          az account set --subscription "${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}"
 
       - name: Run Deployment Checklist
         id: checklist
@@ -73,11 +71,11 @@ jobs:
           AZURE_LOCATION: ${{ env.AZURE_LOCATION }}
         run: |
           # Run checklist and capture output
-          python3 config/scripts/deployment-checklist.py --verbose > checklist_output.txt 2>&1 || true
+          python3 config/scripts/deployment-checklist.py --verbose > checklist_output.txt 2>&1
           cat checklist_output.txt
 
           # Run JSON output for parsing
-          python3 config/scripts/deployment-checklist.py --json > checklist_report.json 2>&1 || true
+          python3 config/scripts/deployment-checklist.py --json > checklist_report.json 2>&1
 
           # Extract counts from output
           PASSED=$(grep -oP '✅ Passed:\s+\K\d+' checklist_output.txt || echo "0")
@@ -93,6 +91,7 @@ jobs:
           echo "json_report=$JSON_REPORT" >> $GITHUB_OUTPUT
 
       - name: Upload Checklist Report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: deployment-checklist-report
@@ -197,6 +196,12 @@ jobs:
           echo "⚠️ Deployment checklist found ${{ steps.checklist.outputs.failed }} issue(s)"
           echo "These are infrastructure checks — Azure resources may not be deployed yet."
           echo "Review the checklist report artifact for details."
+
+      - name: Fail on Critical Checklist Issues
+        if: steps.checklist.outputs.failed != '0'
+        run: |
+          echo "Deployment checklist found ${{ steps.checklist.outputs.failed }} critical issue(s)."
+          exit 1
 
   # ============================================
   # Job 2: Validate Configuration Files
