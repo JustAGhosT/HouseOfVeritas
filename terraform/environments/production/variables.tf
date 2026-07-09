@@ -187,6 +187,114 @@ variable "baserow_api_token" {
   default     = ""
 }
 
+variable "baserow_database_id" {
+  description = "Baserow database ID for operational data"
+  type        = string
+  default     = ""
+}
+
+variable "baserow_table_employees" {
+  description = "Baserow table ID for Employees"
+  type        = string
+  default     = "0"
+}
+
+variable "baserow_table_assets" {
+  description = "Baserow table ID for Assets"
+  type        = string
+  default     = "0"
+}
+
+variable "baserow_table_tasks" {
+  description = "Baserow table ID for Tasks"
+  type        = string
+  default     = "0"
+}
+
+variable "baserow_table_time_clock" {
+  description = "Baserow table ID for Time Clock Entries"
+  type        = string
+  default     = "0"
+}
+
+variable "baserow_table_incidents" {
+  description = "Baserow table ID for Incidents"
+  type        = string
+  default     = "0"
+}
+
+variable "baserow_table_vehicle_logs" {
+  description = "Baserow table ID for Vehicle Logs"
+  type        = string
+  default     = "0"
+}
+
+variable "baserow_table_expenses" {
+  description = "Baserow table ID for Expenses"
+  type        = string
+  default     = "0"
+}
+
+variable "baserow_table_document_expiry" {
+  description = "Baserow table ID for Document Expiry"
+  type        = string
+  default     = "0"
+}
+
+variable "baserow_table_leave_requests" {
+  description = "Baserow table ID for Leave Requests"
+  type        = string
+  default     = "0"
+}
+
+variable "baserow_table_loans" {
+  description = "Baserow table ID for Loans/Advances"
+  type        = string
+  default     = "0"
+}
+
+variable "baserow_table_petty_cash" {
+  description = "Baserow table ID for Petty Cash"
+  type        = string
+  default     = "0"
+}
+
+variable "baserow_table_onboarding_checklist" {
+  description = "Baserow table ID for Onboarding Checklist"
+  type        = string
+  default     = "0"
+}
+
+variable "baserow_table_budget" {
+  description = "Baserow table ID for Budget"
+  type        = string
+  default     = "0"
+}
+
+variable "baserow_table_ppe" {
+  description = "Baserow table ID for PPE/Equipment"
+  type        = string
+  default     = "0"
+}
+
+variable "baserow_table_policy_versions" {
+  description = "Baserow table ID for Policy Versions"
+  type        = string
+  default     = "0"
+}
+
+variable "baserow_table_contractor_contracts" {
+  description = "Baserow table ID for Contractor Contracts"
+  type        = string
+  default     = "0"
+}
+
+variable "baserow_table_insurance_claims" {
+  description = "Baserow table ID for Insurance Claims"
+  type        = string
+  default     = "0"
+}
+
 variable "docuseal_api_key" {
   description = "DocuSeal API key for function app integrations"
   type        = string
