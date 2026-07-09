@@ -19,14 +19,14 @@ describe("api/response", () => {
     expect(json.items).toEqual([])
   })
 
-  it("uses mock message when Baserow not configured", async () => {
+  it("uses empty-state message when Baserow not configured", async () => {
     const { isBaserowConfigured } = await import("@/lib/services/baserow")
     vi.mocked(isBaserowConfigured).mockReturnValue(false)
     const { withDataSource } = await import("@/lib/api/response")
     const res = withDataSource({ items: [] })
     const json = await res.json()
     expect(json.configured).toBe(false)
-    expect(json.message).toContain("mock")
+    expect(json.message).toBe("Baserow not configured")
   })
 
   it("preserves custom message when provided", async () => {

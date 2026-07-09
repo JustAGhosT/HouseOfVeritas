@@ -1,4 +1,4 @@
-# Architecture Agent
+# Veritas Blueprint
 
 ## Role
 

@@ -36,7 +36,7 @@ interface EmployeePayroll {
 }
 
 interface PayrollData {
-  mode: "mock" | "live"
+  mode: "demo" | "empty" | "live"
   month: string
   employees: EmployeePayroll[]
   totals: {
@@ -117,7 +117,7 @@ export function PayrollPanel() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="text-primary h-8 w-8 animate-spin" />
       </div>
     )
   }
@@ -127,15 +127,17 @@ export function PayrollPanel() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="rounded-xl bg-primary/20 p-2">
-            <DollarSign className="h-5 w-5 text-primary" />
+          <div className="bg-primary/20 rounded-xl p-2">
+            <DollarSign className="text-primary h-5 w-5" />
           </div>
           <div>
             <h2 className="font-semibold text-white">Payroll Management</h2>
             <p className="text-sm text-white/50">
               {data?.mode === "live"
                 ? "Connected to QuickBooks"
-                : "Demo Mode - QuickBooks not configured"}
+                : data?.mode === "demo"
+                  ? "Demo Mode - QuickBooks not configured"
+                  : "QuickBooks not configured"}
             </p>
           </div>
         </div>
@@ -158,8 +160,8 @@ export function PayrollPanel() {
       </div>
 
       {/* Mode Alert */}
-      {data?.mode === "mock" && (
-        <div className="flex items-center gap-2 rounded-lg border border-secondary/30 bg-secondary/10 p-3 text-sm text-secondary">
+      {data?.mode === "demo" && (
+        <div className="border-secondary/30 bg-secondary/10 text-secondary flex items-center gap-2 rounded-lg border p-3 text-sm">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>Using demo data. Configure QuickBooks/Xero for live payroll integration.</span>
         </div>
@@ -201,7 +203,7 @@ export function PayrollPanel() {
         <button
           onClick={runPayroll}
           disabled={processing}
-          className="flex items-center gap-2 rounded-lg bg-primary text-primary-foreground px-4 py-2 transition-colors hover:bg-primary/90 disabled:opacity-50"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-lg px-4 py-2 transition-colors disabled:opacity-50"
         >
           {processing ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -212,7 +214,7 @@ export function PayrollPanel() {
         </button>
         <button
           onClick={exportPayroll}
-          className="flex items-center gap-2 rounded-lg bg-secondary text-secondary-foreground px-4 py-2 transition-colors hover:bg-secondary/90"
+          className="bg-secondary text-secondary-foreground hover:bg-secondary/90 flex items-center gap-2 rounded-lg px-4 py-2 transition-colors"
         >
           <Download className="h-4 w-4" />
           Export CSV
@@ -250,10 +252,10 @@ export function PayrollPanel() {
                       {emp.overtime > 0 && <span className="text-secondary">+{emp.overtime}h</span>}
                     </td>
                     <td className="p-4 text-right text-white">R{emp.grossPay.toLocaleString()}</td>
-                    <td className="p-4 text-right text-destructive">-R{emp.deductions.tax}</td>
-                    <td className="p-4 text-right text-destructive">-R{emp.deductions.uif}</td>
-                    <td className="p-4 text-right text-destructive">-R{emp.deductions.pension}</td>
-                    <td className="p-4 text-right font-semibold text-primary">
+                    <td className="text-destructive p-4 text-right">-R{emp.deductions.tax}</td>
+                    <td className="text-destructive p-4 text-right">-R{emp.deductions.uif}</td>
+                    <td className="text-destructive p-4 text-right">-R{emp.deductions.pension}</td>
+                    <td className="text-primary p-4 text-right font-semibold">
                       R{emp.netPay.toLocaleString()}
                     </td>
                   </tr>
@@ -264,17 +266,17 @@ export function PayrollPanel() {
                   <td colSpan={2} className="p-4 font-semibold text-white">
                     TOTALS
                   </td>
-                  <td className="p-4 text-right font-semibold text-foreground">
+                  <td className="text-foreground p-4 text-right font-semibold">
                     {data.totals.totalHours}h
                   </td>
-                  <td className="p-4 text-right text-secondary">{data.totals.totalOvertime}h</td>
-                  <td className="p-4 text-right font-semibold text-foreground">
+                  <td className="text-secondary p-4 text-right">{data.totals.totalOvertime}h</td>
+                  <td className="text-foreground p-4 text-right font-semibold">
                     R{data.totals.totalGrossPay.toLocaleString()}
                   </td>
-                  <td colSpan={3} className="p-4 text-right text-destructive">
+                  <td colSpan={3} className="text-destructive p-4 text-right">
                     -R{data.totals.totalDeductions.toLocaleString()}
                   </td>
-                  <td className="p-4 text-right font-bold text-primary">
+                  <td className="text-primary p-4 text-right font-bold">
                     R{data.totals.totalNetPay.toLocaleString()}
                   </td>
                 </tr>

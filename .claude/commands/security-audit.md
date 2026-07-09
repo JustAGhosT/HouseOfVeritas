@@ -21,7 +21,7 @@ Read `.claude/rules/security.md` for the security standards, then:
    - Flag routes that call `request.json()` without validation
    - Flag routes that pass user input directly to external APIs
 
-4. **Dependency audit**: Run `npm audit` and report vulnerabilities
+4. **Dependency audit**: Run `pnpm audit` and report vulnerabilities
 
 5. **Terraform security**:
    - Check NSG rules for overly permissive access

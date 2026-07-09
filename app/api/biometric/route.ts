@@ -18,6 +18,8 @@ export function isBiometricConfigured(): boolean {
   return !!(BIOMETRIC_CONFIG.deviceApiKey && BIOMETRIC_CONFIG.deviceEndpoint)
 }
 
+const DEMO_DATA_ENABLED = process.env.ALLOW_DEMO_DATA === "true"
+
 // Employee biometric data (mock)
 interface BiometricEmployee {
   id: string
@@ -28,32 +30,34 @@ interface BiometricEmployee {
   lastVerification: string | null
 }
 
-const ENROLLED_EMPLOYEES: BiometricEmployee[] = [
-  {
-    id: "charl",
-    name: "Charl",
-    fingerprintId: "FP_001",
-    faceId: "FACE_001",
-    enrolledAt: "2025-01-15T09:00:00Z",
-    lastVerification: "2026-02-20T07:02:15Z",
-  },
-  {
-    id: "lucky",
-    name: "Lucky",
-    fingerprintId: "FP_002",
-    faceId: "FACE_002",
-    enrolledAt: "2025-01-15T09:15:00Z",
-    lastVerification: "2026-02-20T06:28:45Z",
-  },
-  {
-    id: "irma",
-    name: "Irma",
-    fingerprintId: "FP_003",
-    faceId: "FACE_003",
-    enrolledAt: "2025-01-15T09:30:00Z",
-    lastVerification: "2026-02-20T07:55:30Z",
-  },
-]
+const ENROLLED_EMPLOYEES: BiometricEmployee[] = DEMO_DATA_ENABLED
+  ? [
+      {
+        id: "charl",
+        name: "Charl",
+        fingerprintId: "FP_001",
+        faceId: "FACE_001",
+        enrolledAt: "2025-01-15T09:00:00Z",
+        lastVerification: "2026-02-20T07:02:15Z",
+      },
+      {
+        id: "lucky",
+        name: "Lucky",
+        fingerprintId: "FP_002",
+        faceId: "FACE_002",
+        enrolledAt: "2025-01-15T09:15:00Z",
+        lastVerification: "2026-02-20T06:28:45Z",
+      },
+      {
+        id: "irma",
+        name: "Irma",
+        fingerprintId: "FP_003",
+        faceId: "FACE_003",
+        enrolledAt: "2025-01-15T09:30:00Z",
+        lastVerification: "2026-02-20T07:55:30Z",
+      },
+    ]
+  : []
 
 // Time clock records (in-memory store)
 interface ClockRecord {
@@ -68,41 +72,48 @@ interface ClockRecord {
   deviceId?: string
 }
 
-let clockRecords: ClockRecord[] = [
-  {
-    id: "clk_001",
-    employeeId: "charl",
-    employeeName: "Charl",
-    type: "clock_in",
-    method: "fingerprint",
-    timestamp: "2026-02-20T07:02:15Z",
-    location: "Workshop Entrance",
-    verified: true,
-    deviceId: "BIO_DEVICE_01",
-  },
-  {
-    id: "clk_002",
-    employeeId: "lucky",
-    employeeName: "Lucky",
-    type: "clock_in",
-    method: "face",
-    timestamp: "2026-02-20T06:28:45Z",
-    location: "Garden Gate",
-    verified: true,
-    deviceId: "BIO_DEVICE_02",
-  },
-  {
-    id: "clk_003",
-    employeeId: "irma",
-    employeeName: "Irma",
-    type: "clock_in",
-    method: "fingerprint",
-    timestamp: "2026-02-20T07:55:30Z",
-    location: "Main House",
-    verified: true,
-    deviceId: "BIO_DEVICE_01",
-  },
-]
+let clockRecords: ClockRecord[] = DEMO_DATA_ENABLED
+  ? [
+      {
+        id: "clk_001",
+        employeeId: "charl",
+        employeeName: "Charl",
+        type: "clock_in",
+        method: "fingerprint",
+        timestamp: "2026-02-20T07:02:15Z",
+        location: "Workshop Entrance",
+        verified: true,
+        deviceId: "BIO_DEVICE_01",
+      },
+      {
+        id: "clk_002",
+        employeeId: "lucky",
+        employeeName: "Lucky",
+        type: "clock_in",
+        method: "face",
+        timestamp: "2026-02-20T06:28:45Z",
+        location: "Garden Gate",
+        verified: true,
+        deviceId: "BIO_DEVICE_02",
+      },
+      {
+        id: "clk_003",
+        employeeId: "irma",
+        employeeName: "Irma",
+        type: "clock_in",
+        method: "fingerprint",
+        timestamp: "2026-02-20T07:55:30Z",
+        location: "Main House",
+        verified: true,
+        deviceId: "BIO_DEVICE_01",
+      },
+    ]
+  : []
+
+function getBiometricMode(): "demo" | "empty" | "live" {
+  if (isBiometricConfigured()) return "live"
+  return DEMO_DATA_ENABLED ? "demo" : "empty"
+}
 
 // GET - Get biometric status, enrolled employees, or clock records
 export const GET = withAuth(async (request) => {
@@ -115,31 +126,38 @@ export const GET = withAuth(async (request) => {
   if (action === "status") {
     return NextResponse.json({
       configured: isBiometricConfigured(),
-      mode: isBiometricConfigured() ? "live" : "mock",
-      devices: [
-        {
-          id: "BIO_DEVICE_01",
-          location: "Workshop Entrance",
-          status: "online",
-          type: "fingerprint+face",
-        },
-        { id: "BIO_DEVICE_02", location: "Garden Gate", status: "online", type: "fingerprint" },
-        { id: "BIO_DEVICE_03", location: "Main House", status: "online", type: "fingerprint+face" },
-      ],
+      mode: getBiometricMode(),
+      devices: DEMO_DATA_ENABLED
+        ? [
+            {
+              id: "BIO_DEVICE_01",
+              location: "Workshop Entrance",
+              status: "online",
+              type: "fingerprint+face",
+            },
+            { id: "BIO_DEVICE_02", location: "Garden Gate", status: "online", type: "fingerprint" },
+            {
+              id: "BIO_DEVICE_03",
+              location: "Main House",
+              status: "online",
+              type: "fingerprint+face",
+            },
+          ]
+        : [],
       enrolledEmployees: ENROLLED_EMPLOYEES.length,
       todayRecords: clockRecords.filter((r) =>
         r.timestamp.startsWith(new Date().toISOString().split("T")[0])
       ).length,
       note: isBiometricConfigured()
         ? "Biometric system connected"
-        : "Using mock data. Configure BIOMETRIC_API_KEY for live integration.",
+        : "Configure BIOMETRIC_API_KEY for live integration.",
     })
   }
 
   // Get enrolled employees
   if (action === "enrolled") {
     return NextResponse.json({
-      mode: isBiometricConfigured() ? "live" : "mock",
+      mode: getBiometricMode(),
       employees: ENROLLED_EMPLOYEES,
     })
   }
@@ -221,7 +239,7 @@ export const GET = withAuth(async (request) => {
   })
 
   return NextResponse.json({
-    mode: isBiometricConfigured() ? "live" : "mock",
+    mode: getBiometricMode(),
     date: date || today,
     records,
     employeeStatus,
@@ -276,7 +294,7 @@ export const POST = withAuth(async (request) => {
 
       return NextResponse.json({
         success: true,
-        mode: isBiometricConfigured() ? "live" : "mock",
+        mode: getBiometricMode(),
         record,
         persisted: isBaserowConfigured(),
         message: `${employee.name} ${action === "clock_in" ? "clocked in" : "clocked out"} successfully`,
@@ -292,7 +310,7 @@ export const POST = withAuth(async (request) => {
       // In production: capture and store biometric template
       return NextResponse.json({
         success: true,
-        mode: "mock",
+        mode: getBiometricMode(),
         message: `Employee enrollment initiated. In production, biometric capture would occur.`,
         instructions: [
           "1. Position finger on scanner",

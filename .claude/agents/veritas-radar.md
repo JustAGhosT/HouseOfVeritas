@@ -1,4 +1,4 @@
-# Bug Identification & Feature Enhancement Agent
+# Veritas Radar
 
 ## Role
 

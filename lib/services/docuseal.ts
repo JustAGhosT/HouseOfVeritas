@@ -4,6 +4,7 @@
 import { logger } from "@/lib/logger"
 
 const FETCH_TIMEOUT_MS = 10000
+const DEMO_DATA_ENABLED = process.env.ALLOW_DEMO_DATA === "true"
 
 interface DocuSealConfig {
   apiUrl: string
@@ -62,8 +63,7 @@ export async function getTemplates(): Promise<DocumentTemplate[]> {
   const config = getConfig()
 
   if (!config.apiKey) {
-    // Return mock data when not configured
-    return getMockTemplates()
+    return DEMO_DATA_ENABLED ? getMockTemplates() : []
   }
 
   try {
@@ -84,7 +84,7 @@ export async function getTemplates(): Promise<DocumentTemplate[]> {
     logger.error("DocuSeal getTemplates error", {
       error: error instanceof Error ? error.message : String(error),
     })
-    return getMockTemplates()
+    return DEMO_DATA_ENABLED ? getMockTemplates() : []
   }
 }
 
@@ -95,8 +95,7 @@ export async function createSubmission(
   const config = getConfig()
 
   if (!config.apiKey) {
-    // Return mock submission when not configured
-    return createMockSubmission(request)
+    return DEMO_DATA_ENABLED ? createMockSubmission(request) : null
   }
 
   try {
@@ -147,7 +146,7 @@ export async function createSubmission(
     logger.error("DocuSeal createSubmission error", {
       error: error instanceof Error ? error.message : String(error),
     })
-    return createMockSubmission(request)
+    return DEMO_DATA_ENABLED ? createMockSubmission(request) : null
   }
 }
 
@@ -158,7 +157,7 @@ export async function getSubmissionStatus(
   const config = getConfig()
 
   if (!config.apiKey) {
-    return getMockSubmissionStatus(submissionId)
+    return DEMO_DATA_ENABLED ? getMockSubmissionStatus(submissionId) : null
   }
 
   try {
@@ -192,7 +191,7 @@ export async function getSubmissionStatus(
     logger.error("DocuSeal getSubmissionStatus error", {
       error: error instanceof Error ? error.message : String(error),
     })
-    return getMockSubmissionStatus(submissionId)
+    return DEMO_DATA_ENABLED ? getMockSubmissionStatus(submissionId) : null
   }
 }
 

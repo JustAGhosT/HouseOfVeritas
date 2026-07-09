@@ -43,6 +43,7 @@ export interface PaginatedResult<T> {
 }
 
 const DEFAULT_PAGE_SIZE = 100
+const DEMO_DATA_ENABLED = process.env.ALLOW_DEMO_DATA === "true"
 
 function appendPagination(endpoint: string, page?: number, size?: number): string {
   if (page == null && size == null) return endpoint
@@ -1782,6 +1783,7 @@ function mapRowToVehicleLog(row: BaserowRow): VehicleLog {
 // ==================== MOCK DATA ====================
 
 function getMockEmployees(): Employee[] {
+  if (!DEMO_DATA_ENABLED) return []
   return [
     {
       id: 1,
@@ -1819,6 +1821,7 @@ function getMockEmployees(): Employee[] {
 }
 
 function getMockTasks(): Task[] {
+  if (!DEMO_DATA_ENABLED) return []
   return [
     {
       id: 1,
@@ -1894,6 +1897,7 @@ function getMockTasks(): Task[] {
 }
 
 function getMockExpenses(): Expense[] {
+  if (!DEMO_DATA_ENABLED) return []
   return [
     {
       id: 1,
@@ -1941,6 +1945,7 @@ function getMockExpenses(): Expense[] {
 }
 
 function getMockAssets(): Asset[] {
+  if (!DEMO_DATA_ENABLED) return []
   return [
     {
       id: 1,
@@ -1988,6 +1993,7 @@ function getMockAssets(): Asset[] {
 }
 
 function getMockTimeClockEntries(): TimeClockEntry[] {
+  if (!DEMO_DATA_ENABLED) return []
   const today = toISODateString()
   return [
     {
@@ -2010,6 +2016,7 @@ function getMockTimeClockEntries(): TimeClockEntry[] {
 }
 
 function getMockVehicleLogs(): VehicleLog[] {
+  if (!DEMO_DATA_ENABLED) return []
   return [
     {
       id: 1,

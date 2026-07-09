@@ -16,12 +16,12 @@ Read the orchestrator summary or a specific agent report, then fix the highest-p
 
 1. Security vulnerabilities (JWT, auth, password leaks)
 2. Data integrity issues (floating-point money, in-memory stores)
-3. Build/CI failures (ignoreBuildErrors, yarn/npm mismatch)
+3. Build/CI failures (ignoreBuildErrors, package-manager mismatch)
 4. Missing auth checks on routes
 5. Dead code and console.log replacement
 
 ## Constraints
 
 - Fix at most 5 P0 items per session to keep changes reviewable
-- Run `npm test` after each fix to verify no regressions
+- Run `pnpm test` after each fix to verify no regressions
 - Commit after each logical group of fixes

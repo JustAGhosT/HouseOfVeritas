@@ -6,10 +6,10 @@ Pre-deployment verification checklist. Run this before deploying to production.
 
 ### Phase 1: Code Quality
 
-1. Run `npx tsc --noEmit` — must pass with 0 errors
-2. Run `npm run lint` — must pass with 0 errors
-3. Run `npm test -- --run` — all tests must pass
-4. Run `npm run build` — must succeed
+1. Run `pnpm exec tsc --noEmit` — must pass with 0 errors
+2. Run `pnpm run lint` — must pass with 0 errors
+3. Run `pnpm test` — all tests must pass
+4. Run `pnpm run build` — must succeed
 5. Check for `console.log` in production code paths
 
 ### Phase 2: Security
@@ -17,7 +17,7 @@ Pre-deployment verification checklist. Run this before deploying to production.
 1. Verify `JWT_SECRET` is set in environment (not using fallback)
 2. Verify no `demoPassword` in auth responses
 3. Verify all API routes have auth checks (except PUBLIC_PATHS)
-4. Run `npm audit` — no critical vulnerabilities
+4. Run `pnpm audit` — no critical vulnerabilities
 5. Verify `.env.local` is gitignored
 
 ### Phase 3: Infrastructure

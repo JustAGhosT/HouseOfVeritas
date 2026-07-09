@@ -247,11 +247,6 @@ export default function OCRPage() {
           </h1>
           <p className="mt-1 text-white/60">
             Extract text and data from invoices, receipts, and handwritten notes
-            {!process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY && (
-              <Badge variant="outline" className="ml-2 border-yellow-400/50 text-yellow-400">
-                Demo Mode
-              </Badge>
-            )}
           </p>
         </div>
 

@@ -69,6 +69,7 @@ const SEED_INCIDENTS: ReadonlyArray<Readonly<Incident & { reporterName?: string 
 // It is intended for local development and demo purposes only. In production, use Baserow.
 // The GET/POST handlers will prefer Baserow when isIncidentsTableConfigured() returns true.
 const inMemoryIncidents: Incident[] = []
+const DEMO_DATA_ENABLED = process.env.ALLOW_DEMO_DATA === "true"
 
 // Maximum number of in-memory incidents to prevent unbounded growth
 const MAX_IN_MEMORY_INCIDENTS = 1000
@@ -120,7 +121,7 @@ function checkInMemoryAllowed(): InMemoryCheckResult {
 }
 
 function getIncidentsData(): Incident[] {
-  return [...SEED_INCIDENTS, ...inMemoryIncidents]
+  return [...(DEMO_DATA_ENABLED ? SEED_INCIDENTS : []), ...inMemoryIncidents]
 }
 
 function formatIncidentForApi(incident: Incident & { reporterName?: string }) {

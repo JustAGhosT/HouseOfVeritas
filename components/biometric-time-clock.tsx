@@ -38,7 +38,7 @@ interface ClockRecord {
 }
 
 interface BiometricData {
-  mode: "mock" | "live"
+  mode: "demo" | "empty" | "live"
   date: string
   records: ClockRecord[]
   employeeStatus: EmployeeStatus[]
@@ -114,7 +114,9 @@ export function BiometricTimeClockPanel() {
             <p className="text-sm text-white/50">
               {data?.mode === "live"
                 ? "Biometric devices connected"
-                : "Demo Mode - Simulated biometrics"}
+                : data?.mode === "demo"
+                  ? "Demo Mode - Simulated biometrics"
+                  : "Biometric devices not configured"}
             </p>
           </div>
         </div>
@@ -131,7 +133,7 @@ export function BiometricTimeClockPanel() {
       </div>
 
       {/* Mode Alert */}
-      {data?.mode === "mock" && (
+      {data?.mode === "demo" && (
         <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-400">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>

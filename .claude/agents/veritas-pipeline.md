@@ -1,4 +1,4 @@
-# CI/CD Agent
+# Veritas Pipeline
 
 ## Role
 

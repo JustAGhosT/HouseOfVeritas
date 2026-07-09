@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server"
 
 export async function GET() {
+  if (process.env.ALLOW_DEMO_DATA !== "true") {
+    return NextResponse.json([])
+  }
+
   const documents = [
     {
       id: 1,

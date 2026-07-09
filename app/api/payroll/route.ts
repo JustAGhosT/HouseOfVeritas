@@ -13,39 +13,43 @@ export function isQuickBooksConfigured(): boolean {
   return !!(QUICKBOOKS_CONFIG.clientId && QUICKBOOKS_CONFIG.clientSecret)
 }
 
+const DEMO_DATA_ENABLED = process.env.ALLOW_DEMO_DATA === "true"
+
 // Employee payroll data (mock)
-const EMPLOYEE_PAYROLL = [
-  {
-    id: "charl",
-    name: "Charl",
-    role: "Workshop & Maintenance",
-    hourlyRate: 85,
-    monthlyHours: 176,
-    overtime: 12,
-    overtimeRate: 127.5,
-    deductions: { tax: 2850, uif: 142, pension: 570 },
-  },
-  {
-    id: "lucky",
-    name: "Lucky",
-    role: "Gardener & Groundskeeper",
-    hourlyRate: 65,
-    monthlyHours: 184,
-    overtime: 8,
-    overtimeRate: 97.5,
-    deductions: { tax: 1980, uif: 120, pension: 480 },
-  },
-  {
-    id: "irma",
-    name: "Irma",
-    role: "Housekeeper & Admin",
-    hourlyRate: 75,
-    monthlyHours: 160,
-    overtime: 0,
-    overtimeRate: 112.5,
-    deductions: { tax: 2100, uif: 120, pension: 480 },
-  },
-]
+const EMPLOYEE_PAYROLL = DEMO_DATA_ENABLED
+  ? [
+      {
+        id: "charl",
+        name: "Charl",
+        role: "Workshop & Maintenance",
+        hourlyRate: 85,
+        monthlyHours: 176,
+        overtime: 12,
+        overtimeRate: 127.5,
+        deductions: { tax: 2850, uif: 142, pension: 570 },
+      },
+      {
+        id: "lucky",
+        name: "Lucky",
+        role: "Gardener & Groundskeeper",
+        hourlyRate: 65,
+        monthlyHours: 184,
+        overtime: 8,
+        overtimeRate: 97.5,
+        deductions: { tax: 1980, uif: 120, pension: 480 },
+      },
+      {
+        id: "irma",
+        name: "Irma",
+        role: "Housekeeper & Admin",
+        hourlyRate: 75,
+        monthlyHours: 160,
+        overtime: 0,
+        overtimeRate: 112.5,
+        deductions: { tax: 2100, uif: 120, pension: 480 },
+      },
+    ]
+  : []
 
 // Calculate payroll for an employee
 function calculatePayroll(employee: (typeof EMPLOYEE_PAYROLL)[0]) {
@@ -94,15 +98,15 @@ export const GET = withRole("admin")(async (request) => {
     return NextResponse.json({
       quickbooks: {
         configured: isQuickBooksConfigured(),
-        mode: isQuickBooksConfigured() ? "live" : "mock",
+        mode: isQuickBooksConfigured() ? "live" : DEMO_DATA_ENABLED ? "demo" : "empty",
       },
       xero: {
         configured: false,
-        mode: "mock",
+        mode: "empty",
       },
       note: isQuickBooksConfigured()
         ? "QuickBooks integration active"
-        : "Using mock payroll data. Configure QUICKBOOKS_CLIENT_ID/SECRET for live integration.",
+        : "Configure QUICKBOOKS_CLIENT_ID/SECRET for live integration.",
     })
   }
 
@@ -113,7 +117,7 @@ export const GET = withRole("admin")(async (request) => {
       return NextResponse.json({ error: "Employee not found" }, { status: 404 })
     }
     return NextResponse.json({
-      mode: isQuickBooksConfigured() ? "live" : "mock",
+      mode: isQuickBooksConfigured() ? "live" : DEMO_DATA_ENABLED ? "demo" : "empty",
       month,
       payroll: calculatePayroll(employee),
     })
@@ -130,7 +134,7 @@ export const GET = withRole("admin")(async (request) => {
   }
 
   return NextResponse.json({
-    mode: isQuickBooksConfigured() ? "live" : "mock",
+    mode: isQuickBooksConfigured() ? "live" : DEMO_DATA_ENABLED ? "demo" : "empty",
     month,
     employees: payrollData,
     totals,
@@ -149,14 +153,14 @@ export const POST = withRole("admin")(async (request) => {
 
       return NextResponse.json({
         success: true,
-        mode: isQuickBooksConfigured() ? "live" : "mock",
+        mode: isQuickBooksConfigured() ? "live" : DEMO_DATA_ENABLED ? "demo" : "empty",
         month: month || new Date().toISOString().slice(0, 7),
         status: "processed",
         employees: payrollData.length,
         totalPayout: payrollData.reduce((sum, p) => sum + p.netPay, 0),
         message: isQuickBooksConfigured()
           ? "Payroll synced to QuickBooks"
-          : "Payroll processed (mock mode)",
+          : "Payroll processed locally",
       })
     }
 

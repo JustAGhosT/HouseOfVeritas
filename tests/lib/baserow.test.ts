@@ -29,48 +29,36 @@ describe("baserow service", () => {
     })
   })
 
-  describe("getEmployees (mock fallback)", () => {
-    it("returns mock employees when not configured", async () => {
+  describe("getEmployees (empty fallback)", () => {
+    it("returns empty employees when not configured and demo data is disabled", async () => {
       delete process.env.BASEROW_API_TOKEN
       const employees = await getEmployees()
       expect(Array.isArray(employees)).toBe(true)
-      expect(employees.length).toBeGreaterThan(0)
-      expect(employees[0]).toHaveProperty("id")
-      expect(employees[0]).toHaveProperty("fullName")
-      expect(employees[0]).toHaveProperty("role")
-      expect(employees[0]).toHaveProperty("email")
+      expect(employees).toHaveLength(0)
     })
   })
 
-  describe("getTasks (mock fallback)", () => {
-    it("returns mock tasks when not configured", async () => {
+  describe("getTasks (empty fallback)", () => {
+    it("returns empty tasks when not configured and demo data is disabled", async () => {
       delete process.env.BASEROW_API_TOKEN
       const tasks = await getTasks()
       expect(Array.isArray(tasks)).toBe(true)
-      expect(tasks.length).toBeGreaterThan(0)
-      expect(tasks[0]).toHaveProperty("id")
-      expect(tasks[0]).toHaveProperty("title")
-      expect(tasks[0]).toHaveProperty("status")
-      expect(tasks[0]).toHaveProperty("priority")
+      expect(tasks).toHaveLength(0)
     })
 
-    it("filters by assignedTo when using mock", async () => {
+    it("returns empty assignedTo results when not configured and demo data is disabled", async () => {
       delete process.env.BASEROW_API_TOKEN
       const tasks = await getTasks({ assignedTo: 1 })
-      expect(Array.isArray(tasks)).toBe(true)
-      tasks.forEach((t) => expect(t.assignedTo).toBe(1))
+      expect(tasks).toEqual([])
     })
   })
 
-  describe("getExpenses (mock fallback)", () => {
-    it("returns mock expenses when not configured", async () => {
+  describe("getExpenses (empty fallback)", () => {
+    it("returns empty expenses when not configured and demo data is disabled", async () => {
       delete process.env.BASEROW_API_TOKEN
       const expenses = await getExpenses()
       expect(Array.isArray(expenses)).toBe(true)
-      expect(expenses.length).toBeGreaterThan(0)
-      expect(expenses[0]).toHaveProperty("id")
-      expect(expenses[0]).toHaveProperty("amount")
-      expect(expenses[0]).toHaveProperty("approvalStatus")
+      expect(expenses).toHaveLength(0)
     })
   })
 })

@@ -1,4 +1,4 @@
-# Vertical Feature Completeness Agent
+# Veritas Journey
 
 ## Role
 

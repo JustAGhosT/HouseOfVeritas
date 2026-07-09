@@ -1,4 +1,4 @@
-# UI Layer Agent
+# Veritas Surface
 
 ## Role
 

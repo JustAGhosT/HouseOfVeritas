@@ -15,8 +15,7 @@ export interface User {
 
 export type UserRole = "admin" | "resident" | "operator" | "employee"
 
-const DEMO_USERS_ENABLED =
-  process.env.NODE_ENV !== "production" || process.env.ALLOW_DEMO_USERS === "true"
+const DEMO_USERS_ENABLED = process.env.ALLOW_DEMO_USERS === "true"
 
 const DEMO_SEED_USERS: Record<string, User> = DEMO_USERS_ENABLED
   ? {
@@ -205,7 +204,17 @@ export async function findOrCreateOidcUserAsync(
       `INSERT INTO users (id, name, email, phone, role, description, color, icon, specialty)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        ON CONFLICT (email) DO NOTHING`,
-      [user.id, user.name, user.email, user.phone, user.role, user.description, user.color, user.icon, user.specialty]
+      [
+        user.id,
+        user.name,
+        user.email,
+        user.phone,
+        user.role,
+        user.description,
+        user.color,
+        user.icon,
+        user.specialty,
+      ]
     )
     // Return the canonical persisted row so a concurrent create that won the
     // race (same email) yields the same account rather than a divergent object.

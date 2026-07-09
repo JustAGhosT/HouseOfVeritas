@@ -3,12 +3,12 @@ import { GET } from "@/app/api/documents/route"
 import { GET as getTemplates } from "@/app/api/documents/templates/route"
 
 describe("GET /api/documents", () => {
-  it("returns 200 with documents array", async () => {
+  it("returns 200 with empty documents array when demo data is disabled", async () => {
     const response = await GET()
     expect(response.status).toBe(200)
     const data = await response.json()
     expect(Array.isArray(data)).toBe(true)
-    expect(data.length).toBeGreaterThan(0)
+    expect(data).toHaveLength(0)
   })
 })
 

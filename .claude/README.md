@@ -23,18 +23,17 @@ Multi-agent assessment framework with lifecycle hooks, persistent state, and dom
          │
          ▼
 ┌─────────────────────────────────┐
-│         ORCHESTRATOR            │
-│    (00-orchestrator.md)         │
-│  Dispatches, collects, ranks   │
+│         VERITAS ORBIT           │
+│     (veritas-orbit.md)          │
+│  Dispatches, collects, ranks    │
 └──────────┬──────────────────────┘
            │
     ┌──────┼──────────────────────────────────────────┐
     │      │      │      │      │      │      │       │
     ▼      ▼      ▼      ▼      ▼      ▼      ▼       ▼
-┌──────┐┌──────┐┌──────┐┌──────┐┌──────┐┌──────┐┌──────┐┌──────┐
-│CI/CD ││Infra ││Test  ││API   ││DB    ││UI    ││Arch  ││Refac │
-│  01  ││  02  ││  03  ││  04  ││  05  ││  06  ││  07  ││  08  │
-└──────┘└──────┘└──────┘└──────┘└──────┘└──────┘└──────┘└──────┘
+┌────────┐┌────────┐┌──────┐┌────────┐┌──────┐┌────────┐┌────────┐┌────────┐
+│Pipeline││Foundation││Lab ││Gateway ││Vault ││Surface ││Blueprint││Refinery│
+└────────┘└────────┘└──────┘└────────┘└──────┘└────────┘└────────┘└────────┘
     │      │      │      │      │      │      │       │
     ▼      ▼      ▼      ▼      ▼      ▼      ▼       ▼
 ┌──────────────────────────────────────────────────────────────┐
@@ -43,10 +42,9 @@ Multi-agent assessment framework with lifecycle hooks, persistent state, and dom
 └──────────────────────────────────────────────────────────────┘
          ▲              ▲
          │              │
-    ┌──────┐       ┌──────┐
-    │Bugs  │       │Vert. │
-    │  09  │       │  10  │
-    └──────┘       └──────┘
+    ┌──────┐       ┌────────┐
+    │Radar │       │Journey │
+    └──────┘       └────────┘
 ```
 
 ## Components
@@ -60,6 +58,8 @@ Each has a role, scope (file patterns), and checklist.
 
 Executable prompts: 11 assessment commands + 6 operational commands
 (healthcheck, fix, discover, deploy, review-pr, security-audit).
+
+Commands should use `pnpm` for JavaScript/TypeScript work in this repo.
 
 ### Hooks (5 lifecycle scripts)
 
@@ -83,3 +83,20 @@ Updated by `discover` and `assess-all` commands.
 ### Permissions
 
 `settings.json` whitelists safe commands and blocks destructive ones.
+
+## Baton Project
+
+House of Veritas work belongs in Baton project `house-of-veritas`
+(`da62c803-1a03-45a4-9ce1-b6e86dd8d23d`). Do not create House of Veritas tasks
+under the generic `baton` project. If that happens, recreate the task in the
+correct project and close the misplaced copy.
+
+## Adopted Agent Practices
+
+From Mystira and Retort, this system should preserve:
+
+- explicit project/task ownership before implementation,
+- focused specialist routing by domain,
+- quality gates before handoff,
+- traceable handoffs with changed files and verification,
+- opt-in demo data only.

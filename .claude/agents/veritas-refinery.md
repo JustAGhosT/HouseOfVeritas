@@ -1,4 +1,4 @@
-# Refactoring Agent
+# Veritas Refinery
 
 ## Role
 

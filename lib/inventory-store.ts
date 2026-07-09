@@ -30,6 +30,8 @@ export interface InventoryItem {
   }>
 }
 
+const DEMO_DATA_ENABLED = process.env.ALLOW_DEMO_DATA === "true"
+
 const inventory: InventoryItem[] = [
   {
     id: "inv_001",
@@ -149,6 +151,10 @@ const inventory: InventoryItem[] = [
     consumptionHistory: [],
   },
 ]
+
+if (!DEMO_DATA_ENABLED) {
+  inventory.splice(0, inventory.length)
+}
 
 function findByName(name: string): number {
   const lower = name.toLowerCase().trim()

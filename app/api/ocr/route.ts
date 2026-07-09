@@ -11,6 +11,8 @@ function isAzureDocConfigured(): boolean {
   return !!(AZURE_DOC_CONFIG.endpoint && AZURE_DOC_CONFIG.apiKey)
 }
 
+const DEMO_DATA_ENABLED = process.env.ALLOW_DEMO_DATA === "true"
+
 // OCR Result types
 interface OCRResult {
   id: string
@@ -193,7 +195,7 @@ export async function POST(request: Request) {
         result = mockOCRReceipt(file.name)
       }
       result.aiPowered = true
-    } else {
+    } else if (DEMO_DATA_ENABLED) {
       // Use mock OCR
       if (documentType === "handwritten_request") {
         result = mockOCRHandwrittenRequest(file.name)
@@ -202,13 +204,21 @@ export async function POST(request: Request) {
       } else {
         result = mockOCRReceipt(file.name)
       }
+    } else {
+      return NextResponse.json(
+        {
+          error:
+            "OCR is not configured. Set AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT/AZURE_DOCUMENT_INTELLIGENCE_KEY or ALLOW_DEMO_DATA=true.",
+        },
+        { status: 503 }
+      )
     }
 
     ocrResults.push(result)
 
     return NextResponse.json({
       success: true,
-      mode: isAzureDocConfigured() ? "azure" : "mock",
+      mode: isAzureDocConfigured() ? "azure" : "demo",
       result,
       note: isAzureDocConfigured()
         ? "Processed with Azure Document Intelligence"

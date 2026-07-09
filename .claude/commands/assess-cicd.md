@@ -1,10 +1,10 @@
 # Assess CI/CD
 
-Read the agent definition at `.claude/agents/01-cicd.md` and execute a thorough assessment of the CI/CD pipeline.
+Read the agent definition at `.claude/agents/veritas-pipeline.md` and execute a thorough assessment of the CI/CD pipeline.
 
 ## Instructions
 
-1. Read `.claude/agents/01-cicd.md` for the full checklist
+1. Read `.claude/agents/veritas-pipeline.md` for the full checklist
 2. Scan all files in `.github/workflows/`
 3. Check `.env.example` for documented secrets
 4. Review deployment docs in `docs/03-deployment/`

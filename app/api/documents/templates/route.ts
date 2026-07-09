@@ -9,9 +9,7 @@ export async function GET() {
     return NextResponse.json({
       templates,
       configured: isDocuSealConfigured(),
-      message: isDocuSealConfigured()
-        ? "Connected to DocuSeal"
-        : "Using mock data - DocuSeal not configured",
+      message: isDocuSealConfigured() ? "Connected to DocuSeal" : "DocuSeal not configured",
     })
   } catch (error) {
     logger.error("Error fetching templates", {
