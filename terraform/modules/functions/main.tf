@@ -79,8 +79,8 @@ resource "azurerm_linux_function_app" "main" {
 
     ACS_CONNECTION_STRING = var.acs_connection_string
     EMAIL_FROM            = "alerts@${var.domain_name}"
-    ADMIN_EMAIL      = "hans@${var.domain_name}"
-    ADMIN_PHONE      = var.admin_phone
+    ADMIN_EMAIL           = "hans@${var.domain_name}"
+    ADMIN_PHONE           = var.admin_phone
 
     AZURE_STORAGE_CONNECTION_STRING = var.storage_connection_string
     BACKUP_CONTAINER                = "backups"

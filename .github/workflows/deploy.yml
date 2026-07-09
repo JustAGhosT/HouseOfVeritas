@@ -60,6 +60,11 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
       - name: Install Azure CLI
         run: curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
@@ -321,15 +326,21 @@ jobs:
       - name: Verify Web App Health
         run: |
           APP_URL="https://${{ vars.WEBAPP_NAME || 'nl-prod-hov-app-san' }}.azurewebsites.net"
+          healthy=false
           for i in {1..10}; do
             HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL" || echo "000")
             if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "302" ]; then
               echo "Web App is healthy (HTTP $HTTP_STATUS)"
+              healthy=true
               break
             fi
             echo "Waiting for Web App... (attempt $i/10, got HTTP $HTTP_STATUS)"
             sleep 15
           done
+          if [ "$healthy" != "true" ]; then
+            echo "Web App health check failed after 10 attempts"
+            exit 1
+          fi
 
   # ============================================
   # Job 5: Deploy DocuSeal
@@ -503,6 +514,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
 
       - name: Install Azure CLI
         run: curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
