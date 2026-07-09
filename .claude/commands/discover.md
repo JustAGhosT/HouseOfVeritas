@@ -7,9 +7,9 @@ Scan the codebase to build a comprehensive snapshot of the current project state
 1. Read `.claude/state/orchestrator.json` (or create from template if missing)
 
 2. **Collect metrics:**
-   - TypeScript errors: `npx tsc --noEmit 2>&1 | grep -c "error TS"`
-   - Lint errors: `npm run lint 2>&1 | grep -c "error"`
-   - Test results: `npm test -- --run 2>&1` (extract pass/fail counts)
+   - TypeScript errors: `pnpm exec tsc --noEmit 2>&1 | grep -c "error TS"`
+   - Lint errors: `pnpm run lint 2>&1 | grep -c "error"`
+   - Test results: `pnpm test 2>&1` (extract pass/fail counts)
    - TODO count: `grep -r -c "TODO" --include="*.ts" --include="*.tsx" | awk -F: '{s+=$NF}END{print s}'`
    - FIXME count: `grep -r -c "FIXME" --include="*.ts" --include="*.tsx" | awk -F: '{s+=$NF}END{print s}'`
    - Console.log count: `grep -r "console\." --include="*.ts" --include="*.tsx" | wc -l`

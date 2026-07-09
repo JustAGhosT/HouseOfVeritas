@@ -5,7 +5,7 @@ import { isBaserowConfigured } from "@/lib/services/baserow"
 export function withDataSource<T extends Record<string, unknown>>(data: T) {
   const dataSourceMessage = isBaserowConfigured()
     ? "Connected to Baserow"
-    : "Using mock data - Baserow not configured"
+    : "Baserow not configured"
   return NextResponse.json({
     ...data,
     configured: isBaserowConfigured(),

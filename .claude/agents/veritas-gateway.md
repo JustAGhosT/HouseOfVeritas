@@ -1,4 +1,4 @@
-# API & Functions Agent
+# Veritas Gateway
 
 ## Role
 

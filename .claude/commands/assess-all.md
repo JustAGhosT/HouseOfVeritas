@@ -1,6 +1,6 @@
 # Full Team Assessment (Orchestrator)
 
-Read the orchestrator definition at `.claude/agents/00-orchestrator.md` and execute the complete multi-agent assessment.
+Read the orchestrator definition at `.claude/agents/veritas-orbit.md` and execute the complete multi-agent assessment.
 
 ## Instructions
 

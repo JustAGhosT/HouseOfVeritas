@@ -15,7 +15,11 @@ export const GET = withAuth(async (_request) => {
   const monthExpenses = expenses.filter((e) => e.date >= monthStart)
 
   const stats = {
-    dataSource: isBaserowConfigured() ? "live" : "mock",
+    dataSource: isBaserowConfigured()
+      ? "live"
+      : process.env.ALLOW_DEMO_DATA === "true"
+        ? "demo"
+        : "empty",
     users: {
       total: employees.length,
       active: employees.length,
@@ -35,7 +39,7 @@ export const GET = withAuth(async (_request) => {
       approved: expenses.filter((e) => e.approvalStatus === "Approved").length,
     },
     budget: {
-      allocated: 45000,
+      allocated: 0,
       spent: monthExpenses
         .filter((e) => e.approvalStatus === "Approved")
         .reduce((sum, e) => sum + e.amount, 0),
@@ -45,7 +49,8 @@ export const GET = withAuth(async (_request) => {
   }
 
   stats.budget.remaining = stats.budget.allocated - stats.budget.spent
-  stats.budget.percentage = Math.round((stats.budget.spent / stats.budget.allocated) * 100)
+  stats.budget.percentage =
+    stats.budget.allocated > 0 ? Math.round((stats.budget.spent / stats.budget.allocated) * 100) : 0
 
   return NextResponse.json(stats)
 })

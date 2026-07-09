@@ -143,6 +143,7 @@ const PAGE_DEFINITIONS: PageDef[] = [
 const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
   hans: {
     Overview: "/dashboard/hans",
+    Team: "/dashboard/hans/team",
     Tasks: "/dashboard/hans/tasks",
     "Time & Attendance": "/dashboard/hans/time",
     Expenses: "/dashboard/hans/expenses",

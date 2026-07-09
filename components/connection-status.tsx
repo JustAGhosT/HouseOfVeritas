@@ -5,7 +5,9 @@ import { Wifi, WifiOff } from "lucide-react"
 import { apiFetchSafe } from "@/lib/api-client"
 
 export function ConnectionStatus() {
-  const [status, setStatus] = useState<"connected" | "mock" | "error" | "loading">("loading")
+  const [status, setStatus] = useState<"connected" | "demo" | "empty" | "error" | "loading">(
+    "loading"
+  )
 
   useEffect(() => {
     async function check() {
@@ -13,7 +15,15 @@ export function ConnectionStatus() {
         const data = await apiFetchSafe<{ dataSource?: string } | null>("/api/stats", null, {
           label: "Stats",
         })
-        setStatus(!data ? "error" : data.dataSource === "live" ? "connected" : "mock")
+        setStatus(
+          !data
+            ? "error"
+            : data.dataSource === "live"
+              ? "connected"
+              : data.dataSource === "demo"
+                ? "demo"
+                : "empty"
+        )
       } catch {
         setStatus("error")
       }
@@ -26,11 +36,12 @@ export function ConnectionStatus() {
   if (status === "loading") return null
 
   if (status === "connected") return null
+  if (status === "empty") return null
 
   return (
     <div
       className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium ${
-        status === "mock"
+        status === "demo"
           ? "border border-amber-500/20 bg-amber-500/10 text-amber-400"
           : "border border-red-500/20 bg-red-500/10 text-red-400"
       }`}

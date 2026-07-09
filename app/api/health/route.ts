@@ -34,7 +34,11 @@ export async function GET() {
 
   return NextResponse.json({
     status: overall ? "healthy" : "degraded",
-    dataMode: isBaserowConfigured() ? "live" : "mock",
+    dataMode: isBaserowConfigured()
+      ? "live"
+      : process.env.ALLOW_DEMO_DATA === "true"
+        ? "demo"
+        : "empty",
     services: checks,
     timestamp: new Date().toISOString(),
   })

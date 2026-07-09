@@ -74,7 +74,11 @@ export const GET = withRole("admin")(async (request) => {
 
   return NextResponse.json({
     reportType,
-    dataSource: isBaserowConfigured() ? "live" : "mock",
+    dataSource: isBaserowConfigured()
+      ? "live"
+      : process.env.ALLOW_DEMO_DATA === "true"
+        ? "demo"
+        : "empty",
     generatedAt: new Date().toISOString(),
     filters: { userId },
     data,

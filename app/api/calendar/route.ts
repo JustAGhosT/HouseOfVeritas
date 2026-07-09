@@ -15,6 +15,8 @@ export function isGoogleConfigured(): boolean {
   return !!(GOOGLE_CONFIG.clientId && GOOGLE_CONFIG.clientSecret)
 }
 
+const DEMO_DATA_ENABLED = process.env.ALLOW_DEMO_DATA === "true"
+
 // Mock calendar events (when Google is not configured)
 const MOCK_EVENTS = [
   {
@@ -73,7 +75,7 @@ const MOCK_EVENTS = [
 ]
 
 // In-memory event store for mock mode
-let mockEvents = [...MOCK_EVENTS]
+let mockEvents = DEMO_DATA_ENABLED ? [...MOCK_EVENTS] : []
 
 // GET - List calendar events or initiate OAuth
 export const GET = withAuth(async (request) => {
@@ -84,10 +86,10 @@ export const GET = withAuth(async (request) => {
   if (action === "status") {
     return NextResponse.json({
       configured: isGoogleConfigured(),
-      mode: isGoogleConfigured() ? "live" : "mock",
+      mode: isGoogleConfigured() ? "live" : DEMO_DATA_ENABLED ? "demo" : "empty",
       message: isGoogleConfigured()
         ? "Google Calendar API configured"
-        : "Google Calendar not configured - using mock data. Configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET for live integration.",
+        : "Google Calendar not configured.",
     })
   }
 
@@ -123,7 +125,7 @@ export const GET = withAuth(async (request) => {
   const maxResults = parseInt(searchParams.get("maxResults") || "20")
 
   if (!isGoogleConfigured()) {
-    // Return mock events
+    // Return local events while Google Calendar is not configured.
     const filteredEvents = mockEvents
       .filter((evt) => {
         const eventDate = evt.start.dateTime || evt.start.date
@@ -132,10 +134,10 @@ export const GET = withAuth(async (request) => {
       .slice(0, maxResults)
 
     return NextResponse.json({
-      mode: "mock",
+      mode: DEMO_DATA_ENABLED ? "demo" : "empty",
       items: filteredEvents,
       count: filteredEvents.length,
-      note: "Using mock data. Configure Google Calendar API for live integration.",
+      note: "Configure Google Calendar API for live integration.",
     })
   }
 
@@ -185,10 +187,10 @@ export const POST = withAuth(async (request) => {
       // Add to mock events
       mockEvents.push(newEvent)
       return NextResponse.json({
-        mode: "mock",
+        mode: DEMO_DATA_ENABLED ? "demo" : "empty",
         success: true,
         event: newEvent,
-        note: "Event created in mock mode",
+        note: "Event created locally. Configure Google Calendar API for live sync.",
       })
     }
 
@@ -216,7 +218,11 @@ export const DELETE = withAuth(async (request) => {
     const index = mockEvents.findIndex((e) => e.id === eventId)
     if (index > -1) {
       mockEvents.splice(index, 1)
-      return NextResponse.json({ mode: "mock", success: true, deletedId: eventId })
+      return NextResponse.json({
+        mode: DEMO_DATA_ENABLED ? "demo" : "empty",
+        success: true,
+        deletedId: eventId,
+      })
     }
     return NextResponse.json({ error: "Event not found" }, { status: 404 })
   }

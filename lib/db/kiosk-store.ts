@@ -33,7 +33,9 @@ export interface KioskStore {
   insertMany(docs: Omit<KioskRequestDoc, "_id">[]): Promise<unknown>
 }
 
-export const KIOSK_SEED_DATA: Omit<KioskRequestDoc, "_id">[] = [
+const DEMO_DATA_ENABLED = process.env.ALLOW_DEMO_DATA === "true"
+
+const DEMO_KIOSK_SEED_DATA: Omit<KioskRequestDoc, "_id">[] = [
   {
     type: "stock_order",
     employeeId: "lucky",
@@ -126,6 +128,10 @@ export const KIOSK_SEED_DATA: Omit<KioskRequestDoc, "_id">[] = [
     notes: "Please resubmit with vehicle repair quote attached.",
   },
 ]
+
+export const KIOSK_SEED_DATA: Omit<KioskRequestDoc, "_id">[] = DEMO_DATA_ENABLED
+  ? DEMO_KIOSK_SEED_DATA
+  : []
 
 const inMemoryStore = new Map<string, KioskRequestDoc>()
 let inMemorySeeded = false

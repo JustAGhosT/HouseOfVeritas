@@ -11,7 +11,7 @@ export async function GET() {
       name: "DocuSeal",
       description: "E-Signature Platform",
       configured: docusealConfigured,
-      status: docusealConfigured ? "connected" : "mock",
+      status: docusealConfigured ? "connected" : "empty",
       endpoints: {
         api: process.env.DOCUSEAL_API_URL || "Not configured",
       },
@@ -20,7 +20,7 @@ export async function GET() {
       name: "Baserow",
       description: "Operational Database",
       configured: baserowConfigured,
-      status: baserowConfigured ? "connected" : "mock",
+      status: baserowConfigured ? "connected" : "empty",
       endpoints: {
         api: process.env.BASEROW_API_URL || "Not configured",
       },
@@ -29,7 +29,7 @@ export async function GET() {
       name: "Twilio",
       description: "SMS Notifications",
       configured: !!process.env.TWILIO_ACCOUNT_SID,
-      status: process.env.TWILIO_ACCOUNT_SID ? "connected" : "mock",
+      status: process.env.TWILIO_ACCOUNT_SID ? "connected" : "empty",
       endpoints: {
         api: "https://api.twilio.com",
       },
@@ -43,7 +43,7 @@ export async function GET() {
     status: overallStatus,
     message: allConfigured
       ? "All services connected - running in production mode"
-      : "Some services not configured - running with mock data",
+      : "Some services are not configured",
     services,
     environment: {
       nodeEnv: process.env.NODE_ENV || "development",

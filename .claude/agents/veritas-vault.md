@@ -1,4 +1,4 @@
-# Database Layer Agent
+# Veritas Vault
 
 ## Role
 

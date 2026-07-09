@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server"
 import { logger } from "@/lib/logger"
 
-// Mock asset/vehicle data for maintenance analysis
-const ASSET_DATA = [
+const DEMO_DATA_ENABLED = process.env.ALLOW_DEMO_DATA === "true"
+
+// Demo asset/vehicle data for maintenance analysis
+const DEMO_ASSET_DATA = [
   {
     id: "vehicle_1",
     name: "Toyota Hilux (CA 123-456)",
@@ -67,6 +69,8 @@ const ASSET_DATA = [
   },
 ]
 
+const ASSET_DATA = DEMO_DATA_ENABLED ? DEMO_ASSET_DATA : []
+
 // AI-powered maintenance prediction (using Emergent LLM)
 async function getPredictiveAnalysis(assets: typeof ASSET_DATA): Promise<{
   predictions: any[]
@@ -77,15 +81,15 @@ async function getPredictiveAnalysis(assets: typeof ASSET_DATA): Promise<{
   const EMERGENT_KEY = process.env.EMERGENT_LLM_KEY
 
   if (!EMERGENT_KEY) {
-    // Return mock predictions if no API key
-    return getMockPredictions(assets)
+    return DEMO_DATA_ENABLED
+      ? getMockPredictions(assets)
+      : { predictions: [], insights: [], urgentItems: [], costForecast: [] }
   }
 
   try {
     // Use fetch to call the LLM API
     // In production this would use the emergentintegrations library
-    // For now, return mock data with the key present
-    logger.info("AI Maintenance: API key present, returning enhanced mock predictions")
+    logger.info("AI Maintenance: API key present, returning local predictions")
     return getMockPredictions(assets)
   } catch (error) {
     logger.error("AI Maintenance error", {

@@ -1,4 +1,5 @@
 import { GET, PATCH, POST } from "@/app/api/kiosk/requests/route"
+import { POST as INVENTORY_POST } from "@/app/api/inventory/route"
 import { getInventory } from "@/lib/inventory-store"
 import * as workflows from "@/lib/workflows"
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -173,6 +174,24 @@ describe("PATCH /api/kiosk/requests", () => {
   })
 
   it("auto-restocks inventory when stock_order is approved", async () => {
+    const createItemReq = new Request("http://localhost/api/inventory", {
+      method: "POST",
+      headers: { ...adminHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Garden fertilizer 25kg",
+        category: "garden_supplies",
+        unit: "bags",
+        currentStock: 0,
+        minStock: 1,
+        maxStock: 20,
+        reorderPoint: 2,
+        location: "Garden Shed",
+        unitCost: 100,
+      }),
+    })
+    const createItemRes = await INVENTORY_POST(createItemReq)
+    expect(createItemRes.status).toBe(200)
+
     const postReq = new Request("http://localhost/api/kiosk/requests", {
       method: "POST",
       headers: { ...adminHeaders, "Content-Type": "application/json" },

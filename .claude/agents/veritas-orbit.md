@@ -1,4 +1,4 @@
-# Team Orchestrator
+# Veritas Orbit
 
 ## Role
 
@@ -7,18 +7,18 @@ identifies cross-cutting concerns, and produces a unified assessment with priori
 
 ## Agents Under Coordination
 
-| ID  | Agent             | Focus                                     |
-| --- | ----------------- | ----------------------------------------- |
-| 01  | CI/CD             | GitHub Actions, deployment pipelines      |
-| 02  | Infrastructure    | Terraform, Azure resources, security      |
-| 03  | Testing           | Test coverage, quality, frameworks        |
-| 04  | API/Functions     | Next.js routes, Azure Functions           |
-| 05  | Database          | Data layer, storage, integrations         |
-| 06  | UI Layer          | Components, pages, accessibility, UX      |
-| 07  | Architecture      | System design, patterns, scalability      |
-| 08  | Refactoring       | SOLID, DRY, code smells, patterns         |
-| 09  | Bugs & Features   | Bug detection, feature gaps, enhancements |
-| 10  | Vertical Features | Cross-stack feature completeness          |
+| Agent                | Focus                                     |
+| -------------------- | ----------------------------------------- |
+| `veritas-pipeline`   | GitHub Actions, deployment pipelines      |
+| `veritas-foundation` | Terraform, Azure resources, security      |
+| `veritas-lab`        | Test coverage, quality, frameworks        |
+| `veritas-gateway`    | Next.js routes, Azure Functions           |
+| `veritas-vault`      | Data layer, storage, integrations         |
+| `veritas-surface`    | Components, pages, accessibility, UX      |
+| `veritas-blueprint`  | System design, patterns, scalability      |
+| `veritas-refinery`   | SOLID, DRY, code smells, patterns         |
+| `veritas-radar`      | Bug detection, feature gaps, enhancements |
+| `veritas-journey`    | Cross-stack feature completeness          |
 
 ## Orchestration Protocol
 

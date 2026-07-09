@@ -41,7 +41,7 @@ const COLOR_MAP: Record<string, string> = {
 export function CalendarPanel() {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loading, setLoading] = useState(true)
-  const [mode, setMode] = useState<"mock" | "live">("mock")
+  const [mode, setMode] = useState<"demo" | "empty" | "live">("empty")
   const [currentDate, setCurrentDate] = useState(new Date())
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -49,12 +49,12 @@ export function CalendarPanel() {
   const fetchEvents = async () => {
     setLoading(true)
     try {
-      const data = await apiFetch<{ items?: CalendarEvent[]; mode?: "mock" | "live" }>(
+      const data = await apiFetch<{ items?: CalendarEvent[]; mode?: "demo" | "empty" | "live" }>(
         "/api/calendar",
         { label: "Calendar" }
       )
       setEvents(data?.items || [])
-      setMode(data?.mode || "mock")
+      setMode(data?.mode || "empty")
     } catch (error) {
       logger.error("Failed to fetch calendar events", {
         error: error instanceof Error ? error.message : String(error),
@@ -112,7 +112,11 @@ export function CalendarPanel() {
           <div>
             <h2 className="font-semibold text-white">Calendar</h2>
             <p className="text-sm text-white/50">
-              {mode === "mock" ? "Demo Mode" : "Connected to Google Calendar"}
+              {mode === "live"
+                ? "Connected to Google Calendar"
+                : mode === "demo"
+                  ? "Demo Mode"
+                  : "Google Calendar not configured"}
             </p>
           </div>
         </div>
@@ -127,7 +131,7 @@ export function CalendarPanel() {
       </div>
 
       {/* Mode Alert */}
-      {mode === "mock" && (
+      {mode === "demo" && (
         <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-400">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>Using demo data. Configure Google Calendar API for live sync.</span>

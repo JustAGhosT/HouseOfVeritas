@@ -1,4 +1,4 @@
-# Infrastructure Agent
+# Veritas Foundation
 
 ## Role
 
