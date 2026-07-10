@@ -2,7 +2,7 @@
 
 A comprehensive estate and asset management platform for private households and small estates, featuring secure document signing, operational tracking, inventory management, and AI-powered automation.
 
-**Domain:** [nexamesh.ai](https://nexamesh.ai) | **Region:** South Africa North | **Status:** Deploying
+**Domain:** [nexamesh.ai](https://nexamesh.ai) | **Region:** South Africa North | **Status:** Canonical production live
 
 ---
 
@@ -26,10 +26,10 @@ A comprehensive estate and asset management platform for private households and 
 | Framework | Next.js 16 (App Router)            |
 | Language  | TypeScript 5                       |
 | Styling   | Tailwind CSS 4 + Shadcn/UI         |
-| Backend   | DocuSeal (Ruby) + Baserow (Django) |
-| Database  | Azure PostgreSQL Flexible Server   |
-| Storage   | Azure Blob Storage (GRS)           |
-| OCR       | Azure Document Intelligence        |
+| Backend   | Next.js API routes; DocuSeal and Baserow optional |
+| Database  | Empty/local mode by default; PostgreSQL optional |
+| Storage   | Azure Blob Storage (LRS baseline)  |
+| OCR       | Azure Document Intelligence optional |
 | IaC       | Terraform 1.5+                     |
 | CI/CD     | GitHub Actions                     |
 | Cloud     | Azure (South Africa North)         |
@@ -49,6 +49,11 @@ See [Local Development Guide](docs/03-deployment/02-local-development.md) for Do
 
 ### Azure Deployment
 
+Production currently uses the low-cost canonical baseline: App Service,
+Storage, Key Vault, and VNet. Optional services such as Baserow, DocuSeal,
+PostgreSQL, Cosmos DB, Functions, Document Intelligence, monitoring, and
+Application Gateway are disabled until explicitly justified.
+
 ```powershell
 cd terraform\environments\production
 terraform init -backend-config="backend.hcl"
@@ -56,7 +61,8 @@ terraform plan -var-file="terraform.tfvars" -out=tfplan
 terraform apply tfplan
 ```
 
-See [Deployment Guide](docs/03-deployment/01-deployment-guide.md) for complete instructions.
+See [Canonical Azure Production Profile](docs/03-deployment/07-canonical-azure-naming-migration.md)
+and [Deployment Guide](docs/03-deployment/01-deployment-guide.md) for complete instructions.
 
 ---
 
