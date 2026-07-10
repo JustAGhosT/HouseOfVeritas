@@ -371,7 +371,7 @@ variable "dns_zone_name" {
 variable "dns_zone_resource_group" {
   description = "Resource group containing the DNS zone"
   type        = string
-  default     = "nl-prod-nexamesh-rg-san"
+  default     = "mys-global-shared-rg"
 }
 
 # SSL Certificate variables

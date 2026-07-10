@@ -277,7 +277,7 @@ Resolve-DnsName ops.nexamesh.ai
 
 ### Azure DNS Zone
 
-The DNS zone `nexamesh.ai` is in resource group `nl-prod-nexamesh-rg-san`. Ensure the domain registrar's nameservers point to:
+The DNS zone `nexamesh.ai` is in resource group `mys-global-shared-rg`. Ensure the domain registrar's nameservers point to:
 
 - `ns1-09.azure-dns.com`
 - `ns2-09.azure-dns.net`
@@ -311,7 +311,7 @@ For DNS validation, add a TXT record via Azure DNS (or update `acme_challenge_va
 
 ```powershell
 az network dns record-set txt add-record `
-  --resource-group nl-prod-nexamesh-rg-san `
+  --resource-group mys-global-shared-rg `
   --zone-name nexamesh.ai `
   --record-set-name _acme-challenge `
   --value "<acme-challenge-value>"
@@ -660,7 +660,7 @@ az cognitiveservices account show `
 | `ssl_certificate_data`         | `""`                      | tfvars (sensitive, optional) |
 | `ssl_certificate_password`     | `""`                      | tfvars (sensitive, optional) |
 | `dns_zone_name`                | `nexamesh.ai`             | default                      |
-| `dns_zone_resource_group`      | `nl-prod-nexamesh-rg-san` | default                      |
+| `dns_zone_resource_group`      | `mys-global-shared-rg`    | default                      |
 | `document_intelligence_name`   | `nl-prod-hov-di-san`      | default                      |
 | `storage_account_name`         | `nlprodhovstsan`          | default                      |
 | `key_vault_name`               | `nl-prod-hov-kv-san`      | default                      |
@@ -717,7 +717,7 @@ az storage blob lease break `
 ```powershell
 # Verify Azure DNS records
 az network dns record-set a list `
-  --resource-group nl-prod-nexamesh-rg-san `
+  --resource-group mys-global-shared-rg `
   --zone-name nexamesh.ai `
   --output table
 

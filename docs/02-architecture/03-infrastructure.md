@@ -115,9 +115,9 @@ network ─────────────┬──────────
 
 | Record             | Type | Target                 | Zone                      |
 | ------------------ | ---- | ---------------------- | ------------------------- |
-| `docs.nexamesh.ai` | A    | Application Gateway IP | `nl-prod-nexamesh-rg-san` |
-| `ops.nexamesh.ai`  | A    | Application Gateway IP | `nl-prod-nexamesh-rg-san` |
-| `nexamesh.ai`      | A    | Application Gateway IP | `nl-prod-nexamesh-rg-san` |
+| `docs.nexamesh.ai` | A    | Application Gateway IP | `mys-global-shared-rg` |
+| `ops.nexamesh.ai`  | A    | Application Gateway IP | `mys-global-shared-rg` |
+| `nexamesh.ai`      | A    | Application Gateway IP | `mys-global-shared-rg` |
 
 ## Traffic Flow
 
