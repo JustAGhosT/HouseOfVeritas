@@ -25,43 +25,43 @@ output "key_vault_uri" {
 
 output "database_server_fqdn" {
   description = "FQDN of the PostgreSQL server"
-  value       = module.database.server_fqdn
+  value       = try(module.database[0].server_fqdn, null)
 }
 
 output "cosmos_account_name" {
   description = "Cosmos DB account name"
-  value       = module.cosmos_mongo.account_name
+  value       = try(module.cosmos_mongo[0].account_name, null)
 }
 
 output "cosmos_mongo_database_name" {
   description = "Cosmos Mongo database name"
-  value       = module.cosmos_mongo.mongo_database_name
+  value       = try(module.cosmos_mongo[0].mongo_database_name, null)
 }
 
 output "cosmos_mongo_collection_name" {
   description = "Cosmos Mongo collection name"
-  value       = module.cosmos_mongo.mongo_collection_name
+  value       = try(module.cosmos_mongo[0].mongo_collection_name, null)
 }
 
 output "cosmos_mongo_connection_string" {
   description = "Cosmos Mongo connection string"
-  value       = module.cosmos_mongo.mongo_connection_string
+  value       = try(module.cosmos_mongo[0].mongo_connection_string, null)
   sensitive   = true
 }
 
 output "docuseal_container_id" {
   description = "ID of the DocuSeal container"
-  value       = module.compute.docuseal_container_id
+  value       = try(module.compute[0].docuseal_container_id, null)
 }
 
 output "baserow_container_id" {
   description = "ID of the Baserow container"
-  value       = module.compute.baserow_container_id
+  value       = try(module.compute[0].baserow_container_id, null)
 }
 
 output "application_gateway_public_ip" {
   description = "Public IP address of the Application Gateway"
-  value       = module.gateway.public_ip_address
+  value       = try(module.gateway[0].public_ip_address, null)
 }
 
 output "docuseal_url" {
@@ -77,19 +77,19 @@ output "baserow_url" {
 output "dns_records_required" {
   description = "DNS records configured"
   value = {
-    docs = module.dns.docs_fqdn
-    ops  = module.dns.ops_fqdn
+    docs = try(module.dns[0].docs_fqdn, null)
+    ops  = try(module.dns[0].ops_fqdn, null)
   }
 }
 
 output "document_intelligence_endpoint" {
   description = "Document Intelligence endpoint URL"
-  value       = module.cognitive.endpoint
+  value       = try(module.cognitive[0].endpoint, null)
 }
 
 output "document_intelligence_key" {
   description = "Document Intelligence access key"
-  value       = module.cognitive.primary_access_key
+  value       = try(module.cognitive[0].primary_access_key, null)
   sensitive   = true
 }
 
@@ -121,17 +121,17 @@ output "web_app_hostname" {
 
 output "function_app_url" {
   description = "URL of the Azure Function App"
-  value       = module.functions.function_app_url
+  value       = try(module.functions[0].function_app_url, null)
 }
 
 output "function_app_name" {
   description = "Name of the Azure Function App"
-  value       = module.functions.function_app_name
+  value       = try(module.functions[0].function_app_name, null)
 }
 
 output "function_app_hostname" {
   description = "Default hostname of the Function App"
-  value       = module.functions.function_app_default_hostname
+  value       = try(module.functions[0].function_app_default_hostname, null)
 }
 
 output "runner_subnet_id" {

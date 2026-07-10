@@ -5,30 +5,45 @@
 # specifically want to change. Most fields here are commented out so the
 # defaults flow through.
 
-# Defaults follow the org convention: nl-prod-hov-{type}-san for hyphenated
-# resources and nlprodhovXXsan for storage accounts (no hyphens permitted).
+# Defaults follow the canonical org convention: nl-prod-hov-{type} for
+# hyphenated resources and nlprodhovXX for storage accounts (no hyphens
+# permitted).
 
 # environment         = "prod"
 # location            = "South Africa North"
-# resource_group_name = "nl-prod-hov-rg-san"
+# resource_group_name = "nl-prod-hov-rg"
 
 # Storage (override only if you need a different name; storage account names
 # are globally unique, lowercase, alphanumeric, 3-24 chars, no hyphens).
-# storage_account_name = "nlprodhovstsan"
+# storage_account_name = "nlprodhovst"
+# storage_account_replication_type = "LRS"
+# storage_network_default_action = "Allow"
 
 # Key Vault - globally unique within Azure DNS.
-# key_vault_name = "nl-prod-hov-kv-san"
+# key_vault_name = "nl-prod-hov-kv"
+# key_vault_network_default_action = "Allow"
 
 # Database - PostgreSQL Flexible Server.
-# db_server_name    = "nl-prod-hov-pg-san"
+# db_server_name    = "nl-prod-hov-pg"
 # db_admin_username = "hov_admin"
 db_admin_password   = "CHANGE_ME_SECURE_PASSWORD_HERE"  # NOT optional
 
 # Cosmos DB (Mongo API) for the kiosk request queue.
-# cosmos_account_name          = "nlprodhovcosmosan"
+# enable_cosmos_mongo          = false
+# cosmos_account_name          = "nlprodhovcosmos"
 # cosmos_mongo_database_name   = "house_of_veritas"
 # cosmos_mongo_collection_name = "kiosk_requests"
 # cosmos_mongo_throughput      = 400
+
+# Low-usage defaults keep optional paid services disabled. Enable these only
+# when the household workflow actually needs them.
+# enable_operational_services  = false
+# enable_database              = false
+# enable_application_gateway   = false
+# enable_dns_records           = false
+# enable_functions             = false
+# enable_monitoring            = false
+# enable_document_intelligence = false
 
 # Domain. Update if you've migrated off nexamesh.ai.
 # domain_name = "nexamesh.ai"

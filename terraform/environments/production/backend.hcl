@@ -4,4 +4,4 @@
 resource_group_name  = "hov-shared-tfstate-rg"
 storage_account_name = "hovsharedtfstatesa"
 container_name       = "tfstate"
-key                  = "production.terraform.tfstate"
+key                  = "production-canonical.terraform.tfstate"

@@ -5,7 +5,7 @@ resource "azurerm_storage_account" "main" {
   resource_group_name      = var.resource_group_name
   location                 = var.location
   account_tier             = "Standard"
-  account_replication_type = "GRS" # Geo-redundant for DR
+  account_replication_type = var.account_replication_type
   account_kind             = "StorageV2"
 
   min_tls_version = "TLS1_2"
@@ -23,7 +23,7 @@ resource "azurerm_storage_account" "main" {
   }
 
   network_rules {
-    default_action             = "Deny"
+    default_action             = var.network_default_action
     bypass                     = ["AzureServices"]
     ip_rules                   = var.deployer_ip_addresses
     virtual_network_subnet_ids = [var.container_subnet_id, var.database_subnet_id, var.runner_subnet_id]

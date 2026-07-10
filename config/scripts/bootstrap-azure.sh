@@ -17,7 +17,7 @@
 #   - TF_STATE_RESOURCE_GROUP
 #   - TF_STATE_STORAGE_ACCOUNT
 #   - TF_STATE_CONTAINER
-#   - TF_STATE_KEY             (production.terraform.tfstate)
+#   - TF_STATE_KEY             (production-canonical.terraform.tfstate)
 #   - DB_ADMIN_PASSWORD        (random 24-char value — also printed once at end)
 #
 # Run interactively from a shell where you can `az login` and `gh auth login`:
@@ -52,7 +52,7 @@ TF_RG="${TF_RG:-hov-shared-tfstate-rg}"
 TF_STORAGE="${TF_STORAGE:-hovsharedtfstatesa}"
 TF_CONTAINER="${TF_CONTAINER:-tfstate}"
 TF_LOCATION="${TF_LOCATION:-southafricanorth}"
-TF_STATE_KEY="${TF_STATE_KEY:-production.terraform.tfstate}"
+TF_STATE_KEY="${TF_STATE_KEY:-production-canonical.terraform.tfstate}"
 REPO="${REPO:-neuralliquid/house-of-veritas}"
 
 # ── Sanity checks ────────────────────────────────────────────────────────────

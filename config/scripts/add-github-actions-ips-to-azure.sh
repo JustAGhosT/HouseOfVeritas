@@ -9,8 +9,8 @@
 
 set -e
 
-KV_NAME="${TF_KEY_VAULT_NAME:-nl-prod-hov-kv-san}"
-SA_NAME="${TF_STORAGE_ACCOUNT_NAME:-nlprodhovstsan}"
+KV_NAME="${TF_KEY_VAULT_NAME:-nl-prod-hov-kv}"
+SA_NAME="${TF_STORAGE_ACCOUNT_NAME:-nlprodhovst}"
 DRY_RUN=false
 
 [[ "${1:-}" == "--dry-run" ]] && DRY_RUN=true

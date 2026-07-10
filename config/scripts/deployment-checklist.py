@@ -83,21 +83,22 @@ class DeploymentChecker:
         
         # Configuration
         self.subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID", "")
-        self.resource_group = os.environ.get("AZURE_RESOURCE_GROUP", "nl-prod-hov-rg-san")
+        self.resource_group = os.environ.get("AZURE_RESOURCE_GROUP", "nl-prod-hov-rg")
         self.location = os.environ.get("AZURE_LOCATION", "southafricanorth")
         self.env = os.environ.get("AZURE_ENV", "prod")
-        
-        # Naming convention: nl-{env}-hov-{resourcetype}-san
-        # Expected resources with new naming convention
+        self.enable_operational_services = os.environ.get("ENABLE_OPERATIONAL_SERVICES", "false").lower() == "true"
+        self.enable_application_gateway = os.environ.get("ENABLE_APPLICATION_GATEWAY", "false").lower() == "true"
+
+        # Naming convention: nl-{env}-hov-{resourcetype}
         self.expected_resources = {
-            "vnet": f"nl-{self.env}-hov-vnet-san",
-            "postgres": f"nl-{self.env}-hov-pg-san",
-            "storage": f"nl{self.env}hovstsan",  # Storage accounts can't have hyphens
-            "keyvault": f"nl-{self.env}-hov-kv-san",
-            "appgateway": f"nl-{self.env}-hov-agw-san",
-            "docuseal": f"nl-{self.env}-hov-aci-docuseal-san",
-            "baserow": f"nl-{self.env}-hov-aci-baserow-san",
-            "functionapp": f"nl-{self.env}-hov-func-san",
+            "vnet": f"nl-{self.env}-hov-vnet",
+            "postgres": f"nl-{self.env}-hov-pg",
+            "storage": f"nl{self.env}hovst",  # Storage accounts can't have hyphens
+            "keyvault": f"nl-{self.env}-hov-kv",
+            "appgateway": f"nl-{self.env}-hov-agw",
+            "docuseal": f"{self.env}-docuseal",
+            "baserow": f"{self.env}-baserow",
+            "functionapp": f"nl-{self.env}-hov-func",
         }
     
     def run_command(self, command: List[str], capture_output: bool = True) -> tuple:
@@ -731,12 +732,19 @@ class DeploymentChecker:
             name="Application Services",
             description="DocuSeal and Baserow containers"
         )
-        services.checks.append(self.check_container_instance(
-            self.expected_resources["docuseal"], "DocuSeal"
-        ))
-        services.checks.append(self.check_container_instance(
-            self.expected_resources["baserow"], "Baserow"
-        ))
+        if self.enable_operational_services:
+            services.checks.append(self.check_container_instance(
+                self.expected_resources["docuseal"], "DocuSeal"
+            ))
+            services.checks.append(self.check_container_instance(
+                self.expected_resources["baserow"], "Baserow"
+            ))
+        else:
+            services.checks.append(CheckResult(
+                name="Operational Services",
+                status=Status.SKIP,
+                message="DocuSeal and Baserow containers are disabled for the low-usage canonical stack"
+            ))
         self.categories.append(services)
         
         # Category 4: Networking & Security
@@ -744,9 +752,21 @@ class DeploymentChecker:
             name="Networking & Security",
             description="Gateway, DNS, and SSL"
         )
-        networking.checks.append(self.check_app_gateway())
-        networking.checks.append(self.check_dns())
-        networking.checks.append(self.check_ssl_certificates())
+        if self.enable_application_gateway:
+            networking.checks.append(self.check_app_gateway())
+            networking.checks.append(self.check_dns())
+            networking.checks.append(self.check_ssl_certificates())
+        else:
+            networking.checks.append(CheckResult(
+                name="Application Gateway",
+                status=Status.SKIP,
+                message="Application Gateway WAF is disabled for the low-usage canonical stack"
+            ))
+            networking.checks.append(CheckResult(
+                name="DNS/SSL for Ops Services",
+                status=Status.SKIP,
+                message="docs/ops DNS and gateway SSL checks are skipped until operational services are enabled"
+            ))
         self.categories.append(networking)
 
         if not json_only:

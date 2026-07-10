@@ -14,8 +14,8 @@ permissions:
   id-token: write
 
 env:
-  AZURE_RESOURCE_GROUP: "nl-prod-hov-rg-san"
-  AZURE_FUNCTIONAPP_NAME: "nl-prod-hov-func-san"
+  AZURE_RESOURCE_GROUP: "nl-prod-hov-rg"
+  AZURE_FUNCTIONAPP_NAME: "nl-prod-hov-func"
   PYTHON_VERSION: "3.11"
 
 jobs:

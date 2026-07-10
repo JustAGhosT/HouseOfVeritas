@@ -56,6 +56,17 @@ variable "deployer_ip_addresses" {
   default     = []
 }
 
+variable "network_default_action" {
+  description = "Default network action for the Key Vault firewall"
+  type        = string
+  default     = "Deny"
+
+  validation {
+    condition     = contains(["Allow", "Deny"], var.network_default_action)
+    error_message = "network_default_action must be Allow or Deny."
+  }
+}
+
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)
