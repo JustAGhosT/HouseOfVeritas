@@ -10,7 +10,7 @@ environment and should not be used as the model for new production resources.
 | --- | --- | --- | --- |
 | Canonical production | Live low-usage application stack | `nl-prod-hov-*`, `nlprodhov*` | Active |
 | Optional operational services | Baserow, DocuSeal, Functions, WAF, database add-ons | Canonical names only | Disabled until justified |
-| Legacy demo | Original demo stack with region suffix | `*-san`, `*san` | Retired/deleting |
+| Legacy demo | Original demo stack with region suffix | `*-san`, `*san` | Retired/deleted |
 
 The production default is intentionally small: App Service, Storage, Key Vault,
 and VNet. Optional services must be enabled deliberately and cost-reviewed first.
@@ -41,7 +41,17 @@ The canonical stack has been created under the separate backend key
 | Baserow/DocuSeal health state | `unconfigured`, not degraded |
 
 The old `nl-prod-hov-rg-san` resource group is no longer a production fallback.
-It was requested for deletion after the canonical app returned healthy.
+Deletion has completed; Azure Resource Manager now returns
+`ResourceGroupNotFound` for `nl-prod-hov-rg-san`.
+
+As of 2026-07-10, `nexamesh.ai` has not been cut over to the canonical App
+Service. The canonical app has only the default hostname bound:
+`nl-prod-hov-app.azurewebsites.net`. Public DNS still resolves
+`www.nexamesh.ai` to the shared `nex-prod-marketing-swa` Static Web App, which
+serves the Neualliquid/Nexamesh portfolio surface for House of Veritas,
+Cog-Mesh, Omnipost, and Convolens. If House of Veritas should serve the apex or
+`www` domain directly from this App Service, add the custom hostname binding,
+certificate, and DNS records as a deliberate cutover step.
 
 ## Required Approach For Future Changes
 
