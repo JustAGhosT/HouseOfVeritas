@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { RESPONSIBILITIES } from "@/lib/access-config"
 import { apiFetch, apiFetchSafe } from "@/lib/api-client"
 import { useAuth } from "@/lib/auth-context"
+import { logger } from "@/lib/logger"
 import { useLoginModal } from "@/lib/login-modal-context"
 import {
   ArrowRight,
@@ -97,10 +98,13 @@ export default function OnboardingPage() {
         }
       })
       .catch((err) => {
-        console.error("Failed to fetch user:", err)
         // Extract status from error response
         const status =
           err?.status ?? err?.response?.status ?? (err instanceof Response ? err.status : undefined)
+        logger.error("Failed to fetch onboarding user", {
+          error: err instanceof Error ? err.message : String(err),
+          status,
+        })
         const isAuthError = status === 401 || status === 403
         if (isAuthError) {
           setAuthError(true)
@@ -218,8 +222,6 @@ export default function OnboardingPage() {
   }
 
   if (error) {
-    // Log full error details for debugging, but show generic message to users
-    console.error("Onboarding load error:", error)
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-black/60 p-4">
         <div

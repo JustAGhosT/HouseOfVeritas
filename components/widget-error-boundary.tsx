@@ -1,5 +1,6 @@
 "use client"
 
+import { logger } from "@/lib/logger"
 import { Component, type ReactNode } from "react"
 
 interface Props {
@@ -20,7 +21,11 @@ export class WidgetErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error("WidgetErrorBoundary caught an error:", error, info)
+    logger.error("WidgetErrorBoundary caught an error", {
+      error: error.message,
+      stack: error.stack,
+      componentStack: info.componentStack,
+    })
   }
 
   render() {

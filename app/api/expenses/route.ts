@@ -37,9 +37,9 @@ function getDefaultRequesterId(): number {
       )
     }
     // Log warning for invalid env value but continue with fallback in non-production
-    console.warn(
-      `Invalid DEFAULT_EXPENSE_REQUESTER_ID: ${process.env.DEFAULT_EXPENSE_REQUESTER_ID}, using fallback`
-    )
+    logger.warn("Invalid DEFAULT_EXPENSE_REQUESTER_ID, using fallback", {
+      value: process.env.DEFAULT_EXPENSE_REQUESTER_ID,
+    })
   }
   // In production, require the environment variable to be set
   if (process.env.NODE_ENV === "production") {
