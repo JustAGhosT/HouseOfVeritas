@@ -13,7 +13,7 @@ variable "location" {
 variable "location_short" {
   description = "Short location code for naming"
   type        = string
-  default     = "san"
+  default     = ""
 }
 
 variable "project_prefix" {
@@ -31,14 +31,14 @@ variable "project_name" {
 variable "resource_group_name" {
   description = "Name of the resource group"
   type        = string
-  default     = "nl-prod-hov-rg-san"
+  default     = "nl-prod-hov-rg"
 }
 
 # Network variables
 variable "vnet_name" {
   description = "Virtual network name"
   type        = string
-  default     = "nl-prod-hov-vnet-san"
+  default     = "nl-prod-hov-vnet"
 }
 
 variable "vnet_address_space" {
@@ -75,21 +75,54 @@ variable "runner_subnet_prefix" {
 variable "storage_account_name" {
   description = "Storage account name (must be globally unique, no hyphens)"
   type        = string
-  default     = "nlprodhovstsan"
+  default     = "nlprodhovst"
+}
+
+variable "storage_account_replication_type" {
+  description = "Storage account replication type"
+  type        = string
+  default     = "LRS"
+
+  validation {
+    condition     = contains(["LRS", "GRS", "RAGRS", "ZRS", "GZRS", "RAGZRS"], var.storage_account_replication_type)
+    error_message = "storage_account_replication_type must be one of LRS, GRS, RAGRS, ZRS, GZRS, or RAGZRS."
+  }
+}
+
+variable "storage_network_default_action" {
+  description = "Default network action for the storage account firewall"
+  type        = string
+  default     = "Allow"
+
+  validation {
+    condition     = contains(["Allow", "Deny"], var.storage_network_default_action)
+    error_message = "storage_network_default_action must be Allow or Deny."
+  }
 }
 
 # Security variables
 variable "key_vault_name" {
   description = "Key Vault name (must be globally unique)"
   type        = string
-  default     = "nl-prod-hov-kv-san"
+  default     = "nl-prod-hov-kv"
+}
+
+variable "key_vault_network_default_action" {
+  description = "Default network action for the Key Vault firewall"
+  type        = string
+  default     = "Allow"
+
+  validation {
+    condition     = contains(["Allow", "Deny"], var.key_vault_network_default_action)
+    error_message = "key_vault_network_default_action must be Allow or Deny."
+  }
 }
 
 # Database variables
 variable "db_server_name" {
   description = "PostgreSQL server name"
   type        = string
-  default     = "nl-prod-hov-pg-san"
+  default     = "nl-prod-hov-pg"
 }
 
 variable "db_admin_username" {
@@ -107,7 +140,7 @@ variable "db_admin_password" {
 variable "cosmos_account_name" {
   description = "Cosmos DB account name (Mongo API)"
   type        = string
-  default     = "nlprodhovcosmosan"
+  default     = "nlprodhovcosmos"
 }
 
 variable "cosmos_mongo_database_name" {
@@ -137,6 +170,54 @@ variable "cosmos_public_network_access_enabled" {
 variable "cosmos_enable_free_tier" {
   description = "Enable Cosmos DB free tier"
   type        = bool
+  default     = true
+}
+
+variable "enable_cosmos_mongo" {
+  description = "Whether to provision Cosmos DB Mongo resources"
+  type        = bool
+  default     = false
+}
+
+variable "enable_database" {
+  description = "Whether to provision PostgreSQL Flexible Server resources"
+  type        = bool
+  default     = false
+}
+
+variable "enable_operational_services" {
+  description = "Whether to provision always-on DocuSeal and Baserow container instances"
+  type        = bool
+  default     = false
+}
+
+variable "enable_application_gateway" {
+  description = "Whether to provision Application Gateway WAF and its public IP"
+  type        = bool
+  default     = false
+}
+
+variable "enable_dns_records" {
+  description = "Whether Terraform should manage docs/ops/root Azure DNS records"
+  type        = bool
+  default     = false
+}
+
+variable "enable_functions" {
+  description = "Whether to provision the Azure Function App automation stack"
+  type        = bool
+  default     = false
+}
+
+variable "enable_monitoring" {
+  description = "Whether to provision Log Analytics and metric alerts"
+  type        = bool
+  default     = false
+}
+
+variable "enable_document_intelligence" {
+  description = "Whether to provision Azure AI Document Intelligence"
+  type        = bool
   default     = false
 }
 
@@ -144,40 +225,40 @@ variable "cosmos_enable_free_tier" {
 variable "docuseal_container_name" {
   description = "DocuSeal container instance name"
   type        = string
-  default     = "nl-prod-hov-aci-docuseal-san"
+  default     = "nl-prod-hov-aci-docuseal"
 }
 
 variable "baserow_container_name" {
   description = "Baserow container instance name"
   type        = string
-  default     = "nl-prod-hov-aci-baserow-san"
+  default     = "nl-prod-hov-aci-baserow"
 }
 
 # Gateway variables
 variable "app_gateway_name" {
   description = "Application Gateway name"
   type        = string
-  default     = "nl-prod-hov-agw-san"
+  default     = "nl-prod-hov-agw"
 }
 
 # Web App variables
 variable "web_app_name" {
   description = "Azure Web App name for the Next.js frontend"
   type        = string
-  default     = "nl-prod-hov-app-san"
+  default     = "nl-prod-hov-app"
 }
 
 # Function App variables
 variable "function_app_name" {
   description = "Azure Function App name"
   type        = string
-  default     = "nl-prod-hov-func-san"
+  default     = "nl-prod-hov-func"
 }
 
 variable "functions_storage_account_name" {
   description = "Storage account for Function App code (must be globally unique, no hyphens)"
   type        = string
-  default     = "nlprodhovfuncstsan"
+  default     = "nlprodhovfuncst"
 }
 
 variable "baserow_api_token" {
@@ -358,7 +439,7 @@ variable "smtp_password" {
 variable "document_intelligence_name" {
   description = "Name of the Document Intelligence account"
   type        = string
-  default     = "nl-prod-hov-di-san"
+  default     = "nl-prod-hov-di"
 }
 
 # DNS variables

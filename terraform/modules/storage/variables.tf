@@ -13,6 +13,28 @@ variable "storage_account_name" {
   type        = string
 }
 
+variable "account_replication_type" {
+  description = "Storage account replication type"
+  type        = string
+  default     = "GRS"
+
+  validation {
+    condition     = contains(["LRS", "GRS", "RAGRS", "ZRS", "GZRS", "RAGZRS"], var.account_replication_type)
+    error_message = "account_replication_type must be one of LRS, GRS, RAGRS, ZRS, GZRS, or RAGZRS."
+  }
+}
+
+variable "network_default_action" {
+  description = "Default network action for the storage account firewall"
+  type        = string
+  default     = "Deny"
+
+  validation {
+    condition     = contains(["Allow", "Deny"], var.network_default_action)
+    error_message = "network_default_action must be Allow or Deny."
+  }
+}
+
 variable "container_subnet_id" {
   description = "ID of the container subnet"
   type        = string

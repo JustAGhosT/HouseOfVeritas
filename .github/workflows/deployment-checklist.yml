@@ -19,7 +19,7 @@ permissions:
   issues: write
 
 env:
-  AZURE_RESOURCE_GROUP: "nl-prod-hov-rg-san"
+  AZURE_RESOURCE_GROUP: "nl-prod-hov-rg"
   AZURE_LOCATION: "southafricanorth"
   AZURE_ENV: "prod"
 

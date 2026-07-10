@@ -1,0 +1,57 @@
+# House of Veritas - Production Canonical Naming
+#
+# Use this only for a new canonical production stack or a deliberate migration
+# plan. Do not pass this file against the existing -san Terraform state unless
+# the plan has been reviewed for replacements.
+#
+# Low-usage target: 4 household users, roughly twice per day each. Keep the
+# canonical stack cheap by avoiding WAF_v2 Application Gateway and always-on
+# operational containers unless those modules are explicitly refactored for
+# scale-to-zero hosting.
+
+domain_name = "nexamesh.ai"
+
+# Canonical names remove the Azure region suffix from resource names.
+resource_group_name = "nl-prod-hov-rg"
+vnet_name           = "nl-prod-hov-vnet"
+
+storage_account_name             = "nlprodhovst"
+storage_account_replication_type = "LRS"
+storage_network_default_action   = "Allow"
+key_vault_name                   = "nl-prod-hov-kv"
+key_vault_network_default_action = "Allow"
+db_server_name                   = "nl-prod-hov-pg"
+cosmos_account_name              = "nlprodhovcosmos"
+document_intelligence_name       = "nl-prod-hov-di"
+web_app_name                     = "nl-prod-hov-app"
+function_app_name                = "nl-prod-hov-func"
+functions_storage_account_name   = "nlprodhovfuncst"
+
+# Keep only if the kiosk workflow still needs Cosmos. Prefer migrating kiosk
+# data into Postgres/Baserow; otherwise use the subscription's Cosmos free tier.
+cosmos_enable_free_tier = true
+
+# Cost-control switches for the initial canonical stack.
+enable_cosmos_mongo          = false
+enable_database              = false
+enable_operational_services  = false
+enable_application_gateway   = false
+enable_dns_records           = false
+enable_functions             = false
+enable_monitoring            = false
+enable_document_intelligence = false
+
+# These variables are currently kept for compatibility. The compute and
+# gateway modules derive live names internally as prod-docuseal, prod-baserow,
+# and prod-appgw.
+docuseal_container_name = "nl-prod-hov-aci-docuseal"
+baserow_container_name  = "nl-prod-hov-aci-baserow"
+app_gateway_name        = "nl-prod-hov-agw"
+
+# Required secret values must be supplied by secure automation or a local
+# untracked tfvars file.
+db_admin_password = "REPLACE_WITH_DB_ADMIN_PASSWORD"
+smtp_password     = "REPLACE_WITH_SMTP_PASSWORD"
+
+# Optional deployer firewall opening for one-off local Terraform runs.
+deployer_ip = ""

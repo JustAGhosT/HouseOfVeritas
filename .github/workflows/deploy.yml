@@ -36,7 +36,7 @@ permissions:
 
 env:
   WORKING_DIR: "./terraform/environments/production"
-  AZURE_RESOURCE_GROUP: "nl-prod-hov-rg-san"
+  AZURE_RESOURCE_GROUP: "nl-prod-hov-rg"
   AZURE_ENV: "prod"
 
 jobs:
@@ -252,7 +252,7 @@ jobs:
             -backend-config="resource_group_name=${{ secrets.TF_STATE_RESOURCE_GROUP }}" \
             -backend-config="storage_account_name=${{ secrets.TF_STATE_STORAGE_ACCOUNT }}" \
             -backend-config="container_name=${{ secrets.TF_STATE_CONTAINER }}" \
-            -backend-config="key=${{ secrets.TF_STATE_KEY || 'production.terraform.tfstate' }}"
+            -backend-config="key=${{ secrets.TF_STATE_KEY || 'production-canonical.terraform.tfstate' }}"
 
       - name: Terraform Plan
         working-directory: ${{ env.WORKING_DIR }}
@@ -320,12 +320,12 @@ jobs:
       - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ vars.WEBAPP_NAME || 'nl-prod-hov-app-san' }}
+          app-name: ${{ vars.WEBAPP_NAME || 'nl-prod-hov-app' }}
           package: deploy.zip
 
       - name: Verify Web App Health
         run: |
-          APP_URL="https://${{ vars.WEBAPP_NAME || 'nl-prod-hov-app-san' }}.azurewebsites.net"
+          APP_URL="https://${{ vars.WEBAPP_NAME || 'nl-prod-hov-app' }}.azurewebsites.net"
           healthy=false
           for i in {1..10}; do
             HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL" || echo "000")
@@ -350,6 +350,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [deploy-infrastructure]
+    if: ${{ vars.ENABLE_OPERATIONAL_SERVICES == 'true' }}
     environment: ${{ inputs.environment || 'production' }}
 
     steps:
@@ -409,6 +410,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [deploy-infrastructure]
+    if: ${{ vars.ENABLE_OPERATIONAL_SERVICES == 'true' }}
     environment: ${{ inputs.environment || 'production' }}
 
     steps:
@@ -468,7 +470,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [deploy-baserow]
-    if: ${{ inputs.seed_data }}
+    if: ${{ inputs.seed_data && vars.ENABLE_OPERATIONAL_SERVICES == 'true' }}
     environment: ${{ inputs.environment || 'production' }}
 
     steps:

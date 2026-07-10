@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { isBaserowConfigured } from "@/lib/services/baserow"
+import { isDocuSealConfigured } from "@/lib/services/docuseal"
 
 async function checkService(
   name: string,
@@ -28,12 +29,16 @@ export async function GET() {
   const checks = await Promise.all([
     checkService(
       "baserow",
-      serviceBaseUrl(process.env.BASEROW_API_URL || process.env.NEXT_PUBLIC_BASEROW_URL),
+      isBaserowConfigured()
+        ? serviceBaseUrl(process.env.BASEROW_API_URL || process.env.NEXT_PUBLIC_BASEROW_URL)
+        : undefined,
       "/api/_health/"
     ),
     checkService(
       "docuseal",
-      serviceBaseUrl(process.env.NEXT_PUBLIC_DOCUSEAL_URL || process.env.DOCUSEAL_API_URL),
+      isDocuSealConfigured()
+        ? serviceBaseUrl(process.env.NEXT_PUBLIC_DOCUSEAL_URL || process.env.DOCUSEAL_API_URL)
+        : undefined,
       "/health"
     ),
   ])

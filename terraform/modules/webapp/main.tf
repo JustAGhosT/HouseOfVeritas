@@ -35,6 +35,7 @@ resource "azurerm_linux_web_app" "main" {
 
   app_settings = merge({
     WEBSITE_NODE_DEFAULT_VERSION = "~20"
+    HOSTNAME                     = "0.0.0.0"
     NODE_ENV                     = "production"
     NEXT_PUBLIC_APP_URL          = "https://${var.domain_name}"
 
@@ -69,7 +70,8 @@ resource "azurerm_linux_web_app" "main" {
     DOCUSEAL_API_KEY         = var.docuseal_api_key
     NEXT_PUBLIC_DOCUSEAL_URL = "https://docs.${var.domain_name}"
 
-    JWT_SECRET = var.jwt_secret
+    AUTH_SECRET = var.jwt_secret
+    JWT_SECRET  = var.jwt_secret
 
     AZURE_STORAGE_CONNECTION_STRING = var.storage_connection_string
     DOCUMENT_INTELLIGENCE_ENDPOINT  = var.document_intelligence_endpoint

@@ -59,7 +59,7 @@ jobs:
       - name: Terraform Init
         working-directory: ${{ env.WORKING_DIR }}
         env:
-          TF_STATE_KEY: ${{ secrets.TF_STATE_KEY || 'production.terraform.tfstate' }}
+          TF_STATE_KEY: ${{ secrets.TF_STATE_KEY || 'production-canonical.terraform.tfstate' }}
           TF_STATE_RESOURCE_GROUP: ${{ secrets.TF_STATE_RESOURCE_GROUP }}
           TF_STATE_STORAGE_ACCOUNT: ${{ secrets.TF_STATE_STORAGE_ACCOUNT }}
           TF_STATE_CONTAINER: ${{ secrets.TF_STATE_CONTAINER }}

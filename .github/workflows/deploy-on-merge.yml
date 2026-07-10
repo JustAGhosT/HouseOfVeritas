@@ -29,7 +29,7 @@ permissions:
   id-token: write
 
 env:
-  AZURE_RESOURCE_GROUP: "nl-prod-hov-rg-san"
+  AZURE_RESOURCE_GROUP: "nl-prod-hov-rg"
   AZURE_ENV: "prod"
 
 jobs:
@@ -122,12 +122,12 @@ jobs:
       - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ vars.WEBAPP_NAME || 'nl-prod-hov-app-san' }}
+          app-name: ${{ vars.WEBAPP_NAME || 'nl-prod-hov-app' }}
           package: deploy.zip
 
       - name: Verify Web App Health
         run: |
-          APP_URL="https://${{ vars.WEBAPP_NAME || 'nl-prod-hov-app-san' }}.azurewebsites.net"
+          APP_URL="https://${{ vars.WEBAPP_NAME || 'nl-prod-hov-app' }}.azurewebsites.net"
           healthy=false
           for i in {1..10}; do
             HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL" || echo "000")
