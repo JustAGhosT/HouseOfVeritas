@@ -2,7 +2,12 @@
 
 A comprehensive estate and asset management platform for private households and small estates, featuring secure document signing, operational tracking, inventory management, and AI-powered automation.
 
-**Domain:** [nexamesh.ai](https://nexamesh.ai) | **Region:** South Africa North | **Status:** Canonical production live
+**App URL:** [nl-prod-hov-app.azurewebsites.net](https://nl-prod-hov-app.azurewebsites.net) | **Region:** South Africa North | **Status:** Canonical production live
+
+`nexamesh.ai` currently serves the shared Neualliquid/Nexamesh portfolio surface
+for House of Veritas, Cog-Mesh, Omnipost, and Convolens. It is not bound
+directly to the House of Veritas App Service unless a custom-domain cutover is
+performed.
 
 ---
 

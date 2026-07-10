@@ -724,7 +724,15 @@ class DeploymentChecker:
         resources.checks.append(self.check_vnet())
         resources.checks.append(self.check_storage_account())
         resources.checks.append(self.check_key_vault())
-        resources.checks.append(self.check_postgres())
+        if self.enable_operational_services:
+            resources.checks.append(self.check_postgres())
+        else:
+            resources.checks.append(CheckResult(
+                name="PostgreSQL Server",
+                status=Status.SKIP,
+                message="PostgreSQL is disabled for the low-usage canonical stack",
+                details="Set ENABLE_OPERATIONAL_SERVICES=true when validating the operational-data add-ons"
+            ))
         self.categories.append(resources)
         
         # Category 3: Application Services
@@ -824,9 +832,12 @@ class DeploymentChecker:
         
         steps = self.get_deployment_steps()
         for i, step in enumerate(steps, 1):
-            status_icon = "✅" if step["complete"] else "⏳"
+            if step.get("skipped"):
+                status_icon = "⏭️"
+            else:
+                status_icon = "✅" if step["complete"] else "⏳"
             print(f"  {status_icon} Step {i}: {step['name']}")
-            if not step["complete"]:
+            if not step["complete"] and not step.get("skipped"):
                 print(f"      Command: {step['command']}")
         
         print("\n" + "=" * 70)
@@ -917,41 +928,49 @@ class DeploymentChecker:
             {
                 "name": "Deploy PostgreSQL Database",
                 "complete": has_postgres,
+                "skipped": not self.enable_operational_services,
                 "command": "terraform apply -target=module.database"
             },
             {
                 "name": "Deploy DocuSeal Container",
                 "complete": has_docuseal,
+                "skipped": not self.enable_operational_services,
                 "command": "terraform apply -target=module.compute (docuseal)"
             },
             {
                 "name": "Deploy Baserow Container",
                 "complete": has_baserow,
+                "skipped": not self.enable_operational_services,
                 "command": "terraform apply -target=module.compute (baserow)"
             },
             {
                 "name": "Deploy Application Gateway",
                 "complete": has_gateway,
+                "skipped": not self.enable_application_gateway,
                 "command": "terraform apply -target=module.gateway"
             },
             {
                 "name": "Configure DNS Records",
                 "complete": False,  # Manual step
+                "skipped": not self.enable_application_gateway,
                 "command": "Create A records for docs.nexamesh.ai and ops.nexamesh.ai"
             },
             {
                 "name": "Configure SSL Certificates",
                 "complete": False,  # Requires manual check
+                "skipped": not self.enable_application_gateway,
                 "command": "certbot certonly && az keyvault certificate import"
             },
             {
                 "name": "Seed Initial Data",
                 "complete": False,  # Post-deployment
+                "skipped": not self.enable_operational_services,
                 "command": "python /app/config/scripts/seed-baserow.py"
             },
             {
                 "name": "Create User Accounts",
                 "complete": False,  # Post-deployment
+                "skipped": not self.enable_operational_services,
                 "command": "See /app/docs/04-configuration/01-docuseal-setup.md and /app/docs/04-configuration/02-baserow-setup.md"
             }
         ]
