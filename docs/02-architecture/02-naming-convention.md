@@ -52,25 +52,43 @@ Some Azure resources don't allow hyphens in names:
 | East US            | `eus`      |
 | West US            | `wus`      |
 
-Region suffixes such as `-san` are retained only for legacy resources created
-before the canonical naming migration. New production resources should omit the
-region suffix.
+Region suffixes such as `-san` are retained only in historical references to
+the retired demo stack. Active production resources must omit the region suffix.
 
 ## Resource Inventory
 
-### Production Environment (`prod`)
+### Production Environment (`prod`) - Live Baseline
 
 | Resource           | Name                           | Purpose                  |
 | ------------------ | ------------------------------ | ------------------------ |
 | Resource Group     | `nl-prod-hov-rg`               | All production resources |
 | Virtual Network    | `nl-prod-hov-vnet`             | Network isolation        |
-| PostgreSQL         | `nl-prod-hov-pg`               | Database server          |
 | Storage Account    | `nlprodhovst`                  | Document/backup storage  |
 | Key Vault          | `nl-prod-hov-kv`               | Secrets management       |
-| App Gateway        | `nl-prod-hov-agw`              | Load balancer/WAF        |
-| DocuSeal Container | `nl-prod-hov-aci-docuseal`     | Document signing         |
-| Baserow Container  | `nl-prod-hov-aci-baserow`      | Operations data          |
-| Function App       | `nl-prod-hov-func`             | Automation functions     |
+| Web App            | `nl-prod-hov-app`              | Next.js application      |
+
+### Production Environment (`prod`) - Optional Add-Ons
+
+These names are reserved for future production services, but the services are
+not part of the low-usage baseline. Enable them only when there is a live
+operational requirement, integration credentials are ready, and the cost impact
+has an owner decision.
+
+| Resource              | Name                       | Purpose                  |
+| --------------------- | -------------------------- | ------------------------ |
+| PostgreSQL            | `nl-prod-hov-pg`           | Optional database server |
+| Cosmos DB             | `nlprodhovcosmos`          | Optional document store  |
+| Document Intelligence | `nl-prod-hov-di`           | Optional OCR             |
+| App Gateway           | `nl-prod-hov-agw`          | Optional WAF/edge        |
+| DocuSeal Container    | `nl-prod-hov-aci-docuseal` | Optional document signing |
+| Baserow Container     | `nl-prod-hov-aci-baserow`  | Optional operations data |
+| Function App          | `nl-prod-hov-func`         | Optional automation jobs |
+
+### Retired Demo Stack
+
+Names ending in `-san` or `san`, such as `nl-prod-hov-rg-san` and
+`nlprodhovstsan`, belonged to the disposable demo stack. Do not use them for
+new production work, GitHub Actions defaults, Terraform examples, or runbooks.
 
 ### Development Environment (`dev`)
 

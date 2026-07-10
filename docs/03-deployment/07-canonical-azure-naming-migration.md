@@ -1,7 +1,19 @@
-# Canonical Azure Naming Migration
+# Canonical Azure Production Profile
 
-House of Veritas is moving away from region-suffixed Azure resource names such
-as `nl-prod-hov-rg-san`. The canonical production names remove the region code:
+House of Veritas production now uses canonical Azure resource names without the
+old South Africa North `-san` suffix. The `-san` stack was a disposable demo
+environment and should not be used as the model for new production resources.
+
+## Environment Classes
+
+| Class | Purpose | Naming | Current status |
+| --- | --- | --- | --- |
+| Canonical production | Live low-usage application stack | `nl-prod-hov-*`, `nlprodhov*` | Active |
+| Optional operational services | Baserow, DocuSeal, Functions, WAF, database add-ons | Canonical names only | Disabled until justified |
+| Legacy demo | Original demo stack with region suffix | `*-san`, `*san` | Retired/deleting |
+
+The production default is intentionally small: App Service, Storage, Key Vault,
+and VNet. Optional services must be enabled deliberately and cost-reviewed first.
 
 | Resource | Current | Canonical |
 | --- | --- | --- |
@@ -15,28 +27,44 @@ as `nl-prod-hov-rg-san`. The canonical production names remove the region code:
 | Web App | `nl-prod-hov-app-san` | `nl-prod-hov-app` |
 | Function App | `nl-prod-hov-func-san` | `nl-prod-hov-func` |
 
-## Required Approach
+## Cutover Status
 
-Azure cannot rename most of these resources in place. In Terraform, changing
-these names against the existing production state will plan replacements and can
-destroy or orphan live infrastructure. Use a parallel canonical stack instead:
+The canonical stack has been created under the separate backend key
+`production-canonical.terraform.tfstate` and deployed to:
 
-1. Keep the existing `-san` stack untouched and serving production.
-2. Create a separate canonical Terraform state key for the canonical stack.
-3. Apply the canonical stack using
-   `terraform/environments/production/canonical.tfvars.example` as the template.
-4. Deploy the app to the canonical Web App and Function App.
-5. Bring up operational data services under canonical infrastructure.
-6. Smoke-check canonical endpoints and health.
-7. Cut over DNS and GitHub Actions variables to canonical names.
-8. Retire the `-san` stack only after backups and validation are complete.
+| Item | Value |
+| --- | --- |
+| Resource group | `nl-prod-hov-rg` |
+| Web App | `nl-prod-hov-app` |
+| Default URL | `https://nl-prod-hov-app.azurewebsites.net` |
+| Data mode | `empty` until live operational integrations are configured |
+| Baserow/DocuSeal health state | `unconfigured`, not degraded |
+
+The old `nl-prod-hov-rg-san` resource group is no longer a production fallback.
+It was requested for deletion after the canonical app returned healthy.
+
+## Required Approach For Future Changes
+
+Azure cannot rename most resources in place. In Terraform, changing names
+against an existing state can plan replacements and can destroy or orphan live
+infrastructure. Keep these rules:
+
+1. Use `production-canonical.terraform.tfstate` for canonical production.
+2. Do not reintroduce `-san` names in active workflows, Terraform defaults, or
+   deployment scripts.
+3. Keep costly modules disabled unless a real production use case justifies
+   them.
+4. Treat Baserow, DocuSeal, Functions, Cosmos, PostgreSQL, Document
+   Intelligence, monitoring, and Application Gateway as optional add-ons.
+5. Run a targeted stale-name sweep over `.github`, `terraform`, and `config`
+   before merging infrastructure changes.
 
 ## Low-Usage Cost Target
 
 Current expected use is about four users, twice per day each. The production
 stack should optimize for idle cost first.
 
-Current `-san` spend from Azure Cost Management for 2026-06-10 through
+Legacy `-san` spend from Azure Cost Management for 2026-06-10 through
 2026-07-10 was about `$33.52`, almost entirely Cosmos DB:
 
 | Service | Cost |
@@ -59,17 +87,18 @@ Use this cheaper target instead:
 | Functions | Prefer Consumption plan or fold jobs into app until volume justifies B1 | save about `$14` |
 | Storage | Use LRS until backup/DR policy requires GRS | small saving |
 
-Practical goal for the canonical stack: keep idle/low-usage spend around
-`$50-$120/month`, not `$600+`.
+Practical goal for the canonical baseline: keep idle/low-usage spend in the
+low tens per month. Only move toward `$50-$120/month` after operational services
+are actually being used.
 
 ## Do Not Do
 
 - Do not pass canonical names to the existing `-san` state and run a broad
   `terraform apply`.
-- Do not destroy the `-san` resource group until the canonical stack has served
-  production traffic and backups have been verified.
-- Do not enable operational data in the app before Baserow and DocuSeal have
-  real API keys and table IDs configured.
+- Do not recreate the `-san` stack for production.
+- Do not enable operational data services before Baserow and DocuSeal have real
+  API keys, table IDs, owners, and a cost owner decision.
+- Do not make `/api/health` depend on disabled optional integrations.
 
 ## Terraform Notes
 
@@ -77,14 +106,14 @@ The canonical tfvars template documents the low-usage profile now used by the
 production defaults. The repository deployment workflows target canonical names
 and default to the `production-canonical.terraform.tfstate` backend key.
 
-Use a distinct backend key for the canonical state, for example:
+Use the canonical backend key:
 
 ```powershell
 terraform init -reconfigure `
   -backend-config="resource_group_name=hov-shared-tfstate-rg" `
   -backend-config="storage_account_name=hovsharedtfstatesa" `
   -backend-config="container_name=tfstate" `
-  -backend-config="key=house-of-veritas-prod-canonical.tfstate"
+  -backend-config="key=production-canonical.terraform.tfstate"
 ```
 
 Then plan with copied, secret-filled tfvars:
