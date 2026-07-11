@@ -13,7 +13,7 @@ test.describe("clean-default mode", () => {
   }) => {
     const health = await request.get("/api/health")
     expect(health.ok()).toBeTruthy()
-    await expect(health).toHaveJSON(
+    expect(await health.json()).toEqual(
       expect.objectContaining({
         dataMode: "empty",
       })
@@ -25,7 +25,7 @@ test.describe("clean-default mode", () => {
 
     const templates = await request.get("/api/documents/templates")
     expect(templates.ok()).toBeTruthy()
-    await expect(templates).toHaveJSON(
+    expect(await templates.json()).toEqual(
       expect.objectContaining({
         configured: false,
         templates: [],
@@ -36,7 +36,7 @@ test.describe("clean-default mode", () => {
 
     const stats = await context.request.get("/api/stats")
     expect(stats.ok()).toBeTruthy()
-    await expect(stats).toHaveJSON(
+    expect(await stats.json()).toEqual(
       expect.objectContaining({
         dataSource: "empty",
         users: expect.objectContaining({ total: 0, active: 0, names: [] }),
@@ -47,19 +47,19 @@ test.describe("clean-default mode", () => {
 
     const calendarStatus = await context.request.get("/api/calendar?action=status")
     expect(calendarStatus.ok()).toBeTruthy()
-    await expect(calendarStatus).toHaveJSON(
+    expect(await calendarStatus.json()).toEqual(
       expect.objectContaining({ configured: false, mode: "empty" })
     )
 
     const calendar = await context.request.get("/api/calendar")
     expect(calendar.ok()).toBeTruthy()
-    await expect(calendar).toHaveJSON(
+    expect(await calendar.json()).toEqual(
       expect.objectContaining({ mode: "empty", items: [], count: 0 })
     )
 
     const biometricStatus = await context.request.get("/api/biometric?action=status")
     expect(biometricStatus.ok()).toBeTruthy()
-    await expect(biometricStatus).toHaveJSON(
+    expect(await biometricStatus.json()).toEqual(
       expect.objectContaining({
         configured: false,
         mode: "empty",
@@ -71,7 +71,7 @@ test.describe("clean-default mode", () => {
 
     const biometric = await context.request.get("/api/biometric")
     expect(biometric.ok()).toBeTruthy()
-    await expect(biometric).toHaveJSON(
+    expect(await biometric.json()).toEqual(
       expect.objectContaining({
         mode: "empty",
         records: [],
@@ -82,7 +82,7 @@ test.describe("clean-default mode", () => {
 
     const payroll = await context.request.get("/api/payroll?month=2026-07")
     expect(payroll.ok()).toBeTruthy()
-    await expect(payroll).toHaveJSON(
+    expect(await payroll.json()).toEqual(
       expect.objectContaining({
         mode: "empty",
         employees: [],
