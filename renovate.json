@@ -3,6 +3,7 @@
   "extends": ["config:recommended", ":semanticCommits", ":automergePatch", "group:allNonMajor"],
   "labels": ["dependencies"],
   "rangeStrategy": "bump",
+  "dependencyDashboard": true,
   "packageRules": [
     {
       "matchDepTypes": ["devDependencies"],
@@ -14,12 +15,12 @@
       "automerge": false
     },
     {
-      "matchPackagePatterns": ["^@radix-ui/"],
+      "matchPackageNames": ["@radix-ui/**"],
       "groupName": "radix-ui",
       "automerge": true
     },
     {
-      "matchPackagePatterns": ["^@testing-library/"],
+      "matchPackageNames": ["@testing-library/**"],
       "groupName": "testing-library",
       "automerge": true
     },
@@ -39,5 +40,6 @@
     "enabled": true,
     "labels": ["security"]
   },
+  "osvVulnerabilityAlerts": true,
   "schedule": ["before 6am on monday"]
 }
