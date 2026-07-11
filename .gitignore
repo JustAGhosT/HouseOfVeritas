@@ -58,3 +58,6 @@ test-results/
 playwright-report/
 playwright/.cache/
 blob-report/
+
+# Local dev-run output logs
+output/
