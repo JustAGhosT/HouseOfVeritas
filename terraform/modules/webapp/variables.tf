@@ -152,9 +152,34 @@ variable "docuseal_api_key" {
 }
 
 variable "jwt_secret" {
-  description = "JWT signing secret for auth"
+  description = "JWT signing secret for auth (also used as Auth.js AUTH_SECRET)"
   type        = string
   sensitive   = true
+}
+
+variable "mystira_oidc_issuer" {
+  description = "Mystira OIDC issuer URL (relying party: neuralliquid-hov-web). Empty leaves the app on its in-code dev default."
+  type        = string
+  default     = ""
+}
+
+variable "mystira_oidc_client_id" {
+  description = "Mystira OIDC client ID for the House of Veritas relying party"
+  type        = string
+  default     = ""
+}
+
+variable "mystira_oidc_client_secret" {
+  description = "Mystira OIDC client secret for the House of Veritas relying party"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "auth_url" {
+  description = "Canonical public base URL for Auth.js (e.g. https://hov.neuralliquid.ai). Leave empty to let Auth.js derive it from the trusted request host."
+  type        = string
+  default     = ""
 }
 
 variable "storage_connection_string" {

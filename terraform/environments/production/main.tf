@@ -229,6 +229,10 @@ module "webapp" {
   domain_name                        = var.domain_name
   key_vault_id                       = module.security.key_vault_id
   jwt_secret                         = random_password.jwt_secret.result
+  mystira_oidc_issuer                = var.mystira_oidc_issuer
+  mystira_oidc_client_id             = var.mystira_oidc_client_id
+  mystira_oidc_client_secret         = var.mystira_oidc_client_secret
+  auth_url                           = var.auth_url
   storage_connection_string          = module.storage.storage_account_primary_connection_string
   baserow_api_token                  = var.baserow_api_token
   baserow_database_id                = var.baserow_database_id

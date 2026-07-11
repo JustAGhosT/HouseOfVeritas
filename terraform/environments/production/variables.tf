@@ -410,6 +410,50 @@ variable "domain_name" {
   default     = "nexamesh.ai"
 }
 
+# -----------------------------------------------------------------------------
+# Auth.js v5 + Mystira OIDC (relying party: neuralliquid-hov-web)
+# -----------------------------------------------------------------------------
+# The issuer defaults to the deployed Mystira dev IdP, which is the identity
+# provider HOV currently authenticates against. When a dedicated staging/prod
+# Mystira issuer is provisioned, override MYSTIRA_OIDC_ISSUER (and supply the
+# matching client secret from Key Vault / GitHub secrets). The issuer host is
+# public config, not a secret — see .env.example.
+variable "mystira_oidc_issuer" {
+  description = "Mystira OIDC issuer URL"
+  type        = string
+  default     = "https://mys-dev-id-webapi.azurewebsites.net"
+}
+
+variable "mystira_oidc_client_id" {
+  description = "Mystira OIDC client ID for the House of Veritas relying party"
+  type        = string
+  default     = "neuralliquid-hov-web"
+}
+
+# Supply via a GitHub Actions secret / untracked tfvars — never commit the value.
+# When empty, the app falls back to its in-code dev client secret, which matches
+# the seeded neuralliquid-hov-web client on the dev IdP above.
+variable "mystira_oidc_client_secret" {
+  description = "Mystira OIDC client secret for the House of Veritas relying party"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+# Pinned to the canonical public host. Auth.js MUST emit callback URLs on the
+# exact host the Mystira IdP allowlists for the neuralliquid-hov-web client
+# (https://hov.neuralliquid.ai/api/auth/callback/mystira). The app is reachable
+# at both hov.neuralliquid.ai and nl-prod-hov-app.azurewebsites.net; deriving the
+# callback from the request host would produce the azurewebsites.net URL, which
+# the IdP rejects (ID2043). Pinning AUTH_URL forces the allowlisted host
+# regardless of entry point. Change this only alongside the IdP redirect-URI
+# allowlist in phoenixvc/mystira-workspace.
+variable "auth_url" {
+  description = "Canonical public base URL for Auth.js (must match the IdP-allowlisted callback host)"
+  type        = string
+  default     = "https://hov.neuralliquid.ai"
+}
+
 # SMTP variables
 variable "smtp_host" {
   description = "SMTP server host (used by DocuSeal — ACS Email exposes SMTP relay at smtp.azurecomm.net)"
