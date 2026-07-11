@@ -11,6 +11,7 @@ test.describe("clean-default mode", () => {
     context,
     request,
   }) => {
+    // Public endpoint: /api/health needs no session (proxy.ts PUBLIC_PATHS).
     const health = await request.get("/api/health")
     expect(health.ok()).toBeTruthy()
     expect(await health.json()).toEqual(
@@ -19,11 +20,16 @@ test.describe("clean-default mode", () => {
       })
     )
 
-    const documents = await request.get("/api/documents")
+    // Everything below is auth-protected by proxy.ts (401 without a session),
+    // so seed the session before hitting authenticated routes and use
+    // context.request so the session cookie is sent.
+    await seedSession(context, adminUser)
+
+    const documents = await context.request.get("/api/documents")
     expect(documents.ok()).toBeTruthy()
     expect(await documents.json()).toEqual([])
 
-    const templates = await request.get("/api/documents/templates")
+    const templates = await context.request.get("/api/documents/templates")
     expect(templates.ok()).toBeTruthy()
     expect(await templates.json()).toEqual(
       expect.objectContaining({
@@ -31,8 +37,6 @@ test.describe("clean-default mode", () => {
         templates: [],
       })
     )
-
-    await seedSession(context, adminUser)
 
     const stats = await context.request.get("/api/stats")
     expect(stats.ok()).toBeTruthy()
