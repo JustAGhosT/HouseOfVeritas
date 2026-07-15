@@ -1,3 +1,22 @@
+locals {
+  # Auth.js v5 + Mystira OIDC runtime settings. Each OIDC key is emitted ONLY
+  # when a value is supplied, so an unset variable leaves the setting absent and
+  # the app falls back to its in-code dev default (see auth.config.ts) rather
+  # than being overridden with an empty string. AUTH_TRUST_HOST is always on:
+  # behind Azure App Service's proxy Auth.js must trust the forwarded host or it
+  # throws UntrustedHost (which surfaces as the /api/auth/error "Server error"
+  # page). AUTH_URL is left unset unless pinned, so Auth.js derives callback URLs
+  # from the real request host — correct even when the public hostname differs
+  # from var.domain_name.
+  auth_app_settings = merge(
+    { AUTH_TRUST_HOST = "true" },
+    var.mystira_oidc_issuer != "" ? { MYSTIRA_OIDC_ISSUER = var.mystira_oidc_issuer } : {},
+    var.mystira_oidc_client_id != "" ? { MYSTIRA_OIDC_CLIENT_ID = var.mystira_oidc_client_id } : {},
+    var.mystira_oidc_client_secret != "" ? { MYSTIRA_OIDC_CLIENT_SECRET = var.mystira_oidc_client_secret } : {},
+    var.auth_url != "" ? { AUTH_URL = var.auth_url } : {},
+  )
+}
+
 resource "azurerm_service_plan" "webapp" {
   name                = "${var.web_app_name}-plan"
   resource_group_name = var.resource_group_name
@@ -70,13 +89,15 @@ resource "azurerm_linux_web_app" "main" {
     DOCUSEAL_API_KEY         = var.docuseal_api_key
     NEXT_PUBLIC_DOCUSEAL_URL = "https://docs.${var.domain_name}"
 
+    # AUTH_SECRET encrypts the Auth.js session JWT. MYSTIRA_OIDC_* / AUTH_URL /
+    # AUTH_TRUST_HOST are injected via local.auth_app_settings below.
     AUTH_SECRET = var.jwt_secret
     JWT_SECRET  = var.jwt_secret
 
     AZURE_STORAGE_CONNECTION_STRING = var.storage_connection_string
     DOCUMENT_INTELLIGENCE_ENDPOINT  = var.document_intelligence_endpoint
     DOCUMENT_INTELLIGENCE_KEY       = var.document_intelligence_key
-  }, var.extra_app_settings)
+  }, local.auth_app_settings, var.extra_app_settings)
 
   identity {
     type = "SystemAssigned"

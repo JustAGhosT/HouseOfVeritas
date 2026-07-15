@@ -81,3 +81,11 @@ _Note: 06 reserved for future deployment documentation._
 | [ai-integration-opportunities.md](05-project/ai-integration-opportunities.md) | AI suggestion APIs, implemented features, configuration          |
 | [onboarding-flow.md](05-project/onboarding-flow.md)                           | User onboarding steps, invite flow, guided tour                  |
 | [employees-vs-users.md](05-project/employees-vs-users.md)                     | Users (auth) vs Employees (Baserow), Team page consolidation     |
+
+## handoffs/ -- Session Handoffs
+
+Dated session continuity notes (root cause, files changed, verification, next-owner steps).
+
+| Document                                                                                        | Description                                                                          |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| [2026-07-11-mystira-oidc-prod-login-fix.md](handoffs/2026-07-11-mystira-oidc-prod-login-fix.md) | Production login `/api/auth/error` fix — Mystira OIDC app settings + AUTH_TRUST_HOST |

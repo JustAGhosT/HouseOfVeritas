@@ -259,6 +259,9 @@ jobs:
         run: |
           terraform plan \
             -var="domain_name=${{ vars.DOMAIN_NAME || 'nexamesh.ai' }}" \
+            -var="mystira_oidc_issuer=${{ vars.MYSTIRA_OIDC_ISSUER || 'https://mys-dev-id-webapi.azurewebsites.net' }}" \
+            -var="mystira_oidc_client_secret=${{ secrets.MYSTIRA_OIDC_CLIENT_SECRET }}" \
+            -var="auth_url=${{ vars.AUTH_URL || 'https://hov.neuralliquid.ai' }}" \
             -var="db_admin_password=${{ secrets.DB_ADMIN_PASSWORD }}" \
             -var="smtp_username=${{ secrets.SMTP_USERNAME }}" \
             -var="smtp_password=${{ secrets.SMTP_PASSWORD }}" \
