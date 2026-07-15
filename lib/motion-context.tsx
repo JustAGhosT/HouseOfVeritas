@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, ReactNode, useContext, useEffect, useState } from "react"
+import { logger } from "@/lib/logger"
 
 interface MotionContextType {
   motionEnabled: boolean
@@ -25,7 +26,9 @@ export function MotionProvider({ children }: { children: ReactNode }) {
           setMotionEnabledState(saved === "true")
         }
       } catch (e) {
-        console.warn("Failed to read motion preference from localStorage:", e)
+        logger.warn("Failed to read motion preference from localStorage", {
+          error: e instanceof Error ? e.message : String(e),
+        })
       }
       setMounted(true)
     }
@@ -40,7 +43,9 @@ export function MotionProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(STORAGE_KEY, String(newValue))
       } catch (e) {
         // Silently fail if localStorage is not available (e.g., quota exceeded, private mode)
-        console.warn("Failed to save motion preference to localStorage:", e)
+        logger.warn("Failed to save motion preference to localStorage", {
+          error: e instanceof Error ? e.message : String(e),
+        })
       }
       return newValue
     })
