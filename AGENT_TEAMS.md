@@ -63,6 +63,7 @@ a current Veritas module theme rather than numbered files or medieval titles.
 | P1       | `veritas-archive` | Docs, ADRs, history notes, durable agent lessons      | Mystira scribe/keeper, Retort retrospective  |
 | P1       | `veritas-studio`  | UI polish, accessibility, responsive checks           | UI/design review practice                    |
 | P1       | `veritas-launch`  | Release readiness, CI/CD, rollback planning           | Retort release discipline                    |
+| P1       | `veritas-mvp-launch` | Bounded MVP evidence-to-decision launch workflow    | House of Veritas MVP-to-live plan            |
 | P1       | `veritas-ledger`  | Data/integration implementation validation            | Data-layer assessment practice               |
 | P1       | `veritas-compass` | Product workflows, backlog shape, PRD clarity         | Product/vertical feature practice            |
 
@@ -82,6 +83,7 @@ Borrowing the strongest practice from Mystira and Retort, use team ownership bef
 - **Dashboard/navigation/UI changes:** involve `veritas-surface` and `veritas-studio`; browser-check affected routes when practical.
 - **CI/CD or deployment changes:** involve `veritas-pipeline`, `veritas-foundation`, `veritas-launch`, and `veritas-beacon`; verify pipeline command names and package manager.
 - **Cross-stack features:** involve `veritas-journey` and `veritas-compass` after implementation to confirm the user workflow works end to end.
+- **MVP-to-live evidence workflow:** involve `veritas-mvp-launch`, `veritas-compass`, `veritas-launch`, `veritas-shield`, and `veritas-proof`; verify bounded scope, provenance boundaries, governance controls, human review, cost/model limits, and funding evidence.
 - **Non-trivial implementation:** `veritas-proof` owns the verification plan; `veritas-radar` owns regression risk.
 
 ## Handoff Standard

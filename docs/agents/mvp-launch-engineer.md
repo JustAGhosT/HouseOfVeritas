@@ -1,5 +1,9 @@
 # House of Veritas MVP Launch Engineer
 
+## Runnable agent
+
+Use `.claude/agents/veritas-mvp-launch.md` for the harness-runnable agent definition and route MVP-to-live work through `AGENT_TEAMS.md`. This document remains the durable launch-engineer brief.
+
 ## Purpose
 
 Ship a bounded evidence-to-decision workflow that proves provenance, governance, and human-review value without making unsupported legal or truth-verification claims.

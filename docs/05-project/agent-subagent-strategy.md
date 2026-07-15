@@ -46,6 +46,7 @@ and Retort, but scoped to this repo.
 | P1       | `veritas-archive` | Mystira `scribe`/`keeper`, Retort `retrospective-analyst` | Maintains docs, history notes, agent guidance, ADRs, and durable lessons.                                  | Non-trivial changes, new patterns, postmortems, agent-system updates.        |
 | P1       | `veritas-studio`  | UI/design review practice                                 | Visual polish, design tokens, accessibility, responsive behavior, and screenshot review.                   | Dashboard UX, component polish, layout changes, visual regressions.          |
 | P1       | `veritas-launch`  | Retort release discipline                                 | Release readiness, CI/CD validation, deployment notes, rollback planning.                                  | Pre-release checks, deployment failures, release handoff.                    |
+| P1       | `veritas-mvp-launch` | House of Veritas MVP-to-live plan                      | Bounded evidence-to-decision launch workflow, provenance, governance controls, human review, and funding evidence. | MVP launch-gate work, demo/funding evidence, governed evidence workflow. |
 | P1       | `veritas-ledger`  | Data-layer assessment practice                            | Data model, integration contract, seed/fallback, and storage implementation validation.                    | Baserow, DocuSeal, MongoDB, storage, payroll, documents, real-data mode.     |
 | P1       | `veritas-compass` | Product/vertical feature practice                         | Product workflow clarity, backlog shape, acceptance criteria, and PRD alignment.                           | Feature planning, ambiguous requirements, estate workflow changes.           |
 
@@ -339,6 +340,6 @@ replay.
 1. Use `veritas-nexus`, `veritas-shield`, and `veritas-proof` for high-risk work.
 2. Bring in `veritas-atlas`, `veritas-beacon`, and `veritas-archive` whenever discovery,
    runtime validation, or durable handoff is needed.
-3. Use `veritas-studio`, `veritas-launch`, `veritas-ledger`, and `veritas-compass`
+3. Use `veritas-studio`, `veritas-launch`, `veritas-mvp-launch`, `veritas-ledger`, and `veritas-compass`
    when their domain is directly touched.
 4. Update `AGENT_TEAMS.md` whenever a new operational subagent is added.
