@@ -4,6 +4,8 @@ import { ASSET_CATEGORIES, type AssetCategory } from "@/lib/constants/asset-cate
 
 export { ASSET_CATEGORIES, type AssetCategory }
 
+const DEMO_DATA_ENABLED = process.env.ALLOW_DEMO_DATA === "true"
+
 // Azure AI Configuration (with mock fallback)
 const AZURE_AI_CONFIG = {
   endpoint: process.env.AZURE_AI_ENDPOINT,
@@ -60,8 +62,7 @@ export interface Asset {
   updatedAt: string
 }
 
-// In-memory asset store (in production, use MongoDB)
-let assets: Asset[] = [
+const DEMO_ASSETS: Asset[] = [
   {
     id: "asset_001",
     name: "Toyota Hilux 2.8 GD-6",
@@ -192,6 +193,9 @@ let assets: Asset[] = [
     updatedAt: "2026-02-20T10:00:00Z",
   },
 ]
+
+// In-memory asset store (in production, use MongoDB)
+let assets: Asset[] = DEMO_DATA_ENABLED ? [...DEMO_ASSETS] : []
 
 // GET - List assets with filters
 export const GET = withAuth(async (request) => {

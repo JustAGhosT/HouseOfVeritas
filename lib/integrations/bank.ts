@@ -3,7 +3,7 @@
  * Used for payroll, reimbursements, loans/advances, and contractor payments.
  *
  * Configure BANK_API_URL and BANK_API_KEY to enable. When not configured,
- * submitPayment logs and returns a stub success (no actual transfer).
+ * submitPayment logs the attempted payment and returns a failure.
  *
  * Sends Idempotency-Key header (payment.reference or derived key) so the bank
  * API can deduplicate retries. The bank API should support this header.
@@ -39,9 +39,8 @@ export async function submitPayment(payment: PaymentRequest): Promise<PaymentRes
       reference: payment.reference,
     })
     return {
-      success: true,
-      transactionId: `stub-${Date.now()}`,
-      message: "Bank API not configured; payment logged only",
+      success: false,
+      message: "Bank API is not configured; payment was not submitted",
     }
   }
 

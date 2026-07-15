@@ -50,6 +50,9 @@ terraform/crash.log
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 
+# Local agent tooling
+.serena/
+
 # Coverage
 coverage/
 
