@@ -36,6 +36,7 @@ import {
   X,
 } from "lucide-react"
 import { AiSuggestIcon } from "@/components/ui/ai-suggest-icon"
+import { getStoredScopeId } from "@/components/scope-selector"
 import type { Project } from "@/lib/projects"
 import type { ProjectSuggestion } from "@/app/api/projects/suggestions/route"
 import { logger } from "@/lib/logger"
@@ -56,6 +57,8 @@ const STATUS_COLORS: Record<string, string> = {
   completed: "bg-primary/40 text-primary-foreground",
 }
 
+const ALL_SCOPES = "_all"
+
 interface ProjectsPageContentProps {
   persona: "hans" | "charl" | "lucky" | "irma"
   isAdmin: boolean
@@ -68,6 +71,7 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
   const [dialogOpen, setDialogOpen] = useState(false)
   const [suggestDialogOpen, setSuggestDialogOpen] = useState(false)
   const [expandedMajor, setExpandedMajor] = useState<Set<string>>(new Set())
+  const [selectedScopeId, setSelectedScopeId] = useState(ALL_SCOPES)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [photoBase64, setPhotoBase64] = useState<string | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
@@ -113,8 +117,21 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
     fetchSuggestions()
   }, [fetchProjects, fetchSuggestions])
 
-  const majorProjects = projects.filter((p) => p.type === "major")
-  const subprojects = projects.filter((p) => p.type === "subproject")
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    setSelectedScopeId(getStoredScopeId())
+    const handleScopeChange = (event: Event) => {
+      const scopeId = (event as CustomEvent<{ scopeId?: string }>).detail?.scopeId
+      setSelectedScopeId(scopeId || ALL_SCOPES)
+    }
+    window.addEventListener("hov:scope-change", handleScopeChange)
+    return () => window.removeEventListener("hov:scope-change", handleScopeChange)
+  }, [])
+
+  const scopes = projects.filter((p) => p.type === "major")
+  const jobs = projects.filter((p) => p.type === "subproject")
+  const selectedScope = scopes.find((scope) => scope.id === selectedScopeId)
+  const visibleScopes = selectedScope ? [selectedScope] : scopes
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -162,7 +179,7 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
         body: {
           title: formData.name,
           description: formData.description,
-          context: `Project type: ${formData.type}, Parent: ${formData.parentId || "none"}`,
+          context: `Work type: ${formData.type === "major" ? "scope" : "job"}, Scope: ${formData.parentId || "none"}`,
         },
         label: "RefineDescription",
       })
@@ -252,7 +269,13 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
   }
 
   const resetForm = () => {
-    setFormData({ name: "", description: "", type: "subproject", parentId: "", status: "planned" })
+    setFormData({
+      name: "",
+      description: "",
+      type: "subproject",
+      parentId: selectedScopeId === ALL_SCOPES ? "" : selectedScopeId,
+      status: "planned",
+    })
     setPhotoPreview(null)
     setPhotoBase64(null)
   }
@@ -341,23 +364,23 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="major">Major Project</SelectItem>
-            <SelectItem value="subproject">Subproject (Work Package)</SelectItem>
+            <SelectItem value="major">Site, Asset or Location</SelectItem>
+            <SelectItem value="subproject">Job / Work Project</SelectItem>
           </SelectContent>
         </Select>
       </div>
       {formData.type === "subproject" && (
         <div>
-          <Label>Parent Project</Label>
+          <Label>Scope</Label>
           <Select
             value={formData.parentId}
             onValueChange={(v) => setFormData((p) => ({ ...p, parentId: v }))}
           >
             <SelectTrigger className="mt-1 border-white/10 bg-white/5">
-              <SelectValue placeholder="Select parent" />
+              <SelectValue placeholder="Select site, asset or location" />
             </SelectTrigger>
             <SelectContent>
-              {majorProjects.map((p) => (
+              {scopes.map((p) => (
                 <SelectItem key={p.id} value={p.id}>
                   {p.name}
                 </SelectItem>
@@ -372,7 +395,7 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
           value={formData.name}
           onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
           className="mt-1 border-white/10 bg-white/5"
-          placeholder="e.g. Kitchen Cupboards"
+          placeholder={formData.type === "major" ? "e.g. 32 Singlehurst" : "e.g. Repair bathroom"}
           required
         />
       </div>
@@ -426,12 +449,12 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
             <FolderKanban className="h-8 w-8 text-primary" />
-            Projects
+            Work
           </h1>
           <p className="mt-1 text-white/60">
             {isAdmin
-              ? "Major projects and subprojects (House Revamp, Zeerust Arming, etc.)"
-              : "View projects and suggest new ones"}
+              ? "Jobs grouped by Sites, Assets & Locations."
+              : "View jobs and suggest new work"}
           </p>
         </div>
         <div className="flex gap-2">
@@ -440,20 +463,23 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
               open={dialogOpen}
               onOpenChange={(o) => {
                 setDialogOpen(o)
+                if (o && selectedScopeId !== ALL_SCOPES) {
+                  setFormData((p) => ({ ...p, type: "subproject", parentId: selectedScopeId }))
+                }
                 if (!o) resetForm()
               }}
             >
               <DialogTrigger asChild>
                 <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Project
+                  Add Scope / Job
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto border-white/10 bg-[#0d0d12] text-white">
                 <DialogHeader>
-                  <DialogTitle>Add Project</DialogTitle>
+                  <DialogTitle>Add Scope or Job</DialogTitle>
                   <DialogDescription className="text-white/60">
-                    Create a major project or subproject. Use a photo for AI suggestions.
+                    Create a site, asset, location, or a job under one of them.
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleCreate} className="mt-4 space-y-4">
@@ -474,6 +500,9 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
             open={suggestDialogOpen}
             onOpenChange={(o) => {
               setSuggestDialogOpen(o)
+              if (o && selectedScopeId !== ALL_SCOPES) {
+                setFormData((p) => ({ ...p, type: "subproject", parentId: selectedScopeId }))
+              }
               if (!o) resetForm()
             }}
           >
@@ -483,14 +512,14 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
                 className={!isAdmin ? "bg-primary text-primary-foreground hover:bg-primary/90" : "border-white/20"}
               >
                 <Sparkles className="mr-2 h-4 w-4" />
-                Suggest Project
+                Suggest Work
               </Button>
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto border-white/10 bg-[#0d0d12] text-white">
               <DialogHeader>
-                <DialogTitle>Suggest a Project</DialogTitle>
+                <DialogTitle>Suggest Work</DialogTitle>
                 <DialogDescription className="text-white/60">
-                  Propose a new project or subproject. Admins will review and approve.
+                  Propose a new site, asset, location, or job. Admins will review and approve.
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSuggest} className="mt-4 space-y-4">
@@ -518,7 +547,7 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
           <CardHeader>
             <CardTitle className="text-secondary">Pending suggestions</CardTitle>
             <CardDescription className="text-white/60">
-              {suggestions.length} project suggestion{suggestions.length !== 1 ? "s" : ""} awaiting
+              {suggestions.length} work suggestion{suggestions.length !== 1 ? "s" : ""} awaiting
               review
             </CardDescription>
           </CardHeader>
@@ -566,63 +595,66 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
         </div>
       ) : (
         <div className="space-y-4">
-          {majorProjects.map((major) => {
-            const subs = subprojects.filter((s) => s.parentId === major.id)
-            const isExpanded = expandedMajor.has(major.id)
+          {visibleScopes.map((scope) => {
+            const scopeJobs = jobs.filter((job) => job.parentId === scope.id)
+            const isExpanded = selectedScope ? true : expandedMajor.has(scope.id)
 
             return (
-              <Card key={major.id} className="border-white/10 bg-white/5">
+              <Card key={scope.id} className="border-white/10 bg-white/5">
                 <CardHeader
-                  className="cursor-pointer"
-                  onClick={() =>
+                  className={selectedScope ? "" : "cursor-pointer"}
+                  onClick={() => {
+                    if (selectedScope) return
                     setExpandedMajor((prev) => {
                       const next = new Set(prev)
-                      if (next.has(major.id)) next.delete(major.id)
-                      else next.add(major.id)
+                      if (next.has(scope.id)) next.delete(scope.id)
+                      else next.add(scope.id)
                       return next
                     })
-                  }
+                  }}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      {subs.length > 0 ? (
+                      {!selectedScope && scopeJobs.length > 0 ? (
                         isExpanded ? (
                           <ChevronDown className="h-5 w-5 text-white/60" />
                         ) : (
                           <ChevronRight className="h-5 w-5 text-white/60" />
                         )
                       ) : null}
-                      <CardTitle className="text-white">{major.name}</CardTitle>
-                      <Badge className={STATUS_COLORS[major.status] || STATUS_COLORS.planned}>
-                        {major.status.replace("_", " ")}
+                      <CardTitle className="text-white">{scope.name}</CardTitle>
+                      <Badge className={STATUS_COLORS[scope.status] || STATUS_COLORS.planned}>
+                        {scope.status.replace("_", " ")}
                       </Badge>
                     </div>
-                    <span className="text-sm text-white/50">{subs.length} subprojects</span>
+                    <span className="text-sm text-white/50">
+                      {scopeJobs.length} job{scopeJobs.length !== 1 ? "s" : ""}
+                    </span>
                   </div>
-                  {major.description && (
-                    <CardDescription className="text-white/60">{major.description}</CardDescription>
+                  {scope.description && (
+                    <CardDescription className="text-white/60">{scope.description}</CardDescription>
                   )}
                 </CardHeader>
-                {isExpanded && subs.length > 0 && (
+                {isExpanded && scopeJobs.length > 0 && (
                   <CardContent className="space-y-2 pt-0">
-                    {subs.map((sub) => (
+                    {scopeJobs.map((job) => (
                       <div
-                        key={sub.id}
+                        key={job.id}
                         className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-3"
                       >
                         <div>
-                          <p className="font-medium text-white">{sub.name}</p>
+                          <p className="font-medium text-white">{job.name}</p>
                           <div className="mt-1 flex items-center gap-2">
                             <Badge
-                              className={STATUS_COLORS[sub.status] || STATUS_COLORS.planned}
+                              className={STATUS_COLORS[job.status] || STATUS_COLORS.planned}
                               variant="outline"
                             >
-                              {sub.status.replace("_", " ")}
+                              {job.status.replace("_", " ")}
                             </Badge>
-                            {sub.members?.length ? (
+                            {job.members?.length ? (
                               <span className="flex items-center gap-1 text-sm text-white/50">
                                 <Users className="h-3 w-3" />
-                                {sub.members
+                                {job.members
                                   .map((m) => PERSONA_INFO[m.userId] || m.userId)
                                   .join(", ")}
                               </span>
@@ -632,24 +664,24 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
                         {isAdmin &&
                           (() => {
                             const available = ["hans", "charl", "lucky", "irma"].filter(
-                              (id) => !sub.members?.some((m) => m.userId === id)
+                              (id) => !job.members?.some((m) => m.userId === id)
                             )
                             if (available.length === 0)
                               return <span className="text-sm text-white/40">All assigned</span>
-                            const loading = suggestMemberLoading === sub.id
+                            const loading = suggestMemberLoading === job.id
                             return (
                               <div className="flex items-center gap-2">
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   className="text-primary hover:text-primary/80 hover:bg-primary/10"
-                                  onClick={() => handleSuggestMember(sub.id, sub.name)}
+                                  onClick={() => handleSuggestMember(job.id, job.name)}
                                   disabled={loading}
                                 >
                                   <AiSuggestIcon loading={loading} size="md" />
                                 </Button>
                                 <Select
-                                  onValueChange={(v) => handleAddMember(sub.id, v, "contributor")}
+                                  onValueChange={(v) => handleAddMember(job.id, v, "contributor")}
                                 >
                                   <SelectTrigger className="w-36 border-white/10 bg-white/5">
                                     <SelectValue placeholder="Add member" />
@@ -669,9 +701,23 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
                     ))}
                   </CardContent>
                 )}
+                {isExpanded && scopeJobs.length === 0 && (
+                  <CardContent className="pt-0">
+                    <p className="rounded-lg border border-dashed border-white/10 bg-white/5 p-3 text-sm text-white/50">
+                      No jobs yet for this scope.
+                    </p>
+                  </CardContent>
+                )}
               </Card>
             )
           })}
+          {visibleScopes.length === 0 && (
+            <Card className="border-dashed border-white/10 bg-white/5">
+              <CardContent className="py-8 text-center text-white/60">
+                No Sites, Assets & Locations yet. Add a scope first, then add jobs under it.
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
     </div>

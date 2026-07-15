@@ -142,9 +142,9 @@ export function TasksPage({
   useEffect(() => {
     if (!canAddTask) return
     apiFetchSafe<{ projects?: { name: string }[] }>(
-      "/api/projects",
+      "/api/projects?type=subproject",
       { projects: [] },
-      { label: "Projects" }
+      { label: "Jobs" }
     ).then((d) => setProjectOptions((d?.projects || []).map((p) => p.name)))
   }, [canAddTask])
 
@@ -157,7 +157,7 @@ export function TasksPage({
         body: {
           title: taskForm.title,
           description: taskForm.description,
-          context: `Task for project: ${taskForm.project || "general"}`,
+          context: `Task for job: ${taskForm.project || "general"}`,
         },
         label: "AI Refine",
       })
@@ -304,7 +304,7 @@ export function TasksPage({
                   />
                 </div>
                 <div>
-                  <Label>Project</Label>
+                  <Label>Job</Label>
                   <Select
                     value={taskForm.project || "_none"}
                     onValueChange={(v) =>
@@ -312,7 +312,7 @@ export function TasksPage({
                     }
                   >
                     <SelectTrigger className="mt-1 border-border bg-background">
-                      <SelectValue placeholder="Select project" />
+                      <SelectValue placeholder="Select job" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="_none">None</SelectItem>

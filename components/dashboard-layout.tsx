@@ -7,6 +7,7 @@ import { NotificationPanel } from "@/components/notification-panel"
 import { OnboardingTutorial } from "@/components/onboarding-tutorial"
 import { RealTimeIndicator } from "@/components/realtime-indicator"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { ScopeSelector } from "@/components/scope-selector"
 import { UserProfileDropdown } from "@/components/user-profile-dropdown"
 import { WidgetErrorBoundary } from "@/components/widget-error-boundary"
 import { apiFetch } from "@/lib/api-client"
@@ -324,6 +325,7 @@ export default function DashboardLayout({ children, persona }: DashboardLayoutPr
 
             {/* Right Side Actions */}
             <div className="flex items-center gap-4">
+              <ScopeSelector />
               <ConnectionStatus />
               <WidgetErrorBoundary>
                 <RealTimeIndicator />
