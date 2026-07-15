@@ -33,10 +33,13 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev",
+    // Serve a production build so route compilation cannot consume an E2E
+    // assertion timeout. This also keeps the suite on the same runtime path
+    // used by deployment rather than relying on the dev server's bundler.
+    command: "pnpm run build && pnpm start",
     url: "http://localhost:3000",
     reuseExistingServer: true,
-    timeout: 120_000,
+    timeout: 300_000,
     env: { ...process.env, E2E_TEST: "1" },
   },
 })
