@@ -16,8 +16,8 @@ async function importWithMockedFiles<T>(modulePath: string, files: FileStore = n
   vi.doMock("fs/promises", () => {
     const mockFs = {
       readFile: vi.fn(async (path: string) => {
-        const key = String(path)
-        if (!files.has(key)) throw new Error("ENOENT")
+        const key = [...files.keys()].find((fileName) => String(path).endsWith(fileName))
+        if (!key) throw new Error("ENOENT")
         return files.get(key)
       }),
       mkdir: vi.fn(async () => undefined),
@@ -37,7 +37,7 @@ describe("job areas API", () => {
   it("filters areas to the requested job", async () => {
     const files = new Map<string, string>([
       [
-        "C:\\Users\\smitj\\repos\\house-of-veritas\\data\\job-areas.json",
+        "job-areas.json",
         JSON.stringify([
           { id: "area-1", projectId: "job-1", name: "Bathroom", kind: "room", createdAt: "now", updatedAt: "now" },
           { id: "area-2", projectId: "job-2", name: "Workshop", kind: "zone", createdAt: "now", updatedAt: "now" },
@@ -85,7 +85,7 @@ describe("job allocations API", () => {
   it("filters allocations by job and optional type", async () => {
     const files = new Map<string, string>([
       [
-        "C:\\Users\\smitj\\repos\\house-of-veritas\\data\\job-allocations.json",
+        "job-allocations.json",
         JSON.stringify([
           { id: "alloc-1", projectId: "job-1", type: "material", name: "Tiles", createdAt: "now", updatedAt: "now" },
           { id: "alloc-2", projectId: "job-1", type: "labour", name: "Plumber", createdAt: "now", updatedAt: "now" },
@@ -152,14 +152,17 @@ describe("job task groups API", () => {
   it("attaches area and group metadata to existing project tasks", async () => {
     const files = new Map<string, string>([
       [
-        "C:\\Users\\smitj\\repos\\house-of-veritas\\data\\job-task-groups.json",
+        "job-task-groups.json",
         JSON.stringify([{ taskId: 101, projectId: "job-1", areaId: "area-1", groupName: "Prep", createdAt: "now", updatedAt: "now" }]),
       ],
     ])
     vi.resetModules()
     vi.doMock("fs/promises", () => {
       const mockFs = {
-        readFile: vi.fn(async (path: string) => files.get(String(path)) ?? "[]"),
+        readFile: vi.fn(async (path: string) => {
+          const key = [...files.keys()].find((fileName) => String(path).endsWith(fileName))
+          return key ? files.get(key) : "[]"
+        }),
         mkdir: vi.fn(async () => undefined),
         writeFile: vi.fn(async (path: string, data: string) => files.set(String(path), data)),
       }
