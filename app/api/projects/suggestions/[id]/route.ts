@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { withRole } from "@/lib/auth/rbac"
 import { readFile, writeFile, mkdir } from "fs/promises"
 import { join } from "path"
-import type { Project, ProjectMember } from "@/lib/projects"
+import { withProjectKind, type Project, type ProjectMember } from "@/lib/projects"
 import type { ProjectSuggestion } from "../route"
 import { logger } from "@/lib/logger"
 import { routeToInngest } from "@/lib/workflows"
@@ -100,7 +100,7 @@ export const PATCH = withRole("admin")(async (request, context) => {
         },
       })
 
-      return NextResponse.json({ suggestion: suggestions[idx], project })
+      return NextResponse.json({ suggestion: suggestions[idx], project: withProjectKind(project) })
     }
 
     return NextResponse.json({ suggestion: suggestions[idx] })

@@ -142,7 +142,7 @@ export function TasksPage({
   useEffect(() => {
     if (!canAddTask) return
     apiFetchSafe<{ projects?: { name: string }[] }>(
-      "/api/projects?type=subproject",
+      "/api/projects?type=job",
       { projects: [] },
       { label: "Jobs" }
     ).then((d) => setProjectOptions((d?.projects || []).map((p) => p.name)))

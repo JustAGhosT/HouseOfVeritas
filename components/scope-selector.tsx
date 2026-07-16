@@ -26,7 +26,7 @@ export function ScopeSelector() {
 
   useEffect(() => {
     apiFetchSafe<{ projects?: Project[] }>(
-      "/api/projects?type=major",
+      "/api/projects?type=scope",
       { projects: [] },
       { label: "Scopes" }
     ).then((data) => {

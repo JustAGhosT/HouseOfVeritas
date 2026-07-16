@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { withRole } from "@/lib/auth/rbac"
 import { readFile, writeFile, mkdir } from "fs/promises"
 import { join } from "path"
-import type { Project } from "@/lib/projects"
+import { toStoredProjectType, withProjectKind, type Project } from "@/lib/projects"
 import { logger } from "@/lib/logger"
 import { routeToInngest } from "@/lib/workflows"
 
@@ -29,7 +29,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     const projects = await loadProjects()
     const project = projects.find((p) => p.id === id)
     if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 })
-    return NextResponse.json({ project })
+    return NextResponse.json({ project: withProjectKind(project) })
   } catch (err) {
     logger.error("Failed to load project", {
       error: err instanceof Error ? err.message : String(err),
@@ -50,9 +50,15 @@ export const PATCH = withRole("admin")(async (request, context) => {
 
     const p = projects[idx]
     const prevStatus = p.status
+    const storedType = toStoredProjectType(body.type)
+    const updates = { ...body }
+    if (body.type !== undefined) {
+      if (storedType) updates.type = storedType
+      else delete updates.type
+    }
     projects[idx] = {
       ...p,
-      ...body,
+      ...updates,
       id: p.id,
       members: body.members ?? p.members,
       updatedAt: new Date().toISOString(),
@@ -70,7 +76,7 @@ export const PATCH = withRole("admin")(async (request, context) => {
       })
     }
 
-    return NextResponse.json({ project: projects[idx] })
+    return NextResponse.json({ project: withProjectKind(projects[idx]) })
   } catch (err) {
     logger.error("Failed to update project", {
       error: err instanceof Error ? err.message : String(err),

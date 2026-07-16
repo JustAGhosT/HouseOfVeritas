@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { withAuth, withRole } from "@/lib/auth/rbac"
 import { readFile, writeFile, mkdir } from "fs/promises"
 import { join } from "path"
-import type { Project } from "@/lib/projects"
+import { toStoredProjectType, type Project, type ProjectStorageType } from "@/lib/projects"
 import { logger } from "@/lib/logger"
 
 const SUGGESTIONS_PATH = join(process.cwd(), "data", "project-suggestions.json")
@@ -12,7 +12,7 @@ export interface ProjectSuggestion {
   id: string
   name: string
   description?: string
-  type: "major" | "subproject"
+  type: ProjectStorageType
   parentId?: string
   suggestedBy: string
   suggestedAt: string
@@ -78,12 +78,13 @@ export const POST = withAuth(async (request: Request) => {
 
     const suggestions = await loadSuggestions()
     const id = `sug-${Date.now()}`
+    const storedType = toStoredProjectType(type) ?? "subproject"
     const suggestion: ProjectSuggestion = {
       id,
       name: name.trim(),
       description: description?.trim(),
-      type: type === "major" ? "major" : "subproject",
-      parentId: type === "subproject" ? parentId : undefined,
+      type: storedType,
+      parentId: storedType === "subproject" ? parentId : undefined,
       suggestedBy: auth,
       suggestedAt: new Date().toISOString(),
       status: "pending",
