@@ -5,6 +5,8 @@ import {
 } from "@/lib/services/marketplace-service"
 import { withAuth, withRole } from "@/lib/auth/rbac"
 
+const DEMO_DATA_ENABLED = process.env.ALLOW_DEMO_DATA === "true"
+
 // Initialize marketplace service with environment configs
 const marketplaceConfigs = [
   {
@@ -133,8 +135,7 @@ interface MarketplaceListing {
   expiresAt?: string
 }
 
-// In-memory listings store
-let listings: MarketplaceListing[] = [
+const DEMO_LISTINGS: MarketplaceListing[] = [
   {
     id: "listing_001",
     assetId: "asset_003",
@@ -182,6 +183,9 @@ let listings: MarketplaceListing[] = [
     expiresAt: "2026-03-10T10:00:00Z",
   },
 ]
+
+// In-memory listings store
+let listings: MarketplaceListing[] = DEMO_DATA_ENABLED ? [...DEMO_LISTINGS] : []
 
 // GET - List marketplace listings or get platforms
 export const GET = withAuth(async (request) => {

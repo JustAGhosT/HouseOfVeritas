@@ -3,6 +3,8 @@ import { logger } from "@/lib/logger"
 import { withRole } from "@/lib/auth/rbac"
 import { routeToInngest } from "@/lib/workflows"
 
+const DEMO_DATA_ENABLED = process.env.ALLOW_DEMO_DATA === "true"
+
 // Scheduled maintenance items (synced with calendar)
 interface ScheduledMaintenance {
   id: string
@@ -18,10 +20,11 @@ interface ScheduledMaintenance {
   status: "scheduled" | "in_progress" | "completed" | "cancelled"
   createdAt: string
   aiGenerated: boolean
+  actualCost?: number
+  notes?: string
 }
 
-// In-memory store for scheduled maintenance
-let scheduledMaintenance: ScheduledMaintenance[] = [
+const DEMO_SCHEDULED_MAINTENANCE: ScheduledMaintenance[] = [
   {
     id: "maint_001",
     assetId: "asset_2",
@@ -67,6 +70,11 @@ let scheduledMaintenance: ScheduledMaintenance[] = [
     aiGenerated: true,
   },
 ]
+
+// In-memory store for scheduled maintenance
+let scheduledMaintenance: ScheduledMaintenance[] = DEMO_DATA_ENABLED
+  ? [...DEMO_SCHEDULED_MAINTENANCE]
+  : []
 
 // GET - List scheduled maintenance
 export const GET = withRole(
@@ -140,7 +148,13 @@ export const POST = withRole(
       }
 
       const newSchedules: ScheduledMaintenance[] = []
-      const calendarEvents: any[] = []
+      const calendarEvents: Array<{
+        summary: string
+        description: string
+        start: string
+        end: string
+        assignedTo: string
+      }> = []
 
       for (const prediction of predictionsData.predictions) {
         // Skip if already scheduled
@@ -335,10 +349,10 @@ export const PUT = withRole(
       scheduledMaintenance[index].status = status
     }
     if (actualCost !== undefined) {
-      ;(scheduledMaintenance[index] as any).actualCost = actualCost
+      scheduledMaintenance[index].actualCost = actualCost
     }
     if (notes) {
-      ;(scheduledMaintenance[index] as any).notes = notes
+      scheduledMaintenance[index].notes = notes
     }
 
     return NextResponse.json({
