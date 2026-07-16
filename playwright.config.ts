@@ -40,6 +40,9 @@ export default defineConfig({
     url: "http://localhost:3000",
     reuseExistingServer: true,
     timeout: 300_000,
-    env: { ...process.env, E2E_TEST: "1" },
+    // Auth.js rejects localhost unless the host is explicitly trusted. Without
+    // this, the login page's session probe never resolves and every browser
+    // authentication flow remains on its loading spinner.
+    env: { ...process.env, E2E_TEST: "1", AUTH_TRUST_HOST: "true" },
   },
 })
