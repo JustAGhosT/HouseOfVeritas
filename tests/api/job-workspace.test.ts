@@ -170,7 +170,7 @@ describe("job task groups API", () => {
     })
     vi.doMock("@/lib/services/baserow", () => ({
       getTasks: vi.fn(async () => [
-        { id: 101, title: "Strip tiles", project: "Bathroom Repair", status: "Not Started", priority: "Medium" },
+        { id: 101, title: "Strip tiles", project: "Old Bathroom Name", status: "Not Started", priority: "Medium" },
         { id: 102, title: "Paint wall", project: "Other Job", status: "Not Started", priority: "Medium" },
       ]),
       createTask: vi.fn(),
@@ -187,5 +187,49 @@ describe("job task groups API", () => {
     expect(data.tasks).toEqual([
       expect.objectContaining({ id: 101, title: "Strip tiles", areaId: "area-1", groupName: "Prep" }),
     ])
+  })
+})
+
+describe("project suggestion approval", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.resetModules()
+  })
+
+  it("preserves scope category when approving a scope suggestion", async () => {
+    const files = new Map<string, string>([
+      [
+        "project-suggestions.json",
+        JSON.stringify([
+          {
+            id: "sug-1",
+            name: "Zeerust Farm",
+            type: "major",
+            scopeKind: "asset",
+            suggestedBy: "lucky",
+            suggestedAt: "now",
+            status: "pending",
+          },
+        ]),
+      ],
+      ["projects.json", "[]"],
+    ])
+    vi.doMock("@/lib/workflows", () => ({ routeToInngest: vi.fn(async () => undefined) }))
+    const { PATCH } = await importWithMockedFiles<
+      typeof import("@/app/api/projects/suggestions/[id]/route")
+    >("@/app/api/projects/suggestions/[id]/route", files)
+
+    const response = await PATCH(
+      new Request("http://localhost/api/projects/suggestions/sug-1", {
+        method: "PATCH",
+        headers: authHeaders,
+        body: JSON.stringify({ status: "approved" }),
+      }),
+      { params: Promise.resolve({ id: "sug-1" }) }
+    )
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.project).toMatchObject({ name: "Zeerust Farm", type: "major", scopeKind: "asset", kind: "scope" })
   })
 })

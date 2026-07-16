@@ -80,6 +80,7 @@ export const PATCH = withRole("admin")(async (request, context) => {
         name: suggestion.name,
         description: suggestion.description,
         type: suggestion.type,
+        scopeKind: suggestion.scopeKind,
         parentId: suggestion.parentId,
         status: "planned",
         members: [] as ProjectMember[],

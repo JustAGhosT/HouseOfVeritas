@@ -56,7 +56,11 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
   try {
     const [tasks, metadata] = await Promise.all([getTasks({ status: undefined }), loadMetadata()])
-    const projectTasks = tasks.filter((task) => task.project === projectName)
+    const projectMetadata = metadata.filter((item) => item.projectId === id)
+    const projectTasks = tasks.filter(
+      (task) =>
+        task.project === projectName || projectMetadata.some((item) => item.taskId === task.id)
+    )
     return NextResponse.json({ tasks: attachMetadata(projectTasks, metadata, id) })
   } catch (error) {
     logger.error("Failed to load grouped job tasks", {
