@@ -4,12 +4,23 @@ import { useCallback, useEffect, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { ArrowLeft, BriefcaseBusiness, CalendarDays, ClipboardList, FileText, Hammer, Layers3, Package, Users } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { apiFetch } from "@/lib/api-client"
 import { logger } from "@/lib/logger"
 import type { Project } from "@/lib/projects"
+import type { JobArea, JobAreaKind } from "@/app/api/projects/[id]/areas/route"
 
 const STATUS_COLORS: Record<string, string> = {
   planned: "bg-muted text-muted-foreground",
@@ -34,6 +45,12 @@ export function JobDetailPageContent({ persona, projectId }: JobDetailPageConten
   const [job, setJob] = useState<Project | null>(null)
   const [scope, setScope] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
+  const [areas, setAreas] = useState<JobArea[]>([])
+  const [areaForm, setAreaForm] = useState({
+    name: "",
+    kind: "area" as JobAreaKind,
+    notes: "",
+  })
 
   const fetchJob = useCallback(async () => {
     setLoading(true)
@@ -43,6 +60,15 @@ export function JobDetailPageContent({ persona, projectId }: JobDetailPageConten
       })
       const loadedJob = data?.project || null
       setJob(loadedJob)
+
+      if (loadedJob?.type === "subproject") {
+        const areasData = await apiFetch<{ areas?: JobArea[] }>(`/api/projects/${loadedJob.id}/areas`, {
+          label: "JobAreas",
+        })
+        setAreas(areasData?.areas || [])
+      } else {
+        setAreas([])
+      }
 
       if (loadedJob?.parentId) {
         const scopeData = await apiFetch<{ project?: Project }>(`/api/projects/${loadedJob.parentId}`, {
@@ -68,6 +94,32 @@ export function JobDetailPageContent({ persona, projectId }: JobDetailPageConten
     fetchJob()
   }, [fetchJob])
 
+  const handleCreateArea = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!job || !areaForm.name.trim()) return
+
+    try {
+      await apiFetch(`/api/projects/${job.id}/areas`, {
+        method: "POST",
+        body: {
+          name: areaForm.name,
+          kind: areaForm.kind,
+          notes: areaForm.notes || undefined,
+        },
+        label: "CreateJobArea",
+      })
+      setAreaForm({ name: "", kind: "area", notes: "" })
+      const areasData = await apiFetch<{ areas?: JobArea[] }>(`/api/projects/${job.id}/areas`, {
+        label: "JobAreas",
+      })
+      setAreas(areasData?.areas || [])
+    } catch (error) {
+      logger.error("Failed to create job area", {
+        error: error instanceof Error ? error.message : String(error),
+        projectId: job.id,
+      })
+    }
+  }
   if (loading) {
     return <div className="py-12 text-center text-muted-foreground">Loading job...</div>
   }
@@ -175,8 +227,79 @@ export function JobDetailPageContent({ persona, projectId }: JobDetailPageConten
           </Card>
         </TabsContent>
 
-        <TabsContent value="areas">
-          <PlaceholderCard icon={<Layers3 className="h-5 w-5" />} title="Areas / Rooms / Components" body="The next slice will add subdivisions inside this job." />
+        <TabsContent value="areas" className="space-y-4">
+          <Card className="border-border bg-card/80">
+            <CardHeader>
+              <CardTitle>Areas / Rooms / Components</CardTitle>
+              <CardDescription>Break this job into physical or logical work areas.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleCreateArea} className="grid gap-3 md:grid-cols-[1fr_160px_auto]">
+                <div>
+                  <Label>Name</Label>
+                  <Input
+                    value={areaForm.name}
+                    onChange={(event) => setAreaForm((form) => ({ ...form, name: event.target.value }))}
+                    placeholder="e.g. Bathroom, front axle, coach 2"
+                    className="mt-1 border-border bg-background"
+                  />
+                </div>
+                <div>
+                  <Label>Type</Label>
+                  <Select
+                    value={areaForm.kind}
+                    onValueChange={(value) => setAreaForm((form) => ({ ...form, kind: value as JobAreaKind }))}
+                  >
+                    <SelectTrigger className="mt-1 border-border bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="room">Room</SelectItem>
+                      <SelectItem value="area">Area</SelectItem>
+                      <SelectItem value="component">Component</SelectItem>
+                      <SelectItem value="zone">Zone</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end">
+                  <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">
+                    Add area
+                  </Button>
+                </div>
+                <div className="md:col-span-3">
+                  <Label>Notes</Label>
+                  <Textarea
+                    value={areaForm.notes}
+                    onChange={(event) => setAreaForm((form) => ({ ...form, notes: event.target.value }))}
+                    className="mt-1 border-border bg-background"
+                    rows={2}
+                  />
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          {areas.length === 0 ? (
+            <PlaceholderCard icon={<Layers3 className="h-5 w-5" />} title="No areas yet" body="Add the first room, area, component or zone for this job." />
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2">
+              {areas.map((area) => (
+                <Card key={area.id} className="border-border bg-card/80">
+                  <CardContent className="pt-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-foreground">{area.name}</p>
+                        {area.notes && <p className="mt-1 text-sm text-muted-foreground">{area.notes}</p>}
+                      </div>
+                      <Badge variant="outline" className="border-border text-muted-foreground">
+                        {area.kind}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
         <TabsContent value="tasks">
           <PlaceholderCard icon={<ClipboardList className="h-5 w-5" />} title="Tasks" body="Tasks will remain job-owned and can later be grouped by area." />
