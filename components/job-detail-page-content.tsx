@@ -22,6 +22,7 @@ import { logger } from "@/lib/logger"
 import type { Project } from "@/lib/projects"
 import type { JobArea, JobAreaKind } from "@/app/api/projects/[id]/areas/route"
 import type { GroupedJobTask } from "@/app/api/projects/[id]/task-groups/route"
+import type { JobAllocation } from "@/app/api/projects/[id]/allocations/route"
 
 const STATUS_COLORS: Record<string, string> = {
   planned: "bg-muted text-muted-foreground",
@@ -48,6 +49,7 @@ export function JobDetailPageContent({ persona, projectId }: JobDetailPageConten
   const [loading, setLoading] = useState(true)
   const [areas, setAreas] = useState<JobArea[]>([])
   const [tasks, setTasks] = useState<GroupedJobTask[]>([])
+  const [allocations, setAllocations] = useState<JobAllocation[]>([])
   const [areaForm, setAreaForm] = useState({
     name: "",
     kind: "area" as JobAreaKind,
@@ -58,6 +60,17 @@ export function JobDetailPageContent({ persona, projectId }: JobDetailPageConten
     areaId: "_none",
     groupName: "",
     priority: "Medium",
+  })
+  const [allocationForm, setAllocationForm] = useState({
+    type: "material" as "material" | "labour",
+    name: "",
+    areaId: "_none",
+    quantity: "",
+    unit: "",
+    hours: "",
+    rate: "",
+    cost: "",
+    notes: "",
   })
 
   const fetchJob = useCallback(async () => {
@@ -79,9 +92,15 @@ export function JobDetailPageContent({ persona, projectId }: JobDetailPageConten
           { label: "JobTasks" }
         )
         setTasks(tasksData?.tasks || [])
+        const allocationsData = await apiFetch<{ allocations?: JobAllocation[] }>(
+          `/api/projects/${loadedJob.id}/allocations`,
+          { label: "JobAllocations" }
+        )
+        setAllocations(allocationsData?.allocations || [])
       } else {
         setAreas([])
         setTasks([])
+        setAllocations([])
       }
 
       if (loadedJob?.parentId) {
@@ -108,6 +127,56 @@ export function JobDetailPageContent({ persona, projectId }: JobDetailPageConten
     fetchJob()
   }, [fetchJob])
 
+  const refreshAllocations = async (currentJob: Project) => {
+    const allocationsData = await apiFetch<{ allocations?: JobAllocation[] }>(
+      `/api/projects/${currentJob.id}/allocations`,
+      { label: "JobAllocations" }
+    )
+    setAllocations(allocationsData?.allocations || [])
+  }
+
+  const handleCreateAllocation = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!job || !allocationForm.name.trim()) return
+
+    const rateCents = allocationForm.rate ? Math.round(Number(allocationForm.rate) * 100) : undefined
+    const costCents = allocationForm.cost ? Math.round(Number(allocationForm.cost) * 100) : undefined
+
+    try {
+      await apiFetch(`/api/projects/${job.id}/allocations`, {
+        method: "POST",
+        body: {
+          type: allocationForm.type,
+          name: allocationForm.name,
+          areaId: allocationForm.areaId === "_none" ? undefined : allocationForm.areaId,
+          quantity: allocationForm.quantity || undefined,
+          unit: allocationForm.unit || undefined,
+          hours: allocationForm.hours || undefined,
+          rateCents,
+          costCents,
+          notes: allocationForm.notes || undefined,
+        },
+        label: "CreateJobAllocation",
+      })
+      setAllocationForm({
+        type: allocationForm.type,
+        name: "",
+        areaId: "_none",
+        quantity: "",
+        unit: "",
+        hours: "",
+        rate: "",
+        cost: "",
+        notes: "",
+      })
+      await refreshAllocations(job)
+    } catch (error) {
+      logger.error("Failed to create allocation", {
+        error: error instanceof Error ? error.message : String(error),
+        projectId: job.id,
+      })
+    }
+  }
   const refreshTasks = async (currentJob: Project) => {
     const tasksData = await apiFetch<{ tasks?: GroupedJobTask[] }>(
       `/api/projects/${currentJob.id}/task-groups?projectName=${encodeURIComponent(currentJob.name)}`,
@@ -445,11 +514,25 @@ export function JobDetailPageContent({ persona, projectId }: JobDetailPageConten
             </div>
           )}
         </TabsContent>
-        <TabsContent value="materials">
-          <PlaceholderCard icon={<Package className="h-5 w-5" />} title="Materials / Parts" body="Materials and parts will support allocations across jobs in a later slice." />
+        <TabsContent value="materials" className="space-y-4">
+          <AllocationForm
+            type="material"
+            areas={areas}
+            allocations={allocations.filter((allocation) => allocation.type === "material")}
+            allocationForm={allocationForm}
+            setAllocationForm={setAllocationForm}
+            onSubmit={handleCreateAllocation}
+          />
         </TabsContent>
-        <TabsContent value="labour">
-          <PlaceholderCard icon={<Hammer className="h-5 w-5" />} title="Labour" body="Labour will support split allocations instead of strict job ownership." />
+        <TabsContent value="labour" className="space-y-4">
+          <AllocationForm
+            type="labour"
+            areas={areas}
+            allocations={allocations.filter((allocation) => allocation.type === "labour")}
+            allocationForm={allocationForm}
+            setAllocationForm={setAllocationForm}
+            onSubmit={handleCreateAllocation}
+          />
         </TabsContent>
         <TabsContent value="documents">
           <PlaceholderCard icon={<FileText className="h-5 w-5" />} title="Documents" body="Photos, quotes, approvals and completion records will attach here." />
@@ -470,5 +553,204 @@ function PlaceholderCard({ icon, title, body }: { icon: ReactNode; title: string
         </div>
       </CardContent>
     </Card>
+  )
+}
+type AllocationFormState = {
+  type: "material" | "labour"
+  name: string
+  areaId: string
+  quantity: string
+  unit: string
+  hours: string
+  rate: string
+  cost: string
+  notes: string
+}
+
+function centsToCurrency(cents?: number): string {
+  if (!cents) return "-"
+  return new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(cents / 100)
+}
+
+function AllocationForm({
+  type,
+  areas,
+  allocations,
+  allocationForm,
+  setAllocationForm,
+  onSubmit,
+}: {
+  type: "material" | "labour"
+  areas: JobArea[]
+  allocations: JobAllocation[]
+  allocationForm: AllocationFormState
+  setAllocationForm: React.Dispatch<React.SetStateAction<AllocationFormState>>
+  onSubmit: (event: React.FormEvent) => void
+}) {
+  const isMaterial = type === "material"
+
+  return (
+    <>
+      <Card className="border-border bg-card/80">
+        <CardHeader>
+          <CardTitle>{isMaterial ? "Materials / Parts" : "Labour"}</CardTitle>
+          <CardDescription>
+            {isMaterial
+              ? "Record materials or parts allocated to this job. Add separate records when a purchase is split."
+              : "Record labour allocated to this job. Split time by adding separate records."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form
+            onSubmit={onSubmit}
+            className="grid gap-3 md:grid-cols-[1fr_180px_140px_140px_auto]"
+            onFocus={() => setAllocationForm((form) => ({ ...form, type }))}
+          >
+            <div>
+              <Label>{isMaterial ? "Material / part" : "Person / crew"}</Label>
+              <Input
+                value={allocationForm.type === type ? allocationForm.name : ""}
+                onChange={(event) =>
+                  setAllocationForm((form) => ({ ...form, type, name: event.target.value }))
+                }
+                className="mt-1 border-border bg-background"
+                placeholder={isMaterial ? "e.g. Tiles" : "e.g. Charl"}
+              />
+            </div>
+            <div>
+              <Label>Area</Label>
+              <Select
+                value={allocationForm.type === type ? allocationForm.areaId : "_none"}
+                onValueChange={(value) => setAllocationForm((form) => ({ ...form, type, areaId: value }))}
+              >
+                <SelectTrigger className="mt-1 border-border bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">No area</SelectItem>
+                  {areas.map((area) => (
+                    <SelectItem key={area.id} value={area.id}>
+                      {area.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {isMaterial ? (
+              <>
+                <div>
+                  <Label>Quantity</Label>
+                  <Input
+                    value={allocationForm.type === type ? allocationForm.quantity : ""}
+                    onChange={(event) =>
+                      setAllocationForm((form) => ({ ...form, type, quantity: event.target.value }))
+                    }
+                    className="mt-1 border-border bg-background"
+                    inputMode="decimal"
+                  />
+                </div>
+                <div>
+                  <Label>Unit</Label>
+                  <Input
+                    value={allocationForm.type === type ? allocationForm.unit : ""}
+                    onChange={(event) =>
+                      setAllocationForm((form) => ({ ...form, type, unit: event.target.value }))
+                    }
+                    className="mt-1 border-border bg-background"
+                    placeholder="bags, m2"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <Label>Hours</Label>
+                  <Input
+                    value={allocationForm.type === type ? allocationForm.hours : ""}
+                    onChange={(event) =>
+                      setAllocationForm((form) => ({ ...form, type, hours: event.target.value }))
+                    }
+                    className="mt-1 border-border bg-background"
+                    inputMode="decimal"
+                  />
+                </div>
+                <div>
+                  <Label>Rate</Label>
+                  <Input
+                    value={allocationForm.type === type ? allocationForm.rate : ""}
+                    onChange={(event) =>
+                      setAllocationForm((form) => ({ ...form, type, rate: event.target.value }))
+                    }
+                    className="mt-1 border-border bg-background"
+                    inputMode="decimal"
+                  />
+                </div>
+              </>
+            )}
+            <div className="flex items-end">
+              <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">
+                Add
+              </Button>
+            </div>
+            <div className="md:col-span-5">
+              <Label>Estimated cost</Label>
+              <Input
+                value={allocationForm.type === type ? allocationForm.cost : ""}
+                onChange={(event) =>
+                  setAllocationForm((form) => ({ ...form, type, cost: event.target.value }))
+                }
+                className="mt-1 border-border bg-background"
+                inputMode="decimal"
+              />
+            </div>
+            <div className="md:col-span-5">
+              <Label>Notes</Label>
+              <Textarea
+                value={allocationForm.type === type ? allocationForm.notes : ""}
+                onChange={(event) =>
+                  setAllocationForm((form) => ({ ...form, type, notes: event.target.value }))
+                }
+                className="mt-1 border-border bg-background"
+                rows={2}
+              />
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      {allocations.length === 0 ? (
+        <PlaceholderCard
+          icon={isMaterial ? <Package className="h-5 w-5" /> : <Hammer className="h-5 w-5" />}
+          title={isMaterial ? "No materials allocated" : "No labour allocated"}
+          body={isMaterial ? "Add materials or parts for this job." : "Add labour time or cost for this job."}
+        />
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2">
+          {allocations.map((allocation) => {
+            const area = areas.find((item) => item.id === allocation.areaId)
+            return (
+              <Card key={allocation.id} className="border-border bg-card/80">
+                <CardContent className="pt-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-foreground">{allocation.name}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {isMaterial
+                          ? `${allocation.quantity ?? "-"} ${allocation.unit || ""}`.trim()
+                          : `${allocation.hours ?? "-"} hours`}
+                      </p>
+                      {area && <p className="mt-1 text-sm text-muted-foreground">{area.name}</p>}
+                    </div>
+                    <Badge variant="outline" className="border-border text-muted-foreground">
+                      {centsToCurrency(allocation.costCents)}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      )}
+    </>
   )
 }
