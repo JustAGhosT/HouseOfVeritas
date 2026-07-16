@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useState, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -829,6 +830,14 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
                             ) : null}
                           </div>
                         </div>
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="outline"
+                          className="border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
+                        >
+                          <Link href={`/dashboard/${persona}/projects/${job.id}`}>Open</Link>
+                        </Button>
                         {isAdmin &&
                           (() => {
                             const available = ["hans", "charl", "lucky", "irma"].filter(
