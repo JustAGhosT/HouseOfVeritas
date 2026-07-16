@@ -131,6 +131,7 @@ Read .claude/commands/fix.md and follow the instructions
 │   ├── veritas-archive.md
 │   ├── veritas-studio.md
 │   ├── veritas-launch.md
+│   ├── veritas-mvp-launch.md
 │   ├── veritas-ledger.md
 │   └── veritas-compass.md
 ├── commands/             # Executable prompts
