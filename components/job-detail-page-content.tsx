@@ -21,6 +21,7 @@ import { apiFetch } from "@/lib/api-client"
 import { logger } from "@/lib/logger"
 import type { Project } from "@/lib/projects"
 import type { JobArea, JobAreaKind } from "@/app/api/projects/[id]/areas/route"
+import type { GroupedJobTask } from "@/app/api/projects/[id]/task-groups/route"
 
 const STATUS_COLORS: Record<string, string> = {
   planned: "bg-muted text-muted-foreground",
@@ -46,10 +47,17 @@ export function JobDetailPageContent({ persona, projectId }: JobDetailPageConten
   const [scope, setScope] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const [areas, setAreas] = useState<JobArea[]>([])
+  const [tasks, setTasks] = useState<GroupedJobTask[]>([])
   const [areaForm, setAreaForm] = useState({
     name: "",
     kind: "area" as JobAreaKind,
     notes: "",
+  })
+  const [taskForm, setTaskForm] = useState({
+    title: "",
+    areaId: "_none",
+    groupName: "",
+    priority: "Medium",
   })
 
   const fetchJob = useCallback(async () => {
@@ -66,8 +74,14 @@ export function JobDetailPageContent({ persona, projectId }: JobDetailPageConten
           label: "JobAreas",
         })
         setAreas(areasData?.areas || [])
+        const tasksData = await apiFetch<{ tasks?: GroupedJobTask[] }>(
+          `/api/projects/${loadedJob.id}/task-groups?projectName=${encodeURIComponent(loadedJob.name)}`,
+          { label: "JobTasks" }
+        )
+        setTasks(tasksData?.tasks || [])
       } else {
         setAreas([])
+        setTasks([])
       }
 
       if (loadedJob?.parentId) {
@@ -94,6 +108,39 @@ export function JobDetailPageContent({ persona, projectId }: JobDetailPageConten
     fetchJob()
   }, [fetchJob])
 
+  const refreshTasks = async (currentJob: Project) => {
+    const tasksData = await apiFetch<{ tasks?: GroupedJobTask[] }>(
+      `/api/projects/${currentJob.id}/task-groups?projectName=${encodeURIComponent(currentJob.name)}`,
+      { label: "JobTasks" }
+    )
+    setTasks(tasksData?.tasks || [])
+  }
+
+  const handleCreateTask = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!job || !taskForm.title.trim()) return
+
+    try {
+      await apiFetch(`/api/projects/${job.id}/task-groups`, {
+        method: "POST",
+        body: {
+          title: taskForm.title,
+          projectName: job.name,
+          areaId: taskForm.areaId === "_none" ? undefined : taskForm.areaId,
+          groupName: taskForm.groupName || undefined,
+          priority: taskForm.priority,
+        },
+        label: "CreateJobTask",
+      })
+      setTaskForm({ title: "", areaId: "_none", groupName: "", priority: "Medium" })
+      await refreshTasks(job)
+    } catch (error) {
+      logger.error("Failed to create grouped task", {
+        error: error instanceof Error ? error.message : String(error),
+        projectId: job.id,
+      })
+    }
+  }
   const handleCreateArea = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!job || !areaForm.name.trim()) return
@@ -301,8 +348,102 @@ export function JobDetailPageContent({ persona, projectId }: JobDetailPageConten
             </div>
           )}
         </TabsContent>
-        <TabsContent value="tasks">
-          <PlaceholderCard icon={<ClipboardList className="h-5 w-5" />} title="Tasks" body="Tasks will remain job-owned and can later be grouped by area." />
+        <TabsContent value="tasks" className="space-y-4">
+          <Card className="border-border bg-card/80">
+            <CardHeader>
+              <CardTitle>Tasks</CardTitle>
+              <CardDescription>Tasks stay owned by this job and can be grouped by area.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleCreateTask} className="grid gap-3 md:grid-cols-[1fr_180px_160px_auto]">
+                <div>
+                  <Label>Task</Label>
+                  <Input
+                    value={taskForm.title}
+                    onChange={(event) => setTaskForm((form) => ({ ...form, title: event.target.value }))}
+                    placeholder="e.g. Remove old basin"
+                    className="mt-1 border-border bg-background"
+                  />
+                </div>
+                <div>
+                  <Label>Area</Label>
+                  <Select
+                    value={taskForm.areaId}
+                    onValueChange={(value) => setTaskForm((form) => ({ ...form, areaId: value }))}
+                  >
+                    <SelectTrigger className="mt-1 border-border bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">No area</SelectItem>
+                      {areas.map((area) => (
+                        <SelectItem key={area.id} value={area.id}>
+                          {area.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Priority</Label>
+                  <Select
+                    value={taskForm.priority}
+                    onValueChange={(value) => setTaskForm((form) => ({ ...form, priority: value }))}
+                  >
+                    <SelectTrigger className="mt-1 border-border bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Low">Low</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="High">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end">
+                  <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">
+                    Add task
+                  </Button>
+                </div>
+                <div className="md:col-span-4">
+                  <Label>Task group</Label>
+                  <Input
+                    value={taskForm.groupName}
+                    onChange={(event) => setTaskForm((form) => ({ ...form, groupName: event.target.value }))}
+                    placeholder="e.g. Plumbing, Prep, Finishing"
+                    className="mt-1 border-border bg-background"
+                  />
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          {tasks.length === 0 ? (
+            <PlaceholderCard icon={<ClipboardList className="h-5 w-5" />} title="No tasks yet" body="Add the first job task and optionally place it in an area or task group." />
+          ) : (
+            <div className="space-y-3">
+              {tasks.map((task) => {
+                const area = areas.find((item) => item.id === task.areaId)
+                return (
+                  <Card key={task.id} className="border-border bg-card/80">
+                    <CardContent className="flex items-center justify-between gap-4 pt-4">
+                      <div>
+                        <p className="font-medium text-foreground">{task.title}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <Badge variant="outline" className="border-border text-muted-foreground">
+                            {task.status}
+                          </Badge>
+                          <Badge className="bg-accent/20 text-accent">{task.priority}</Badge>
+                          {area && <span className="text-sm text-muted-foreground">{area.name}</span>}
+                          {task.groupName && <span className="text-sm text-muted-foreground">{task.groupName}</span>}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
         </TabsContent>
         <TabsContent value="materials">
           <PlaceholderCard icon={<Package className="h-5 w-5" />} title="Materials / Parts" body="Materials and parts will support allocations across jobs in a later slice." />
