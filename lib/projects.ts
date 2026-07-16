@@ -13,6 +13,8 @@ export type ProjectMemberRole = "lead" | "contributor" | "supervisor"
 
 export type ProjectKind = "scope" | "job"
 
+export type ScopeKind = "site" | "asset" | "location"
+
 export type ProjectStorageType = "major" | "subproject"
 
 export type ProjectTypeInput = ProjectKind | ProjectStorageType
@@ -28,6 +30,7 @@ export interface Project {
   name: string
   description?: string
   type: ProjectStorageType
+  scopeKind?: ScopeKind
   parentId?: string
   status: ProjectStatus
   startDate?: string

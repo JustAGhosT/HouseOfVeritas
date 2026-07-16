@@ -57,7 +57,7 @@ export async function GET(request: Request) {
 export const POST = withRole("admin")(async (request: Request) => {
   try {
     const body = await request.json()
-    const { name, description, type, parentId, status, startDate, endDate, budget, members } = body
+    const { name, description, type, scopeKind, parentId, status, startDate, endDate, budget, members } = body
 
     if (!name || !type) {
       return NextResponse.json({ error: "name and type are required" }, { status: 400 })
@@ -73,6 +73,7 @@ export const POST = withRole("admin")(async (request: Request) => {
       name,
       description: description || undefined,
       type: storedType,
+      scopeKind: storedType === "major" ? scopeKind || "site" : undefined,
       parentId: storedType === "subproject" ? parentId : undefined,
       status: status || "planned",
       startDate,

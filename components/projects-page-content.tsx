@@ -34,10 +34,11 @@ import {
   ImagePlus,
   Check,
   X,
+  Pencil,
 } from "lucide-react"
 import { AiSuggestIcon } from "@/components/ui/ai-suggest-icon"
 import { getStoredScopeId } from "@/components/scope-selector"
-import type { Project } from "@/lib/projects"
+import type { Project, ScopeKind } from "@/lib/projects"
 import type { ProjectSuggestion } from "@/app/api/projects/suggestions/route"
 import { logger } from "@/lib/logger"
 import { apiFetch } from "@/lib/api-client"
@@ -59,6 +60,12 @@ const STATUS_COLORS: Record<string, string> = {
 
 const ALL_SCOPES = "_all"
 
+const SCOPE_KIND_LABELS: Record<ScopeKind, string> = {
+  site: "Site",
+  asset: "Asset",
+  location: "Location",
+}
+
 interface ProjectsPageContentProps {
   persona: "hans" | "charl" | "lucky" | "irma"
   isAdmin: boolean
@@ -70,6 +77,8 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [suggestDialogOpen, setSuggestDialogOpen] = useState(false)
+  const [editScopeOpen, setEditScopeOpen] = useState(false)
+  const [editingScope, setEditingScope] = useState<Project | null>(null)
   const [expandedMajor, setExpandedMajor] = useState<Set<string>>(new Set())
   const [selectedScopeId, setSelectedScopeId] = useState(ALL_SCOPES)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
@@ -82,7 +91,15 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
     name: "",
     description: "",
     type: "subproject" as "major" | "subproject",
+    scopeKind: "site" as ScopeKind,
     parentId: "",
+    status: "planned",
+  })
+
+  const [editScopeForm, setEditScopeForm] = useState({
+    name: "",
+    description: "",
+    scopeKind: "site" as ScopeKind,
     status: "planned",
   })
 
@@ -223,6 +240,7 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
           name: formData.name,
           description: formData.description,
           type: formData.type,
+          scopeKind: formData.type === "major" ? formData.scopeKind : undefined,
           parentId: formData.type === "subproject" ? formData.parentId || undefined : undefined,
         },
         label: "SuggestProject",
@@ -268,11 +286,47 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
     }
   }
 
+  const openEditScope = (scope: Project) => {
+    setEditingScope(scope)
+    setEditScopeForm({
+      name: scope.name,
+      description: scope.description || "",
+      scopeKind: scope.scopeKind || "site",
+      status: scope.status,
+    })
+    setEditScopeOpen(true)
+  }
+
+  const handleUpdateScope = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingScope) return
+    try {
+      await apiFetch(`/api/projects/${editingScope.id}`, {
+        method: "PATCH",
+        body: {
+          name: editScopeForm.name,
+          description: editScopeForm.description || undefined,
+          type: "scope",
+          scopeKind: editScopeForm.scopeKind,
+          status: editScopeForm.status,
+        },
+        label: "UpdateScope",
+      })
+      setEditScopeOpen(false)
+      setEditingScope(null)
+      fetchProjects()
+    } catch (error) {
+      logger.error("Failed to update scope", {
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
   const resetForm = () => {
     setFormData({
       name: "",
       description: "",
       type: "subproject",
+      scopeKind: "site",
       parentId: selectedScopeId === ALL_SCOPES ? "" : selectedScopeId,
       status: "planned",
     })
@@ -369,6 +423,24 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
           </SelectContent>
         </Select>
       </div>
+      {formData.type === "major" && (
+        <div>
+          <Label>Scope category</Label>
+          <Select
+            value={formData.scopeKind}
+            onValueChange={(v) => setFormData((p) => ({ ...p, scopeKind: v as ScopeKind }))}
+          >
+            <SelectTrigger className="mt-1 border-white/10 bg-white/5">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="site">Site</SelectItem>
+              <SelectItem value="asset">Asset</SelectItem>
+              <SelectItem value="location">Location</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       {formData.type === "subproject" && (
         <div>
           <Label>Scope</Label>
@@ -542,6 +614,83 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
         </div>
       </div>
 
+      <Dialog
+        open={editScopeOpen}
+        onOpenChange={(open) => {
+          setEditScopeOpen(open)
+          if (!open) setEditingScope(null)
+        }}
+      >
+        <DialogContent className="max-w-md border-white/10 bg-[#0d0d12] text-white">
+          <DialogHeader>
+            <DialogTitle>Edit Scope</DialogTitle>
+            <DialogDescription className="text-white/60">
+              Update the site, asset or location used to group jobs.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateScope} className="mt-4 space-y-4">
+            <div>
+              <Label>Name</Label>
+              <Input
+                value={editScopeForm.name}
+                onChange={(e) => setEditScopeForm((p) => ({ ...p, name: e.target.value }))}
+                className="mt-1 border-white/10 bg-white/5"
+                required
+              />
+            </div>
+            <div>
+              <Label>Scope category</Label>
+              <Select
+                value={editScopeForm.scopeKind}
+                onValueChange={(v) => setEditScopeForm((p) => ({ ...p, scopeKind: v as ScopeKind }))}
+              >
+                <SelectTrigger className="mt-1 border-white/10 bg-white/5">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="site">Site</SelectItem>
+                  <SelectItem value="asset">Asset</SelectItem>
+                  <SelectItem value="location">Location</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Status</Label>
+              <Select
+                value={editScopeForm.status}
+                onValueChange={(v) => setEditScopeForm((p) => ({ ...p, status: v }))}
+              >
+                <SelectTrigger className="mt-1 border-white/10 bg-white/5">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="planned">Planned</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="on_hold">On Hold</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <Textarea
+                value={editScopeForm.description}
+                onChange={(e) => setEditScopeForm((p) => ({ ...p, description: e.target.value }))}
+                className="mt-1 border-white/10 bg-white/5"
+                rows={3}
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditScopeOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">
+                Save scope
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
       {isAdmin && suggestions.length > 0 && (
         <Card className="border-secondary/30 bg-secondary/10">
           <CardHeader>
@@ -626,10 +775,29 @@ export function ProjectsPageContent({ persona, isAdmin }: ProjectsPageContentPro
                       <Badge className={STATUS_COLORS[scope.status] || STATUS_COLORS.planned}>
                         {scope.status.replace("_", " ")}
                       </Badge>
+                      <Badge variant="outline" className="border-white/15 text-white/60">
+                        {SCOPE_KIND_LABELS[scope.scopeKind || "site"]}
+                      </Badge>
                     </div>
-                    <span className="text-sm text-white/50">
-                      {scopeJobs.length} job{scopeJobs.length !== 1 ? "s" : ""}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-white/50">
+                        {scopeJobs.length} job{scopeJobs.length !== 1 ? "s" : ""}
+                      </span>
+                      {isAdmin && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 px-2 text-white/60 hover:bg-white/10 hover:text-white"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            openEditScope(scope)
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   {scope.description && (
                     <CardDescription className="text-white/60">{scope.description}</CardDescription>
