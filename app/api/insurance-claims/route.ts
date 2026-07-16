@@ -95,6 +95,11 @@ export const PATCH = withRole("admin")(async (request) => {
         updates.claimId = result.claimId
         updates.status = "Submitted"
         updates.submittedAt = toISODateString()
+      } else {
+        return NextResponse.json(
+          { error: "Insurance submission failed", details: result.message ?? "Unknown error" },
+          { status: 502 }
+        )
       }
     } else if (status) {
       updates.status = status

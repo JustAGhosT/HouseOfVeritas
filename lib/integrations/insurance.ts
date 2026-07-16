@@ -3,7 +3,7 @@
  * Used for asset loss/damage and incident-related insurance claims.
  *
  * Configure INSURANCE_PORTAL_URL and INSURANCE_API_KEY to enable. When not configured,
- * submitClaim logs and returns a stub; getClaimStatus returns a placeholder status.
+ * submitClaim logs the attempted claim and returns a failure; getClaimStatus returns null.
  */
 
 import { logger } from "@/lib/logger"
@@ -43,9 +43,8 @@ export async function submitClaim(claim: ClaimRequest): Promise<ClaimResult> {
       amount: claim.amount,
     })
     return {
-      success: true,
-      claimId: `stub-claim-${Date.now()}`,
-      message: "Insurance portal not configured; claim logged only",
+      success: false,
+      message: "Insurance portal is not configured; claim was not submitted",
     }
   }
 
@@ -89,12 +88,8 @@ export async function submitClaim(claim: ClaimRequest): Promise<ClaimResult> {
 
 export async function getClaimStatus(claimId: string): Promise<ClaimStatusResult | null> {
   if (!isConfigured()) {
-    logger.info("Insurance portal not configured, returning stub status", { claimId })
-    return {
-      claimId,
-      status: "Submitted",
-      updatedAt: new Date().toISOString(),
-    }
+    logger.info("Insurance portal not configured, claim status unavailable", { claimId })
+    return null
   }
 
   try {
