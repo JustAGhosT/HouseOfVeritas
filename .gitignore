@@ -49,6 +49,7 @@ terraform/crash.log
 .claude/worktrees/
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+.serena/
 
 # Coverage
 coverage/
