@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { withAuth, withRole } from "@/lib/auth/rbac"
 import { readFile, writeFile, mkdir } from "fs/promises"
 import { join } from "path"
-import type { Project } from "@/lib/projects"
+import { toStoredProjectType, type Project, type ProjectStorageType, type ScopeKind } from "@/lib/projects"
 import { logger } from "@/lib/logger"
 
 const SUGGESTIONS_PATH = join(process.cwd(), "data", "project-suggestions.json")
@@ -12,7 +12,8 @@ export interface ProjectSuggestion {
   id: string
   name: string
   description?: string
-  type: "major" | "subproject"
+  type: ProjectStorageType
+  scopeKind?: ScopeKind
   parentId?: string
   suggestedBy: string
   suggestedAt: string
@@ -70,7 +71,7 @@ export const POST = withAuth(async (request: Request) => {
   try {
     const auth = request.headers.get("x-user-id") || "unknown"
     const body = await request.json()
-    const { name, description, type, parentId } = body
+    const { name, description, type, scopeKind, parentId } = body
 
     if (!name || typeof name !== "string" || !name.trim()) {
       return NextResponse.json({ error: "name is required" }, { status: 400 })
@@ -78,12 +79,14 @@ export const POST = withAuth(async (request: Request) => {
 
     const suggestions = await loadSuggestions()
     const id = `sug-${Date.now()}`
+    const storedType = toStoredProjectType(type) ?? "subproject"
     const suggestion: ProjectSuggestion = {
       id,
       name: name.trim(),
       description: description?.trim(),
-      type: type === "major" ? "major" : "subproject",
-      parentId: type === "subproject" ? parentId : undefined,
+      type: storedType,
+      scopeKind: storedType === "major" ? scopeKind || "site" : undefined,
+      parentId: storedType === "subproject" ? parentId : undefined,
       suggestedBy: auth,
       suggestedAt: new Date().toISOString(),
       status: "pending",

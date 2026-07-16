@@ -64,7 +64,7 @@ const PAGE_DEFINITIONS: PageDef[] = [
     adminOnly: true,
   },
   {
-    name: "Projects",
+    name: "Work",
     href: "/dashboard",
     icon: FolderKanban,
     category: "Operations",
@@ -157,11 +157,11 @@ const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
     Marketplace: "/dashboard/hans/marketplace",
     Reports: "/dashboard/hans/reports",
     Settings: "/dashboard/hans/settings",
-    Projects: "/dashboard/hans/projects",
+    Work: "/dashboard/hans/projects",
   },
   charl: {
     "My Dashboard": "/dashboard/charl",
-    Projects: "/dashboard/charl/projects",
+    Work: "/dashboard/charl/projects",
     "My Tasks": "/dashboard/charl/tasks",
     "Time Clock": "/dashboard/charl/time",
     "Vehicle Log": "/dashboard/charl/vehicles",
@@ -171,7 +171,7 @@ const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
   },
   lucky: {
     "My Dashboard": "/dashboard/lucky",
-    Projects: "/dashboard/lucky/projects",
+    Work: "/dashboard/lucky/projects",
     "My Tasks": "/dashboard/lucky/tasks",
     "Time Clock": "/dashboard/lucky/time",
     "Vehicle Log": "/dashboard/lucky/vehicles",
@@ -182,7 +182,7 @@ const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
   },
   irma: {
     "My Dashboard": "/dashboard/irma",
-    Projects: "/dashboard/irma/projects",
+    Work: "/dashboard/irma/projects",
     "Household Tasks": "/dashboard/irma/tasks",
     "My Documents": "/dashboard/irma/documents",
     Settings: "/dashboard/irma/settings",

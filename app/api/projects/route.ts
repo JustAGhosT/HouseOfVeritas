@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { withRole } from "@/lib/auth/rbac"
 import { readFile, writeFile, mkdir } from "fs/promises"
 import { join } from "path"
-import type { Project } from "@/lib/projects"
+import { toStoredProjectType, withProjectKind, type Project } from "@/lib/projects"
 import { logger } from "@/lib/logger"
 
 const PROJECTS_PATH = join(process.cwd(), "data", "projects.json")
@@ -25,7 +25,7 @@ async function saveProjects(projects: Project[]): Promise<void> {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const parentId = searchParams.get("parentId")
-  const type = searchParams.get("type")
+  const type = toStoredProjectType(searchParams.get("type"))
   const member = searchParams.get("member")
 
   try {
@@ -36,11 +36,15 @@ export async function GET(request: Request) {
 
     const major = projects.filter((p) => p.type === "major")
     const subprojects = projects.filter((p) => p.type === "subproject")
+    const scopes = major.map(withProjectKind)
+    const jobs = subprojects.map(withProjectKind)
 
     return NextResponse.json({
-      projects,
-      major,
-      subprojects,
+      projects: projects.map(withProjectKind),
+      scopes,
+      jobs,
+      major: scopes,
+      subprojects: jobs,
     })
   } catch (err) {
     logger.error("Failed to load projects", {
@@ -53,7 +57,7 @@ export async function GET(request: Request) {
 export const POST = withRole("admin")(async (request: Request) => {
   try {
     const body = await request.json()
-    const { name, description, type, parentId, status, startDate, endDate, budget, members } = body
+    const { name, description, type, scopeKind, parentId, status, startDate, endDate, budget, members } = body
 
     if (!name || !type) {
       return NextResponse.json({ error: "name and type are required" }, { status: 400 })
@@ -62,13 +66,15 @@ export const POST = withRole("admin")(async (request: Request) => {
     const projects = await loadProjects()
     const id = `proj-${Date.now()}`
     const now = new Date().toISOString()
+    const storedType = toStoredProjectType(type) ?? "subproject"
 
     const project: Project = {
       id,
       name,
       description: description || undefined,
-      type: type === "major" ? "major" : "subproject",
-      parentId: type === "subproject" ? parentId : undefined,
+      type: storedType,
+      scopeKind: storedType === "major" ? scopeKind || "site" : undefined,
+      parentId: storedType === "subproject" ? parentId : undefined,
       status: status || "planned",
       startDate,
       endDate,
@@ -81,7 +87,7 @@ export const POST = withRole("admin")(async (request: Request) => {
     projects.push(project)
     await saveProjects(projects)
 
-    return NextResponse.json({ project })
+    return NextResponse.json({ project: withProjectKind(project) })
   } catch (err) {
     logger.error("Failed to create project", {
       error: err instanceof Error ? err.message : String(err),
