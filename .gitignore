@@ -54,6 +54,9 @@ terraform/crash.log
 # Local agent tooling
 .serena/
 
+# Local agent tooling
+.serena/
+
 # Coverage
 coverage/
 
