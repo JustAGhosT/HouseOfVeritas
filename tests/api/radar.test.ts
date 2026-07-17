@@ -6,6 +6,7 @@ describe("GET /api/radar", () => {
     const response = await GET()
 
     expect(response.status).toBe(200)
+    expect(response.headers.get("Cache-Control")).toBe("no-store, max-age=0, must-revalidate")
     await expect(response.json()).resolves.toEqual(
       expect.objectContaining({
         data: [],

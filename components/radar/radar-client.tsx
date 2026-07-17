@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import Link from "next/link"
 import {
   AlertTriangle,
   ExternalLink,
@@ -61,6 +62,7 @@ interface RankedListing {
 }
 
 const STORAGE_KEY = "hov-radar-controls-v1"
+const TAKEDOWN_EMAIL = "sales@houseofv.com"
 
 const DEFAULT_WEIGHTS: Weights = {
   buyIn: 9,
@@ -155,7 +157,9 @@ function parseSavedControls(): { weights: Weights; filters: Filters } | null {
   if (!encoded) return null
 
   try {
-    const json = encoded.startsWith("{") ? encoded : atob(encoded.replace(/-/g, "+").replace(/_/g, "/"))
+    const json = encoded.startsWith("{")
+      ? encoded
+      : atob(encoded.replace(/-/g, "+").replace(/_/g, "/"))
     const parsed = JSON.parse(json) as { weights?: Partial<Weights>; filters?: Partial<Filters> }
     const nextWeights = { ...DEFAULT_WEIGHTS }
     const nextFilters = { ...DEFAULT_FILTERS }
@@ -164,7 +168,8 @@ function parseSavedControls(): { weights: Weights; filters: Filters } | null {
       nextWeights[key] = clamp(readNumber(parsed.weights?.[key], nextWeights[key]), 0, 10)
     }
 
-    nextFilters.area = typeof parsed.filters?.area === "string" ? parsed.filters.area : nextFilters.area
+    nextFilters.area =
+      typeof parsed.filters?.area === "string" ? parsed.filters.area : nextFilters.area
     nextFilters.maxPrice = Math.max(0, readNumber(parsed.filters?.maxPrice, nextFilters.maxPrice))
     nextFilters.minErf = Math.max(0, readNumber(parsed.filters?.minErf, nextFilters.minErf))
     nextFilters.freeholdOnly = readBoolean(parsed.filters?.freeholdOnly, nextFilters.freeholdOnly)
@@ -248,7 +253,7 @@ function WeightSlider({
     <label className="grid gap-2">
       <span className="flex items-center justify-between gap-3 text-sm font-medium">
         <span>{label}</span>
-        <span className="tabular-nums text-muted-foreground">{value}</span>
+        <span className="text-muted-foreground tabular-nums">{value}</span>
       </span>
       <Slider
         value={[value]}
@@ -283,25 +288,29 @@ export function RadarClient({ initialListings, summary }: RadarClientProps) {
   const [weights, setWeights] = useState(DEFAULT_WEIGHTS)
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [controlsRestored, setControlsRestored] = useState(false)
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       const saved = parseSavedControls()
-      if (!saved) return
-      setWeights(saved.weights)
-      setFilters(saved.filters)
+      if (saved) {
+        setWeights(saved.weights)
+        setFilters(saved.filters)
+      }
+      setControlsRestored(true)
     })
 
     return () => window.cancelAnimationFrame(frame)
   }, [])
 
   useEffect(() => {
+    if (!controlsRestored) return
     const encoded = encodeControls(weights, filters)
     window.localStorage.setItem(STORAGE_KEY, encoded)
     const url = new URL(window.location.href)
     url.searchParams.set("state", encoded)
     window.history.replaceState(null, "", url)
-  }, [weights, filters])
+  }, [controlsRestored, weights, filters])
 
   const suburbs = useMemo(
     () => [...new Set(initialListings.map((listing) => listing.suburb))].sort(),
@@ -312,7 +321,11 @@ export function RadarClient({ initialListings, summary }: RadarClientProps) {
     return initialListings
       .filter((listing) => matchesFilters(listing, filters))
       .map((listing) => ({ listing, liveScore: scoreListing(listing, weights) }))
-      .sort((a, b) => b.liveScore - a.liveScore)
+      .sort(
+        (a, b) =>
+          Number(b.listing.confidence === "verified") -
+            Number(a.listing.confidence === "verified") || b.liveScore - a.liveScore
+      )
   }, [filters, initialListings, weights])
 
   const setWeight = (key: WeightKey, value: number) => {
@@ -347,9 +360,22 @@ export function RadarClient({ initialListings, summary }: RadarClientProps) {
             <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl">
               Property Deal Radar
             </h1>
-            <p className="mt-2 max-w-3xl text-sm text-muted-foreground sm:text-base">
+            <p className="text-muted-foreground mt-2 max-w-3xl text-sm sm:text-base">
               Public shortlist of verified, publish-approved property opportunities with adjustable
               investment weighting.
+            </p>
+            <p className="text-muted-foreground mt-2 text-sm">
+              Not financial advice.{" "}
+              <Link href="/radar/about" className="underline underline-offset-4">
+                How Radar works
+              </Link>
+              {" · "}
+              <a
+                href={`mailto:${TAKEDOWN_EMAIL}?subject=Property%20Deal%20Radar%20takedown%20or%20correction`}
+                className="underline underline-offset-4"
+              >
+                Report / request takedown
+              </a>
             </p>
           </div>
         </div>
@@ -367,9 +393,9 @@ export function RadarClient({ initialListings, summary }: RadarClientProps) {
 
       <section className="grid gap-5 lg:grid-cols-[360px_1fr]">
         <aside className="space-y-4">
-          <div className="rounded-lg border bg-card p-4">
+          <div className="bg-card rounded-lg border p-4">
             <div className="mb-4 flex items-center gap-2">
-              <SlidersHorizontal className="size-4 text-muted-foreground" />
+              <SlidersHorizontal className="text-muted-foreground size-4" />
               <h2 className="text-base font-semibold">Weights</h2>
             </div>
             <div className="grid gap-4">
@@ -389,7 +415,9 @@ export function RadarClient({ initialListings, summary }: RadarClientProps) {
               onClick={() => setAdvancedOpen((open) => !open)}
             >
               Advanced weights
-              <span className="text-xs text-muted-foreground">{advancedOpen ? "Hide" : "Show"}</span>
+              <span className="text-muted-foreground text-xs">
+                {advancedOpen ? "Hide" : "Show"}
+              </span>
             </Button>
             {advancedOpen ? (
               <div className="mt-4 grid gap-4 border-t pt-4">
@@ -405,7 +433,7 @@ export function RadarClient({ initialListings, summary }: RadarClientProps) {
             ) : null}
           </div>
 
-          <div className="rounded-lg border bg-card p-4">
+          <div className="bg-card rounded-lg border p-4">
             <h2 className="mb-4 text-base font-semibold">Filters</h2>
             <div className="grid gap-3">
               <label className="grid gap-2 text-sm">
@@ -434,7 +462,7 @@ export function RadarClient({ initialListings, summary }: RadarClientProps) {
                   value={filters.maxPrice || ""}
                   onChange={(event) => setFilter("maxPrice", Number(event.target.value) || 0)}
                   placeholder="No cap"
-                  className="h-9 rounded-md border bg-transparent px-3 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  className="focus-visible:ring-ring/50 h-9 rounded-md border bg-transparent px-3 text-sm outline-none focus-visible:ring-[3px]"
                 />
               </label>
 
@@ -447,7 +475,7 @@ export function RadarClient({ initialListings, summary }: RadarClientProps) {
                   value={filters.minErf || ""}
                   onChange={(event) => setFilter("minErf", Number(event.target.value) || 0)}
                   placeholder="Any"
-                  className="h-9 rounded-md border bg-transparent px-3 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  className="focus-visible:ring-ring/50 h-9 rounded-md border bg-transparent px-3 text-sm outline-none focus-visible:ring-[3px]"
                 />
               </label>
 
@@ -474,11 +502,11 @@ export function RadarClient({ initialListings, summary }: RadarClientProps) {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-xl font-semibold">{rankedListings.length} opportunities</h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Ranked by current weighting. Confidence is displayed but not scored.
               </p>
             </div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-muted-foreground text-sm">
               Sources: {summary.sources.length > 0 ? summary.sources.join(", ") : "none"}
             </div>
           </div>
@@ -486,10 +514,10 @@ export function RadarClient({ initialListings, summary }: RadarClientProps) {
           {summary.mode !== "live" ? (
             <div className="rounded-lg border border-dashed p-6">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="mt-0.5 size-5 text-muted-foreground" />
+                <AlertTriangle className="text-muted-foreground mt-0.5 size-5" />
                 <div>
                   <h3 className="font-semibold">Radar is not publishing listings</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="text-muted-foreground mt-1 text-sm">
                     {summary.mode === "disabled"
                       ? "RADAR_ENABLED is off or unset, so public listings remain hidden."
                       : summary.error || "No publish-approved listings are available."}
@@ -502,7 +530,7 @@ export function RadarClient({ initialListings, summary }: RadarClientProps) {
           {summary.mode === "live" && rankedListings.length === 0 ? (
             <div className="rounded-lg border border-dashed p-6">
               <h3 className="font-semibold">No listings match these filters</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="text-muted-foreground mt-1 text-sm">
                 Adjust the area, title, price, erf, or status filters to widen the shortlist.
               </p>
             </div>
@@ -510,7 +538,7 @@ export function RadarClient({ initialListings, summary }: RadarClientProps) {
 
           <div className="grid gap-4">
             {rankedListings.map(({ listing, liveScore }, index) => (
-              <article key={listing.id} className="rounded-lg border bg-card p-4">
+              <article key={listing.id} className="bg-card rounded-lg border p-4">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                   <div className="min-w-0 space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
@@ -523,11 +551,12 @@ export function RadarClient({ initialListings, summary }: RadarClientProps) {
                     </div>
                     <div>
                       <h3 className="flex flex-wrap items-center gap-2 text-xl font-semibold">
-                        <MapPin className="size-5 text-muted-foreground" />
+                        <MapPin className="text-muted-foreground size-5" />
                         {listing.suburb}
                       </h3>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Last seen {listing.lastSeen || "unknown"} via {titleCase(listing.sourcePortal)}
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        Last seen {listing.lastSeen || "unknown"} via{" "}
+                        {titleCase(listing.sourcePortal)}
                       </p>
                     </div>
                     <p className="max-w-3xl text-sm leading-6">
@@ -535,7 +564,7 @@ export function RadarClient({ initialListings, summary }: RadarClientProps) {
                         `${titleCase(listing.effort)} effort ${titleCase(listing.propertyType)} with ${listing.erfSizeM2 ?? "unknown"} m2 erf and ${formatPercent(listing.flipPct)} projected flip.`}
                     </p>
                   </div>
-                  <div className="grid min-w-56 gap-2 rounded-md border bg-background p-3 text-sm">
+                  <div className="bg-background grid min-w-56 gap-2 rounded-md border p-3 text-sm">
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-muted-foreground">Live score</span>
                       <strong>{liveScore.toFixed(1)}</strong>
@@ -553,7 +582,7 @@ export function RadarClient({ initialListings, summary }: RadarClientProps) {
 
                 <div className="mt-4 grid gap-3 border-t pt-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div className="flex items-center gap-2 text-sm">
-                    <Home className="size-4 text-muted-foreground" />
+                    <Home className="text-muted-foreground size-4" />
                     <span>
                       {listing.bedrooms ?? "n/a"} bed / {listing.bathrooms ?? "n/a"} bath
                     </span>
@@ -564,7 +593,9 @@ export function RadarClient({ initialListings, summary }: RadarClientProps) {
                   </div>
                   <div className="text-sm">
                     <span className="text-muted-foreground">Deal score </span>
-                    <span>{listing.dealScore === null ? "n/a" : `${listing.dealScore.toFixed(1)} pts`}</span>
+                    <span>
+                      {listing.dealScore === null ? "n/a" : `${listing.dealScore.toFixed(1)} pts`}
+                    </span>
                   </div>
                   <div className="text-sm">
                     <span className="text-muted-foreground">ARV </span>
@@ -592,7 +623,14 @@ export function RadarClient({ initialListings, summary }: RadarClientProps) {
                   </div>
                 </div>
 
-                <div className="mt-4 flex justify-end">
+                <div className="mt-4 flex flex-wrap justify-end gap-2">
+                  <Button asChild variant="ghost">
+                    <a
+                      href={`mailto:${TAKEDOWN_EMAIL}?subject=${encodeURIComponent(`Property Deal Radar takedown or correction: ${listing.id}`)}`}
+                    >
+                      Report / request takedown
+                    </a>
+                  </Button>
                   <Button asChild variant="outline">
                     <a href={listing.sourceUrl} target="_blank" rel="noreferrer">
                       <ExternalLink className="size-4" />
@@ -603,6 +641,20 @@ export function RadarClient({ initialListings, summary }: RadarClientProps) {
               </article>
             ))}
           </div>
+          <footer className="text-muted-foreground border-t pt-4 text-sm">
+            Listing facts are attributed to their source portals; source listings are authoritative.
+            Radar is an information and research tool, not financial advice.{" "}
+            <Link href="/radar/about" className="underline underline-offset-4">
+              Sources and methodology
+            </Link>
+            {" · "}
+            <a
+              href={`mailto:${TAKEDOWN_EMAIL}?subject=Property%20Deal%20Radar%20takedown%20or%20correction`}
+              className="underline underline-offset-4"
+            >
+              Report / request takedown
+            </a>
+          </footer>
         </section>
       </section>
     </div>
