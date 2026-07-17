@@ -20,6 +20,19 @@ test.describe("clean-default mode", () => {
       })
     )
 
+    const radar = await request.get("/api/radar")
+    expect(radar.ok()).toBeTruthy()
+    expect(await radar.json()).toEqual(
+      expect.objectContaining({
+        data: [],
+        summary: expect.objectContaining({
+          mode: "disabled",
+          enabled: false,
+          count: 0,
+        }),
+      })
+    )
+
     // Everything below is auth-protected by proxy.ts (401 without a session),
     // so seed the session before hitting authenticated routes and use
     // context.request so the session cookie is sent.
@@ -127,5 +140,10 @@ test.describe("clean-default mode", () => {
     await page.goto("/login")
     await expect(page.getByTestId("login-submit")).toContainText("Continue with Mystira")
     await expect(page.locator("body")).not.toContainText(/demo-user|Demo Mode/i)
+
+    await page.goto("/radar")
+    await expect(page.getByRole("heading", { name: "Property Deal Radar" })).toBeVisible()
+    await expect(page.getByText("Radar is not publishing listings")).toBeVisible()
+    await expect(page.locator("body")).not.toContainText(cleanModeText)
   })
 })

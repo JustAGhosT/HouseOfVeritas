@@ -9,9 +9,11 @@ const PUBLIC_PATHS = [
   "/api/auth",
   "/api/health",
   "/api/kiosk",
+  "/api/radar",
   "/kiosk",
   "/offline",
   "/login",
+  "/radar",
   "/",
 ]
 
