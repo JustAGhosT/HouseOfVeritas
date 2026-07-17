@@ -46,6 +46,8 @@ class Config:
     table_vehicle_logs: str = ""
     table_expenses: str = ""
     table_document_expiry: str = ""
+    table_deal_radar_listings: str = ""
+    table_deal_radar_quarantine: str = ""
     
     # DocuSeal
     docuseal_url: str = ""
@@ -69,6 +71,11 @@ class Config:
     storage_connection_string: str = ""
     backup_container: str = "backups"
     archive_container: str = "archive"
+
+    # Property Deal Radar
+    radar_enabled: bool = False
+    radar_seed_enabled: bool = True
+    radar_row_delta_threshold_pct: int = 60
     
     @classmethod
     def from_env(cls) -> "Config":
@@ -84,6 +91,8 @@ class Config:
             table_vehicle_logs=os.environ.get("TABLE_VEHICLE_LOGS", "6"),
             table_expenses=os.environ.get("TABLE_EXPENSES", "7"),
             table_document_expiry=os.environ.get("TABLE_DOCUMENT_EXPIRY", "8"),
+            table_deal_radar_listings=os.environ.get("TABLE_DEAL_RADAR_LISTINGS", ""),
+            table_deal_radar_quarantine=os.environ.get("TABLE_DEAL_RADAR_QUARANTINE", ""),
             docuseal_url=os.environ.get("DOCUSEAL_URL", ""),
             docuseal_api_key=os.environ.get("DOCUSEAL_API_KEY", ""),
             docuseal_webhook_secret=os.environ.get("DOCUSEAL_WEBHOOK_SECRET", ""),
@@ -97,6 +106,9 @@ class Config:
             storage_connection_string=os.environ.get("AZURE_STORAGE_CONNECTION_STRING", ""),
             backup_container=os.environ.get("BACKUP_CONTAINER", "backups"),
             archive_container=os.environ.get("ARCHIVE_CONTAINER", "archive"),
+            radar_enabled=os.environ.get("RADAR_ENABLED", "").lower() in ["1", "true", "yes", "on"],
+            radar_seed_enabled=os.environ.get("RADAR_SEED_ENABLED", "true").lower() in ["1", "true", "yes", "on"],
+            radar_row_delta_threshold_pct=int(os.environ.get("RADAR_ROW_DELTA_THRESHOLD_PCT", "60")),
         )
 
 
