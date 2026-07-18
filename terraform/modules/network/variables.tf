@@ -42,11 +42,6 @@ variable "database_subnet_prefix" {
   default     = "10.0.3.0/24"
 }
 
-variable "runner_subnet_prefix" {
-  description = "Address prefix for CI runner subnet"
-  type        = string
-  default     = "10.0.4.0/28"
-}
 
 variable "tags" {
   description = "Tags to apply to resources"

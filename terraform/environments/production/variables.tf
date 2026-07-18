@@ -65,11 +65,6 @@ variable "database_subnet_prefix" {
   default     = "10.0.3.0/24"
 }
 
-variable "runner_subnet_prefix" {
-  description = "Runner subnet prefix for CI"
-  type        = string
-  default     = "10.0.4.0/28"
-}
 
 # Storage variables
 variable "storage_account_name" {

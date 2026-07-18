@@ -17,7 +17,7 @@ resource "azurerm_key_vault" "main" {
     bypass                     = "AzureServices"
     default_action             = var.network_default_action
     ip_rules                   = var.deployer_ip_addresses
-    virtual_network_subnet_ids = [var.container_subnet_id, var.runner_subnet_id]
+    virtual_network_subnet_ids = [var.container_subnet_id]
   }
 
   tags = var.tags

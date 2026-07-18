@@ -52,15 +52,6 @@ resource "azurerm_subnet" "database" {
   }
 }
 
-resource "azurerm_subnet" "runner" {
-  name                 = "${var.environment}-runner-subnet"
-  resource_group_name  = var.resource_group_name
-  virtual_network_name = azurerm_virtual_network.main.name
-  address_prefixes     = [var.runner_subnet_prefix]
-
-  service_endpoints = ["Microsoft.KeyVault", "Microsoft.Storage"]
-}
-
 # Network Security Groups
 resource "azurerm_network_security_group" "gateway" {
   name                = "${var.environment}-gateway-nsg"
@@ -208,41 +199,4 @@ resource "azurerm_subnet_network_security_group_association" "containers" {
 resource "azurerm_subnet_network_security_group_association" "database" {
   subnet_id                 = azurerm_subnet.database.id
   network_security_group_id = azurerm_network_security_group.database.id
-}
-
-resource "azurerm_network_security_group" "runner" {
-  name                = "${var.environment}-runner-nsg"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-
-  security_rule {
-    name                       = "AllowHTTPSOutbound"
-    priority                   = 100
-    direction                  = "Outbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "443"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
-
-  security_rule {
-    name                       = "DenyAllInbound"
-    priority                   = 4096
-    direction                  = "Inbound"
-    access                     = "Deny"
-    protocol                   = "*"
-    source_port_range          = "*"
-    destination_port_range     = "*"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
-
-  tags = var.tags
-}
-
-resource "azurerm_subnet_network_security_group_association" "runner" {
-  subnet_id                 = azurerm_subnet.runner.id
-  network_security_group_id = azurerm_network_security_group.runner.id
 }

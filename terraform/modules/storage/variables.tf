@@ -45,10 +45,6 @@ variable "database_subnet_id" {
   type        = string
 }
 
-variable "runner_subnet_id" {
-  description = "ID of the runner subnet (for CI runner access)"
-  type        = string
-}
 
 variable "deployer_ip_addresses" {
   description = "IP addresses allowed to manage Storage Account (e.g. CI runner)"

@@ -18,10 +18,6 @@ variable "container_subnet_id" {
   type        = string
 }
 
-variable "runner_subnet_id" {
-  description = "ID of the runner subnet (for CI runner access)"
-  type        = string
-}
 
 variable "db_admin_password" {
   description = "Database administrator password"
