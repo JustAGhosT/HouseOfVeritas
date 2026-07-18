@@ -126,4 +126,8 @@ resource "azurerm_app_service_custom_hostname_binding" "root" {
   hostname            = var.custom_domain
   app_service_name    = azurerm_linux_web_app.main.name
   resource_group_name = var.resource_group_name
+
+  lifecycle {
+    ignore_changes = [ssl_state, thumbprint]
+  }
 }

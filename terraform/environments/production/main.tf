@@ -230,6 +230,7 @@ module "webapp" {
   location                           = azurerm_resource_group.main.location
   web_app_name                       = var.web_app_name
   domain_name                        = var.domain_name
+  custom_domain                      = var.custom_domain
   key_vault_id                       = module.security.key_vault_id
   jwt_secret                         = random_password.jwt_secret.result
   mystira_oidc_issuer                = var.mystira_oidc_issuer
