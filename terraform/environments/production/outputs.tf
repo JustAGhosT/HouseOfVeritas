@@ -133,8 +133,3 @@ output "function_app_hostname" {
   description = "Default hostname of the Function App"
   value       = try(module.functions[0].function_app_default_hostname, null)
 }
-
-output "runner_subnet_id" {
-  description = "ID of the runner subnet (pass to phoenixvc-actions-runner Terraform)"
-  value       = module.network.runner_subnet_id
-}

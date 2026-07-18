@@ -26,7 +26,7 @@ resource "azurerm_storage_account" "main" {
     default_action             = var.network_default_action
     bypass                     = ["AzureServices"]
     ip_rules                   = var.deployer_ip_addresses
-    virtual_network_subnet_ids = [var.container_subnet_id, var.database_subnet_id, var.runner_subnet_id]
+    virtual_network_subnet_ids = [var.container_subnet_id, var.database_subnet_id]
   }
 
   tags = var.tags

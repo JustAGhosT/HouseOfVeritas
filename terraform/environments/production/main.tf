@@ -52,7 +52,6 @@ module "network" {
   gateway_subnet_prefix   = var.gateway_subnet_prefix
   container_subnet_prefix = var.container_subnet_prefix
   database_subnet_prefix  = var.database_subnet_prefix
-  runner_subnet_prefix    = var.runner_subnet_prefix
 
   tags = local.common_tags
 }
@@ -68,7 +67,6 @@ module "storage" {
   network_default_action   = var.storage_network_default_action
   container_subnet_id      = module.network.container_subnet_id
   database_subnet_id       = module.network.database_subnet_id
-  runner_subnet_id         = module.network.runner_subnet_id
   deployer_ip_addresses    = local.ci_ip_rules_storage
 
   tags = local.common_tags
@@ -83,7 +81,6 @@ module "security" {
   key_vault_name                    = var.key_vault_name
   network_default_action            = var.key_vault_network_default_action
   container_subnet_id               = module.network.container_subnet_id
-  runner_subnet_id                  = module.network.runner_subnet_id
   terraform_access_policy_object_id = var.terraform_key_vault_access_policy_object_id
   deployer_ip_addresses             = local.ci_ip_rules_keyvault
   db_admin_password                 = var.db_admin_password
@@ -289,7 +286,6 @@ module "dns" {
   depends_on = [module.gateway]
 }
 
-# Runner infrastructure is in phoenixvc-actions-runner repo (deploys into runner_subnet_id)
 
 # Monitoring Module (alerts, budgets, Log Analytics)
 module "monitoring" {
