@@ -107,6 +107,12 @@ variable "key_vault_name" {
   default     = "nl-prod-hov-kv"
 }
 
+variable "terraform_key_vault_access_policy_object_id" {
+  description = "Microsoft Entra object ID for the deploy principal granted Key Vault data-plane access"
+  type        = string
+  default     = "593a093c-d4fd-4390-977b-a64abfc97606"
+}
+
 variable "key_vault_network_default_action" {
   description = "Default network action for the Key Vault firewall"
   type        = string
