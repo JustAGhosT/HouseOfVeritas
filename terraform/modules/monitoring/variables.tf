@@ -41,8 +41,20 @@ variable "function_app_id" {
   default     = ""
 }
 
+variable "function_app_insights_id" {
+  description = "Application Insights component ID for the Function App"
+  type        = string
+  default     = ""
+}
+
 variable "enable_function_alerts" {
   description = "Whether to create function app metric alerts"
+  type        = bool
+  default     = false
+}
+
+variable "enable_radar_alerts" {
+  description = "Whether to create Deal Radar ingestion alerts"
   type        = bool
   default     = false
 }

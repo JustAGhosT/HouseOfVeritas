@@ -7,12 +7,13 @@ Trigger: Timer (Daily at 04:00 UTC)
 Schedule: 0 0 4 * * *
 """
 
+import json
 import sys
 
 import azure.functions as func
 
 sys.path.append("..")
-from shared.radar_ingestion import SeedRadarSource, run_ingestion
+from shared.radar_ingestion import SeedRadarSource, build_monitoring_payload, run_ingestion
 from shared.utils import BaserowClient, EmailClient, config, setup_logging
 
 logger = setup_logging("deal-radar-refresh")
@@ -37,4 +38,12 @@ def main(timer: func.TimerRequest) -> None:
         radar_enabled=config.radar_enabled,
     )
 
+    monitoring_payload = build_monitoring_payload(result)
+    logger.info("DealRadarRefreshTelemetry %s", json.dumps(monitoring_payload, sort_keys=True))
+    if result["zeroRows"]:
+        logger.warning("DealRadarRefreshZeroRows %s", json.dumps(monitoring_payload, sort_keys=True))
+    if result["quarantined"] > 0:
+        logger.warning("DealRadarRefreshQuarantine %s", json.dumps(monitoring_payload, sort_keys=True))
+    if result["sourceShapeDrift"]:
+        logger.warning("DealRadarRefreshSourceShapeDrift %s", json.dumps(monitoring_payload, sort_keys=True))
     logger.info("Deal Radar refresh complete: %s", result)

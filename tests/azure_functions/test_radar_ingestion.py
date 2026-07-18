@@ -13,6 +13,7 @@ from shared.radar_ingestion import (  # noqa: E402
     SeedRadarSource,
     SourceRecord,
     build_listing_row,
+    build_monitoring_payload,
     cents,
     qa_record,
     run_ingestion,
@@ -94,6 +95,9 @@ class RadarIngestionTests(unittest.TestCase):
         self.assertEqual(result["staged"], 9)
         self.assertEqual(result["quarantined"], 0)
         self.assertEqual(result["delisted"], 0)
+        self.assertFalse(result["zeroRows"])
+        self.assertFalse(result["sourceShapeDrift"])
+        self.assertEqual(result["sourceShapeReasons"], [])
         self.assertEqual(len(email.sent), 0)
         self.assertEqual(len(baserow.tables["radar"]), 9)
         self.assertTrue(all(row["Publish Status"] == "staged" for row in baserow.tables["radar"]))
@@ -207,8 +211,34 @@ class RadarIngestionTests(unittest.TestCase):
         )
 
         self.assertEqual(result["delisted"], 1)
+        self.assertTrue(result["zeroRows"])
+        self.assertTrue(result["sourceShapeDrift"])
+        self.assertEqual(result["sourceShapeReasons"], ["row-count-delta-100pct"])
         self.assertEqual(baserow.tables["radar"][0]["Status"], "delisted")
         self.assertEqual(baserow.tables["radar"][0]["Delisted At"], "2026-07-16")
+
+    def test_monitoring_payload_contains_counts_and_flags_only(self) -> None:
+        result = {
+            "processed": 0,
+            "published": 0,
+            "staged": 0,
+            "quarantined": 1,
+            "delisted": 2,
+            "notificationSent": True,
+            "radarEnabled": False,
+            "zeroRows": True,
+            "sourceShapeDrift": True,
+            "sourceShapeReasons": ["row-count-delta-100pct"],
+        }
+
+        payload = build_monitoring_payload(result)
+
+        self.assertEqual(payload["event"], "DealRadarRefreshTelemetry")
+        self.assertEqual(payload["quarantined"], 1)
+        self.assertTrue(payload["zeroRows"])
+        self.assertTrue(payload["sourceShapeDrift"])
+        self.assertEqual(payload["sourceShapeReasons"], ["row-count-delta-100pct"])
+        self.assertNotIn("sourceUrl", payload)
 
     def test_price_drop_is_logged_on_existing_row_update(self) -> None:
         baserow = FakeBaserow()

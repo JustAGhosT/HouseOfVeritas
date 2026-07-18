@@ -39,7 +39,15 @@ enable_application_gateway   = false
 enable_dns_records           = false
 enable_functions             = false
 enable_monitoring            = false
+enable_radar_alerts          = false
 enable_document_intelligence = false
+
+# Deal Radar remains explicit opt-in for MVP/private validation.
+radar_enabled                       = false
+radar_seed_enabled                  = false
+radar_row_delta_threshold_pct       = 60
+baserow_table_deal_radar_listings   = ""
+baserow_table_deal_radar_quarantine = ""
 
 # These variables are currently kept for compatibility. The compute and
 # gateway modules derive live names internally as prod-docuseal, prod-baserow,

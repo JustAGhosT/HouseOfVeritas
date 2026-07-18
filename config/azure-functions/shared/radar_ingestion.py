@@ -363,6 +363,23 @@ def notify_exceptions(email_client: EmailClient, quarantined: Sequence[Dict[str,
     )
 
 
+def build_monitoring_payload(result: Dict[str, Any]) -> Dict[str, Any]:
+    """Return the stable, non-PII payload emitted for Radar refresh monitoring."""
+    return {
+        "event": "DealRadarRefreshTelemetry",
+        "processed": result["processed"],
+        "published": result["published"],
+        "staged": result["staged"],
+        "quarantined": result["quarantined"],
+        "delisted": result["delisted"],
+        "notificationSent": result["notificationSent"],
+        "radarEnabled": result["radarEnabled"],
+        "zeroRows": result["zeroRows"],
+        "sourceShapeDrift": result["sourceShapeDrift"],
+        "sourceShapeReasons": result["sourceShapeReasons"],
+    }
+
+
 def springs_seed_records() -> List[SourceRecord]:
     base_url = "https://example.invalid/radar-seed/"
     return [
@@ -439,4 +456,7 @@ def run_ingestion(
         "delisted": delisted,
         "notificationSent": notification_sent,
         "radarEnabled": radar_enabled,
+        "zeroRows": len(batch_records) == 0,
+        "sourceShapeDrift": len(batch_reasons) > 0,
+        "sourceShapeReasons": list(batch_reasons),
     }

@@ -116,6 +116,36 @@ variable "baserow_table_document_expiry" {
   default     = "8"
 }
 
+variable "baserow_table_deal_radar_listings" {
+  description = "Baserow table ID for Deal Radar listings"
+  type        = string
+  default     = ""
+}
+
+variable "baserow_table_deal_radar_quarantine" {
+  description = "Baserow table ID for Deal Radar quarantine"
+  type        = string
+  default     = ""
+}
+
+variable "radar_enabled" {
+  description = "Publish Deal Radar rows and expose the public Radar surface"
+  type        = bool
+  default     = false
+}
+
+variable "radar_seed_enabled" {
+  description = "Allow the Deal Radar seed source to run"
+  type        = bool
+  default     = false
+}
+
+variable "radar_row_delta_threshold_pct" {
+  description = "Percent row-count delta that quarantines a Deal Radar ingestion batch"
+  type        = number
+  default     = 60
+}
+
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)
