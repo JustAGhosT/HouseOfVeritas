@@ -56,6 +56,16 @@ variable "deployer_ip_addresses" {
   default     = []
 }
 
+variable "terraform_access_policy_object_id" {
+  description = "Microsoft Entra object ID that Terraform grants Key Vault data-plane access to"
+  type        = string
+
+  validation {
+    condition     = length(trimspace(var.terraform_access_policy_object_id)) > 0
+    error_message = "terraform_access_policy_object_id must be the object ID of the deploy principal."
+  }
+}
+
 variable "network_default_action" {
   description = "Default network action for the Key Vault firewall"
   type        = string

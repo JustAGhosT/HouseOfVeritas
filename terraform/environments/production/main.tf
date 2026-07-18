@@ -78,17 +78,18 @@ module "storage" {
 module "security" {
   source = "../../modules/security"
 
-  resource_group_name    = azurerm_resource_group.main.name
-  location               = azurerm_resource_group.main.location
-  key_vault_name         = var.key_vault_name
-  network_default_action = var.key_vault_network_default_action
-  container_subnet_id    = module.network.container_subnet_id
-  runner_subnet_id       = module.network.runner_subnet_id
-  deployer_ip_addresses  = local.ci_ip_rules_keyvault
-  db_admin_password      = var.db_admin_password
-  docuseal_secret_key    = random_password.docuseal_secret.result
-  baserow_secret_key     = random_password.baserow_secret.result
-  smtp_password          = var.smtp_password
+  resource_group_name               = azurerm_resource_group.main.name
+  location                          = azurerm_resource_group.main.location
+  key_vault_name                    = var.key_vault_name
+  network_default_action            = var.key_vault_network_default_action
+  container_subnet_id               = module.network.container_subnet_id
+  runner_subnet_id                  = module.network.runner_subnet_id
+  terraform_access_policy_object_id = var.terraform_key_vault_access_policy_object_id
+  deployer_ip_addresses             = local.ci_ip_rules_keyvault
+  db_admin_password                 = var.db_admin_password
+  docuseal_secret_key               = random_password.docuseal_secret.result
+  baserow_secret_key                = random_password.baserow_secret.result
+  smtp_password                     = var.smtp_password
 
   tags = local.common_tags
 }
