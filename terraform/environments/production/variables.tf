@@ -446,6 +446,11 @@ variable "domain_name" {
   type        = string
   default     = "nexamesh.ai"
 }
+variable "custom_domain" {
+  description = "Canonical custom hostname bound to the HOV web app. DNS is owned by neuralliquid-org."
+  type        = string
+  default     = "hov.neuralliquid.ai"
+}
 
 # -----------------------------------------------------------------------------
 # Auth.js v5 + Mystira OIDC (relying party: neuralliquid-hov-web)

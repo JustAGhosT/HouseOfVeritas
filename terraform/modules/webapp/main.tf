@@ -1,4 +1,6 @@
 locals {
+  app_base_url = var.custom_domain != "" ? "https://${var.custom_domain}" : "https://${var.domain_name}"
+
   # Auth.js v5 + Mystira OIDC runtime settings. Each OIDC key is emitted ONLY
   # when a value is supplied, so an unset variable leaves the setting absent and
   # the app falls back to its in-code dev default (see auth.config.ts) rather
@@ -45,7 +47,7 @@ resource "azurerm_linux_web_app" "main" {
 
     cors {
       allowed_origins = [
-        "https://${var.domain_name}",
+        local.app_base_url,
         "https://docs.${var.domain_name}",
         "https://ops.${var.domain_name}",
       ]
@@ -56,7 +58,7 @@ resource "azurerm_linux_web_app" "main" {
     WEBSITE_NODE_DEFAULT_VERSION = "~20"
     HOSTNAME                     = "0.0.0.0"
     NODE_ENV                     = "production"
-    NEXT_PUBLIC_APP_URL          = "https://${var.domain_name}"
+    NEXT_PUBLIC_APP_URL          = local.app_base_url
 
     BASEROW_URL             = "https://ops.${var.domain_name}"
     BASEROW_TOKEN           = var.baserow_api_token
@@ -126,4 +128,8 @@ resource "azurerm_app_service_custom_hostname_binding" "root" {
   hostname            = var.custom_domain
   app_service_name    = azurerm_linux_web_app.main.name
   resource_group_name = var.resource_group_name
+
+  lifecycle {
+    ignore_changes = [ssl_state, thumbprint]
+  }
 }
