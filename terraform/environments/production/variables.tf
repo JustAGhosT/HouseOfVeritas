@@ -215,6 +215,12 @@ variable "enable_monitoring" {
   default     = false
 }
 
+variable "enable_radar_alerts" {
+  description = "Whether to provision Deal Radar ingestion alert rules"
+  type        = bool
+  default     = false
+}
+
 variable "enable_document_intelligence" {
   description = "Whether to provision Azure AI Document Intelligence"
   type        = bool
@@ -374,6 +380,36 @@ variable "baserow_table_insurance_claims" {
   description = "Baserow table ID for Insurance Claims"
   type        = string
   default     = "0"
+}
+
+variable "baserow_table_deal_radar_listings" {
+  description = "Baserow table ID for Deal Radar listings"
+  type        = string
+  default     = ""
+}
+
+variable "baserow_table_deal_radar_quarantine" {
+  description = "Baserow table ID for Deal Radar quarantine"
+  type        = string
+  default     = ""
+}
+
+variable "radar_enabled" {
+  description = "Expose and publish the public Deal Radar experience"
+  type        = bool
+  default     = false
+}
+
+variable "radar_seed_enabled" {
+  description = "Allow the Deal Radar seed source to run"
+  type        = bool
+  default     = false
+}
+
+variable "radar_row_delta_threshold_pct" {
+  description = "Percent row-count delta that quarantines a Deal Radar ingestion batch"
+  type        = number
+  default     = 60
 }
 
 variable "docuseal_api_key" {

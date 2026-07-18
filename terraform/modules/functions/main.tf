@@ -68,14 +68,19 @@ resource "azurerm_linux_function_app" "main" {
     DOCUSEAL_API_KEY        = var.docuseal_api_key
     DOCUSEAL_WEBHOOK_SECRET = var.docuseal_webhook_secret
 
-    TABLE_EMPLOYEES       = var.baserow_table_employees
-    TABLE_ASSETS          = var.baserow_table_assets
-    TABLE_TASKS           = var.baserow_table_tasks
-    TABLE_TIME_CLOCK      = var.baserow_table_time_clock
-    TABLE_INCIDENTS       = var.baserow_table_incidents
-    TABLE_VEHICLE_LOGS    = var.baserow_table_vehicle_logs
-    TABLE_EXPENSES        = var.baserow_table_expenses
-    TABLE_DOCUMENT_EXPIRY = var.baserow_table_document_expiry
+    TABLE_EMPLOYEES               = var.baserow_table_employees
+    TABLE_ASSETS                  = var.baserow_table_assets
+    TABLE_TASKS                   = var.baserow_table_tasks
+    TABLE_TIME_CLOCK              = var.baserow_table_time_clock
+    TABLE_INCIDENTS               = var.baserow_table_incidents
+    TABLE_VEHICLE_LOGS            = var.baserow_table_vehicle_logs
+    TABLE_EXPENSES                = var.baserow_table_expenses
+    TABLE_DOCUMENT_EXPIRY         = var.baserow_table_document_expiry
+    TABLE_DEAL_RADAR_LISTINGS     = var.baserow_table_deal_radar_listings
+    TABLE_DEAL_RADAR_QUARANTINE   = var.baserow_table_deal_radar_quarantine
+    RADAR_ENABLED                 = tostring(var.radar_enabled)
+    RADAR_SEED_ENABLED            = tostring(var.radar_seed_enabled)
+    RADAR_ROW_DELTA_THRESHOLD_PCT = tostring(var.radar_row_delta_threshold_pct)
 
     ACS_CONNECTION_STRING = var.acs_connection_string
     EMAIL_FROM            = "alerts@${var.domain_name}"

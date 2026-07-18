@@ -34,3 +34,8 @@ output "application_insights_instrumentation_key" {
   value       = azurerm_application_insights.functions.instrumentation_key
   sensitive   = true
 }
+
+output "application_insights_id" {
+  description = "ID of the Function App Application Insights component"
+  value       = azurerm_application_insights.functions.id
+}

@@ -144,6 +144,18 @@ variable "baserow_table_insurance_claims" {
   default     = "0"
 }
 
+variable "baserow_table_deal_radar_listings" {
+  description = "Baserow table ID for Deal Radar listings"
+  type        = string
+  default     = ""
+}
+
+variable "radar_enabled" {
+  description = "Expose the public Deal Radar surface"
+  type        = bool
+  default     = false
+}
+
 variable "docuseal_api_key" {
   description = "DocuSeal API key"
   type        = string

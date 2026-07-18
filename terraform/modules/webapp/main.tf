@@ -82,6 +82,8 @@ resource "azurerm_linux_web_app" "main" {
     BASEROW_TABLE_POLICY_VERSIONS      = var.baserow_table_policy_versions
     BASEROW_TABLE_CONTRACTOR_CONTRACTS = var.baserow_table_contractor_contracts
     BASEROW_TABLE_INSURANCE_CLAIMS     = var.baserow_table_insurance_claims
+    BASEROW_TABLE_DEAL_RADAR_LISTINGS  = var.baserow_table_deal_radar_listings
+    RADAR_ENABLED                      = tostring(var.radar_enabled)
 
     DOCUSEAL_URL             = "https://docs.${var.domain_name}"
     DOCUSEAL_KEY             = var.docuseal_api_key
