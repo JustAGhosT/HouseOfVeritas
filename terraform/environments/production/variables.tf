@@ -463,7 +463,7 @@ variable "custom_domain" {
 variable "mystira_oidc_issuer" {
   description = "Mystira OIDC issuer URL"
   type        = string
-  default     = "https://mys-dev-id-webapi.azurewebsites.net"
+  default     = "https://identity.mystira.app"
 }
 
 variable "mystira_oidc_client_id" {
@@ -570,5 +570,5 @@ variable "ci_allowed_ip_ranges" {
 variable "mystira_oidc_client_secret_key_vault_secret_name" {
   description = "Name of the HOV Key Vault secret containing the Mystira OIDC client secret. Leave empty until the secret exists and issuer cutover is approved."
   type        = string
-  default     = ""
+  default     = "mystira-oidc-client-secret"
 }
