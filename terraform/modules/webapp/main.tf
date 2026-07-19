@@ -1,5 +1,6 @@
 locals {
-  app_base_url = var.custom_domain != "" ? "https://${var.custom_domain}" : "https://${var.domain_name}"
+  app_base_url                       = var.custom_domain != "" ? "https://${var.custom_domain}" : "https://${var.domain_name}"
+  mystira_oidc_client_secret_setting = var.mystira_oidc_client_secret_key_vault_secret_name != "" ? "@Microsoft.KeyVault(SecretUri=${var.key_vault_uri}secrets/${var.mystira_oidc_client_secret_key_vault_secret_name})" : var.mystira_oidc_client_secret
 
   # Auth.js v5 + Mystira OIDC runtime settings. Each OIDC key is emitted ONLY
   # when a value is supplied, so an unset variable leaves the setting absent and
@@ -14,7 +15,7 @@ locals {
     { AUTH_TRUST_HOST = "true" },
     var.mystira_oidc_issuer != "" ? { MYSTIRA_OIDC_ISSUER = var.mystira_oidc_issuer } : {},
     var.mystira_oidc_client_id != "" ? { MYSTIRA_OIDC_CLIENT_ID = var.mystira_oidc_client_id } : {},
-    var.mystira_oidc_client_secret != "" ? { MYSTIRA_OIDC_CLIENT_SECRET = var.mystira_oidc_client_secret } : {},
+    local.mystira_oidc_client_secret_setting != "" ? { MYSTIRA_OIDC_CLIENT_SECRET = local.mystira_oidc_client_secret_setting } : {},
     var.auth_url != "" ? { AUTH_URL = var.auth_url } : {},
   )
 }

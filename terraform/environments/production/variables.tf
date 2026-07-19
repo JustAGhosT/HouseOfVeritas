@@ -567,3 +567,8 @@ variable "ci_allowed_ip_ranges" {
   type        = list(string)
   default     = []
 }
+variable "mystira_oidc_client_secret_key_vault_secret_name" {
+  description = "Name of the HOV Key Vault secret containing the Mystira OIDC client secret. Leave empty until the secret exists and issuer cutover is approved."
+  type        = string
+  default     = ""
+}
