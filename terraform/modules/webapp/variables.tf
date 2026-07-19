@@ -225,3 +225,12 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+variable "key_vault_uri" {
+  description = "Key Vault URI used for App Service Key Vault references"
+  type        = string
+}
+variable "mystira_oidc_client_secret_key_vault_secret_name" {
+  description = "Name of the HOV Key Vault secret containing the Mystira OIDC client secret. When set, MYSTIRA_OIDC_CLIENT_SECRET is emitted as a Key Vault reference."
+  type        = string
+  default     = ""
+}
