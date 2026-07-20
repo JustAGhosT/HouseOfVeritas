@@ -209,7 +209,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: [build]
-    if: ${{ inputs.deploy_infrastructure }}
+    if: ${{ inputs.deploy_infrastructure && (inputs.environment || 'production') == 'production' }}
     environment: ${{ inputs.environment || 'production' }}
 
     steps:
