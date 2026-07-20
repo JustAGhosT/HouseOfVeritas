@@ -1,44 +1,13 @@
 import { NextResponse } from "next/server"
 import { withRole } from "@/lib/auth/rbac"
-import { readFile, writeFile, mkdir } from "fs/promises"
-import { join } from "path"
 import { withProjectKind, type Project, type ProjectMember } from "@/lib/projects"
-import type { ProjectSuggestion } from "../route"
+import { createProject } from "@/lib/repositories/project-repository"
+import {
+  listProjectSuggestions,
+  saveProjectSuggestions,
+} from "@/lib/repositories/project-suggestion-repository"
 import { logger } from "@/lib/logger"
 import { routeToInngest } from "@/lib/workflows"
-
-const SUGGESTIONS_PATH = join(process.cwd(), "data", "project-suggestions.json")
-const PROJECTS_PATH = join(process.cwd(), "data", "projects.json")
-
-async function loadSuggestions(): Promise<ProjectSuggestion[]> {
-  try {
-    const data = await readFile(SUGGESTIONS_PATH, "utf-8")
-    const parsed = JSON.parse(data)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
-
-async function saveSuggestions(suggestions: ProjectSuggestion[]): Promise<void> {
-  await mkdir(join(process.cwd(), "data"), { recursive: true })
-  await writeFile(SUGGESTIONS_PATH, JSON.stringify(suggestions, null, 2), "utf-8")
-}
-
-async function loadProjects(): Promise<Project[]> {
-  try {
-    const data = await readFile(PROJECTS_PATH, "utf-8")
-    const parsed = JSON.parse(data)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
-
-async function saveProjects(projects: Project[]): Promise<void> {
-  await mkdir(join(process.cwd(), "data"), { recursive: true })
-  await writeFile(PROJECTS_PATH, JSON.stringify(projects, null, 2), "utf-8")
-}
 
 export const PATCH = withRole("admin")(async (request, context) => {
   const params = await context.params
@@ -55,7 +24,7 @@ export const PATCH = withRole("admin")(async (request, context) => {
       return NextResponse.json({ error: "status must be approved or rejected" }, { status: 400 })
     }
 
-    const suggestions = await loadSuggestions()
+    const suggestions = await listProjectSuggestions()
     const idx = suggestions.findIndex((s) => s.id === id)
     if (idx === -1) return NextResponse.json({ error: "Suggestion not found" }, { status: 404 })
 
@@ -71,10 +40,9 @@ export const PATCH = withRole("admin")(async (request, context) => {
       reviewedBy: auth,
       reviewedAt: now,
     }
-    await saveSuggestions(suggestions)
+    await saveProjectSuggestions(suggestions)
 
     if (status === "approved") {
-      const projects = await loadProjects()
       const project: Project = {
         id: `proj-${Date.now()}`,
         name: suggestion.name,
@@ -87,8 +55,7 @@ export const PATCH = withRole("admin")(async (request, context) => {
         createdAt: now,
         updatedAt: now,
       }
-      projects.push(project)
-      await saveProjects(projects)
+      await createProject(project)
 
       await routeToInngest({
         name: "house-of-veritas/project.suggestion.approved",

@@ -59,4 +59,4 @@ Run both steps after PR #98 is merged:
 
 ## Residual Risk
 
-Only `/api/projects` list/create and member project lookup are moved to the repository in this PR. Secondary project routes for detail edits, members, suggestions, areas, allocations, and task groups still contain local JSON helpers and should be moved to repositories in a follow-up if those workflows are used in production.
+Core project workflows now use repositories consistently: list/create, detail edit/delete, member changes, member lookup, and suggestion approval. Project-adjacent metadata routes for areas, allocations, and task groups still contain local JSON helpers and should be moved to durable repositories if those workflows are used in production.

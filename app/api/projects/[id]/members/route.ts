@@ -1,26 +1,8 @@
 import { NextResponse } from "next/server"
 import { withRole } from "@/lib/auth/rbac"
-import { readFile, writeFile, mkdir } from "fs/promises"
-import { join } from "path"
-import type { Project, ProjectMember } from "@/lib/projects"
+import type { ProjectMember } from "@/lib/projects"
+import { findProjectById, replaceProject } from "@/lib/repositories/project-repository"
 import { logger } from "@/lib/logger"
-
-const PROJECTS_PATH = join(process.cwd(), "data", "projects.json")
-
-async function loadProjects(): Promise<Project[]> {
-  try {
-    const data = await readFile(PROJECTS_PATH, "utf-8")
-    const parsed = JSON.parse(data)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
-
-async function saveProjects(projects: Project[]): Promise<void> {
-  await mkdir(join(process.cwd(), "data"), { recursive: true })
-  await writeFile(PROJECTS_PATH, JSON.stringify(projects, null, 2), "utf-8")
-}
 
 export const POST = withRole("admin")(async (request, context) => {
   const params = await context.params
@@ -34,12 +16,11 @@ export const POST = withRole("admin")(async (request, context) => {
       return NextResponse.json({ error: "userId and role are required" }, { status: 400 })
     }
 
-    const projects = await loadProjects()
-    const idx = projects.findIndex((p) => p.id === id)
-    if (idx === -1) return NextResponse.json({ error: "Project not found" }, { status: 404 })
+    const project = await findProjectById(id)
+    if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 })
 
-    const members = projects[idx].members || []
-    if (members.some((m) => m.userId === userId)) {
+    const members = project.members || []
+    if (members.some((member) => member.userId === userId)) {
       return NextResponse.json({ error: "Member already assigned" }, { status: 400 })
     }
 
@@ -48,14 +29,13 @@ export const POST = withRole("admin")(async (request, context) => {
       role: role === "lead" ? "lead" : role === "supervisor" ? "supervisor" : "contributor",
       allocationPercent: allocationPercent ?? undefined,
     }
-    members.push(member)
-    projects[idx] = {
-      ...projects[idx],
-      members,
+    const updatedProject = {
+      ...project,
+      members: [...members, member],
       updatedAt: new Date().toISOString(),
     }
-    await saveProjects(projects)
-    return NextResponse.json({ member, project: projects[idx] })
+    await replaceProject(updatedProject)
+    return NextResponse.json({ member, project: updatedProject })
   } catch (err) {
     logger.error("Failed to add member", {
       error: err instanceof Error ? err.message : String(err),
@@ -76,18 +56,16 @@ export const DELETE = withRole("admin")(async (request, context) => {
   }
 
   try {
-    const projects = await loadProjects()
-    const idx = projects.findIndex((p) => p.id === id)
-    if (idx === -1) return NextResponse.json({ error: "Project not found" }, { status: 404 })
+    const project = await findProjectById(id)
+    if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 })
 
-    const members = (projects[idx].members || []).filter((m) => m.userId !== userId)
-    projects[idx] = {
-      ...projects[idx],
-      members,
+    const updatedProject = {
+      ...project,
+      members: (project.members || []).filter((member) => member.userId !== userId),
       updatedAt: new Date().toISOString(),
     }
-    await saveProjects(projects)
-    return NextResponse.json({ success: true, project: projects[idx] })
+    await replaceProject(updatedProject)
+    return NextResponse.json({ success: true, project: updatedProject })
   } catch (err) {
     logger.error("Failed to remove member", {
       error: err instanceof Error ? err.message : String(err),
