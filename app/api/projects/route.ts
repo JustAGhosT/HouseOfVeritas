@@ -1,26 +1,9 @@
 import { NextResponse } from "next/server"
 import { withRole } from "@/lib/auth/rbac"
-import { readFile, writeFile, mkdir } from "fs/promises"
-import { join } from "path"
 import { toStoredProjectType, withProjectKind, type Project } from "@/lib/projects"
 import { logger } from "@/lib/logger"
+import { createProject, listProjects } from "@/lib/repositories/project-repository"
 
-const PROJECTS_PATH = join(process.cwd(), "data", "projects.json")
-
-async function loadProjects(): Promise<Project[]> {
-  try {
-    const data = await readFile(PROJECTS_PATH, "utf-8")
-    const parsed = JSON.parse(data)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
-
-async function saveProjects(projects: Project[]): Promise<void> {
-  await mkdir(join(process.cwd(), "data"), { recursive: true })
-  await writeFile(PROJECTS_PATH, JSON.stringify(projects, null, 2), "utf-8")
-}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -29,7 +12,7 @@ export async function GET(request: Request) {
   const member = searchParams.get("member")
 
   try {
-    let projects = await loadProjects()
+    let projects = await listProjects()
     if (parentId) projects = projects.filter((p) => p.parentId === parentId)
     if (type) projects = projects.filter((p) => p.type === type)
     if (member) projects = projects.filter((p) => p.members?.some((m) => m.userId === member))
@@ -63,7 +46,6 @@ export const POST = withRole("admin")(async (request: Request) => {
       return NextResponse.json({ error: "name and type are required" }, { status: 400 })
     }
 
-    const projects = await loadProjects()
     const id = `proj-${Date.now()}`
     const now = new Date().toISOString()
     const storedType = toStoredProjectType(type) ?? "subproject"
@@ -84,8 +66,7 @@ export const POST = withRole("admin")(async (request: Request) => {
       updatedAt: now,
     }
 
-    projects.push(project)
-    await saveProjects(projects)
+    await createProject(project)
 
     return NextResponse.json({ project: withProjectKind(project) })
   } catch (err) {

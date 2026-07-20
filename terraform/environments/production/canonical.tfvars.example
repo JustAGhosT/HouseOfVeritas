@@ -33,7 +33,7 @@ functions_storage_account_name   = "nlprodhovfuncst"
 cosmos_enable_free_tier = true
 
 # Cost-control switches for the initial canonical stack.
-enable_cosmos_mongo          = false
+enable_cosmos_mongo          = true
 enable_database              = false
 enable_operational_services  = false
 enable_application_gateway   = false

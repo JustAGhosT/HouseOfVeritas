@@ -163,3 +163,36 @@ Current: execution after approval.
 2. Add deterministic Radar telemetry events and scheduled query alert definitions.
 3. Add Docket-aligned evidence/runbook notes using `https://docket.phoenixvc.tech` and the verified `/openapi.json` surface.
 4. Validate locally without deployment.
+
+---
+
+## 11. Production Remediation: Web Telemetry, Project Persistence, Clean Defaults
+
+> **Status:** Ready for Validation
+
+Added: 2026-07-20
+
+### Goal
+
+Fix three production gaps verified after the OIDC Terraform apply:
+
+- HOV web app has no Application Insights resource or App Insights app setting.
+- Project APIs write to `data/projects.json` inside the deployed app package, so project creation is not durable in Azure App Service.
+- Visible project/task defaults still include sample values even when `ALLOW_DEMO_DATA` is not enabled.
+
+### Scope
+
+| Area | Decision |
+|------|----------|
+| Web telemetry | Add Terraform-managed Application Insights for `nl-prod-hov-app` and wire `APPLICATIONINSIGHTS_CONNECTION_STRING` / role name into App Service settings. |
+| Node instrumentation | Initialize Azure Monitor from `instrumentation.ts` when the connection string exists. |
+| Project persistence | Use the existing production `AZURE_STORAGE_CONNECTION_STRING` to store project JSON in Blob Storage, with local file fallback for dev/tests. |
+| Dummy data | Remove visible project/task seed defaults from production paths; keep explicit demo data behind `ALLOW_DEMO_DATA=true`. |
+| Deployment | Prepare and validate in PR first; production apply/deploy remains a separate controlled action after merge. |
+
+### Validation
+
+- Run `pnpm run lint`.
+- Run focused API tests for projects/tasks.
+- Run `pnpm run build`.
+- Run `terraform fmt -recursive` and `terraform -chdir=terraform/environments/production validate`.

@@ -8,6 +8,10 @@ const DB_NAME = process.env.DB_NAME || "house_of_veritas"
 let client: MongoClient | null = null
 let db: Db | null = null
 
+export function isMongoConfigured(): boolean {
+  return !!(process.env.MONGODB_URI || process.env.MONGO_URL)
+}
+
 export async function getDatabase(): Promise<Db> {
   if (db) return db
 
@@ -25,7 +29,7 @@ export async function getDatabase(): Promise<Db> {
   }
 }
 
-export async function getCollection<T extends { _id?: ObjectId }>(
+export async function getCollection<T extends object>(
   name: string
 ): Promise<Collection<T>> {
   const database = await getDatabase()

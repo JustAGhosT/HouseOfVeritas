@@ -1,44 +1,17 @@
 import { NextResponse } from "next/server"
 import { withRole } from "@/lib/auth/rbac"
 import { getTasks, createTask, type Task } from "@/lib/services/baserow"
-import { readFile, writeFile, mkdir } from "fs/promises"
-import { join } from "path"
+import {
+  createJobTaskMetadata,
+  listJobTaskMetadata,
+  type GroupedJobTask,
+  type JobTaskMetadata,
+} from "@/lib/repositories/job-workspace-repository"
 import { logger } from "@/lib/logger"
 
-const META_PATH = join(process.cwd(), "data", "job-task-groups.json")
-
-export interface JobTaskMetadata {
-  taskId: number
-  projectId: string
-  areaId?: string
-  groupName?: string
-  createdAt: string
-  updatedAt: string
-}
-
-export interface GroupedJobTask extends Task {
-  areaId?: string
-  groupName?: string
-}
-
-async function loadMetadata(): Promise<JobTaskMetadata[]> {
-  try {
-    const data = await readFile(META_PATH, "utf-8")
-    const parsed = JSON.parse(data)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
-
-async function saveMetadata(metadata: JobTaskMetadata[]): Promise<void> {
-  await mkdir(join(process.cwd(), "data"), { recursive: true })
-  await writeFile(META_PATH, JSON.stringify(metadata, null, 2), "utf-8")
-}
-
-function attachMetadata(tasks: Task[], metadata: JobTaskMetadata[], projectId: string): GroupedJobTask[] {
+function attachMetadata(tasks: Task[], metadata: JobTaskMetadata[]): GroupedJobTask[] {
   return tasks.map((task) => {
-    const match = metadata.find((item) => item.projectId === projectId && item.taskId === task.id)
+    const match = metadata.find((item) => item.taskId === task.id)
     return {
       ...task,
       areaId: match?.areaId,
@@ -55,13 +28,11 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   if (!projectName) return NextResponse.json({ error: "projectName is required" }, { status: 400 })
 
   try {
-    const [tasks, metadata] = await Promise.all([getTasks({ status: undefined }), loadMetadata()])
-    const projectMetadata = metadata.filter((item) => item.projectId === id)
+    const [tasks, metadata] = await Promise.all([getTasks({ status: undefined }), listJobTaskMetadata(id)])
     const projectTasks = tasks.filter(
-      (task) =>
-        task.project === projectName || projectMetadata.some((item) => item.taskId === task.id)
+      (task) => task.project === projectName || metadata.some((item) => item.taskId === task.id)
     )
-    return NextResponse.json({ tasks: attachMetadata(projectTasks, metadata, id) })
+    return NextResponse.json({ tasks: attachMetadata(projectTasks, metadata) })
   } catch (error) {
     logger.error("Failed to load grouped job tasks", {
       error: error instanceof Error ? error.message : String(error),
@@ -95,7 +66,6 @@ export const POST = withRole("admin", "operator", "employee")(async (request, co
 
     if (!task) return NextResponse.json({ error: "Failed to create task" }, { status: 500 })
 
-    const metadata = await loadMetadata()
     const now = new Date().toISOString()
     const taskMeta: JobTaskMetadata = {
       taskId: task.id,
@@ -105,8 +75,7 @@ export const POST = withRole("admin", "operator", "employee")(async (request, co
       createdAt: now,
       updatedAt: now,
     }
-    metadata.push(taskMeta)
-    await saveMetadata(metadata)
+    await createJobTaskMetadata(taskMeta)
 
     return NextResponse.json({ task: { ...task, areaId: taskMeta.areaId, groupName: taskMeta.groupName } })
   } catch (error) {

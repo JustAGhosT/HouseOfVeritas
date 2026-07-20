@@ -40,7 +40,7 @@ import {
 import { AiSuggestIcon } from "@/components/ui/ai-suggest-icon"
 import { getStoredScopeId } from "@/components/scope-selector"
 import type { Project, ScopeKind } from "@/lib/projects"
-import type { ProjectSuggestion } from "@/app/api/projects/suggestions/route"
+import type { ProjectSuggestion } from "@/lib/repositories/project-suggestion-repository"
 import { logger } from "@/lib/logger"
 import { apiFetch } from "@/lib/api-client"
 import Image from "next/image"

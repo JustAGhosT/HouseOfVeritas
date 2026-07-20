@@ -1,43 +1,12 @@
 import { NextResponse } from "next/server"
 import { withRole } from "@/lib/auth/rbac"
-import { readFile, writeFile, mkdir } from "fs/promises"
-import { join } from "path"
+import {
+  createJobAllocation,
+  listJobAllocations,
+  type JobAllocation,
+  type JobAllocationType,
+} from "@/lib/repositories/job-workspace-repository"
 import { logger } from "@/lib/logger"
-
-const ALLOCATIONS_PATH = join(process.cwd(), "data", "job-allocations.json")
-
-export type JobAllocationType = "material" | "labour"
-
-export interface JobAllocation {
-  id: string
-  projectId: string
-  type: JobAllocationType
-  name: string
-  areaId?: string
-  quantity?: number
-  unit?: string
-  hours?: number
-  rateCents?: number
-  costCents?: number
-  notes?: string
-  createdAt: string
-  updatedAt: string
-}
-
-async function loadAllocations(): Promise<JobAllocation[]> {
-  try {
-    const data = await readFile(ALLOCATIONS_PATH, "utf-8")
-    const parsed = JSON.parse(data)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
-
-async function saveAllocations(allocations: JobAllocation[]): Promise<void> {
-  await mkdir(join(process.cwd(), "data"), { recursive: true })
-  await writeFile(ALLOCATIONS_PATH, JSON.stringify(allocations, null, 2), "utf-8")
-}
 
 function normalizeType(value: unknown): JobAllocationType {
   return value === "labour" ? "labour" : "material"
@@ -52,13 +21,11 @@ function numberFromBody(value: unknown): number | undefined {
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params
   const { searchParams } = new URL(request.url)
-  const type = searchParams.get("type")
+  const requestedType = searchParams.get("type")
+  const type = requestedType === "material" || requestedType === "labour" ? requestedType : undefined
 
   try {
-    let allocations = (await loadAllocations()).filter((allocation) => allocation.projectId === id)
-    if (type === "material" || type === "labour") {
-      allocations = allocations.filter((allocation) => allocation.type === type)
-    }
+    const allocations = await listJobAllocations(id, type)
     return NextResponse.json({ allocations })
   } catch (error) {
     logger.error("Failed to load job allocations", {
@@ -101,9 +68,7 @@ export const POST = withRole("admin", "operator", "employee")(async (request, co
       updatedAt: now,
     }
 
-    const allocations = await loadAllocations()
-    allocations.push(allocation)
-    await saveAllocations(allocations)
+    await createJobAllocation(allocation)
     return NextResponse.json({ allocation })
   } catch (error) {
     logger.error("Failed to create job allocation", {

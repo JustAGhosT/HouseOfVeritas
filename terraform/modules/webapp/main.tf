@@ -30,6 +30,15 @@ resource "azurerm_service_plan" "webapp" {
   tags = var.tags
 }
 
+resource "azurerm_application_insights" "webapp" {
+  name                = "${var.web_app_name}-insights"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  application_type    = "web"
+
+  tags = var.tags
+}
+
 resource "azurerm_linux_web_app" "main" {
   name                = var.web_app_name
   resource_group_name = var.resource_group_name
@@ -99,9 +108,12 @@ resource "azurerm_linux_web_app" "main" {
     AUTH_SECRET = var.jwt_secret
     JWT_SECRET  = var.jwt_secret
 
-    AZURE_STORAGE_CONNECTION_STRING = var.storage_connection_string
-    DOCUMENT_INTELLIGENCE_ENDPOINT  = var.document_intelligence_endpoint
-    DOCUMENT_INTELLIGENCE_KEY       = var.document_intelligence_key
+    AZURE_STORAGE_CONNECTION_STRING       = var.storage_connection_string
+    DOCUMENT_INTELLIGENCE_ENDPOINT        = var.document_intelligence_endpoint
+    DOCUMENT_INTELLIGENCE_KEY             = var.document_intelligence_key
+    APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.webapp.connection_string
+    APPINSIGHTS_INSTRUMENTATIONKEY        = azurerm_application_insights.webapp.instrumentation_key
+    APPLICATIONINSIGHTS_ROLE_NAME         = var.web_app_name
   }, local.auth_app_settings, var.extra_app_settings)
 
   identity {
