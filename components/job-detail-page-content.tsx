@@ -20,9 +20,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { apiFetch } from "@/lib/api-client"
 import { logger } from "@/lib/logger"
 import type { Project } from "@/lib/projects"
-import type { JobArea, JobAreaKind } from "@/app/api/projects/[id]/areas/route"
-import type { GroupedJobTask } from "@/app/api/projects/[id]/task-groups/route"
-import type { JobAllocation } from "@/app/api/projects/[id]/allocations/route"
+import type { JobArea, JobAreaKind } from "@/lib/repositories/job-workspace-repository"
+import type { GroupedJobTask } from "@/lib/repositories/job-workspace-repository"
+import type { JobAllocation } from "@/lib/repositories/job-workspace-repository"
 
 const STATUS_COLORS: Record<string, string> = {
   planned: "bg-muted text-muted-foreground",

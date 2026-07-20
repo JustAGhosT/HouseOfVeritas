@@ -1,37 +1,12 @@
 import { NextResponse } from "next/server"
 import { withRole } from "@/lib/auth/rbac"
-import { readFile, writeFile, mkdir } from "fs/promises"
-import { join } from "path"
+import {
+  createJobArea,
+  listJobAreas,
+  type JobArea,
+  type JobAreaKind,
+} from "@/lib/repositories/job-workspace-repository"
 import { logger } from "@/lib/logger"
-
-const AREAS_PATH = join(process.cwd(), "data", "job-areas.json")
-
-export type JobAreaKind = "room" | "area" | "component" | "zone"
-
-export interface JobArea {
-  id: string
-  projectId: string
-  name: string
-  kind: JobAreaKind
-  notes?: string
-  createdAt: string
-  updatedAt: string
-}
-
-async function loadAreas(): Promise<JobArea[]> {
-  try {
-    const data = await readFile(AREAS_PATH, "utf-8")
-    const parsed = JSON.parse(data)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
-
-async function saveAreas(areas: JobArea[]): Promise<void> {
-  await mkdir(join(process.cwd(), "data"), { recursive: true })
-  await writeFile(AREAS_PATH, JSON.stringify(areas, null, 2), "utf-8")
-}
 
 function normalizeKind(value: unknown): JobAreaKind {
   if (value === "room" || value === "area" || value === "component" || value === "zone") {
@@ -43,8 +18,8 @@ function normalizeKind(value: unknown): JobAreaKind {
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params
   try {
-    const areas = await loadAreas()
-    return NextResponse.json({ areas: areas.filter((area) => area.projectId === id) })
+    const areas = await listJobAreas(id)
+    return NextResponse.json({ areas })
   } catch (error) {
     logger.error("Failed to load job areas", {
       error: error instanceof Error ? error.message : String(error),
@@ -64,7 +39,6 @@ export const POST = withRole("admin", "operator", "employee")(async (request, co
     const name = typeof body.name === "string" ? body.name.trim() : ""
     if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 })
 
-    const areas = await loadAreas()
     const now = new Date().toISOString()
     const area: JobArea = {
       id: `area-${Date.now()}`,
@@ -75,8 +49,7 @@ export const POST = withRole("admin", "operator", "employee")(async (request, co
       createdAt: now,
       updatedAt: now,
     }
-    areas.push(area)
-    await saveAreas(areas)
+    await createJobArea(area)
     return NextResponse.json({ area })
   } catch (error) {
     logger.error("Failed to create job area", {

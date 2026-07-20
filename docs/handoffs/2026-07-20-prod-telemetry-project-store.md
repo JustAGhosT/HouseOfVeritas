@@ -19,8 +19,8 @@ Live production checks after the OIDC cutover showed three gaps:
 - Adds `@azure/monitor-opentelemetry` and initializes Azure Monitor from `instrumentation.ts` when `APPLICATIONINSIGHTS_CONNECTION_STRING` is present.
 - Adds `azurerm_application_insights.webapp` in `terraform/modules/webapp/main.tf`.
 - Wires `APPLICATIONINSIGHTS_CONNECTION_STRING`, `APPINSIGHTS_INSTRUMENTATIONKEY`, and `APPLICATIONINSIGHTS_ROLE_NAME` into the web app settings.
-- Adds `lib/repositories/project-repository.ts` for project list/create persistence.
-- Changes `app/api/projects/route.ts` to use the repository for list/create instead of directly reading/writing `data/projects.json`.
+- Adds repository-backed persistence for core projects, project suggestions, and job workspace metadata (areas, allocations, task grouping).
+- Changes project routes to use repositories instead of directly reading/writing `data/projects.json`, `project-suggestions.json`, and job workspace JSON files.
 - Changes `lib/projects.ts` member project lookup to use the repository path.
 - Adds `isMongoConfigured()` in `lib/db/mongodb.ts`.
 - Enables the existing Cosmos Mongo module in `terraform/environments/production/canonical.tfvars.example` so production gets `MONGODB_URI` after apply.
@@ -59,4 +59,4 @@ Run both steps after PR #98 is merged:
 
 ## Residual Risk
 
-Core project workflows now use repositories consistently: list/create, detail edit/delete, member changes, member lookup, and suggestion approval. Project-adjacent metadata routes for areas, allocations, and task groups still contain local JSON helpers and should be moved to durable repositories if those workflows are used in production.
+Project, project suggestion, and job workspace metadata routes now go through repositories with Mongo required in real production. Local file fallback remains only for local/test/CI when `MONGODB_URI` is absent.
