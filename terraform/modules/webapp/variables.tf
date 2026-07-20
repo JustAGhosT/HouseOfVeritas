@@ -194,6 +194,12 @@ variable "auth_url" {
   default     = ""
 }
 
+variable "app_service_subnet_id" {
+  description = "Subnet ID for App Service regional VNet integration"
+  type        = string
+  default     = ""
+}
+
 variable "storage_connection_string" {
   description = "Azure Storage connection string"
   type        = string

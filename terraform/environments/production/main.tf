@@ -44,14 +44,16 @@ resource "azurerm_resource_group" "main" {
 module "network" {
   source = "../../modules/network"
 
-  resource_group_name     = azurerm_resource_group.main.name
-  location                = azurerm_resource_group.main.location
-  environment             = var.environment
-  vnet_name               = var.vnet_name
-  vnet_address_space      = var.vnet_address_space
-  gateway_subnet_prefix   = var.gateway_subnet_prefix
-  container_subnet_prefix = var.container_subnet_prefix
-  database_subnet_prefix  = var.database_subnet_prefix
+  resource_group_name            = azurerm_resource_group.main.name
+  location                       = azurerm_resource_group.main.location
+  environment                    = var.environment
+  vnet_name                      = var.vnet_name
+  vnet_address_space             = var.vnet_address_space
+  gateway_subnet_prefix          = var.gateway_subnet_prefix
+  container_subnet_prefix        = var.container_subnet_prefix
+  database_subnet_prefix         = var.database_subnet_prefix
+  app_service_subnet_prefix      = var.app_service_subnet_prefix
+  private_endpoint_subnet_prefix = var.private_endpoint_subnet_prefix
 
   tags = local.common_tags
 }
@@ -120,6 +122,8 @@ module "cosmos_mongo" {
   mongo_collection_name         = var.cosmos_mongo_collection_name
   throughput                    = var.cosmos_mongo_throughput
   public_network_access_enabled = var.cosmos_public_network_access_enabled
+  private_endpoint_subnet_id    = module.network.private_endpoint_subnet_id
+  vnet_id                       = module.network.vnet_id
   enable_free_tier              = var.cosmos_enable_free_tier
 
   tags = local.common_tags
@@ -239,6 +243,7 @@ module "webapp" {
   mystira_oidc_client_secret                       = var.mystira_oidc_client_secret
   mystira_oidc_client_secret_key_vault_secret_name = var.mystira_oidc_client_secret_key_vault_secret_name
   auth_url                                         = var.auth_url
+  app_service_subnet_id                            = module.network.app_service_subnet_id
   storage_connection_string                        = module.storage.storage_account_primary_connection_string
   baserow_api_token                                = var.baserow_api_token
   baserow_database_id                              = var.baserow_database_id

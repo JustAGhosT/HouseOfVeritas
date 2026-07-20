@@ -23,6 +23,15 @@ output "database_subnet_id" {
   value       = azurerm_subnet.database.id
 }
 
+output "app_service_subnet_id" {
+  description = "ID of the App Service integration subnet"
+  value       = azurerm_subnet.app_service.id
+}
+
+output "private_endpoint_subnet_id" {
+  description = "ID of the private endpoint subnet"
+  value       = azurerm_subnet.private_endpoints.id
+}
 
 output "gateway_nsg_id" {
   description = "ID of the gateway NSG"

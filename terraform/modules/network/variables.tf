@@ -9,7 +9,7 @@ variable "location" {
 }
 
 variable "environment" {
-  description = "Environment name (production, staging, etc.)"
+  description = "Environment name"
   type        = string
 }
 
@@ -42,6 +42,17 @@ variable "database_subnet_prefix" {
   default     = "10.0.3.0/24"
 }
 
+variable "app_service_subnet_prefix" {
+  description = "Address prefix for App Service regional VNet integration"
+  type        = string
+  default     = "10.0.4.0/24"
+}
+
+variable "private_endpoint_subnet_prefix" {
+  description = "Address prefix for private endpoints"
+  type        = string
+  default     = "10.0.5.0/24"
+}
 
 variable "tags" {
   description = "Tags to apply to resources"

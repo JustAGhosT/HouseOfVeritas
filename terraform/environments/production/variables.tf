@@ -64,6 +64,17 @@ variable "database_subnet_prefix" {
   type        = string
   default     = "10.0.3.0/24"
 }
+variable "app_service_subnet_prefix" {
+  description = "App Service integration subnet prefix"
+  type        = string
+  default     = "10.0.4.0/24"
+}
+
+variable "private_endpoint_subnet_prefix" {
+  description = "Private endpoint subnet prefix"
+  type        = string
+  default     = "10.0.5.0/24"
+}
 
 
 # Storage variables
@@ -165,7 +176,7 @@ variable "cosmos_mongo_throughput" {
 variable "cosmos_public_network_access_enabled" {
   description = "Enable public network access for Cosmos DB"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "cosmos_enable_free_tier" {
@@ -177,7 +188,7 @@ variable "cosmos_enable_free_tier" {
 variable "enable_cosmos_mongo" {
   description = "Whether to provision Cosmos DB Mongo resources"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "enable_database" {

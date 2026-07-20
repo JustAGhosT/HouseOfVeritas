@@ -40,10 +40,11 @@ resource "azurerm_application_insights" "webapp" {
 }
 
 resource "azurerm_linux_web_app" "main" {
-  name                = var.web_app_name
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  service_plan_id     = azurerm_service_plan.webapp.id
+  name                      = var.web_app_name
+  resource_group_name       = var.resource_group_name
+  location                  = var.location
+  service_plan_id           = azurerm_service_plan.webapp.id
+  virtual_network_subnet_id = var.app_service_subnet_id != "" ? var.app_service_subnet_id : null
 
   site_config {
     application_stack {
@@ -52,8 +53,9 @@ resource "azurerm_linux_web_app" "main" {
 
     app_command_line = "node server.js"
 
-    always_on  = true
-    ftps_state = "Disabled"
+    always_on              = true
+    ftps_state             = "Disabled"
+    vnet_route_all_enabled = var.app_service_subnet_id != ""
 
     cors {
       allowed_origins = [

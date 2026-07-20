@@ -37,7 +37,25 @@ variable "throughput" {
 variable "public_network_access_enabled" {
   description = "Whether public network access is enabled. Defaults to true for backward compatibility. SECURITY NOTICE: This default will change to false in a future release. All calling modules/environments should explicitly set public_network_access_enabled = false for production security before the enforced change."
   type        = bool
-  default     = true
+  default     = false
+}
+
+variable "private_endpoint_subnet_id" {
+  description = "Subnet ID for the Cosmos DB private endpoint when public network access is disabled"
+  type        = string
+  default     = ""
+}
+
+variable "vnet_id" {
+  description = "VNet ID linked to the Cosmos DB private DNS zone when public network access is disabled"
+  type        = string
+  default     = ""
+}
+
+variable "private_dns_zone_name" {
+  description = "Private DNS zone name for Cosmos DB Mongo private endpoints"
+  type        = string
+  default     = "privatelink.mongo.cosmos.azure.com"
 }
 
 variable "enable_free_tier" {
