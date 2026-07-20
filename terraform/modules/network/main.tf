@@ -52,6 +52,28 @@ resource "azurerm_subnet" "database" {
   }
 }
 
+resource "azurerm_subnet" "app_service" {
+  name                 = "${var.environment}-appservice-subnet"
+  resource_group_name  = var.resource_group_name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = [var.app_service_subnet_prefix]
+
+  delegation {
+    name = "app-service-delegation"
+    service_delegation {
+      name    = "Microsoft.Web/serverFarms"
+      actions = ["Microsoft.Network/virtualNetworks/subnets/action"]
+    }
+  }
+}
+
+resource "azurerm_subnet" "private_endpoints" {
+  name                              = "${var.environment}-private-endpoint-subnet"
+  resource_group_name               = var.resource_group_name
+  virtual_network_name              = azurerm_virtual_network.main.name
+  address_prefixes                  = [var.private_endpoint_subnet_prefix]
+  private_endpoint_network_policies = "Disabled"
+}
 # Network Security Groups
 resource "azurerm_network_security_group" "gateway" {
   name                = "${var.environment}-gateway-nsg"
