@@ -1,20 +1,11 @@
 import { NextResponse } from "next/server"
 import { withAuth } from "@/lib/auth/rbac"
 import { suggestProject } from "@/lib/ai/azure-foundry"
-import { readFile } from "fs/promises"
-import { join } from "path"
-import type { Project } from "@/lib/projects"
-
-const PROJECTS_PATH = join(process.cwd(), "data", "projects.json")
+import { listProjects } from "@/lib/repositories/project-repository"
 
 async function loadProjectNames(): Promise<string[]> {
-  try {
-    const data = await readFile(PROJECTS_PATH, "utf-8")
-    const projects: Project[] = JSON.parse(data)
-    return (Array.isArray(projects) ? projects : []).map((p) => p.name)
-  } catch {
-    return ["House Revamp", "Zeerust Arming", "Garage", "Garden Revamp", "Kitchen Cupboards"]
-  }
+  const projects = await listProjects()
+  return [...new Set(projects.map((project) => project.name.trim()).filter(Boolean))]
 }
 
 export const POST = withAuth(async (request: Request) => {
@@ -23,6 +14,15 @@ export const POST = withAuth(async (request: Request) => {
     const { taskTitle, taskDescription, expenseCategory } = body
 
     const options = await loadProjectNames()
+    if (options.length === 0) {
+      return NextResponse.json({
+        suggested: null,
+        options,
+        aiPowered: false,
+        message: "No projects configured",
+      })
+    }
+
     const suggested = await suggestProject({
       taskTitle: taskTitle || undefined,
       taskDescription: taskDescription || undefined,
