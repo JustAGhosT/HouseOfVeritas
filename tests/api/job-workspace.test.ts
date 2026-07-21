@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 const authHeaders = {
   "x-user-id": "hans",
@@ -8,6 +8,16 @@ const authHeaders = {
 }
 
 const routeContext = { params: Promise.resolve({ id: "job-1" }) }
+
+beforeEach(() => {
+  vi.stubEnv("MONGODB_URI", "")
+  vi.stubEnv("MONGO_URL", "")
+  vi.stubEnv("DB_NAME", "")
+})
+
+afterEach(() => {
+  vi.unstubAllEnvs()
+})
 
 type FileStore = Map<string, string>
 
