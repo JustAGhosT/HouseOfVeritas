@@ -1,13 +1,13 @@
 import { readFile, writeFile, mkdir } from "fs/promises"
 import { dirname, join } from "path"
 import type { Filter } from "mongodb"
-import { getCollection, isMongoConfigured } from "@/lib/db/mongodb"
+import { getCollection, isMongoConfigured, withoutMongoId } from "@/lib/db/mongodb"
 import type { Project } from "@/lib/projects"
 
 const PROJECTS_FILE = join(process.cwd(), "data", "projects.json")
 const PROJECTS_COLLECTION = "projects"
 
-type ProjectDocument = Project
+type ProjectDocument = Project & { _id?: unknown }
 
 function requireProductionStore(): void {
   if (process.env.NODE_ENV === "production" && process.env.CI !== "true" && !isMongoConfigured()) {
@@ -35,7 +35,8 @@ export async function listProjects(): Promise<Project[]> {
   if (!isMongoConfigured()) return readFileProjects()
 
   const collection = await getCollection<ProjectDocument>(PROJECTS_COLLECTION)
-  return collection.find({}).sort({ createdAt: 1 }).toArray()
+  const projects = await collection.find({}).sort({ createdAt: 1 }).toArray()
+  return projects.map(withoutMongoId)
 }
 
 export async function findProjectById(id: string): Promise<Project | null> {
@@ -46,7 +47,8 @@ export async function findProjectById(id: string): Promise<Project | null> {
   }
 
   const collection = await getCollection<ProjectDocument>(PROJECTS_COLLECTION)
-  return collection.findOne({ id } as Filter<ProjectDocument>)
+  const project = await collection.findOne({ id } as Filter<ProjectDocument>)
+  return project ? withoutMongoId(project) : null
 }
 
 export async function createProject(project: Project): Promise<Project> {
@@ -75,8 +77,9 @@ export async function replaceProject(project: Project): Promise<Project | null> 
   }
 
   const collection = await getCollection<ProjectDocument>(PROJECTS_COLLECTION)
-  const result = await collection.replaceOne({ id: project.id } as Filter<ProjectDocument>, project)
-  return result.matchedCount > 0 ? project : null
+  const document = withoutMongoId(project as ProjectDocument)
+  const result = await collection.replaceOne({ id: project.id } as Filter<ProjectDocument>, document)
+  return result.matchedCount > 0 ? document : null
 }
 
 export async function deleteProject(id: string): Promise<boolean> {

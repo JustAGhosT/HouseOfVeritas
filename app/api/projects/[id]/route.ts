@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { withRole } from "@/lib/auth/rbac"
-import { toStoredProjectType, withProjectKind } from "@/lib/projects"
+import { toStoredProjectType, withProjectKind, type Project } from "@/lib/projects"
 import { deleteProject, findProjectById, replaceProject } from "@/lib/repositories/project-repository"
 import { logger } from "@/lib/logger"
 import { routeToInngest } from "@/lib/workflows"
@@ -29,18 +29,38 @@ export const PATCH = withRole("admin")(async (request, context) => {
     if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 })
 
     const prevStatus = project.status
-    const storedType = toStoredProjectType(body.type)
-    const updates = { ...body }
-    if (body.type !== undefined) {
-      if (storedType) updates.type = storedType
-      else delete updates.type
+    const updates: Partial<Project> = {}
+
+    if (body.name !== undefined) {
+      const name = typeof body.name === "string" ? body.name.trim() : ""
+      if (!name) return NextResponse.json({ error: "name must be a non-empty string" }, { status: 400 })
+      updates.name = name
     }
+
+    if (body.type !== undefined) {
+      const storedType = toStoredProjectType(body.type)
+      if (!storedType) return NextResponse.json({ error: "type must be scope or job" }, { status: 400 })
+      updates.type = storedType
+      updates.scopeKind = storedType === "major" ? body.scopeKind || project.scopeKind || "site" : undefined
+      updates.parentId = storedType === "subproject" ? body.parentId ?? project.parentId : undefined
+    } else {
+      if (body.scopeKind !== undefined) updates.scopeKind = body.scopeKind
+      if (body.parentId !== undefined) updates.parentId = body.parentId
+    }
+
+    if (body.description !== undefined) {
+      updates.description = typeof body.description === "string" && body.description.trim() ? body.description.trim() : undefined
+    }
+    if (body.status !== undefined) updates.status = body.status
+    if (body.startDate !== undefined) updates.startDate = body.startDate
+    if (body.endDate !== undefined) updates.endDate = body.endDate
+    if (body.budget !== undefined) updates.budget = body.budget
+    if (body.members !== undefined) updates.members = Array.isArray(body.members) ? body.members : project.members
 
     const updatedProject = {
       ...project,
       ...updates,
       id: project.id,
-      members: body.members ?? project.members,
       updatedAt: new Date().toISOString(),
     }
     await replaceProject(updatedProject)

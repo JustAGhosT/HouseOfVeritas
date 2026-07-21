@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto"
 import { NextResponse } from "next/server"
 import { withRole } from "@/lib/auth/rbac"
 import {
@@ -41,7 +42,7 @@ export const POST = withRole("admin", "operator", "employee")(async (request, co
 
     const now = new Date().toISOString()
     const area: JobArea = {
-      id: `area-${Date.now()}`,
+      id: `area-${randomUUID()}`,
       projectId,
       name,
       kind: normalizeKind(body.kind),
