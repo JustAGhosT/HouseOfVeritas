@@ -66,6 +66,26 @@ describe("AI project suggestion routes", () => {
     expect(suggestProject).toHaveBeenCalledWith(expect.objectContaining({ options: ["Gate Repair", "Workshop"] }))
   })
 
+  it("falls back to the first real project option when AI is unavailable", async () => {
+    listProjects.mockResolvedValue([{ id: "p1", name: "Gate Repair" }, { id: "p2", name: "Workshop" }])
+    suggestProject.mockResolvedValue(null)
+    const { POST } = await import("@/app/api/ai/suggest-project/route")
+
+    const response = await POST(
+      new Request("http://localhost/api/ai/suggest-project", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({ taskTitle: "Fix drill press" }),
+      })
+    )
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.options).toEqual(["Gate Repair", "Workshop"])
+    expect(data.suggested).toBe("Gate Repair")
+    expect(data.aiPowered).toBe(false)
+  })
+
   it("uses repository project names for photo suggestions", async () => {
     listProjects.mockResolvedValue([{ id: "p1", name: "Garden" }])
     suggestProjectFromPhoto.mockResolvedValue({ name: "Garden", fromExisting: true })

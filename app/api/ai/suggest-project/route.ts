@@ -31,7 +31,7 @@ export const POST = withAuth(async (request: Request) => {
     })
 
     return NextResponse.json({
-      suggested,
+      suggested: suggested || options[0],
       options,
       aiPowered: !!suggested,
     })
