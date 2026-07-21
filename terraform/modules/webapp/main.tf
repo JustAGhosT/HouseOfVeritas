@@ -36,6 +36,10 @@ resource "azurerm_application_insights" "webapp" {
   location            = var.location
   application_type    = "web"
 
+  lifecycle {
+    ignore_changes = [workspace_id]
+  }
+
   tags = var.tags
 }
 
