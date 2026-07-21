@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto"
 import { NextResponse } from "next/server"
 import { withRole } from "@/lib/auth/rbac"
 import {
@@ -53,7 +54,7 @@ export const POST = withRole("admin", "operator", "employee")(async (request, co
     const costCents = numberFromBody(body.costCents)
     const now = new Date().toISOString()
     const allocation: JobAllocation = {
-      id: `alloc-${Date.now()}`,
+      id: `alloc-${randomUUID()}`,
       projectId,
       type,
       name,

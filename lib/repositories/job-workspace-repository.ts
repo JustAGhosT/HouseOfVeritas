@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir } from "fs/promises"
 import { dirname, join } from "path"
 import type { Filter } from "mongodb"
-import { getCollection, isMongoConfigured } from "@/lib/db/mongodb"
+import { getCollection, isMongoConfigured, withoutMongoId } from "@/lib/db/mongodb"
 import type { Task } from "@/lib/services/baserow"
 
 export type JobAreaKind = "room" | "area" | "component" | "zone"
@@ -42,6 +42,10 @@ export interface JobTaskMetadata {
   createdAt: string
   updatedAt: string
 }
+
+type JobAreaDocument = JobArea & { _id?: unknown }
+type JobAllocationDocument = JobAllocation & { _id?: unknown }
+type JobTaskMetadataDocument = JobTaskMetadata & { _id?: unknown }
 
 export interface GroupedJobTask extends Task {
   areaId?: string
@@ -85,8 +89,9 @@ export async function listJobAreas(projectId: string): Promise<JobArea[]> {
     return areas.filter((area) => area.projectId === projectId)
   }
 
-  const collection = await getCollection<JobArea>(AREAS_COLLECTION)
-  return collection.find({ projectId } as Filter<JobArea>).sort({ createdAt: 1 }).toArray()
+  const collection = await getCollection<JobAreaDocument>(AREAS_COLLECTION)
+  const areas = await collection.find({ projectId } as Filter<JobAreaDocument>).sort({ createdAt: 1 }).toArray()
+  return areas.map(withoutMongoId)
 }
 
 export async function createJobArea(area: JobArea): Promise<JobArea> {
@@ -98,7 +103,7 @@ export async function createJobArea(area: JobArea): Promise<JobArea> {
     return area
   }
 
-  const collection = await getCollection<JobArea>(AREAS_COLLECTION)
+  const collection = await getCollection<JobAreaDocument>(AREAS_COLLECTION)
   await collection.insertOne(area)
   return area
 }
@@ -110,9 +115,10 @@ export async function listJobAllocations(projectId: string, type?: JobAllocation
     return allocations.filter((allocation) => allocation.projectId === projectId && (!type || allocation.type === type))
   }
 
-  const query: Filter<JobAllocation> = type ? { projectId, type } : { projectId }
-  const collection = await getCollection<JobAllocation>(ALLOCATIONS_COLLECTION)
-  return collection.find(query).sort({ createdAt: 1 }).toArray()
+  const query: Filter<JobAllocationDocument> = type ? { projectId, type } : { projectId }
+  const collection = await getCollection<JobAllocationDocument>(ALLOCATIONS_COLLECTION)
+  const allocations = await collection.find(query).sort({ createdAt: 1 }).toArray()
+  return allocations.map(withoutMongoId)
 }
 
 export async function createJobAllocation(allocation: JobAllocation): Promise<JobAllocation> {
@@ -124,7 +130,7 @@ export async function createJobAllocation(allocation: JobAllocation): Promise<Jo
     return allocation
   }
 
-  const collection = await getCollection<JobAllocation>(ALLOCATIONS_COLLECTION)
+  const collection = await getCollection<JobAllocationDocument>(ALLOCATIONS_COLLECTION)
   await collection.insertOne(allocation)
   return allocation
 }
@@ -136,8 +142,9 @@ export async function listJobTaskMetadata(projectId: string): Promise<JobTaskMet
     return metadata.filter((item) => item.projectId === projectId)
   }
 
-  const collection = await getCollection<JobTaskMetadata>(TASK_METADATA_COLLECTION)
-  return collection.find({ projectId } as Filter<JobTaskMetadata>).sort({ createdAt: 1 }).toArray()
+  const collection = await getCollection<JobTaskMetadataDocument>(TASK_METADATA_COLLECTION)
+  const metadata = await collection.find({ projectId } as Filter<JobTaskMetadataDocument>).sort({ createdAt: 1 }).toArray()
+  return metadata.map(withoutMongoId)
 }
 
 export async function createJobTaskMetadata(metadata: JobTaskMetadata): Promise<JobTaskMetadata> {
@@ -149,7 +156,7 @@ export async function createJobTaskMetadata(metadata: JobTaskMetadata): Promise<
     return metadata
   }
 
-  const collection = await getCollection<JobTaskMetadata>(TASK_METADATA_COLLECTION)
+  const collection = await getCollection<JobTaskMetadataDocument>(TASK_METADATA_COLLECTION)
   await collection.insertOne(metadata)
   return metadata
 }

@@ -1,9 +1,10 @@
+import { randomUUID } from "crypto"
 import { NextResponse } from "next/server"
 import { withAuth } from "@/lib/auth/rbac"
 import { toStoredProjectType } from "@/lib/projects"
 import {
+  createProjectSuggestion,
   listProjectSuggestions,
-  saveProjectSuggestions,
   type ProjectSuggestion,
 } from "@/lib/repositories/project-suggestion-repository"
 import { logger } from "@/lib/logger"
@@ -33,9 +34,12 @@ export const POST = withAuth(async (request: Request) => {
       return NextResponse.json({ error: "name is required" }, { status: 400 })
     }
 
-    const suggestions = await listProjectSuggestions()
-    const id = `sug-${Date.now()}`
-    const storedType = toStoredProjectType(type) ?? "subproject"
+    const id = `sug-${randomUUID()}`
+    const storedType = toStoredProjectType(type)
+    if (!storedType) {
+      return NextResponse.json({ error: "type must be scope or job" }, { status: 400 })
+    }
+
     const suggestion: ProjectSuggestion = {
       id,
       name: name.trim(),
@@ -47,8 +51,7 @@ export const POST = withAuth(async (request: Request) => {
       suggestedAt: new Date().toISOString(),
       status: "pending",
     }
-    suggestions.push(suggestion)
-    await saveProjectSuggestions(suggestions)
+    await createProjectSuggestion(suggestion)
     return NextResponse.json({ suggestion })
   } catch (err) {
     logger.error("Failed to create suggestion", {

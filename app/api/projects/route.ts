@@ -1,9 +1,9 @@
+import { randomUUID } from "crypto"
 import { NextResponse } from "next/server"
 import { withRole } from "@/lib/auth/rbac"
 import { toStoredProjectType, withProjectKind, type Project } from "@/lib/projects"
 import { logger } from "@/lib/logger"
 import { createProject, listProjects } from "@/lib/repositories/project-repository"
-
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -42,18 +42,23 @@ export const POST = withRole("admin")(async (request: Request) => {
     const body = await request.json()
     const { name, description, type, scopeKind, parentId, status, startDate, endDate, budget, members } = body
 
-    if (!name || !type) {
+    const projectName = typeof name === "string" ? name.trim() : ""
+    if (!projectName || !type) {
       return NextResponse.json({ error: "name and type are required" }, { status: 400 })
     }
 
-    const id = `proj-${Date.now()}`
+    const storedType = toStoredProjectType(type)
+    if (!storedType) {
+      return NextResponse.json({ error: "type must be scope or job" }, { status: 400 })
+    }
+
+    const id = `proj-${randomUUID()}`
     const now = new Date().toISOString()
-    const storedType = toStoredProjectType(type) ?? "subproject"
 
     const project: Project = {
       id,
-      name,
-      description: description || undefined,
+      name: projectName,
+      description: typeof description === "string" && description.trim() ? description.trim() : undefined,
       type: storedType,
       scopeKind: storedType === "major" ? scopeKind || "site" : undefined,
       parentId: storedType === "subproject" ? parentId : undefined,

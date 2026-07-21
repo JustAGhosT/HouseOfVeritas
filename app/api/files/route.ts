@@ -54,6 +54,12 @@ function validateFile(file: File): { valid: boolean; error?: string } {
   return { valid: true }
 }
 
+function normalizeStorageSegment(value: string | null | undefined, fallback: string): string {
+  const segment = value?.trim()
+  if (!segment) return fallback
+  return segment.replace(/[^a-zA-Z0-9._-]/g, "-")
+}
+
 // Upload to Azure Blob Storage
 async function uploadToAzure(
   buffer: Buffer,
@@ -126,7 +132,7 @@ export const POST = withAuth(async (request) => {
   try {
     const formData = await request.formData()
     const file = formData.get("file") as File
-    const category = (formData.get("category") as string) || "general"
+    const category = normalizeStorageSegment(formData.get("category") as string | null, "general")
     const assetId = formData.get("assetId") as string
     const userId = formData.get("userId") as string
 
@@ -249,6 +255,9 @@ export const DELETE = withAuth(async (request) => {
           { success: false, error: "category and filename required for local delete" },
           { status: 400 }
         )
+      }
+      if (category !== normalizeStorageSegment(category, "") || filename !== path.basename(filename)) {
+        return NextResponse.json({ success: false, error: "Invalid path" }, { status: 400 })
       }
       const baseDir = path.resolve(UPLOAD_CONFIG.uploadDir, category)
       const filePath = path.resolve(baseDir, filename)

@@ -243,3 +243,65 @@ describe("project suggestion approval", () => {
     expect(data.project).toMatchObject({ name: "Zeerust Farm", type: "major", scopeKind: "asset", kind: "scope" })
   })
 })
+
+describe("project API validation", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.resetModules()
+  })
+
+  it("rejects invalid project types instead of coercing them to jobs", async () => {
+    const { POST } = await importWithMockedFiles<typeof import("@/app/api/projects/route")>(
+      "@/app/api/projects/route",
+      new Map([["projects.json", "[]"]])
+    )
+
+    const response = await POST(
+      new Request("http://localhost/api/projects", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({ name: "New Work", type: "other" }),
+      })
+    )
+    const data = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(data.error).toBe("type must be scope or job")
+  })
+
+  it("rejects invalid project type patches", async () => {
+    const files = new Map<string, string>([
+      [
+        "projects.json",
+        JSON.stringify([
+          {
+            id: "proj-1",
+            name: "Bathroom Repair",
+            type: "subproject",
+            status: "planned",
+            members: [],
+            createdAt: "now",
+            updatedAt: "now",
+          },
+        ]),
+      ],
+    ])
+    const { PATCH } = await importWithMockedFiles<typeof import("@/app/api/projects/[id]/route")>(
+      "@/app/api/projects/[id]/route",
+      files
+    )
+
+    const response = await PATCH(
+      new Request("http://localhost/api/projects/proj-1", {
+        method: "PATCH",
+        headers: authHeaders,
+        body: JSON.stringify({ type: "other" }),
+      }),
+      { params: Promise.resolve({ id: "proj-1" }) }
+    )
+    const data = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(data.error).toBe("type must be scope or job")
+  })
+})

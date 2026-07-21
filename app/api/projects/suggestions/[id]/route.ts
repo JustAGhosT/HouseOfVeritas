@@ -1,10 +1,11 @@
+import { randomUUID } from "crypto"
 import { NextResponse } from "next/server"
 import { withRole } from "@/lib/auth/rbac"
 import { withProjectKind, type Project, type ProjectMember } from "@/lib/projects"
 import { createProject } from "@/lib/repositories/project-repository"
 import {
   listProjectSuggestions,
-  saveProjectSuggestions,
+  replaceProjectSuggestion,
 } from "@/lib/repositories/project-suggestion-repository"
 import { logger } from "@/lib/logger"
 import { routeToInngest } from "@/lib/workflows"
@@ -34,17 +35,16 @@ export const PATCH = withRole("admin")(async (request, context) => {
     }
 
     const now = new Date().toISOString()
-    suggestions[idx] = {
+    const reviewedSuggestion = {
       ...suggestion,
       status,
       reviewedBy: auth,
       reviewedAt: now,
     }
-    await saveProjectSuggestions(suggestions)
 
     if (status === "approved") {
       const project: Project = {
-        id: `proj-${Date.now()}`,
+        id: `proj-${randomUUID()}`,
         name: suggestion.name,
         description: suggestion.description,
         type: suggestion.type,
@@ -56,6 +56,8 @@ export const PATCH = withRole("admin")(async (request, context) => {
         updatedAt: now,
       }
       await createProject(project)
+      await replaceProjectSuggestion(reviewedSuggestion)
+      suggestions[idx] = reviewedSuggestion
 
       await routeToInngest({
         name: "house-of-veritas/project.suggestion.approved",
@@ -71,6 +73,8 @@ export const PATCH = withRole("admin")(async (request, context) => {
       return NextResponse.json({ suggestion: suggestions[idx], project: withProjectKind(project) })
     }
 
+    await replaceProjectSuggestion(reviewedSuggestion)
+    suggestions[idx] = reviewedSuggestion
     return NextResponse.json({ suggestion: suggestions[idx] })
   } catch (err) {
     logger.error("Failed to update suggestion", {
