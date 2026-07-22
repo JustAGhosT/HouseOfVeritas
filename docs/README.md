@@ -89,3 +89,5 @@ Dated session continuity notes (root cause, files changed, verification, next-ow
 | Document                                                                                        | Description                                                                          |
 | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | [2026-07-11-mystira-oidc-prod-login-fix.md](handoffs/2026-07-11-mystira-oidc-prod-login-fix.md) | Production login `/api/auth/error` fix — Mystira OIDC app settings + AUTH_TRUST_HOST |
+| [2026-07-20-prod-telemetry-project-store.md](handoffs/2026-07-20-prod-telemetry-project-store.md) | Production telemetry and project datastore remediation handoff                       |
+| [2026-07-22-project-datastore-ai-hardening.md](handoffs/2026-07-22-project-datastore-ai-hardening.md) | Project datastore API and AI project suggestion hardening closeout                   |
