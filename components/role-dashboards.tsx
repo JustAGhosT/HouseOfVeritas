@@ -44,7 +44,7 @@ const roles = [
       "Daily task list",
       "Expense submission",
       "Time tracking",
-      "Vehicle logs",
+      "Vehicles coming soon",
       "Garden equipment access",
     ],
   },

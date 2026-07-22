@@ -159,10 +159,10 @@ export const ALL_PAGES: DashboardPage[] = [
   },
   {
     id: "vehicles",
-    name: "Vehicles",
+    name: "Vehicles (Soon)",
     href: "/dashboard/vehicles",
     icon: "Car",
-    description: "Vehicle log",
+    description: "Vehicle module coming soon",
     sortOrder: 15,
   },
   {

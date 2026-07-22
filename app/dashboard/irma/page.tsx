@@ -22,65 +22,8 @@ import {
   CookingPot,
   Shirt,
 } from "lucide-react"
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-} from "recharts"
 
 import { type Task } from "@/lib/services/baserow"
-
-const taskTypeData = [
-  { name: "Cleaning", value: 35, color: "#a855f7" },
-  { name: "Cooking", value: 30, color: "#f59e0b" },
-  { name: "Babysitting", value: 25, color: "#ec4899" },
-  { name: "Shopping", value: 10, color: "#3b82f6" },
-]
-
-// Weekly task completion
-const weeklyTaskData = [
-  { day: "Mon", completed: 5, total: 5 },
-  { day: "Tue", completed: 4, total: 5 },
-  { day: "Wed", completed: 5, total: 5 },
-  { day: "Thu", completed: 3, total: 4 },
-  { day: "Fri", completed: 4, total: 4 },
-  { day: "Sat", completed: 2, total: 2 },
-  { day: "Sun", completed: 1, total: 1 },
-]
-
-// Meal schedule data
-const mealSchedule = [
-  {
-    day: "Today",
-    breakfast: "Oatmeal & Fruit",
-    lunch: "Grilled Chicken Salad",
-    dinner: "Lamb Curry",
-    status: "in_progress",
-  },
-  {
-    day: "Tomorrow",
-    breakfast: "Eggs & Toast",
-    lunch: "Sandwich Platter",
-    dinner: "Beef Stir Fry",
-    status: "planned",
-  },
-  {
-    day: "Saturday",
-    breakfast: "Pancakes",
-    lunch: "Leftovers",
-    dinner: "Braai Night",
-    status: "planned",
-  },
-]
 
 // Home/Domestic-themed background pattern
 function HomePattern() {
@@ -125,21 +68,15 @@ function HomePattern() {
   )
 }
 
-// Custom tooltip for charts
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="rounded-lg border border-purple-500/20 bg-purple-950 p-3 shadow-xl">
-        <p className="mb-1 font-medium text-purple-100">{label}</p>
-        {payload.map((entry: any, index: number) => (
-          <p key={index} className="text-sm" style={{ color: entry.color }}>
-            {entry.name}: {entry.value}
-          </p>
-        ))}
+function EmptyPanel({ title, action }: { title: string; action?: string }) {
+  return (
+    <div className="flex h-full min-h-40 items-center justify-center rounded-xl border border-purple-500/10 bg-purple-950/30 p-6 text-center">
+      <div>
+        <p className="font-medium text-purple-100">{title}</p>
+        {action && <p className="mt-2 text-sm text-purple-200/50">{action}</p>}
       </div>
-    )
-  }
-  return null
+    </div>
+  )
 }
 
 interface DocumentItem {
@@ -299,10 +236,10 @@ export default function IrmaDashboard() {
         >
           <div className="mb-2 flex items-center gap-3">
             <UtensilsCrossed className="h-5 w-5 text-purple-400" />
-            <p className="text-sm text-purple-200/60">Meals Planned</p>
+          <p className="text-sm text-purple-200/60">Meals Planned</p>
           </div>
-          <p className="text-2xl font-bold text-purple-100">9</p>
-          <p className="text-sm text-purple-200/50">next 3 days</p>
+          <p className="text-2xl font-bold text-purple-100">0</p>
+          <p className="text-sm text-purple-200/50">No meal records</p>
         </div>
       </div>
 
@@ -319,26 +256,12 @@ export default function IrmaDashboard() {
               <p className="text-sm text-purple-200/50">Tasks completed vs total</p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-purple-100">92%</p>
-              <p className="text-sm text-green-400">Completion rate</p>
+              <p className="text-2xl font-bold text-purple-100">—</p>
+              <p className="text-sm text-purple-200/50">No history</p>
             </div>
           </div>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyTaskData} barGap={8}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(168,85,247,0.1)" />
-                <XAxis dataKey="day" stroke="rgba(168,85,247,0.6)" fontSize={12} />
-                <YAxis stroke="rgba(168,85,247,0.6)" fontSize={12} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar
-                  dataKey="total"
-                  fill="rgba(168,85,247,0.2)"
-                  radius={[4, 4, 0, 0]}
-                  name="Total"
-                />
-                <Bar dataKey="completed" fill="#a855f7" radius={[4, 4, 0, 0]} name="Completed" />
-              </BarChart>
-            </ResponsiveContainer>
+            <EmptyPanel title="No weekly task history" action="Completed and assigned task history will appear after live records exist." />
           </div>
         </div>
 
@@ -350,33 +273,7 @@ export default function IrmaDashboard() {
           <h3 className="mb-2 font-semibold text-purple-100">Task Distribution</h3>
           <p className="mb-4 text-sm text-purple-200/50">By category this month</p>
           <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={taskTypeData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={70}
-                  paddingAngle={4}
-                  dataKey="value"
-                >
-                  {taskTypeData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            {taskTypeData.map((task) => (
-              <div key={task.name} className="flex items-center gap-2 text-sm">
-                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: task.color }} />
-                <span className="text-purple-200/60">{task.name}</span>
-                <span className="ml-auto text-purple-100">{task.value}%</span>
-              </div>
-            ))}
+            <EmptyPanel title="No task distribution" action="Task categories will appear once live household tasks are categorized." />
           </div>
         </div>
       </div>
@@ -471,36 +368,8 @@ export default function IrmaDashboard() {
               + Add Meal
             </button>
           </div>
-          <div className="space-y-4 p-4">
-            {mealSchedule.map((meal, index) => (
-              <div
-                key={index}
-                className={`rounded-xl p-4 ${meal.status === "in_progress" ? "border border-purple-500/30 bg-purple-500/20" : "border border-purple-500/10 bg-purple-950/50"}`}
-              >
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="font-medium text-purple-100">{meal.day}</span>
-                  {meal.status === "in_progress" && (
-                    <span className="rounded-full border border-purple-500/40 bg-purple-500/30 px-2 py-1 text-xs text-purple-300">
-                      Active
-                    </span>
-                  )}
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-sm">
-                  <div>
-                    <p className="mb-1 text-purple-200/50">Breakfast</p>
-                    <p className="text-purple-100">{meal.breakfast}</p>
-                  </div>
-                  <div>
-                    <p className="mb-1 text-purple-200/50">Lunch</p>
-                    <p className="text-purple-100">{meal.lunch}</p>
-                  </div>
-                  <div>
-                    <p className="mb-1 text-purple-200/50">Dinner</p>
-                    <p className="text-purple-100">{meal.dinner}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="p-4">
+            <EmptyPanel title="No meals planned" action="Meal plans will appear here after records are connected." />
           </div>
         </div>
 
@@ -573,47 +442,7 @@ export default function IrmaDashboard() {
             </div>
           </div>
           <div className="p-6">
-            <div className="grid grid-cols-7 gap-2">
-              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, index) => {
-                const isToday = index === 3
-                return (
-                  <div
-                    key={day}
-                    className={`rounded-xl p-3 text-center ${isToday ? "border border-purple-500/40 bg-purple-500/30" : "border border-purple-500/10 bg-purple-950/50"}`}
-                  >
-                    <p
-                      className={`mb-1 text-sm font-medium ${isToday ? "text-purple-300" : "text-purple-200/60"}`}
-                    >
-                      {day}
-                    </p>
-                    <p
-                      className={`text-lg font-bold ${isToday ? "text-purple-100" : "text-purple-100/80"}`}
-                    >
-                      {16 + index}
-                    </p>
-                    <div className="mt-2 space-y-1">
-                      {index < 5 && (
-                        <>
-                          <div className="h-1 rounded-full bg-purple-500/60" />
-                          <div className="h-1 rounded-full bg-amber-500/60" />
-                        </>
-                      )}
-                      {index === 5 && <div className="h-1 rounded-full bg-purple-500/40" />}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-            <div className="mt-4 flex items-center gap-4 text-sm text-purple-200/60">
-              <div className="flex items-center gap-2">
-                <div className="h-1 w-3 rounded-full bg-purple-500/60" />
-                <span>Cleaning</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-1 w-3 rounded-full bg-amber-500/60" />
-                <span>Cooking</span>
-              </div>
-            </div>
+            <EmptyPanel title="No weekly schedule" action="Household roster entries will appear after schedule data exists." />
           </div>
         </div>
       </div>

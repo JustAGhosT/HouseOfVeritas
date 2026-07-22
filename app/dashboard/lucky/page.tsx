@@ -2,69 +2,27 @@
 
 import { useState, useEffect } from "react"
 import DashboardLayout from "@/components/dashboard-layout"
+import { logger } from "@/lib/logger"
+import { apiFetchSafe } from "@/lib/api-client"
 import {
   ClipboardList,
   Clock,
   DollarSign,
   Car,
-  CheckCircle,
-  Circle,
-  AlertCircle,
   Play,
   Pause,
   Plus,
   Upload,
-  ChevronRight,
   Leaf,
   Paintbrush,
   Hammer,
-  Sun,
-  CloudRain,
-  Thermometer,
-  TreeDeciduous,
-  Flower2,
 } from "lucide-react"
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  AreaChart,
-  Area,
-} from "recharts"
 
-// Lucky's task distribution data
-const taskTypeData = [
-  { name: "Gardening", value: 45, color: "#10b981" },
-  { name: "Painting", value: 25, color: "#3b82f6" },
-  { name: "Labour", value: 20, color: "#f59e0b" },
-  { name: "Other", value: 10, color: "#8b5cf6" },
-]
-
-// Weekly hours data
-const weeklyHoursData = [
-  { day: "Mon", hours: 8 },
-  { day: "Tue", hours: 7.5 },
-  { day: "Wed", hours: 8 },
-  { day: "Thu", hours: 6.5 },
-  { day: "Fri", hours: 8 },
-  { day: "Sat", hours: 4 },
-  { day: "Sun", hours: 0 },
-]
-
-// Monthly expenses trend
-const expensesTrendData = [
-  { week: "W1", approved: 450, pending: 120 },
-  { week: "W2", approved: 320, pending: 280 },
-  { week: "W3", approved: 580, pending: 0 },
-  { week: "W4", approved: 280, pending: 320 },
-]
+interface DashboardStats {
+  dataSource?: "empty" | "demo" | "live"
+  tasks?: { total: number; completed: number; inProgress: number; overdue: number }
+  expenses?: { thisMonth: number; pending: number; approved: number }
+}
 
 // Grass blade SVG paths for garden background
 const grassPaths = [
@@ -156,35 +114,32 @@ function GardenPattern() {
   )
 }
 
-// Custom tooltip for charts
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="rounded-lg border border-green-500/20 bg-green-950 p-3 shadow-xl">
-        <p className="mb-1 font-medium text-green-100">{label}</p>
-        {payload.map((entry: any, index: number) => (
-          <p key={index} className="text-sm" style={{ color: entry.color }}>
-            {entry.name}:{" "}
-            {typeof entry.value === "number"
-              ? entry.name.includes("R") ||
-                entry.dataKey?.includes("approved") ||
-                entry.dataKey?.includes("pending")
-                ? `R${entry.value}`
-                : entry.value
-              : entry.value}
-          </p>
-        ))}
+function EmptyPanel({ title, action }: { title: string; action?: string }) {
+  return (
+    <div className="flex h-full min-h-40 items-center justify-center rounded-xl border border-green-500/10 bg-green-950/30 p-6 text-center">
+      <div>
+        <p className="font-medium text-green-100">{title}</p>
+        {action && <p className="mt-2 text-sm text-green-200/50">{action}</p>}
       </div>
-    )
-  }
-  return null
+    </div>
+  )
 }
 
 export default function LuckyDashboard() {
-  const [isClockRunning, setIsClockRunning] = useState(true)
-  const [clockTime, setClockTime] = useState("05:18:42")
+  const [isClockRunning, setIsClockRunning] = useState(false)
+  const [clockTime, setClockTime] = useState("00:00:00")
+  const [stats, setStats] = useState<DashboardStats | null>(null)
 
-  // Simulate clock
+  useEffect(() => {
+    apiFetchSafe<DashboardStats | null>("/api/stats", null, { label: "Stats" })
+      .then((data) => setStats(data))
+      .catch((err) =>
+        logger.error("Failed to fetch stats", {
+          error: err instanceof Error ? err.message : String(err),
+        })
+      )
+  }, [])
+
   useEffect(() => {
     if (!isClockRunning) return
     const interval = setInterval(() => {
@@ -207,11 +162,8 @@ export default function LuckyDashboard() {
     return () => clearInterval(interval)
   }, [isClockRunning])
 
-  const [grassPaths] = useState(() =>
-    Array.from({ length: 60 }).map(
-      (_, i) => `M${i * 20} 100 Q${i * 20 + 5} ${70 - Math.random() * 30} ${i * 20 + 10} 100`
-    )
-  )
+  const tasks = stats?.tasks ?? { total: 0, completed: 0, inProgress: 0, overdue: 0 }
+  const expenses = stats?.expenses ?? { thisMonth: 0, pending: 0, approved: 0 }
 
   return (
     <DashboardLayout persona="lucky">
@@ -240,7 +192,7 @@ export default function LuckyDashboard() {
           <div className="flex items-center gap-3">
             <div className="mr-4 hidden text-right md:block">
               <p className="text-sm text-green-200/60">Clocked in at</p>
-              <p className="font-medium text-green-100">06:30 AM</p>
+              <p className="font-medium text-green-100">{isClockRunning ? "Manual session" : "Not clocked in"}</p>
             </div>
             <button
               onClick={() => setIsClockRunning(!isClockRunning)}
@@ -280,12 +232,10 @@ export default function LuckyDashboard() {
             <Hammer className="h-4 w-4" /> Manual Labour
           </span>
         </div>
-        {/* Weather Widget */}
         <div className="flex items-center gap-3 rounded-xl border border-green-500/20 bg-green-950/50 px-4 py-2">
-          <Sun className="h-5 w-5 text-amber-400" />
           <div>
-            <p className="font-medium text-green-100">28°C</p>
-            <p className="text-xs text-green-200/50">Perfect for outdoor work</p>
+            <p className="font-medium text-green-100">{stats?.dataSource ?? "empty"}</p>
+            <p className="text-xs text-green-200/50">Data mode</p>
           </div>
         </div>
       </div>
@@ -297,32 +247,32 @@ export default function LuckyDashboard() {
           data-testid="stat-tasks"
         >
           <p className="text-sm text-green-200/60">Tasks Today</p>
-          <p className="text-2xl font-bold text-green-100">4</p>
-          <p className="text-sm text-green-400">3 completed</p>
+          <p className="text-2xl font-bold text-green-100">{tasks.total}</p>
+          <p className="text-sm text-green-400">{tasks.completed} completed</p>
         </div>
         <div
           className="rounded-xl border border-green-500/20 bg-green-950/40 p-4 backdrop-blur-sm"
           data-testid="stat-hours"
         >
           <p className="text-sm text-green-200/60">Hours This Week</p>
-          <p className="text-2xl font-bold text-green-100">32.5</p>
-          <p className="text-sm text-green-400">On track</p>
+          <p className="text-2xl font-bold text-green-100">0</p>
+          <p className="text-sm text-green-200/50">No time records</p>
         </div>
         <div
           className="rounded-xl border border-green-500/20 bg-green-950/40 p-4 backdrop-blur-sm"
           data-testid="stat-expenses"
         >
           <p className="text-sm text-green-200/60">Pending Expenses</p>
-          <p className="text-2xl font-bold text-green-100">R320</p>
-          <p className="text-sm text-amber-400">Awaiting approval</p>
+          <p className="text-2xl font-bold text-green-100">R{expenses.pending ? expenses.thisMonth.toLocaleString() : 0}</p>
+          <p className="text-sm text-amber-400">{expenses.pending} awaiting approval</p>
         </div>
         <div
           className="rounded-xl border border-green-500/20 bg-green-950/40 p-4 backdrop-blur-sm"
           data-testid="stat-leave"
         >
           <p className="text-sm text-green-200/60">Leave Balance</p>
-          <p className="text-2xl font-bold text-green-100">8</p>
-          <p className="text-sm text-green-200/50">days remaining</p>
+          <p className="text-2xl font-bold text-green-100">—</p>
+          <p className="text-sm text-green-200/50">No leave sync</p>
         </div>
       </div>
 
@@ -339,27 +289,12 @@ export default function LuckyDashboard() {
               <p className="text-sm text-green-200/50">Hours worked per day</p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-green-100">42h</p>
-              <p className="text-sm text-green-400">Total this week</p>
+              <p className="text-2xl font-bold text-green-100">0h</p>
+              <p className="text-sm text-green-200/50">No records</p>
             </div>
           </div>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={weeklyHoursData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(16,185,129,0.1)" />
-                <XAxis dataKey="day" stroke="rgba(16,185,129,0.6)" fontSize={12} />
-                <YAxis stroke="rgba(16,185,129,0.6)" fontSize={12} />
-                <Tooltip content={<CustomTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey="hours"
-                  stroke="#10b981"
-                  fill="rgba(16,185,129,0.2)"
-                  strokeWidth={2}
-                  name="Hours"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <EmptyPanel title="No weekly hours" action="Clock records will populate this chart after time tracking is connected." />
           </div>
         </div>
 
@@ -371,33 +306,7 @@ export default function LuckyDashboard() {
           <h3 className="mb-2 font-semibold text-green-100">Task Types</h3>
           <p className="mb-4 text-sm text-green-200/50">This month&apos;s work</p>
           <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={taskTypeData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={70}
-                  paddingAngle={4}
-                  dataKey="value"
-                >
-                  {taskTypeData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            {taskTypeData.map((task) => (
-              <div key={task.name} className="flex items-center gap-2 text-sm">
-                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: task.color }} />
-                <span className="text-green-200/60">{task.name}</span>
-                <span className="ml-auto text-green-100">{task.value}%</span>
-              </div>
-            ))}
+            <EmptyPanel title="No task-type data" action="Task categories will appear once live work records exist." />
           </div>
         </div>
       </div>
@@ -419,62 +328,7 @@ export default function LuckyDashboard() {
             </div>
           </div>
           <div className="space-y-3 p-4">
-            <div
-              className="flex items-center gap-4 rounded-xl border border-green-500/10 bg-green-950/50 p-4"
-              data-testid="task-lawn-mowing"
-            >
-              <CheckCircle className="h-5 w-5 text-green-400" />
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/20">
-                <Leaf className="h-4 w-4 text-green-400" />
-              </div>
-              <div className="flex-1">
-                <p className="text-green-200/50 line-through">Weekly lawn mowing</p>
-                <p className="text-sm text-green-200/40">Garden - Front & Back</p>
-              </div>
-              <span className="text-sm text-green-400">Done</span>
-            </div>
-            <div
-              className="flex items-center gap-4 rounded-xl border border-green-500/10 bg-green-950/50 p-4"
-              data-testid="task-hedge-trim"
-            >
-              <CheckCircle className="h-5 w-5 text-green-400" />
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/20">
-                <TreeDeciduous className="h-4 w-4 text-green-400" />
-              </div>
-              <div className="flex-1">
-                <p className="text-green-200/50 line-through">Trim hedges - front</p>
-                <p className="text-sm text-green-200/40">Garden Maintenance</p>
-              </div>
-              <span className="text-sm text-green-400">Done</span>
-            </div>
-            <div
-              className="flex items-center gap-4 rounded-xl border border-green-500/10 bg-green-950/50 p-4"
-              data-testid="task-irrigation"
-            >
-              <AlertCircle className="h-5 w-5 text-amber-400" />
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20">
-                <CloudRain className="h-4 w-4 text-amber-400" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-green-100">Fix irrigation zone 3</p>
-                <p className="text-sm text-green-200/50">High Priority - Leak detected</p>
-              </div>
-              <span className="text-sm text-amber-400">In Progress</span>
-            </div>
-            <div
-              className="flex items-center gap-4 rounded-xl border border-green-500/10 bg-green-950/50 p-4"
-              data-testid="task-flowers"
-            >
-              <Circle className="h-5 w-5 text-green-200/40" />
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20">
-                <Paintbrush className="h-4 w-4 text-blue-400" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-green-100">Paint garden shed door</p>
-                <p className="text-sm text-green-200/50">Painting - Exterior</p>
-              </div>
-              <span className="text-sm text-green-200/40">Pending</span>
-            </div>
+            <EmptyPanel title="No assigned tasks" action="Live garden and maintenance tasks will appear here." />
           </div>
         </div>
 
@@ -500,36 +354,7 @@ export default function LuckyDashboard() {
             </button>
           </div>
           <div className="space-y-3 p-4">
-            <div className="flex items-center gap-4 rounded-xl border border-green-500/10 bg-green-950/50 p-4">
-              <div className="flex-1">
-                <p className="font-medium text-green-100">Garden Supplies</p>
-                <p className="text-sm text-green-200/50">Seeds, fertilizer, mulch</p>
-              </div>
-              <p className="font-semibold text-green-100">R320</p>
-              <span className="rounded-full border border-amber-500/30 bg-amber-500/20 px-2 py-1 text-xs text-amber-400">
-                Pending
-              </span>
-            </div>
-            <div className="flex items-center gap-4 rounded-xl border border-green-500/10 bg-green-950/50 p-4">
-              <div className="flex-1">
-                <p className="font-medium text-green-100">Fuel - Lawn Mower</p>
-                <p className="text-sm text-green-200/50">Petrol 10L</p>
-              </div>
-              <p className="font-semibold text-green-100">R280</p>
-              <span className="rounded-full border border-green-500/30 bg-green-500/20 px-2 py-1 text-xs text-green-400">
-                Approved
-              </span>
-            </div>
-            <div className="flex items-center gap-4 rounded-xl border border-green-500/10 bg-green-950/50 p-4">
-              <div className="flex-1">
-                <p className="font-medium text-green-100">Paint Supplies</p>
-                <p className="text-sm text-green-200/50">Exterior paint, brushes</p>
-              </div>
-              <p className="font-semibold text-green-100">R650</p>
-              <span className="rounded-full border border-green-500/30 bg-green-500/20 px-2 py-1 text-xs text-green-400">
-                Approved
-              </span>
-            </div>
+            <EmptyPanel title="No expenses submitted" action="Expense submissions will appear here after live records exist." />
           </div>
           <div className="border-t border-green-500/20 p-4">
             <button
@@ -564,20 +389,11 @@ export default function LuckyDashboard() {
             </div>
           </div>
           <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={expensesTrendData} barGap={4}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(16,185,129,0.1)" />
-                <XAxis dataKey="week" stroke="rgba(16,185,129,0.6)" fontSize={12} />
-                <YAxis stroke="rgba(16,185,129,0.6)" fontSize={12} tickFormatter={(v) => `R${v}`} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="approved" fill="#10b981" radius={[4, 4, 0, 0]} name="Approved" />
-                <Bar dataKey="pending" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Pending" />
-              </BarChart>
-            </ResponsiveContainer>
+            <EmptyPanel title="No monthly expense trend" action="Approved and pending expenses will appear after submissions exist." />
           </div>
         </div>
 
-        {/* Vehicle Log */}
+        {/* Vehicles */}
         <div
           className="overflow-hidden rounded-2xl border border-green-500/20 bg-green-950/40 backdrop-blur-sm"
           data-testid="vehicle-log"
@@ -586,50 +402,16 @@ export default function LuckyDashboard() {
             <div className="flex items-center gap-3">
               <Car className="h-5 w-5 text-green-400" />
               <div>
-                <h3 className="font-semibold text-green-100">Recent Vehicle Trips</h3>
-                <p className="text-sm text-green-200/50">Toyota Hilux usage</p>
+                <h3 className="font-semibold text-green-100">Vehicles</h3>
+                <p className="text-sm text-green-200/50">Coming soon</p>
               </div>
             </div>
-            <button
-              className="rounded-xl border border-green-500/30 bg-green-500/20 px-4 py-2 text-sm font-medium text-green-400 transition-colors hover:bg-green-500/30"
-              data-testid="log-trip-btn"
-            >
-              Log New Trip
-            </button>
+            <span className="rounded-full border border-green-500/30 bg-green-500/20 px-3 py-1 text-sm font-medium text-green-400">
+              Coming soon
+            </span>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-green-950/50">
-                <tr>
-                  <th className="p-4 text-left text-sm font-medium text-green-200/60">Date</th>
-                  <th className="p-4 text-left text-sm font-medium text-green-200/60">Purpose</th>
-                  <th className="p-4 text-left text-sm font-medium text-green-200/60">Distance</th>
-                  <th className="p-4 text-left text-sm font-medium text-green-200/60">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-green-500/10">
-                <tr className="hover:bg-green-950/30">
-                  <td className="p-4 text-green-100">Today</td>
-                  <td className="p-4 text-green-100">Garden center - supplies</td>
-                  <td className="p-4 text-green-100">24 km</td>
-                  <td className="p-4">
-                    <span className="rounded-full border border-green-500/30 bg-green-500/20 px-2 py-1 text-xs text-green-400">
-                      Logged
-                    </span>
-                  </td>
-                </tr>
-                <tr className="hover:bg-green-950/30">
-                  <td className="p-4 text-green-100">Yesterday</td>
-                  <td className="p-4 text-green-100">Hardware store</td>
-                  <td className="p-4 text-green-100">18 km</td>
-                  <td className="p-4">
-                    <span className="rounded-full border border-green-500/30 bg-green-500/20 px-2 py-1 text-xs text-green-400">
-                      Logged
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div className="p-4">
+            <EmptyPanel title="Vehicles are coming soon" action="Trip logging, mileage, fuel, and compliance checks are not active yet." />
           </div>
         </div>
       </div>

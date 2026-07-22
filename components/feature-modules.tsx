@@ -287,20 +287,16 @@ export function FeatureModules() {
             <div className="mb-4 w-fit rounded-lg bg-muted p-2">
               <Car className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
-            <h3 className="mb-2 text-lg font-semibold text-foreground">Vehicle Logs</h3>
-            <p className="mb-4 text-sm text-muted-foreground">
-              Usage authorization, fuel tracking, and child transport compliance.
-            </p>
-            <div className="text-sm text-muted-foreground">
-              <div className="mb-1 flex justify-between">
-                <span>Distance</span>
-                <span className="text-foreground">171 km</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Fuel Cost</span>
-                <span className="text-foreground">R1,237</span>
-              </div>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <h3 className="text-lg font-semibold text-foreground">Vehicles</h3>
+              <span className="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">
+                Coming soon
+              </span>
             </div>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Usage authorization, fuel tracking, and compliance are planned but not active yet.
+            </p>
+            <div className="text-sm text-muted-foreground">Vehicle operations coming soon</div>
           </motion.div>
         </motion.div>
       </div>

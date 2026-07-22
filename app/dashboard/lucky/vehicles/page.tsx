@@ -6,7 +6,7 @@ import { VehiclesPage } from "@/components/shared/vehicles-page"
 export default function LuckyVehiclesPage() {
   return (
     <DashboardLayout persona="lucky">
-      <VehiclesPage personaId="lucky" title="Vehicle Log" />
+      <VehiclesPage title="Vehicles" />
     </DashboardLayout>
   )
 }
