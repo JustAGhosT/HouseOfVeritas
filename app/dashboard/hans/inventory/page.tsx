@@ -34,6 +34,7 @@ import {
 import { ScannerButton } from "@/components/barcode-scanner"
 import { LabelPrintDialog } from "@/components/barcode-label-generator"
 import { BatchScanDialog } from "@/components/batch-scanner"
+import { InventoryPhotoCapture } from "@/components/inventory-photo-capture"
 import {
   Boxes,
   Plus,
@@ -333,6 +334,14 @@ export default function InventoryPage() {
             </Button>
           </div>
         </div>
+
+        <InventoryPhotoCapture
+          persona="hans"
+          tone="blue"
+          defaultCategory={selectedCategory === "all" ? "workshop_consumables" : selectedCategory}
+          defaultLocation="Workshop Store"
+          onSaved={fetchInventory}
+        />
 
         {/* Alerts Banner */}
         {alerts.length > 0 && (
