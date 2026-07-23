@@ -52,7 +52,7 @@ resource "azurerm_linux_web_app" "main" {
 
   site_config {
     application_stack {
-      node_version = "20-lts"
+      node_version = "24-lts"
     }
 
     app_command_line = "node server.js"
@@ -71,7 +71,7 @@ resource "azurerm_linux_web_app" "main" {
   }
 
   app_settings = merge({
-    WEBSITE_NODE_DEFAULT_VERSION = "~20"
+    WEBSITE_NODE_DEFAULT_VERSION = "~24"
     HOSTNAME                     = "0.0.0.0"
     NODE_ENV                     = "production"
     NEXT_PUBLIC_APP_URL          = local.app_base_url
