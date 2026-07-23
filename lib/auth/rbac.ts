@@ -80,7 +80,11 @@ async function resolveAuthContext(request: Request): Promise<{
     // Dev/test fallback below preserves route unit tests and local API harnesses.
   }
 
-  if (process.env.NODE_ENV !== "production" || process.env.ALLOW_HEADER_AUTH === "true") {
+  if (
+    process.env.NODE_ENV !== "production" ||
+    process.env.ALLOW_HEADER_AUTH === "true" ||
+    process.env.E2E_TEST === "1"
+  ) {
     return getAuthContext(request)
   }
 
