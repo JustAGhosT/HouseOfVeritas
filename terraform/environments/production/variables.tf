@@ -466,11 +466,10 @@ variable "custom_domain" {
 # -----------------------------------------------------------------------------
 # Auth.js v5 + Mystira OIDC (relying party: neuralliquid-hov-web)
 # -----------------------------------------------------------------------------
-# The issuer defaults to the deployed Mystira dev IdP, which is the identity
-# provider HOV currently authenticates against. When a dedicated staging/prod
-# Mystira issuer is provisioned, override MYSTIRA_OIDC_ISSUER (and supply the
-# matching client secret from Key Vault / GitHub secrets). The issuer host is
-# public config, not a secret — see .env.example.
+# The issuer defaults to the production Mystira Identity host that HOV currently
+# authenticates against. The issuer host is public config, not a secret; keep the
+# client secret in Key Vault and reference it via
+# mystira_oidc_client_secret_key_vault_secret_name.
 variable "mystira_oidc_issuer" {
   description = "Mystira OIDC issuer URL"
   type        = string
@@ -483,9 +482,9 @@ variable "mystira_oidc_client_id" {
   default     = "neuralliquid-hov-web"
 }
 
-# Supply via a GitHub Actions secret / untracked tfvars — never commit the value.
-# When empty, the app falls back to its in-code dev client secret, which matches
-# the seeded neuralliquid-hov-web client on the dev IdP above.
+# Prefer Key Vault references via mystira_oidc_client_secret_key_vault_secret_name.
+# This plaintext variable remains only as a fallback escape hatch for non-prod or
+# emergency use; never commit a real value.
 variable "mystira_oidc_client_secret" {
   description = "Mystira OIDC client secret for the House of Veritas relying party"
   type        = string
@@ -579,7 +578,7 @@ variable "ci_allowed_ip_ranges" {
   default     = []
 }
 variable "mystira_oidc_client_secret_key_vault_secret_name" {
-  description = "Name of the HOV Key Vault secret containing the Mystira OIDC client secret. Leave empty until the secret exists and issuer cutover is approved."
+  description = "Name of the HOV Key Vault secret containing the Mystira OIDC client secret. When set, the web app receives a Key Vault reference instead of a plaintext secret."
   type        = string
   default     = "mystira-oidc-client-secret"
 }
