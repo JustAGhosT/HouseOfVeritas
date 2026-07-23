@@ -1,7 +1,6 @@
 "use client"
 
 import { apiFetch } from "@/lib/api-client"
-import { useAuth } from "@/lib/auth-context"
 import { logger } from "@/lib/logger"
 import { AlertCircle, Camera, CheckCircle2, Tag, Upload } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
@@ -92,7 +91,6 @@ export function InventoryPhotoCapture({
   defaultLocation = "Workshop Store",
   onSaved,
 }: InventoryPhotoCaptureProps) {
-  const { user } = useAuth()
   const styles = toneClasses[tone]
   const [label, setLabel] = useState("")
   const [category, setCategory] = useState(defaultCategory)
@@ -138,13 +136,11 @@ export function InventoryPhotoCapture({
       return
     }
 
-    const userId = user?.id ?? persona
     setStatus({ type: "saving", message: "Uploading photo..." })
 
     try {
       const formData = new FormData()
       formData.append("file", photo)
-      formData.append("userId", userId)
       formData.append("category", "image")
       formData.append("resourceType", "inventory")
 
