@@ -1,36 +1,67 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":semanticCommits", ":automergePatch", "group:allNonMajor"],
+  "extends": ["config:recommended", ":semanticCommits", ":dependencyDashboard"],
+  "enabledManagers": ["npm", "github-actions", "terraform", "pip_requirements"],
   "labels": ["dependencies"],
   "rangeStrategy": "bump",
   "dependencyDashboard": true,
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
   "packageRules": [
     {
-      "matchDepTypes": ["devDependencies"],
+      "description": "Require dashboard approval for major dependency updates.",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Automerge low-risk npm patch updates after CI passes.",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["patch"],
+      "matchCurrentVersion": "!/^0/",
       "automerge": true
     },
     {
-      "matchPackageNames": ["next", "react", "react-dom"],
-      "groupName": "next.js core",
+      "description": "Group npm minor updates for review.",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor"],
+      "groupName": "npm non-major dependencies",
       "automerge": false
     },
     {
+      "description": "Keep Next.js and React runtime updates together for application validation.",
+      "matchPackageNames": ["next", "react", "react-dom"],
+      "groupName": "next.js core",
+      "automerge": false,
+      "labels": ["dependencies", "application"]
+    },
+    {
+      "description": "Group Radix UI updates together.",
       "matchPackageNames": ["@radix-ui/**"],
       "groupName": "radix-ui",
       "automerge": true
     },
     {
+      "description": "Group Testing Library updates together.",
       "matchPackageNames": ["@testing-library/**"],
       "groupName": "testing-library",
       "automerge": true
     },
     {
+      "description": "Review GitHub Actions updates with CI changes.",
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions",
+      "automerge": false,
+      "labels": ["dependencies", "ci"]
+    },
+    {
+      "description": "Review Terraform provider updates with infrastructure changes.",
       "matchManagers": ["terraform"],
       "groupName": "terraform providers",
       "automerge": false,
       "labels": ["dependencies", "infrastructure"]
     },
     {
+      "description": "Review Python dependency updates for function runtime compatibility.",
       "matchManagers": ["pip_requirements"],
       "groupName": "python dependencies",
       "automerge": false
