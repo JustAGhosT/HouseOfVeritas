@@ -195,7 +195,7 @@ export default function CharlDashboard() {
           className="rounded-xl border border-amber-500/20 bg-amber-950/40 p-4 backdrop-blur-sm"
           data-testid="stat-tasks"
         >
-          <p className="text-sm text-amber-200/60">Tasks Today</p>
+          <p className="text-sm text-amber-200/60">Active Tasks</p>
           <p className="text-2xl font-bold text-amber-100">{tasks.total}</p>
           <p className="text-sm text-amber-400">{tasks.completed} completed</p>
         </div>

@@ -246,7 +246,7 @@ export default function LuckyDashboard() {
           className="rounded-xl border border-green-500/20 bg-green-950/40 p-4 backdrop-blur-sm"
           data-testid="stat-tasks"
         >
-          <p className="text-sm text-green-200/60">Tasks Today</p>
+          <p className="text-sm text-green-200/60">Active Tasks</p>
           <p className="text-2xl font-bold text-green-100">{tasks.total}</p>
           <p className="text-sm text-green-400">{tasks.completed} completed</p>
         </div>
@@ -262,9 +262,9 @@ export default function LuckyDashboard() {
           className="rounded-xl border border-green-500/20 bg-green-950/40 p-4 backdrop-blur-sm"
           data-testid="stat-expenses"
         >
-          <p className="text-sm text-green-200/60">Pending Expenses</p>
-          <p className="text-2xl font-bold text-green-100">R{expenses.pending ? expenses.thisMonth.toLocaleString() : 0}</p>
-          <p className="text-sm text-amber-400">{expenses.pending} awaiting approval</p>
+          <p className="text-sm text-green-200/60">Monthly Expenses</p>
+          <p className="text-2xl font-bold text-green-100">R{expenses.thisMonth.toLocaleString()}</p>
+          <p className="text-sm text-amber-400">{expenses.pending} pending approval</p>
         </div>
         <div
           className="rounded-xl border border-green-500/20 bg-green-950/40 p-4 backdrop-blur-sm"
