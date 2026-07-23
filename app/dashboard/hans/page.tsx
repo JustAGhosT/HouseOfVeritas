@@ -6,10 +6,7 @@ import { apiFetchSafe } from "@/lib/api-client"
 import {
   AlertTriangle,
   ArrowUpRight,
-  Calendar,
-  CheckCircle,
   ClipboardList,
-  Clock,
   Cpu,
   DollarSign,
   Monitor,
@@ -18,63 +15,36 @@ import {
   Shield,
   TrendingDown,
   TrendingUp,
+  type LucideIcon,
   Users,
   XCircle,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts"
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
-// Budget data
-const budgetData = [
-  { month: "Jul", allocated: 45000, spent: 38000 },
-  { month: "Aug", allocated: 45000, spent: 42000 },
-  { month: "Sep", allocated: 48000, spent: 44000 },
-  { month: "Oct", allocated: 48000, spent: 39000 },
-  { month: "Nov", allocated: 45000, spent: 41000 },
-  { month: "Dec", allocated: 45000, spent: 38250 },
-]
+interface DashboardStats {
+  dataSource?: "empty" | "demo" | "live"
+  users?: { total: number; active: number; names: string[] }
+  tasks?: { total: number; completed: number; inProgress: number; overdue: number }
+  expenses?: { thisMonth: number; pending: number; approved: number }
+  budget?: { allocated: number; spent: number; remaining: number; percentage: number }
+}
 
-// Task completion by employee
-const employeeTaskData = [
-  { name: "Charl", completed: 28, pending: 8, color: "#f59e0b" },
-  { name: "Lucky", completed: 24, pending: 6, color: "#10b981" },
-  { name: "Irma", completed: 18, pending: 2, color: "#a855f7" },
-]
+type StatCardColor = "blue" | "green" | "amber" | "red" | "purple"
 
-// Document compliance trend
-const complianceData = [
-  { month: "Jul", compliance: 85 },
-  { month: "Aug", compliance: 88 },
-  { month: "Sep", compliance: 92 },
-  { month: "Oct", compliance: 95 },
-  { month: "Nov", compliance: 98 },
-  { month: "Dec", compliance: 100 },
-]
+interface ChartTooltipEntry {
+  color?: string
+  dataKey?: string | number
+  name?: string | number
+  value?: string | number
+}
 
-// Compute current compliance percentage from the latest data point
-const currentCompliancePercentage =
-  complianceData.length > 0 ? `${complianceData[complianceData.length - 1].compliance}%` : "—"
-
-// Task status distribution
-const taskStatusData = [
-  { name: "Completed", value: 38, color: "#10b981" },
-  { name: "In Progress", value: 6, color: "#f59e0b" },
-  { name: "Overdue", value: 3, color: "#ef4444" },
-]
+interface ChartTooltipProps {
+  active?: boolean
+  label?: string | number
+  payload?: ChartTooltipEntry[]
+}
 
 // Tech/Leadership-themed background pattern
 function TechPattern() {
@@ -134,17 +104,17 @@ function TechPattern() {
 }
 
 // Custom tooltip for charts
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label }: ChartTooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-lg border border-blue-500/20 bg-blue-950 p-3 shadow-xl">
         <p className="mb-1 font-medium text-blue-100">{label}</p>
-        {payload.map((entry: any, index: number) => (
+        {payload.map((entry, index) => (
           <p key={index} className="text-sm" style={{ color: entry.color }}>
             {entry.name}:{" "}
             {typeof entry.value === "number" && entry.name !== "compliance"
-              ? entry.name.includes("allocated") ||
-                entry.name.includes("spent") ||
+              ? String(entry.name).includes("allocated") ||
+                String(entry.name).includes("spent") ||
                 entry.dataKey === "allocated" ||
                 entry.dataKey === "spent"
                 ? `R${entry.value.toLocaleString()}`
@@ -171,10 +141,10 @@ function StatCard({
   value: string | number
   change?: string
   changeType?: "up" | "down" | "neutral"
-  icon: any
-  color: string
+  icon: LucideIcon
+  color: StatCardColor
 }) {
-  const colorClasses = {
+  const colorClasses: Record<StatCardColor, string> = {
     blue: "from-blue-600/30 to-blue-600/10 border-blue-500/30",
     green: "from-green-600/30 to-green-600/10 border-green-500/30",
     amber: "from-amber-600/30 to-amber-600/10 border-amber-500/30",
@@ -182,7 +152,7 @@ function StatCard({
     purple: "from-purple-600/30 to-purple-600/10 border-purple-500/30",
   }
 
-  const iconColors = {
+  const iconColors: Record<StatCardColor, string> = {
     blue: "text-blue-400",
     green: "text-green-400",
     amber: "text-amber-400",
@@ -192,7 +162,7 @@ function StatCard({
 
   return (
     <div
-      className={`rounded-2xl bg-linear-to-br p-6 ${colorClasses[color as keyof typeof colorClasses]} border backdrop-blur-sm`}
+      className={`rounded-2xl bg-linear-to-br p-6 ${colorClasses[color]} border backdrop-blur-sm`}
       data-testid={`stat-card-${title.toLowerCase().replace(/\s+/g, "-")}`}
     >
       <div className="flex items-start justify-between">
@@ -221,118 +191,12 @@ function StatCard({
   )
 }
 
-// Pending Approval Item
-function ApprovalItem({
-  type,
-  title,
-  subtitle,
-  amount,
-  date,
-}: {
-  type: "expense" | "leave" | "overtime"
-  title: string
-  subtitle: string
-  amount?: string
-  date: string
-}) {
-  const typeColors = {
-    expense: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-    leave: "bg-purple-500/20 text-purple-400 border-purple-500/30",
-    overtime: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  }
-
-  const typeLabels = {
-    expense: "Expense",
-    leave: "Leave",
-    overtime: "Overtime",
-  }
-
+function EmptyPanel({ title, action }: { title: string; action?: string }) {
   return (
-    <div className="flex cursor-pointer items-center gap-4 rounded-xl border border-blue-500/10 bg-blue-950/50 p-4 transition-colors hover:border-blue-500/20 hover:bg-blue-950/70">
-      <div className={`rounded-full border px-3 py-1 text-xs font-medium ${typeColors[type]}`}>
-        {typeLabels[type]}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-blue-100">{title}</p>
-        <p className="truncate text-sm text-blue-200/50">{subtitle}</p>
-      </div>
-      {amount && <p className="font-semibold text-blue-100">{amount}</p>}
-      <p className="hidden text-sm text-blue-200/40 sm:block">{date}</p>
-      <div className="flex gap-2">
-        <button
-          className="rounded-lg border border-green-500/30 bg-green-500/20 p-2 text-green-400 transition-colors hover:bg-green-500/30"
-          data-testid="approve-btn"
-          aria-label="Approve expense"
-        >
-          <CheckCircle className="h-4 w-4" />
-        </button>
-        <button
-          className="rounded-lg border border-red-500/30 bg-red-500/20 p-2 text-red-400 transition-colors hover:bg-red-500/30"
-          data-testid="reject-btn"
-          aria-label="Reject expense"
-        >
-          <XCircle className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// Document Expiry Item
-function ExpiryItem({
-  name,
-  daysLeft,
-  responsible,
-}: {
-  name: string
-  daysLeft: number
-  responsible: string
-}) {
-  const urgency = daysLeft <= 7 ? "urgent" : daysLeft <= 30 ? "warning" : "notice"
-  const urgencyColors = {
-    urgent: "bg-red-500/20 text-red-400 border-red-500/30",
-    warning: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-    notice: "bg-green-500/20 text-green-400 border-green-500/30",
-  }
-
-  return (
-    <div className="flex items-center gap-4 rounded-xl border border-blue-500/10 bg-blue-950/50 p-4">
-      <div
-        className={`rounded-full border px-3 py-1 text-xs font-medium ${urgencyColors[urgency]}`}
-      >
-        {daysLeft}d
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-blue-100">{name}</p>
-        <p className="text-sm text-blue-200/50">{responsible}</p>
-      </div>
-      <button className="text-sm font-medium text-blue-400 hover:text-blue-300">Review</button>
-    </div>
-  )
-}
-
-// Recent Activity Item
-function ActivityItem({
-  action,
-  user,
-  time,
-  icon: Icon,
-}: {
-  action: string
-  user: string
-  time: string
-  icon: any
-}) {
-  return (
-    <div className="flex items-start gap-4 py-3">
-      <div className="rounded-lg border border-blue-500/20 bg-blue-950/50 p-2 text-blue-400">
-        <Icon className="h-4 w-4" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm text-blue-100">{action}</p>
-        <p className="mt-1 text-xs text-blue-200/50">
-          by {user} · {time}
-        </p>
+    <div className="flex h-full min-h-40 items-center justify-center rounded-xl border border-blue-500/10 bg-blue-950/30 p-6 text-center">
+      <div>
+        <p className="font-medium text-blue-100">{title}</p>
+        {action && <p className="mt-2 text-sm text-blue-200/50">{action}</p>}
       </div>
     </div>
   )
@@ -341,11 +205,11 @@ function ActivityItem({
 export default function DashboardPage() {
   const router = useRouter()
   const [currentTime, setCurrentTime] = useState(new Date())
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    apiFetchSafe<any>("/api/stats", null, { label: "Stats" })
+    apiFetchSafe<DashboardStats | null>("/api/stats", null, { label: "Stats" })
       .then((data) => {
         setStats(data)
         setLoading(false)
@@ -362,6 +226,24 @@ export default function DashboardPage() {
       </DashboardLayout>
     )
   }
+
+  const users = stats?.users ?? { total: 0, active: 0, names: [] }
+  const tasks = stats?.tasks ?? { total: 0, completed: 0, inProgress: 0, overdue: 0 }
+  const expenses = stats?.expenses ?? { thisMonth: 0, pending: 0, approved: 0 }
+  const budget = stats?.budget ?? { allocated: 0, spent: 0, remaining: 0, percentage: 0 }
+  const pendingTasks = Math.max(tasks.total - tasks.completed - tasks.inProgress - tasks.overdue, 0)
+  const taskStatusData = [
+    { name: "Completed", value: tasks.completed, color: "#10b981" },
+    { name: "In Progress", value: tasks.inProgress, color: "#f59e0b" },
+    { name: "Overdue", value: tasks.overdue, color: "#ef4444" },
+    { name: "Pending", value: pendingTasks, color: "#3b82f6" },
+  ].filter((item) => item.value > 0)
+  const budgetData =
+    budget.allocated > 0 || budget.spent > 0
+      ? [{ month: currentTime.toLocaleString("en-ZA", { month: "short" }), allocated: budget.allocated, spent: budget.spent }]
+      : []
+  const hasTaskStatus = taskStatusData.length > 0
+  const hasBudgetData = budgetData.length > 0
 
   return (
     <DashboardLayout persona="hans">
@@ -390,8 +272,8 @@ export default function DashboardPage() {
         <WidgetErrorBoundary>
           <StatCard
             title="Active Tasks"
-            value={stats?.tasks?.total || 0}
-            change={`${stats?.tasks?.completed || 0} completed`}
+            value={tasks.total}
+            change={`${tasks.completed} completed`}
             changeType="up"
             icon={ClipboardList}
             color="blue"
@@ -400,7 +282,7 @@ export default function DashboardPage() {
         <WidgetErrorBoundary>
           <StatCard
             title="Active Employees"
-            value={stats?.users?.total || 4}
+            value={users.active}
             icon={Users}
             color="green"
           />
@@ -408,9 +290,9 @@ export default function DashboardPage() {
         <WidgetErrorBoundary>
           <StatCard
             title="Pending Approvals"
-            value={stats?.expenses?.pending || 0}
-            change={stats?.tasks?.overdue ? `${stats.tasks.overdue} overdue` : undefined}
-            changeType={stats?.tasks?.overdue > 0 ? "down" : "neutral"}
+            value={expenses.pending}
+            change={tasks.overdue ? `${tasks.overdue} overdue` : undefined}
+            changeType={tasks.overdue > 0 ? "down" : "neutral"}
             icon={AlertTriangle}
             color="amber"
           />
@@ -418,8 +300,8 @@ export default function DashboardPage() {
         <WidgetErrorBoundary>
           <StatCard
             title="Monthly Expenses"
-            value={`R${(stats?.expenses?.thisMonth || 0).toLocaleString()}`}
-            change={`${stats?.budget?.percentage || 0}% of budget`}
+            value={`R${expenses.thisMonth.toLocaleString()}`}
+            change={`${budget.percentage}% of budget`}
             changeType="neutral"
             icon={DollarSign}
             color="purple"
@@ -452,20 +334,24 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={budgetData} barGap={8}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(59,130,246,0.1)" />
-                  <XAxis dataKey="month" stroke="rgba(59,130,246,0.6)" fontSize={12} />
-                  <YAxis
-                    stroke="rgba(59,130,246,0.6)"
-                    fontSize={12}
-                    tickFormatter={(v) => `R${(v / 1000).toFixed(0)}k`}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="allocated" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Allocated" />
-                  <Bar dataKey="spent" fill="#10b981" radius={[4, 4, 0, 0]} name="Spent" />
-                </BarChart>
-              </ResponsiveContainer>
+              {hasBudgetData ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={budgetData} barGap={8}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(59,130,246,0.1)" />
+                    <XAxis dataKey="month" stroke="rgba(59,130,246,0.6)" fontSize={12} />
+                    <YAxis
+                      stroke="rgba(59,130,246,0.6)"
+                      fontSize={12}
+                      tickFormatter={(v) => `R${(v / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar dataKey="allocated" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Allocated" />
+                    <Bar dataKey="spent" fill="#10b981" radius={[4, 4, 0, 0]} name="Spent" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyPanel title="No budget data yet" action="Approved expenses and configured budgets will appear here." />
+              )}
             </div>
           </div>
         </WidgetErrorBoundary>
@@ -479,39 +365,45 @@ export default function DashboardPage() {
             <h3 className="mb-2 font-semibold text-blue-100">Task Status</h3>
             <p className="mb-4 text-sm text-blue-200/50">Current overview</p>
             <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={taskStatusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={40}
-                    outerRadius={70}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {taskStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
+              {hasTaskStatus ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={taskStatusData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={70}
+                      paddingAngle={4}
+                      dataKey="value"
+                    >
+                      {taskStatusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <EmptyPanel title="No tasks yet" action="Create or sync tasks to populate this overview." />
+              )}
             </div>
-            <div className="mt-4 space-y-2">
-              {taskStatusData.map((status) => (
-                <div key={status.name} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="h-2 w-2 rounded-full"
-                      style={{ backgroundColor: status.color }}
-                    />
-                    <span className="text-blue-200/60">{status.name}</span>
+            {hasTaskStatus && (
+              <div className="mt-4 space-y-2">
+                {taskStatusData.map((status) => (
+                  <div key={status.name} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: status.color }}
+                      />
+                      <span className="text-blue-200/60">{status.name}</span>
+                    </div>
+                    <span className="font-medium text-blue-100">{status.value}</span>
                   </div>
-                  <span className="font-medium text-blue-100">{status.value}</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </WidgetErrorBoundary>
       </div>
@@ -531,26 +423,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={employeeTaskData} layout="vertical" barGap={4}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="rgba(59,130,246,0.1)"
-                    horizontal={false}
-                  />
-                  <XAxis type="number" stroke="rgba(59,130,246,0.6)" fontSize={12} />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    stroke="rgba(59,130,246,0.6)"
-                    fontSize={12}
-                    width={60}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="completed" fill="#10b981" radius={[0, 4, 4, 0]} name="Completed" />
-                  <Bar dataKey="pending" fill="#f59e0b" radius={[0, 4, 4, 0]} name="Pending" />
-                </BarChart>
-              </ResponsiveContainer>
+              <EmptyPanel title="No employee performance data yet" action="Task completion by assignee will appear after live task records exist." />
             </div>
           </div>
         </WidgetErrorBoundary>
@@ -567,32 +440,12 @@ export default function DashboardPage() {
                 <p className="text-sm text-blue-200/50">6-month trend</p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-green-400">{currentCompliancePercentage}</p>
+                <p className="text-2xl font-bold text-blue-200/60">—</p>
                 <p className="text-sm text-blue-200/50">Current</p>
               </div>
             </div>
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={complianceData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(59,130,246,0.1)" />
-                  <XAxis dataKey="month" stroke="rgba(59,130,246,0.6)" fontSize={12} />
-                  <YAxis
-                    stroke="rgba(59,130,246,0.6)"
-                    fontSize={12}
-                    domain={[80, 100]}
-                    tickFormatter={(v) => `${v}%`}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area
-                    type="monotone"
-                    dataKey="compliance"
-                    stroke="#3b82f6"
-                    fill="rgba(59,130,246,0.2)"
-                    strokeWidth={2}
-                    name="Compliance"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <EmptyPanel title="No compliance trend yet" action="Signed document history will populate this chart after live records exist." />
             </div>
           </div>
         </WidgetErrorBoundary>
@@ -612,44 +465,11 @@ export default function DashboardPage() {
                 <p className="text-sm text-blue-200/50">Items requiring your action</p>
               </div>
               <span className="rounded-full border border-amber-500/30 bg-amber-500/20 px-3 py-1 text-sm font-medium text-amber-400">
-                {stats?.expenses?.pending || 5} pending
+                {expenses.pending} pending
               </span>
             </div>
             <div className="max-h-96 space-y-3 overflow-y-auto p-4">
-              <ApprovalItem
-                type="expense"
-                title="Workshop Materials"
-                subtitle="Charl Pieterse"
-                amount="R850"
-                date="Today"
-              />
-              <ApprovalItem
-                type="overtime"
-                title="Weekend Work"
-                subtitle="Lucky Mokoena - 4.5 hours"
-                amount="R540"
-                date="Yesterday"
-              />
-              <ApprovalItem
-                type="leave"
-                title="Annual Leave - 3 days"
-                subtitle="Charl Pieterse - Dec 20-22"
-                date="2 days ago"
-              />
-              <ApprovalItem
-                type="expense"
-                title="Garden Supplies"
-                subtitle="Lucky Mokoena"
-                amount="R320"
-                date="3 days ago"
-              />
-              <ApprovalItem
-                type="expense"
-                title="Vehicle Fuel"
-                subtitle="Charl Pieterse"
-                amount="R450"
-                date="3 days ago"
-              />
+              <EmptyPanel title="No pending approvals" action="Submitted expenses or approval workflows will appear here." />
             </div>
             <div className="border-t border-blue-500/20 p-4">
               <button
@@ -680,9 +500,7 @@ export default function DashboardPage() {
                 <AlertTriangle className="h-5 w-5 text-amber-400" />
               </div>
               <div className="space-y-3 p-4">
-                <ExpiryItem name="Emergency Contact List" daysLeft={7} responsible="All" />
-                <ExpiryItem name="Expense Policy" daysLeft={23} responsible="Hans" />
-                <ExpiryItem name="Leave Policy" daysLeft={45} responsible="HR" />
+                <EmptyPanel title="No expiring documents" action="Connected document records will appear here." />
               </div>
             </div>
           </WidgetErrorBoundary>
@@ -697,30 +515,7 @@ export default function DashboardPage() {
                 <h3 className="font-semibold text-blue-100">Recent Activity</h3>
               </div>
               <div className="divide-y divide-blue-500/10 p-4">
-                <ActivityItem
-                  action="Completed workshop cleanup task"
-                  user="Charl"
-                  time="30 min ago"
-                  icon={CheckCircle}
-                />
-                <ActivityItem
-                  action="Submitted fuel expense"
-                  user="Lucky"
-                  time="1 hour ago"
-                  icon={DollarSign}
-                />
-                <ActivityItem
-                  action="Clocked in for shift"
-                  user="Charl"
-                  time="3 hours ago"
-                  icon={Clock}
-                />
-                <ActivityItem
-                  action="Updated vehicle mileage"
-                  user="Lucky"
-                  time="5 hours ago"
-                  icon={Calendar}
-                />
+                <EmptyPanel title="No recent activity" action="Live events will appear here after work is recorded." />
               </div>
             </div>
           </WidgetErrorBoundary>
@@ -737,16 +532,16 @@ export default function DashboardPage() {
               </div>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-blue-200/60">Uptime</span>
-                  <span className="text-sm font-medium text-green-400">99.9%</span>
+                  <span className="text-sm text-blue-200/60">Data mode</span>
+                  <span className="text-sm font-medium text-blue-100">{stats?.dataSource ?? "empty"}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-blue-200/60">Documents Signed</span>
-                  <span className="text-sm font-medium text-blue-100">18/18</span>
+                  <span className="text-sm text-blue-200/60">Tasks tracked</span>
+                  <span className="text-sm font-medium text-blue-100">{tasks.total}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-blue-200/60">Last Backup</span>
-                  <span className="text-sm font-medium text-blue-100">2 hours ago</span>
+                  <span className="text-sm text-blue-200/60">Employees tracked</span>
+                  <span className="text-sm font-medium text-blue-100">{users.active}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-blue-200/60">API Status</span>

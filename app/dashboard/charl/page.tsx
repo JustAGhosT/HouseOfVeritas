@@ -9,59 +9,19 @@ import {
   Clock,
   Package,
   Car,
-  CheckCircle,
-  Circle,
-  AlertCircle,
   Play,
   Pause,
-  ChevronRight,
   Wrench,
   Zap,
   Droplets,
   Settings,
-  TrendingUp,
+  type LucideIcon,
 } from "lucide-react"
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  Area,
-  AreaChart,
-} from "recharts"
 
-// Task data for Charl
-const weeklyTaskData = [
-  { day: "Mon", completed: 6, assigned: 8 },
-  { day: "Tue", completed: 7, assigned: 7 },
-  { day: "Wed", completed: 5, assigned: 6 },
-  { day: "Thu", completed: 8, assigned: 8 },
-  { day: "Fri", completed: 4, assigned: 7 },
-  { day: "Sat", completed: 2, assigned: 3 },
-  { day: "Sun", completed: 0, assigned: 0 },
-]
-
-const skillsData = [
-  { name: "Electrical", value: 35, color: "#f59e0b" },
-  { name: "Plumbing", value: 25, color: "#3b82f6" },
-  { name: "Mechanical", value: 25, color: "#10b981" },
-  { name: "General", value: 15, color: "#8b5cf6" },
-]
-
-const hoursData = [
-  { week: "W1", hours: 42 },
-  { week: "W2", hours: 38 },
-  { week: "W3", hours: 45 },
-  { week: "W4", hours: 40 },
-]
+interface DashboardStats {
+  dataSource?: "empty" | "demo" | "live"
+  tasks?: { total: number; completed: number; inProgress: number; overdue: number }
+}
 
 // Workshop-themed background pattern
 function WorkshopPattern() {
@@ -109,132 +69,24 @@ function WorkshopPattern() {
   )
 }
 
-// Task Item Component
-function TaskItem({
-  title,
-  project,
-  priority,
-  dueDate,
-  status,
-  icon: Icon,
-}: {
-  title: string
-  project: string
-  priority: "high" | "medium" | "low"
-  dueDate: string
-  status: "not_started" | "in_progress" | "completed"
-  icon?: any
-}) {
-  const priorityColors = {
-    high: "bg-red-500/20 text-red-400",
-    medium: "bg-amber-500/20 text-amber-400",
-    low: "bg-green-500/20 text-green-400",
-  }
-
-  const statusIcons = {
-    not_started: <Circle className="h-5 w-5 text-white/40" />,
-    in_progress: <AlertCircle className="h-5 w-5 text-amber-400" />,
-    completed: <CheckCircle className="h-5 w-5 text-green-400" />,
-  }
-
+function EmptyPanel({ title, action }: { title: string; action?: string }) {
   return (
-    <div
-      className="group flex cursor-pointer items-center gap-4 rounded-xl border border-amber-500/10 bg-amber-950/30 p-4 transition-colors hover:border-amber-500/20 hover:bg-amber-950/50"
-      data-testid={`task-${title.toLowerCase().replace(/\s+/g, "-")}`}
-    >
-      <button className="shrink-0" aria-label={`Task status: ${status}`}>
-        {statusIcons[status]}
-      </button>
-      {Icon && (
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20">
-          <Icon className="h-4 w-4 text-amber-400" />
-        </div>
-      )}
-      <div className="min-w-0 flex-1">
-        <p
-          className={`font-medium ${status === "completed" ? "text-white/50 line-through" : "text-white"}`}
-        >
-          {title}
-        </p>
-        <p className="text-sm text-amber-200/50">{project}</p>
-      </div>
-      <div className={`rounded-full px-2 py-1 text-xs font-medium ${priorityColors[priority]}`}>
-        {priority}
-      </div>
-      <p className="hidden text-sm text-amber-200/40 sm:block">{dueDate}</p>
-      <ChevronRight className="h-4 w-4 text-amber-400/40 transition-colors group-hover:text-amber-400/60" />
-    </div>
-  )
-}
-
-// Asset Card Component
-function AssetCard({
-  name,
-  id,
-  status,
-  location,
-}: {
-  name: string
-  id: string
-  status: "available" | "checked_out" | "maintenance"
-  location: string
-}) {
-  const statusColors = {
-    available: "bg-green-500",
-    checked_out: "bg-amber-500",
-    maintenance: "bg-red-500",
-  }
-
-  const statusLabels = {
-    available: "Available",
-    checked_out: "In Use",
-    maintenance: "Maintenance",
-  }
-
-  return (
-    <div
-      className="cursor-pointer rounded-xl border border-amber-500/10 bg-amber-950/30 p-4 transition-colors hover:border-amber-500/20 hover:bg-amber-950/50"
-      data-testid={`asset-${id}`}
-    >
-      <div className="mb-3 flex items-start justify-between">
-        <div>
-          <p className="font-medium text-white">{name}</p>
-          <p className="text-sm text-amber-200/50">{id}</p>
-        </div>
-        <div className={`h-3 w-3 rounded-full ${statusColors[status]}`} />
-      </div>
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-amber-200/50">{location}</span>
-        <span className="text-amber-200/60">{statusLabels[status]}</span>
+    <div className="flex h-full min-h-40 items-center justify-center rounded-xl border border-amber-500/10 bg-amber-950/30 p-6 text-center">
+      <div>
+        <p className="font-medium text-amber-100">{title}</p>
+        {action && <p className="mt-2 text-sm text-amber-200/50">{action}</p>}
       </div>
     </div>
   )
-}
-
-// Custom tooltip for charts
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="rounded-lg border border-amber-500/20 bg-amber-950 p-3 shadow-xl">
-        <p className="mb-1 font-medium text-amber-100">{label}</p>
-        {payload.map((entry: any, index: number) => (
-          <p key={index} className="text-sm" style={{ color: entry.color }}>
-            {entry.name}: {entry.value}
-          </p>
-        ))}
-      </div>
-    )
-  }
-  return null
 }
 
 export default function CharlDashboard() {
-  const [isClockRunning, setIsClockRunning] = useState(true)
-  const [clockTime, setClockTime] = useState("06:42:15")
-  const [stats, setStats] = useState<any>(null)
+  const [isClockRunning, setIsClockRunning] = useState(false)
+  const [clockTime, setClockTime] = useState("00:00:00")
+  const [stats, setStats] = useState<DashboardStats | null>(null)
 
   useEffect(() => {
-    apiFetchSafe<any>("/api/stats", null, { label: "Stats" })
+    apiFetchSafe<DashboardStats | null>("/api/stats", null, { label: "Stats" })
       .then((data) => setStats(data))
       .catch((err) =>
         logger.error("Failed to fetch stats", {
@@ -243,7 +95,6 @@ export default function CharlDashboard() {
       )
   }, [])
 
-  // Simulate clock
   useEffect(() => {
     if (!isClockRunning) return
     const interval = setInterval(() => {
@@ -265,6 +116,8 @@ export default function CharlDashboard() {
     }, 1000)
     return () => clearInterval(interval)
   }, [isClockRunning])
+
+  const tasks = stats?.tasks ?? { total: 0, completed: 0, inProgress: 0, overdue: 0 }
 
   return (
     <DashboardLayout persona="charl">
@@ -293,7 +146,7 @@ export default function CharlDashboard() {
           <div className="flex items-center gap-3">
             <div className="mr-4 hidden text-right md:block">
               <p className="text-sm text-amber-200/60">Clocked in at</p>
-              <p className="font-medium text-amber-100">07:15 AM</p>
+              <p className="font-medium text-amber-100">{isClockRunning ? "Manual session" : "Not clocked in"}</p>
             </div>
             <button
               onClick={() => setIsClockRunning(!isClockRunning)}
@@ -342,33 +195,33 @@ export default function CharlDashboard() {
           className="rounded-xl border border-amber-500/20 bg-amber-950/40 p-4 backdrop-blur-sm"
           data-testid="stat-tasks"
         >
-          <p className="text-sm text-amber-200/60">Tasks Today</p>
-          <p className="text-2xl font-bold text-amber-100">5</p>
-          <p className="text-sm text-amber-400">3 completed</p>
+          <p className="text-sm text-amber-200/60">Active Tasks</p>
+          <p className="text-2xl font-bold text-amber-100">{tasks.total}</p>
+          <p className="text-sm text-amber-400">{tasks.completed} completed</p>
         </div>
         <div
           className="rounded-xl border border-amber-500/20 bg-amber-950/40 p-4 backdrop-blur-sm"
           data-testid="stat-hours"
         >
           <p className="text-sm text-amber-200/60">Hours This Week</p>
-          <p className="text-2xl font-bold text-amber-100">38.5</p>
-          <p className="text-sm text-green-400">On track</p>
+          <p className="text-2xl font-bold text-amber-100">0</p>
+          <p className="text-sm text-amber-200/50">No time records</p>
         </div>
         <div
           className="rounded-xl border border-amber-500/20 bg-amber-950/40 p-4 backdrop-blur-sm"
           data-testid="stat-assets"
         >
           <p className="text-sm text-amber-200/60">Assets Checked</p>
-          <p className="text-2xl font-bold text-amber-100">2</p>
-          <p className="text-sm text-amber-200/50">Drill, Grinder</p>
+          <p className="text-2xl font-bold text-amber-100">0</p>
+          <p className="text-sm text-amber-200/50">No live checkout data</p>
         </div>
         <div
           className="rounded-xl border border-amber-500/20 bg-amber-950/40 p-4 backdrop-blur-sm"
           data-testid="stat-leave"
         >
           <p className="text-sm text-amber-200/60">Leave Balance</p>
-          <p className="text-2xl font-bold text-amber-100">15</p>
-          <p className="text-sm text-amber-200/50">days remaining</p>
+          <p className="text-2xl font-bold text-amber-100">—</p>
+          <p className="text-sm text-amber-200/50">No leave sync</p>
         </div>
       </div>
 
@@ -396,21 +249,7 @@ export default function CharlDashboard() {
             </div>
           </div>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyTaskData} barGap={8}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,158,11,0.1)" />
-                <XAxis dataKey="day" stroke="rgba(245,158,11,0.6)" fontSize={12} />
-                <YAxis stroke="rgba(245,158,11,0.6)" fontSize={12} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar
-                  dataKey="assigned"
-                  fill="rgba(245,158,11,0.2)"
-                  radius={[4, 4, 0, 0]}
-                  name="Assigned"
-                />
-                <Bar dataKey="completed" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Completed" />
-              </BarChart>
-            </ResponsiveContainer>
+            <EmptyPanel title="No weekly task history" action="Assigned and completed task history will appear after live task records exist." />
           </div>
         </div>
 
@@ -422,33 +261,7 @@ export default function CharlDashboard() {
           <h3 className="mb-2 font-semibold text-amber-100">Skills Distribution</h3>
           <p className="mb-4 text-sm text-amber-200/50">Task types this month</p>
           <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={skillsData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={70}
-                  paddingAngle={4}
-                  dataKey="value"
-                >
-                  {skillsData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            {skillsData.map((skill) => (
-              <div key={skill.name} className="flex items-center gap-2 text-sm">
-                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: skill.color }} />
-                <span className="text-amber-200/60">{skill.name}</span>
-                <span className="ml-auto text-amber-100">{skill.value}%</span>
-              </div>
-            ))}
+            <EmptyPanel title="No task-type data" action="Skill distribution will appear once tasks are categorized." />
           </div>
         </div>
       </div>
@@ -469,50 +282,11 @@ export default function CharlDashboard() {
               </div>
             </div>
             <span className="rounded-full border border-amber-500/30 bg-amber-500/20 px-3 py-1 text-sm text-amber-400">
-              5 tasks
+              {tasks.total} tasks
             </span>
           </div>
           <div className="max-h-96 space-y-3 overflow-y-auto p-4">
-            <TaskItem
-              title="Fix electrical outlet - Kitchen"
-              project="Electrical Work"
-              priority="high"
-              dueDate="Today"
-              status="in_progress"
-              icon={Zap}
-            />
-            <TaskItem
-              title="Repair leaking pipe - Bathroom"
-              project="Plumbing"
-              priority="high"
-              dueDate="Today"
-              status="completed"
-              icon={Droplets}
-            />
-            <TaskItem
-              title="Service Toyota Hilux"
-              project="Vehicle Maintenance"
-              priority="medium"
-              dueDate="Today"
-              status="in_progress"
-              icon={Wrench}
-            />
-            <TaskItem
-              title="Install new light fixtures"
-              project="Electrical Work"
-              priority="medium"
-              dueDate="Tomorrow"
-              status="not_started"
-              icon={Zap}
-            />
-            <TaskItem
-              title="Workshop equipment inspection"
-              project="Safety Check"
-              priority="low"
-              dueDate="This week"
-              status="completed"
-              icon={Settings}
-            />
+            <EmptyPanel title="No assigned tasks" action="Live task assignments will appear here." />
           </div>
         </div>
 
@@ -530,17 +304,12 @@ export default function CharlDashboard() {
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 p-4">
-            <AssetCard name="Makita Drill Set" id="WS-001" status="checked_out" location="In Use" />
-            <AssetCard name="Angle Grinder" id="WS-002" status="checked_out" location="In Use" />
-            <AssetCard name="Multimeter" id="WS-005" status="available" location="Workshop" />
-            <AssetCard name="Pipe Wrench Set" id="WS-006" status="available" location="Workshop" />
-            <AssetCard name="Socket Set" id="WS-004" status="available" location="Workshop" />
-            <AssetCard name="Soldering Iron" id="WS-007" status="maintenance" location="Repair" />
+          <div className="p-4">
+            <EmptyPanel title="No workshop asset data" action="Equipment checkouts will appear after asset records are connected." />
           </div>
         </div>
 
-        {/* Vehicle Log */}
+        {/* Vehicles */}
         <div
           className="overflow-hidden rounded-2xl border border-amber-500/20 bg-amber-950/40 backdrop-blur-sm lg:col-span-2"
           data-testid="vehicle-log"
@@ -549,40 +318,16 @@ export default function CharlDashboard() {
             <div className="flex items-center gap-3">
               <Car className="h-5 w-5 text-amber-400" />
               <div>
-                <h3 className="font-semibold text-amber-100">Vehicle Log</h3>
-                <p className="text-sm text-amber-200/50">Toyota Hilux - Current Trip</p>
+                <h3 className="font-semibold text-amber-100">Vehicles</h3>
+                <p className="text-sm text-amber-200/50">Coming soon</p>
               </div>
             </div>
-            <button
-              className="rounded-xl border border-amber-500/30 bg-amber-500/20 px-4 py-2 text-sm font-medium text-amber-400 transition-colors hover:bg-amber-500/30"
-              data-testid="end-trip-btn"
-            >
-              End Trip
-            </button>
+            <span className="rounded-full border border-amber-500/30 bg-amber-500/20 px-3 py-1 text-sm font-medium text-amber-400">
+              Coming soon
+            </span>
           </div>
           <div className="p-6">
-            <div className="grid grid-cols-2 gap-6 md:grid-cols-5">
-              <div>
-                <p className="mb-1 text-sm text-amber-200/50">Start Odometer</p>
-                <p className="text-xl font-semibold text-amber-100">124,532 km</p>
-              </div>
-              <div>
-                <p className="mb-1 text-sm text-amber-200/50">Trip Start</p>
-                <p className="text-xl font-semibold text-amber-100">07:30 AM</p>
-              </div>
-              <div>
-                <p className="mb-1 text-sm text-amber-200/50">Purpose</p>
-                <p className="text-xl font-semibold text-amber-100">Supply Run</p>
-              </div>
-              <div>
-                <p className="mb-1 text-sm text-amber-200/50">Pre-Trip Check</p>
-                <p className="text-xl font-semibold text-green-400">✓ Completed</p>
-              </div>
-              <div>
-                <p className="mb-1 text-sm text-amber-200/50">Fuel Level</p>
-                <p className="text-xl font-semibold text-amber-400">75%</p>
-              </div>
-            </div>
+            <EmptyPanel title="Vehicles are coming soon" action="Trip logging, mileage, fuel, and compliance checks are not active yet." />
           </div>
         </div>
       </div>
