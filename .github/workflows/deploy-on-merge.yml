@@ -61,7 +61,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "24"
+          node-version: "22"
           cache: "pnpm"
 
       - name: Install Dependencies
@@ -127,19 +127,19 @@ jobs:
 
       - name: Verify Web App Health
         run: |
-          APP_URL="https://${{ vars.WEBAPP_NAME || 'nl-prod-hov-app' }}.azurewebsites.net"
+          HEALTH_URL="https://${{ vars.WEBAPP_NAME || 'nl-prod-hov-app' }}.azurewebsites.net/api/health"
           healthy=false
           for i in {1..10}; do
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL" || echo "000")
-            if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "302" ]; then
-              echo "Web App is healthy (HTTP $HTTP_STATUS)"
+            RESPONSE=$(curl -fsS "$HEALTH_URL" || true)
+            if echo "$RESPONSE" | grep -q '"status":"healthy"'; then
+              echo "Web App health endpoint is healthy"
               healthy=true
               break
             fi
-            echo "Waiting for Web App... (attempt $i/10, got HTTP $HTTP_STATUS)"
+            echo "Waiting for Web App health endpoint... (attempt $i/10)"
             sleep 15
           done
           if [ "$healthy" != "true" ]; then
-            echo "Web App health check failed after 10 attempts"
+            echo "Web App health endpoint failed after 10 attempts"
             exit 1
           fi
