@@ -82,6 +82,7 @@ interface InventoryPhotoCaptureProps {
   tone: InventoryTone
   defaultCategory?: string
   defaultLocation?: string
+  onSaved?: () => void
 }
 
 export function InventoryPhotoCapture({
@@ -89,6 +90,7 @@ export function InventoryPhotoCapture({
   tone,
   defaultCategory = "workshop_consumables",
   defaultLocation = "Workshop Store",
+  onSaved,
 }: InventoryPhotoCaptureProps) {
   const { user } = useAuth()
   const styles = toneClasses[tone]
@@ -180,6 +182,7 @@ export function InventoryPhotoCapture({
       setPhoto(null)
       clearPreview()
       setStatus({ type: "success", message: "Saved to inventory." })
+      onSaved?.()
     } catch (error) {
       logger.error("Failed to save inventory photo label", {
         error: error instanceof Error ? error.message : String(error),

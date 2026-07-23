@@ -19,6 +19,7 @@ import {
 import { Boxes, Search, AlertTriangle, Package, ArrowDown, Leaf } from "lucide-react"
 import { logger } from "@/lib/logger"
 import { apiFetch } from "@/lib/api-client"
+import { InventoryPhotoCapture } from "@/components/inventory-photo-capture"
 
 interface InventoryItem {
   id: string
@@ -111,6 +112,14 @@ export default function LuckyInventoryPage() {
           </h1>
           <p className="mt-1 text-white/60">Track and use garden supplies</p>
         </div>
+
+        <InventoryPhotoCapture
+          persona="lucky"
+          tone="green"
+          defaultCategory="garden_supplies"
+          defaultLocation="Yard"
+          onSaved={fetchInventory}
+        />
 
         {/* Search */}
         <Card className="border-white/10 bg-white/5">
