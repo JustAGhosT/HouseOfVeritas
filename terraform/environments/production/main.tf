@@ -103,6 +103,9 @@ module "database" {
   server_name         = var.db_server_name
   admin_username      = var.db_admin_username
   admin_password      = var.db_admin_password
+  sku_name            = var.db_sku_name
+  storage_mb          = var.db_storage_mb
+  app_database_name   = var.db_app_database_name
   database_subnet_id  = module.network.database_subnet_id
   vnet_id             = module.network.vnet_id
 
@@ -270,13 +273,15 @@ module "webapp" {
   document_intelligence_endpoint                   = try(module.cognitive[0].endpoint, "")
   document_intelligence_key                        = try(module.cognitive[0].primary_access_key, "")
   extra_app_settings = {
-    MONGODB_URI = try(module.cosmos_mongo[0].mongo_connection_string, "")
-    DB_NAME     = try(module.cosmos_mongo[0].mongo_database_name, "")
+    DATABASE_URL = try(module.database[0].connection_string_app, "")
+    POSTGRES_URL = try(module.database[0].connection_string_app, "")
+    MONGODB_URI  = try(module.cosmos_mongo[0].mongo_connection_string, "")
+    DB_NAME      = try(module.cosmos_mongo[0].mongo_database_name, "")
   }
 
   tags = local.common_tags
 
-  depends_on = [module.network, module.storage, module.security]
+  depends_on = [module.network, module.storage, module.security, module.database]
 }
 
 # DNS Module (Azure DNS records for nexamesh.ai)

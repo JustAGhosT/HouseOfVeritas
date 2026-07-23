@@ -1,5 +1,7 @@
 import DashboardLayout from "@/components/dashboard-layout"
+import { InventoryBatchCapturePreview } from "@/components/inventory-batch-capture-preview"
 import { InventoryPhotoCapture } from "@/components/inventory-photo-capture"
+import { ScopedInventoryList } from "@/components/scoped-inventory-list"
 import { Boxes } from "lucide-react"
 import { notFound } from "next/navigation"
 
@@ -71,6 +73,10 @@ export default async function UniversalInventoryPage({ params }: UniversalInvent
           defaultCategory={config.category}
           defaultLocation={config.location}
         />
+
+        <InventoryBatchCapturePreview defaultLocation={config.location} />
+
+        <ScopedInventoryList />
       </div>
     </DashboardLayout>
   )

@@ -149,6 +149,24 @@ variable "db_admin_password" {
   sensitive   = true
 }
 
+variable "db_sku_name" {
+  description = "PostgreSQL Flexible Server Terraform SKU. B_Standard_B1ms is the cheapest burstable option available in South Africa North."
+  type        = string
+  default     = "B_Standard_B1ms"
+}
+
+variable "db_storage_mb" {
+  description = "PostgreSQL storage in MB. 32768 is the minimum managed disk size returned in South Africa North."
+  type        = number
+  default     = 32768
+}
+
+variable "db_app_database_name" {
+  description = "Database name for the House of Veritas web app"
+  type        = string
+  default     = "house_of_veritas"
+}
+
 variable "cosmos_account_name" {
   description = "Cosmos DB account name (Mongo API)"
   type        = string

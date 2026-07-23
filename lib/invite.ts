@@ -286,7 +286,7 @@ export async function invalidateInviteToken(token: string): Promise<void> {
 export async function sendInvite(
   userId: string,
   baseUrl: string
-): Promise<{ sent: boolean; error?: string }> {
+): Promise<{ sent: boolean; error?: string; inviteLink?: string; channels?: string[] }> {
   try {
     const token = await createInviteToken(userId)
     const user = await findUserByIdAsync(userId)
@@ -311,7 +311,7 @@ export async function sendInvite(
     })
 
     logger.info("Invite sent", { userId, channels })
-    return { sent: true }
+    return { sent: true, inviteLink: link, channels }
   } catch (err) {
     logger.error("Invite send failed", { error: err instanceof Error ? err.message : String(err) })
     return { sent: false, error: err instanceof Error ? err.message : String(err) }

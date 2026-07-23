@@ -1,10 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server"
+import { auth } from "@/auth"
 import type { UserRole } from "@/lib/users"
 import {
   hasResponsibility,
   getDefaultResponsibilities,
   type Responsibility,
 } from "@/lib/access-config"
+import { getUserWithManagement } from "@/lib/user-management"
 
 export interface AuthenticatedRequest extends NextRequest {
   userId: string
@@ -42,6 +44,53 @@ export function getAuthContext(request: Request): {
   return { userId, role, email, responsibilities }
 }
 
+async function resolveAuthContext(request: Request): Promise<{
+  userId: string
+  role: UserRole
+  email: string
+  responsibilities?: string[]
+} | null> {
+  try {
+    const session = await auth()
+    const userId = session?.user?.userId
+
+    if (userId) {
+      const managed = await getUserWithManagement(userId).catch(() => null)
+      if (managed) {
+        return {
+          userId: managed.id,
+          role: managed.role,
+          email: managed.email,
+          responsibilities: managed.responsibilities?.length
+            ? managed.responsibilities
+            : getDefaultResponsibilities(managed.role),
+        }
+      }
+
+      if (session.user.role && session.user.email) {
+        return {
+          userId,
+          role: session.user.role,
+          email: session.user.email,
+          responsibilities: getDefaultResponsibilities(session.user.role),
+        }
+      }
+    }
+  } catch {
+    // Dev/test fallback below preserves route unit tests and local API harnesses.
+  }
+
+  if (
+    process.env.NODE_ENV !== "production" ||
+    process.env.ALLOW_HEADER_AUTH === "true" ||
+    process.env.E2E_TEST === "1"
+  ) {
+    return getAuthContext(request)
+  }
+
+  return null
+}
+
 export function isAdminOrOperator(role: UserRole): boolean {
   return role === "admin" || role === "operator"
 }
@@ -65,16 +114,16 @@ export function withRole(...allowedRoles: UserRole[]) {
       request: Request,
       routeContext?: { params?: Promise<Record<string, string>> }
     ) {
-      const auth = getAuthContext(request)
-      if (!auth) {
+      const authContext = await resolveAuthContext(request)
+      if (!authContext) {
         return NextResponse.json({ error: "Authentication required" }, { status: 401 })
       }
 
-      if (auth.role !== "admin" && !allowedRoles.includes(auth.role)) {
+      if (authContext.role !== "admin" && !allowedRoles.includes(authContext.role)) {
         return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
       }
 
-      const context: RouteContext = { ...auth, params: routeContext?.params }
+      const context: RouteContext = { ...authContext, params: routeContext?.params }
       return handler(request, context)
     }
   }
@@ -90,16 +139,19 @@ export function withResponsibility(required: Responsibility) {
       request: Request,
       routeContext?: { params?: Promise<Record<string, string>> }
     ) {
-      const auth = getAuthContext(request)
-      if (!auth) {
+      const authContext = await resolveAuthContext(request)
+      if (!authContext) {
         return NextResponse.json({ error: "Authentication required" }, { status: 401 })
       }
 
-      if (auth.role !== "admin" && !hasResponsibility(auth.responsibilities ?? [], required)) {
+      if (
+        authContext.role !== "admin" &&
+        !hasResponsibility(authContext.responsibilities ?? [], required)
+      ) {
         return NextResponse.json({ error: `Requires responsibility: ${required}` }, { status: 403 })
       }
 
-      const context: RouteContext = { ...auth, params: routeContext?.params }
+      const context: RouteContext = { ...authContext, params: routeContext?.params }
       return handler(request, context)
     }
   }
@@ -110,11 +162,11 @@ export function withAuth(handler: RouteHandler) {
     request: Request,
     routeContext?: { params?: Promise<Record<string, string>> }
   ) {
-    const auth = getAuthContext(request)
-    if (!auth) {
+    const authContext = await resolveAuthContext(request)
+    if (!authContext) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
-    const context: RouteContext = { ...auth, params: routeContext?.params }
+    const context: RouteContext = { ...authContext, params: routeContext?.params }
     return handler(request, context)
   }
 }

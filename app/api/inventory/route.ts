@@ -71,13 +71,43 @@ function optionalPhotoUrl(value: unknown): string | undefined {
   return undefined
 }
 
+function optionalTextList(value: unknown, maxLength: number): string[] | undefined {
+  if (!Array.isArray(value)) return undefined
+  const values = value
+    .map((item) => optionalText(item, maxLength))
+    .filter((item): item is string => !!item)
+  return values.length ? Array.from(new Set(values)) : undefined
+}
+
+function optionalImageBounds(value: unknown): InventoryItem["imageBounds"] | undefined {
+  if (!value || typeof value !== "object") return undefined
+  const bounds = value as Record<string, unknown>
+  const x = Number(bounds.x)
+  const y = Number(bounds.y)
+  const width = Number(bounds.width)
+  const height = Number(bounds.height)
+  if (![x, y, width, height].every(Number.isFinite)) return undefined
+  if (x < 0 || y < 0 || width <= 0 || height <= 0) return undefined
+  if (x + width > 1 || y + height > 1) return undefined
+  return { x, y, width, height }
+}
+
+function isLinkedToUser(item: InventoryItem, userId: string): boolean {
+  return (
+    item.capturedBy === userId ||
+    item.ownerId === userId ||
+    item.responsibleUserId === userId ||
+    item.linkedUserIds?.includes(userId) === true
+  )
+}
+
 // GET - List inventory with filters
 export const GET = withRole(
   "admin",
   "operator",
   "employee",
   "resident"
-)(async (request: Request) => {
+)(async (request: Request, context) => {
   const inventory = getInventory()
   const { searchParams } = new URL(request.url)
   const category = searchParams.get("category")
@@ -86,7 +116,10 @@ export const GET = withRole(
   const barcode = searchParams.get("barcode")
   const search = searchParams.get("search")
 
-  let items = [...inventory]
+  let items =
+    context.role === "resident"
+      ? inventory.filter((item) => isLinkedToUser(item, context.userId))
+      : [...inventory]
 
   if (barcode) {
     items = items.filter((i) => i.barcode === barcode)
@@ -110,7 +143,7 @@ export const GET = withRole(
     items = items.filter((i) => i.location.toLowerCase().includes(location.toLowerCase()))
   }
 
-  const alerts = inventory
+  const alerts = items
     .filter((i) => i.currentStock <= i.reorderPoint)
     .map((i) => ({
       id: i.id,
@@ -149,13 +182,16 @@ export const POST = withRole(
   "operator",
   "employee",
   "resident"
-)(async (request: Request) => {
+)(async (request: Request, context) => {
   const inventory = getInventory()
   try {
     const body = await request.json()
     const { action } = body
 
     if (action === "consume") {
+      if (context.role === "resident") {
+        return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
+      }
       const { itemId, quantity, usedBy, purpose } = body
 
       const index = findIndexById(itemId)
@@ -210,6 +246,9 @@ export const POST = withRole(
     }
 
     if (action === "restock") {
+      if (context.role === "resident") {
+        return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
+      }
       const { itemId, quantity, unitCost } = body
 
       const index = findIndexById(itemId)
@@ -244,7 +283,20 @@ export const POST = withRole(
       label,
       photoUrl,
       photoFileId,
+      ownerId,
+      responsibleUserId,
+      linkedUserIds,
+      imageBounds,
     } = body
+    const sanitizedPhotoUrl = optionalPhotoUrl(photoUrl)
+    const isResidentCapture = context.role === "resident"
+
+    if (isResidentCapture && !sanitizedPhotoUrl) {
+      return NextResponse.json(
+        { error: "Residents can only add inventory through photo capture" },
+        { status: 403 }
+      )
+    }
 
     if (!name || !category || !unit || !location) {
       return NextResponse.json(
@@ -258,23 +310,27 @@ export const POST = withRole(
       name: optionalText(name, 120) ?? name,
       category,
       unit: optionalText(unit, 40) ?? unit,
-      currentStock: currentStock || 0,
-      minStock: minStock || 1,
-      maxStock: maxStock || 10,
-      reorderPoint: reorderPoint || minStock || 1,
+      currentStock: isResidentCapture ? 1 : currentStock || 0,
+      minStock: isResidentCapture ? 1 : minStock || 1,
+      maxStock: isResidentCapture ? 1 : maxStock || 10,
+      reorderPoint: isResidentCapture ? 1 : reorderPoint || minStock || 1,
       lastRestocked: new Date().toISOString().split("T")[0],
       averageConsumption: 0,
       location: optionalText(location, 120) ?? location,
       supplier: optionalText(supplier, 120),
-      unitCost: unitCost || 0,
-      totalValue: (currentStock || 0) * (unitCost || 0),
+      unitCost: isResidentCapture ? 0 : unitCost || 0,
+      totalValue: isResidentCapture ? 0 : (currentStock || 0) * (unitCost || 0),
       label: optionalText(label, 120),
-      photoUrl: optionalPhotoUrl(photoUrl),
+      photoUrl: sanitizedPhotoUrl,
       photoFileId: optionalText(photoFileId, 120),
-      photoUploadedAt: optionalPhotoUrl(photoUrl) ? new Date().toISOString() : undefined,
-      capturedBy: optionalPhotoUrl(photoUrl)
-        ? optionalText(request.headers.get("x-user-id"), 80)
-        : undefined,
+      photoUploadedAt: sanitizedPhotoUrl ? new Date().toISOString() : undefined,
+      capturedBy: sanitizedPhotoUrl ? context.userId : undefined,
+      ownerId: isResidentCapture ? context.userId : optionalText(ownerId, 80),
+      responsibleUserId: isResidentCapture
+        ? context.userId
+        : optionalText(responsibleUserId, 80),
+      linkedUserIds: isResidentCapture ? [context.userId] : optionalTextList(linkedUserIds, 80),
+      imageBounds: optionalImageBounds(imageBounds),
       consumptionHistory: [],
     }
 

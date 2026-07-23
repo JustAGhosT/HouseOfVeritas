@@ -224,6 +224,7 @@ variable "extra_app_settings" {
   description = "Additional app settings to merge"
   type        = map(string)
   default     = {}
+  sensitive   = true
 }
 
 variable "tags" {

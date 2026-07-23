@@ -17,5 +17,9 @@ export const POST = withRole("admin")(async (_request, context) => {
   if (!result.sent) {
     return NextResponse.json({ error: result.error || "Failed to send invite" }, { status: 500 })
   }
-  return NextResponse.json({ success: true })
+  return NextResponse.json({
+    success: true,
+    inviteLink: result.inviteLink,
+    channels: result.channels,
+  })
 })

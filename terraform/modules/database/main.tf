@@ -13,9 +13,9 @@ resource "azurerm_postgresql_flexible_server" "main" {
   administrator_login    = var.admin_username
   administrator_password = var.admin_password
 
-  storage_mb = 32768
+  storage_mb = var.storage_mb
 
-  sku_name = "B_Standard_B1ms"
+  sku_name = var.sku_name
 
   backup_retention_days        = 7
   geo_redundant_backup_enabled = false
@@ -57,6 +57,13 @@ resource "azurerm_postgresql_flexible_server_database" "docuseal" {
 
 resource "azurerm_postgresql_flexible_server_database" "baserow" {
   name      = "baserow_production"
+  server_id = azurerm_postgresql_flexible_server.main.id
+  collation = "en_US.utf8"
+  charset   = "UTF8"
+}
+
+resource "azurerm_postgresql_flexible_server_database" "app" {
+  name      = var.app_database_name
   server_id = azurerm_postgresql_flexible_server.main.id
   collation = "en_US.utf8"
   charset   = "UTF8"

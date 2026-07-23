@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { afterEach, describe, it, expect, vi } from "vitest"
 import { NextResponse } from "next/server"
 import {
   getAuthContext,
@@ -19,6 +19,10 @@ function makeRequest(headers: Record<string, string> = {}): Request {
 }
 
 describe("RBAC", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   describe("getAuthContext", () => {
     it("should extract auth context from headers", () => {
       const req = makeRequest({
@@ -105,6 +109,23 @@ describe("RBAC", () => {
         })
       )
       expect(res.status).toBe(403)
+    })
+
+    it("rejects header-only auth in production outside CI", async () => {
+      vi.stubEnv("NODE_ENV", "production")
+      vi.stubEnv("E2E_TEST", "")
+      vi.stubEnv("ALLOW_HEADER_AUTH", "")
+
+      const handler = withRole("admin")(async () => ok())
+      const res = await handler(
+        makeRequest({
+          "x-user-id": "hans",
+          "x-user-role": "admin",
+          "x-user-email": "smit.jurie@gmail.com",
+        })
+      )
+
+      expect(res.status).toBe(401)
     })
   })
 

@@ -22,6 +22,9 @@ key_vault_name                   = "nl-prod-hov-kv"
 key_vault_network_default_action = "Allow"
 terraform_key_vault_access_policy_object_id = "593a093c-d4fd-4390-977b-a64abfc97606"
 db_server_name                   = "nl-prod-hov-pg"
+db_sku_name                      = "B_Standard_B1ms"
+db_storage_mb                    = 32768
+db_app_database_name             = "house_of_veritas"
 cosmos_account_name              = "nlprodhovcosmos"
 document_intelligence_name       = "nl-prod-hov-di"
 web_app_name                     = "nl-prod-hov-app"
@@ -34,7 +37,7 @@ cosmos_enable_free_tier = true
 
 # Cost-control switches for the initial canonical stack.
 enable_cosmos_mongo          = true
-enable_database              = false
+enable_database              = true
 enable_operational_services  = false
 enable_application_gateway   = false
 enable_dns_records           = false

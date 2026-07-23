@@ -27,6 +27,15 @@ export interface InventoryItem {
   photoFileId?: string
   photoUploadedAt?: string
   capturedBy?: string
+  ownerId?: string
+  responsibleUserId?: string
+  linkedUserIds?: string[]
+  imageBounds?: {
+    x: number
+    y: number
+    width: number
+    height: number
+  }
   consumptionHistory: Array<{
     date: string
     quantity: number
