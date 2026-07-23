@@ -88,6 +88,10 @@ class DeploymentChecker:
         self.env = os.environ.get("AZURE_ENV", "prod")
         self.enable_operational_services = os.environ.get("ENABLE_OPERATIONAL_SERVICES", "false").lower() == "true"
         self.enable_application_gateway = os.environ.get("ENABLE_APPLICATION_GATEWAY", "false").lower() == "true"
+        self.is_ci = (
+            os.environ.get("CI", "false").lower() == "true"
+            or os.environ.get("GITHUB_ACTIONS") == "true"
+        )
 
         # Naming convention: nl-{env}-hov-{resourcetype}
         self.expected_resources = {
@@ -269,6 +273,17 @@ class DeploymentChecker:
         
         # Check for .terraform directory (initialized)
         if not (terraform_dir / ".terraform").exists():
+            if self.is_ci:
+                return CheckResult(
+                    name="Terraform State",
+                    status=Status.SKIP,
+                    message="Terraform local state directory is not expected in CI",
+                    details=(
+                        "Terraform plan/apply workflows initialize their own backend "
+                        "before running Terraform commands"
+                    )
+                )
+
             return CheckResult(
                 name="Terraform State",
                 status=Status.WARN,
@@ -422,12 +437,13 @@ class DeploymentChecker:
             )
         
         # Check for required secrets
-        required_secrets = [
-            "postgres-admin-password",
-            "docuseal-secret-key",
-            "baserow-secret-key",
-            "smtp-password"
-        ]
+        required_secrets = ["smtp-password"]
+        if self.enable_operational_services:
+            required_secrets.extend([
+                "postgres-admin-password",
+                "docuseal-secret-key",
+                "baserow-secret-key",
+            ])
         
         success, output, error = self.run_command([
             "az", "keyvault", "secret", "list",
@@ -661,6 +677,14 @@ class DeploymentChecker:
         template_file = self.repo_root / ".env.example"
         
         if not env_file.exists():
+            if self.is_ci:
+                return CheckResult(
+                    name="Environment File",
+                    status=Status.PASS,
+                    message="CI/CD uses GitHub secrets instead of .env.local",
+                    details=".env.local is intentionally absent from CI checkouts"
+                )
+
             return CheckResult(
                 name="Environment File",
                 status=Status.WARN,
@@ -907,7 +931,14 @@ class DeploymentChecker:
             },
             {
                 "name": "Initialize Terraform",
-                "complete": (self.repo_root / "terraform" / "environments" / "production" / ".terraform").exists(),
+                "complete": self.is_ci
+                or (
+                    self.repo_root
+                    / "terraform"
+                    / "environments"
+                    / "production"
+                    / ".terraform"
+                ).exists(),
                 "command": "cd /app/terraform/environments/production && terraform init"
             },
             {
