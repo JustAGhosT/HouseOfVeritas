@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import DashboardLayout from "@/components/dashboard-layout"
+import { InventoryPhotoCapture } from "@/components/inventory-photo-capture"
 import { logger } from "@/lib/logger"
 import { apiFetchSafe } from "@/lib/api-client"
 import {
@@ -146,7 +147,9 @@ export default function CharlDashboard() {
           <div className="flex items-center gap-3">
             <div className="mr-4 hidden text-right md:block">
               <p className="text-sm text-amber-200/60">Clocked in at</p>
-              <p className="font-medium text-amber-100">{isClockRunning ? "Manual session" : "Not clocked in"}</p>
+              <p className="font-medium text-amber-100">
+                {isClockRunning ? "Manual session" : "Not clocked in"}
+              </p>
             </div>
             <button
               onClick={() => setIsClockRunning(!isClockRunning)}
@@ -188,6 +191,8 @@ export default function CharlDashboard() {
           <Settings className="h-4 w-4" /> Magicman
         </span>
       </div>
+
+      <InventoryPhotoCapture persona="charl" tone="amber" />
 
       {/* Stats Row */}
       <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -249,7 +254,10 @@ export default function CharlDashboard() {
             </div>
           </div>
           <div className="h-64">
-            <EmptyPanel title="No weekly task history" action="Assigned and completed task history will appear after live task records exist." />
+            <EmptyPanel
+              title="No weekly task history"
+              action="Assigned and completed task history will appear after live task records exist."
+            />
           </div>
         </div>
 
@@ -261,7 +269,10 @@ export default function CharlDashboard() {
           <h3 className="mb-2 font-semibold text-amber-100">Skills Distribution</h3>
           <p className="mb-4 text-sm text-amber-200/50">Task types this month</p>
           <div className="h-48">
-            <EmptyPanel title="No task-type data" action="Skill distribution will appear once tasks are categorized." />
+            <EmptyPanel
+              title="No task-type data"
+              action="Skill distribution will appear once tasks are categorized."
+            />
           </div>
         </div>
       </div>
@@ -286,7 +297,10 @@ export default function CharlDashboard() {
             </span>
           </div>
           <div className="max-h-96 space-y-3 overflow-y-auto p-4">
-            <EmptyPanel title="No assigned tasks" action="Live task assignments will appear here." />
+            <EmptyPanel
+              title="No assigned tasks"
+              action="Live task assignments will appear here."
+            />
           </div>
         </div>
 
@@ -305,7 +319,10 @@ export default function CharlDashboard() {
             </div>
           </div>
           <div className="p-4">
-            <EmptyPanel title="No workshop asset data" action="Equipment checkouts will appear after asset records are connected." />
+            <EmptyPanel
+              title="No workshop asset data"
+              action="Equipment checkouts will appear after asset records are connected."
+            />
           </div>
         </div>
 
@@ -327,7 +344,10 @@ export default function CharlDashboard() {
             </span>
           </div>
           <div className="p-6">
-            <EmptyPanel title="Vehicles are coming soon" action="Trip logging, mileage, fuel, and compliance checks are not active yet." />
+            <EmptyPanel
+              title="Vehicles are coming soon"
+              action="Trip logging, mileage, fuel, and compliance checks are not active yet."
+            />
           </div>
         </div>
       </div>
