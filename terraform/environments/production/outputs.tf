@@ -28,6 +28,11 @@ output "database_server_fqdn" {
   value       = try(module.database[0].server_fqdn, null)
 }
 
+output "app_database_name" {
+  description = "Name of the House of Veritas application database"
+  value       = try(module.database[0].app_database_name, null)
+}
+
 output "cosmos_account_name" {
   description = "Cosmos DB account name"
   value       = try(module.cosmos_mongo[0].account_name, null)

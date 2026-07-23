@@ -25,6 +25,24 @@ variable "admin_password" {
   sensitive   = true
 }
 
+variable "sku_name" {
+  description = "PostgreSQL Flexible Server Terraform SKU. B_Standard_B1ms maps to the lowest burstable Standard_B1ms SKU available in South Africa North."
+  type        = string
+  default     = "B_Standard_B1ms"
+}
+
+variable "storage_mb" {
+  description = "Provisioned PostgreSQL storage in MB. 32768 is the minimum managed disk size returned for South Africa North."
+  type        = number
+  default     = 32768
+}
+
+variable "app_database_name" {
+  description = "Database name for the House of Veritas web application"
+  type        = string
+  default     = "house_of_veritas"
+}
+
 variable "database_subnet_id" {
   description = "ID of the database subnet"
   type        = string
