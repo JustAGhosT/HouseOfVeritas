@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import DashboardLayout from "@/components/dashboard-layout"
+import { InventoryPhotoCapture } from "@/components/inventory-photo-capture"
 import { logger } from "@/lib/logger"
 import { apiFetchSafe } from "@/lib/api-client"
 import {
@@ -192,7 +193,9 @@ export default function LuckyDashboard() {
           <div className="flex items-center gap-3">
             <div className="mr-4 hidden text-right md:block">
               <p className="text-sm text-green-200/60">Clocked in at</p>
-              <p className="font-medium text-green-100">{isClockRunning ? "Manual session" : "Not clocked in"}</p>
+              <p className="font-medium text-green-100">
+                {isClockRunning ? "Manual session" : "Not clocked in"}
+              </p>
             </div>
             <button
               onClick={() => setIsClockRunning(!isClockRunning)}
@@ -240,6 +243,13 @@ export default function LuckyDashboard() {
         </div>
       </div>
 
+      <InventoryPhotoCapture
+        persona="lucky"
+        tone="green"
+        defaultCategory="garden_supplies"
+        defaultLocation="Yard"
+      />
+
       {/* Stats Row */}
       <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
         <div
@@ -263,7 +273,9 @@ export default function LuckyDashboard() {
           data-testid="stat-expenses"
         >
           <p className="text-sm text-green-200/60">Monthly Expenses</p>
-          <p className="text-2xl font-bold text-green-100">R{expenses.thisMonth.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-green-100">
+            R{expenses.thisMonth.toLocaleString()}
+          </p>
           <p className="text-sm text-amber-400">{expenses.pending} pending approval</p>
         </div>
         <div
@@ -294,7 +306,10 @@ export default function LuckyDashboard() {
             </div>
           </div>
           <div className="h-64">
-            <EmptyPanel title="No weekly hours" action="Clock records will populate this chart after time tracking is connected." />
+            <EmptyPanel
+              title="No weekly hours"
+              action="Clock records will populate this chart after time tracking is connected."
+            />
           </div>
         </div>
 
@@ -306,7 +321,10 @@ export default function LuckyDashboard() {
           <h3 className="mb-2 font-semibold text-green-100">Task Types</h3>
           <p className="mb-4 text-sm text-green-200/50">This month&apos;s work</p>
           <div className="h-48">
-            <EmptyPanel title="No task-type data" action="Task categories will appear once live work records exist." />
+            <EmptyPanel
+              title="No task-type data"
+              action="Task categories will appear once live work records exist."
+            />
           </div>
         </div>
       </div>
@@ -328,7 +346,10 @@ export default function LuckyDashboard() {
             </div>
           </div>
           <div className="space-y-3 p-4">
-            <EmptyPanel title="No assigned tasks" action="Live garden and maintenance tasks will appear here." />
+            <EmptyPanel
+              title="No assigned tasks"
+              action="Live garden and maintenance tasks will appear here."
+            />
           </div>
         </div>
 
@@ -354,7 +375,10 @@ export default function LuckyDashboard() {
             </button>
           </div>
           <div className="space-y-3 p-4">
-            <EmptyPanel title="No expenses submitted" action="Expense submissions will appear here after live records exist." />
+            <EmptyPanel
+              title="No expenses submitted"
+              action="Expense submissions will appear here after live records exist."
+            />
           </div>
           <div className="border-t border-green-500/20 p-4">
             <button
@@ -389,7 +413,10 @@ export default function LuckyDashboard() {
             </div>
           </div>
           <div className="h-48">
-            <EmptyPanel title="No monthly expense trend" action="Approved and pending expenses will appear after submissions exist." />
+            <EmptyPanel
+              title="No monthly expense trend"
+              action="Approved and pending expenses will appear after submissions exist."
+            />
           </div>
         </div>
 
@@ -411,7 +438,10 @@ export default function LuckyDashboard() {
             </span>
           </div>
           <div className="p-4">
-            <EmptyPanel title="Vehicles are coming soon" action="Trip logging, mileage, fuel, and compliance checks are not active yet." />
+            <EmptyPanel
+              title="Vehicles are coming soon"
+              action="Trip logging, mileage, fuel, and compliance checks are not active yet."
+            />
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client"
 
 import DashboardLayout from "@/components/dashboard-layout"
+import { InventoryPhotoCapture } from "@/components/inventory-photo-capture"
 import { WidgetErrorBoundary } from "@/components/widget-error-boundary"
 import { apiFetchSafe } from "@/lib/api-client"
 import {
@@ -21,7 +22,18 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts"
 
 interface DashboardStats {
   dataSource?: "empty" | "demo" | "live"
@@ -240,7 +252,13 @@ export default function DashboardPage() {
   ].filter((item) => item.value > 0)
   const budgetData =
     budget.allocated > 0 || budget.spent > 0
-      ? [{ month: currentTime.toLocaleString("en-ZA", { month: "short" }), allocated: budget.allocated, spent: budget.spent }]
+      ? [
+          {
+            month: currentTime.toLocaleString("en-ZA", { month: "short" }),
+            allocated: budget.allocated,
+            spent: budget.spent,
+          },
+        ]
       : []
   const hasTaskStatus = taskStatusData.length > 0
   const hasBudgetData = budgetData.length > 0
@@ -267,6 +285,13 @@ export default function DashboardPage() {
         </span>
       </div>
 
+      <InventoryPhotoCapture
+        persona="hans"
+        tone="blue"
+        defaultCategory="other"
+        defaultLocation="House"
+      />
+
       {/* Stats Grid */}
       <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <WidgetErrorBoundary>
@@ -280,12 +305,7 @@ export default function DashboardPage() {
           />
         </WidgetErrorBoundary>
         <WidgetErrorBoundary>
-          <StatCard
-            title="Active Employees"
-            value={users.active}
-            icon={Users}
-            color="green"
-          />
+          <StatCard title="Active Employees" value={users.active} icon={Users} color="green" />
         </WidgetErrorBoundary>
         <WidgetErrorBoundary>
           <StatCard
@@ -345,12 +365,20 @@ export default function DashboardPage() {
                       tickFormatter={(v) => `R${(v / 1000).toFixed(0)}k`}
                     />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="allocated" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Allocated" />
+                    <Bar
+                      dataKey="allocated"
+                      fill="#3b82f6"
+                      radius={[4, 4, 0, 0]}
+                      name="Allocated"
+                    />
                     <Bar dataKey="spent" fill="#10b981" radius={[4, 4, 0, 0]} name="Spent" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <EmptyPanel title="No budget data yet" action="Approved expenses and configured budgets will appear here." />
+                <EmptyPanel
+                  title="No budget data yet"
+                  action="Approved expenses and configured budgets will appear here."
+                />
               )}
             </div>
           </div>
@@ -385,7 +413,10 @@ export default function DashboardPage() {
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <EmptyPanel title="No tasks yet" action="Create or sync tasks to populate this overview." />
+                <EmptyPanel
+                  title="No tasks yet"
+                  action="Create or sync tasks to populate this overview."
+                />
               )}
             </div>
             {hasTaskStatus && (
@@ -423,7 +454,10 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="h-64">
-              <EmptyPanel title="No employee performance data yet" action="Task completion by assignee will appear after live task records exist." />
+              <EmptyPanel
+                title="No employee performance data yet"
+                action="Task completion by assignee will appear after live task records exist."
+              />
             </div>
           </div>
         </WidgetErrorBoundary>
@@ -445,7 +479,10 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="h-64">
-              <EmptyPanel title="No compliance trend yet" action="Signed document history will populate this chart after live records exist." />
+              <EmptyPanel
+                title="No compliance trend yet"
+                action="Signed document history will populate this chart after live records exist."
+              />
             </div>
           </div>
         </WidgetErrorBoundary>
@@ -469,7 +506,10 @@ export default function DashboardPage() {
               </span>
             </div>
             <div className="max-h-96 space-y-3 overflow-y-auto p-4">
-              <EmptyPanel title="No pending approvals" action="Submitted expenses or approval workflows will appear here." />
+              <EmptyPanel
+                title="No pending approvals"
+                action="Submitted expenses or approval workflows will appear here."
+              />
             </div>
             <div className="border-t border-blue-500/20 p-4">
               <button
@@ -500,7 +540,10 @@ export default function DashboardPage() {
                 <AlertTriangle className="h-5 w-5 text-amber-400" />
               </div>
               <div className="space-y-3 p-4">
-                <EmptyPanel title="No expiring documents" action="Connected document records will appear here." />
+                <EmptyPanel
+                  title="No expiring documents"
+                  action="Connected document records will appear here."
+                />
               </div>
             </div>
           </WidgetErrorBoundary>
@@ -515,7 +558,10 @@ export default function DashboardPage() {
                 <h3 className="font-semibold text-blue-100">Recent Activity</h3>
               </div>
               <div className="divide-y divide-blue-500/10 p-4">
-                <EmptyPanel title="No recent activity" action="Live events will appear here after work is recorded." />
+                <EmptyPanel
+                  title="No recent activity"
+                  action="Live events will appear here after work is recorded."
+                />
               </div>
             </div>
           </WidgetErrorBoundary>
@@ -533,7 +579,9 @@ export default function DashboardPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-blue-200/60">Data mode</span>
-                  <span className="text-sm font-medium text-blue-100">{stats?.dataSource ?? "empty"}</span>
+                  <span className="text-sm font-medium text-blue-100">
+                    {stats?.dataSource ?? "empty"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-blue-200/60">Tasks tracked</span>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import DashboardLayout from "@/components/dashboard-layout"
+import { InventoryPhotoCapture } from "@/components/inventory-photo-capture"
 import { logger } from "@/lib/logger"
 import { apiFetch } from "@/lib/api-client"
 import {
@@ -189,6 +190,13 @@ export default function IrmaDashboard() {
         </span>
       </div>
 
+      <InventoryPhotoCapture
+        persona="irma"
+        tone="purple"
+        defaultCategory="household"
+        defaultLocation="House"
+      />
+
       {/* Quick Stats */}
       <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
         <div
@@ -236,7 +244,7 @@ export default function IrmaDashboard() {
         >
           <div className="mb-2 flex items-center gap-3">
             <UtensilsCrossed className="h-5 w-5 text-purple-400" />
-          <p className="text-sm text-purple-200/60">Meals Planned</p>
+            <p className="text-sm text-purple-200/60">Meals Planned</p>
           </div>
           <p className="text-2xl font-bold text-purple-100">0</p>
           <p className="text-sm text-purple-200/50">No meal records</p>
@@ -261,7 +269,10 @@ export default function IrmaDashboard() {
             </div>
           </div>
           <div className="h-64">
-            <EmptyPanel title="No weekly task history" action="Completed and assigned task history will appear after live records exist." />
+            <EmptyPanel
+              title="No weekly task history"
+              action="Completed and assigned task history will appear after live records exist."
+            />
           </div>
         </div>
 
@@ -273,7 +284,10 @@ export default function IrmaDashboard() {
           <h3 className="mb-2 font-semibold text-purple-100">Task Distribution</h3>
           <p className="mb-4 text-sm text-purple-200/50">By category this month</p>
           <div className="h-48">
-            <EmptyPanel title="No task distribution" action="Task categories will appear once live household tasks are categorized." />
+            <EmptyPanel
+              title="No task distribution"
+              action="Task categories will appear once live household tasks are categorized."
+            />
           </div>
         </div>
       </div>
@@ -369,7 +383,10 @@ export default function IrmaDashboard() {
             </button>
           </div>
           <div className="p-4">
-            <EmptyPanel title="No meals planned" action="Meal plans will appear here after records are connected." />
+            <EmptyPanel
+              title="No meals planned"
+              action="Meal plans will appear here after records are connected."
+            />
           </div>
         </div>
 
@@ -442,7 +459,10 @@ export default function IrmaDashboard() {
             </div>
           </div>
           <div className="p-6">
-            <EmptyPanel title="No weekly schedule" action="Household roster entries will appear after schedule data exists." />
+            <EmptyPanel
+              title="No weekly schedule"
+              action="Household roster entries will appear after schedule data exists."
+            />
           </div>
         </div>
       </div>

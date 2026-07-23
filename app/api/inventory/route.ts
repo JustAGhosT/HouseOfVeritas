@@ -51,6 +51,26 @@ function findInventoryItemByName(inventory: InventoryItem[], name: string): numb
   return -1
 }
 
+function optionalText(value: unknown, maxLength: number): string | undefined {
+  if (typeof value !== "string") return undefined
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  return trimmed.slice(0, maxLength)
+}
+
+function optionalPhotoUrl(value: unknown): string | undefined {
+  const photoUrl = optionalText(value, 2048)
+  if (!photoUrl) return undefined
+  if (
+    photoUrl.startsWith("/api/uploads/") ||
+    photoUrl.startsWith("/api/files/serve?") ||
+    photoUrl.startsWith("https://")
+  ) {
+    return photoUrl
+  }
+  return undefined
+}
+
 // GET - List inventory with filters
 export const GET = withRole(
   "admin",
@@ -127,7 +147,8 @@ export const GET = withRole(
 export const POST = withRole(
   "admin",
   "operator",
-  "employee"
+  "employee",
+  "resident"
 )(async (request: Request) => {
   const inventory = getInventory()
   try {
@@ -220,6 +241,9 @@ export const POST = withRole(
       location,
       supplier,
       unitCost,
+      label,
+      photoUrl,
+      photoFileId,
     } = body
 
     if (!name || !category || !unit || !location) {
@@ -231,19 +255,26 @@ export const POST = withRole(
 
     const newItem: InventoryItem = {
       id: `inv_${Date.now()}`,
-      name,
+      name: optionalText(name, 120) ?? name,
       category,
-      unit,
+      unit: optionalText(unit, 40) ?? unit,
       currentStock: currentStock || 0,
       minStock: minStock || 1,
       maxStock: maxStock || 10,
       reorderPoint: reorderPoint || minStock || 1,
       lastRestocked: new Date().toISOString().split("T")[0],
       averageConsumption: 0,
-      location,
-      supplier,
+      location: optionalText(location, 120) ?? location,
+      supplier: optionalText(supplier, 120),
       unitCost: unitCost || 0,
       totalValue: (currentStock || 0) * (unitCost || 0),
+      label: optionalText(label, 120),
+      photoUrl: optionalPhotoUrl(photoUrl),
+      photoFileId: optionalText(photoFileId, 120),
+      photoUploadedAt: optionalPhotoUrl(photoUrl) ? new Date().toISOString() : undefined,
+      capturedBy: optionalPhotoUrl(photoUrl)
+        ? optionalText(request.headers.get("x-user-id"), 80)
+        : undefined,
       consumptionHistory: [],
     }
 

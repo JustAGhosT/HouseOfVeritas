@@ -22,6 +22,11 @@ export interface InventoryItem {
   totalValue: number
   expiryDate?: string
   barcode?: string
+  label?: string
+  photoUrl?: string
+  photoFileId?: string
+  photoUploadedAt?: string
+  capturedBy?: string
   consumptionHistory: Array<{
     date: string
     quantity: number
