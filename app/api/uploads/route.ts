@@ -167,26 +167,19 @@ export const GET = withAuth(async (request) => {
   })
 })
 
-export const POST = withAuth(async (request) => {
+export const POST = withAuth(async (request, context) => {
   try {
     await ensureUploadDir()
 
     const formData = await request.formData()
     const file = formData.get("file") as File | null
-    const userId = formData.get("userId") as string
     const category = (formData.get("category") as string) || "general"
     const resourceType = formData.get("resourceType") as string | null
     const resourceId = formData.get("resourceId") as string | null
-
-    const authUserId = request.headers.get("x-user-id") || userId
-    const uploader = userId || authUserId
+    const uploader = context.userId
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
-    }
-
-    if (!uploader) {
-      return NextResponse.json({ error: "userId or authenticated user required" }, { status: 400 })
     }
 
     if (file.size > MAX_FILE_SIZE) {
