@@ -104,7 +104,6 @@ const PAGE_DEFINITIONS: PageDef[] = [
     href: "/dashboard",
     icon: Boxes,
     category: "Operations",
-    requiredResponsibility: "Inventory",
   },
   {
     name: "Maintenance",
@@ -166,6 +165,7 @@ const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
     "Time Clock": "/dashboard/charl/time",
     "Vehicles (Soon)": "/dashboard/charl/vehicles",
     Assets: "/dashboard/charl/assets",
+    Inventory: "/dashboard/charl/inventory",
     "My Documents": "/dashboard/charl/documents",
     Settings: "/dashboard/charl/settings",
   },
@@ -184,6 +184,7 @@ const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
     "My Dashboard": "/dashboard/irma",
     Work: "/dashboard/irma/projects",
     "Household Tasks": "/dashboard/irma/tasks",
+    Inventory: "/dashboard/irma/inventory",
     "My Documents": "/dashboard/irma/documents",
     Settings: "/dashboard/irma/settings",
   },
