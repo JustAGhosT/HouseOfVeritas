@@ -20,17 +20,16 @@ export const GET = withAuth(async (request) => {
     return NextResponse.json({ error: "Invalid category" }, { status: 400 })
   }
 
-  const safeName = path.basename(filename)
-  if (safeName !== filename || filename.includes("..")) {
+  if (filename.includes("/") || filename.includes("\\") || filename.includes("..")) {
     return NextResponse.json({ error: "Invalid filename" }, { status: 400 })
   }
 
-  const filePath = path.join(UPLOAD_DIR, category, safeName)
+  const filePath = `${UPLOAD_DIR}/${category}/${filename}`
   if (!existsSync(filePath)) {
     return NextResponse.json({ error: "File not found" }, { status: 404 })
   }
 
-  const ext = path.extname(safeName).toLowerCase()
+  const ext = path.extname(filename).toLowerCase()
   const mimeTypes: Record<string, string> = {
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
