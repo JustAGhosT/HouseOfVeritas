@@ -169,6 +169,7 @@ export async function updateUserManagement(
   id: string,
   updates: Partial<{
     status: UserStatus
+    email: string
     role: UserRole
     responsibilities: string[]
     onboardingStatus: OnboardingStatus
@@ -187,6 +188,10 @@ export async function updateUserManagement(
   if (updates.status != null) {
     setClauses.push(`status = $${idx++}`)
     values.push(updates.status)
+  }
+  if (updates.email != null) {
+    setClauses.push(`email = $${idx++}`)
+    values.push(updates.email)
   }
   if (updates.role != null) {
     setClauses.push(`role = $${idx++}`)

@@ -104,7 +104,7 @@ const USER_PHONES: Record<string, string> = {
 // User emails (in production, fetch from database)
 const USER_EMAILS: Record<string, string> = {
   hans: "smit.jurie@gmail.com",
-  charl: "charl@houseofv.com",
+  charl: "chapmancharl28@gmail.com",
   lucky: "lucky@houseofv.com",
   irma: "irma@houseofv.com",
 }

@@ -92,7 +92,7 @@ export const USERS: Record<string, User> = {
   charl: {
     id: "charl",
     name: "Charl",
-    email: "charl@houseofv.com",
+    email: "chapmancharl28@gmail.com",
     phone: "+27711488390",
     role: "operator",
     description: "Tasks, assets, time tracking, vehicles coming soon",

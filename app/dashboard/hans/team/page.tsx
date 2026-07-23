@@ -34,6 +34,7 @@ import {
   UserPlus,
   Briefcase,
   Send,
+  Copy,
 } from "lucide-react"
 import { logger } from "@/lib/logger"
 import { apiFetch } from "@/lib/api-client"
@@ -70,6 +71,11 @@ export default function HansTeamPage() {
   const [editForm, setEditForm] = useState<Partial<UserWithManagement>>({})
   const [processing, setProcessing] = useState(false)
   const [invitingId, setInvitingId] = useState<string | null>(null)
+  const [inviteResult, setInviteResult] = useState<{
+    userId: string
+    inviteLink: string
+    channels?: string[]
+  } | null>(null)
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -106,8 +112,19 @@ export default function HansTeamPage() {
 
   const handleInvite = async (user: UserWithManagement) => {
     setInvitingId(user.id)
+    setInviteResult(null)
     try {
-      await apiFetch(`/api/users/${user.id}/invite`, { method: "POST", label: "Invite" })
+      const result = await apiFetch<{
+        inviteLink?: string
+        channels?: string[]
+      }>(`/api/users/${user.id}/invite`, { method: "POST", label: "Invite" })
+      if (result.inviteLink) {
+        setInviteResult({
+          userId: user.id,
+          inviteLink: result.inviteLink,
+          channels: result.channels,
+        })
+      }
       await fetchUsers()
     } catch (error) {
       logger.error("Invite failed", {
@@ -160,6 +177,7 @@ export default function HansTeamPage() {
   const openEdit = (user: UserWithManagement) => {
     setSelectedUser(user)
     setEditForm({
+      email: user.email,
       status: user.status,
       role: user.role,
       responsibilities: user.responsibilities || [],
@@ -204,6 +222,40 @@ export default function HansTeamPage() {
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
+            {inviteResult && (
+              <Card className="border-blue-500/30 bg-blue-950/30">
+                <CardContent className="space-y-3 pt-6">
+                  <div>
+                    <p className="font-medium text-blue-100">Invite link ready</p>
+                    <p className="text-sm text-blue-100/60">
+                      Send this link directly if email or SMS delivery is unavailable.
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Input
+                      readOnly
+                      value={inviteResult.inviteLink}
+                      className="border-blue-500/20 bg-black/25 text-blue-50"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="border-blue-500/30 text-blue-100"
+                      onClick={() => navigator.clipboard.writeText(inviteResult.inviteLink)}
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copy
+                    </Button>
+                  </div>
+                  {inviteResult.channels && (
+                    <p className="text-xs text-blue-100/45">
+                      Channels attempted: {inviteResult.channels.join(", ")}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="border-white/10 bg-[#0d0d12]/80">
               <CardHeader>
                 <CardTitle className="text-white">Platform Users</CardTitle>
@@ -328,10 +380,20 @@ export default function HansTeamPage() {
             <DialogHeader>
               <DialogTitle>Edit User</DialogTitle>
               <DialogDescription className="text-white/60">
-                Update status, role, and responsibilities.
+                Update contact details, status, role, and responsibilities.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              <div>
+                <Label className="text-white/80">Email</Label>
+                <Input
+                  type="email"
+                  className="border-white/10 bg-white/5"
+                  value={editForm.email || ""}
+                  onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+                  placeholder="name@example.com"
+                />
+              </div>
               <div>
                 <Label className="text-white/80">Status</Label>
                 <Select
