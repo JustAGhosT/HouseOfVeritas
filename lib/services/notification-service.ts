@@ -4,6 +4,7 @@
 import twilio from "twilio"
 import { EmailClient as AcsEmailClient } from "@azure/communication-email"
 import { logger } from "@/lib/logger"
+import { findUserByIdAsync } from "@/lib/users"
 
 let _acsEmailClient: AcsEmailClient | null | undefined
 function getAcsEmailClient(): AcsEmailClient | null {
@@ -266,7 +267,8 @@ export async function sendNotification(
 ): Promise<NotificationResult[]> {
   const results: NotificationResult[] = []
   const userPhone = USER_PHONES[payload.userId]
-  const userEmail = USER_EMAILS[payload.userId] || `${payload.userId}@houseofv.com`
+  const user = await findUserByIdAsync(payload.userId).catch(() => null)
+  const userEmail = user?.email || USER_EMAILS[payload.userId] || `${payload.userId}@houseofv.com`
 
   // Get user preference if requested
   let channels = payload.channels

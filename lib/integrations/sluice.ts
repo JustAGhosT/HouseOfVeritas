@@ -5,6 +5,8 @@ export interface SluiceInventoryImage {
   photoUrl: string
   originalName?: string
   mimeType?: string
+  imageBase64?: string
+  dataUrl?: string
 }
 
 export interface SluiceInventorySuggestion {
@@ -61,7 +63,12 @@ export async function identifyInventoryBatchWithSluice(
         "Content-Type": "application/json",
         ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
       },
-      body: JSON.stringify({ images }),
+      body: JSON.stringify({
+        images: images.map((image) => ({
+          ...image,
+          imageUrl: image.photoUrl,
+        })),
+      }),
       signal: controller.signal,
     })
 
