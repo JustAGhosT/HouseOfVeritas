@@ -8,7 +8,8 @@ resource "azurerm_storage_account" "main" {
   account_replication_type = var.account_replication_type
   account_kind             = "StorageV2"
 
-  min_tls_version = "TLS1_2"
+  min_tls_version                  = "TLS1_2"
+  cross_tenant_replication_enabled = true
 
   blob_properties {
     versioning_enabled = true
@@ -35,31 +36,31 @@ resource "azurerm_storage_account" "main" {
 # Containers
 resource "azurerm_storage_container" "documents" {
   name                  = "documents"
-  storage_account_name  = azurerm_storage_account.main.name
+  storage_account_id    = azurerm_storage_account.main.id
   container_access_type = "private"
 }
 
 resource "azurerm_storage_container" "backups" {
   name                  = "backups"
-  storage_account_name  = azurerm_storage_account.main.name
+  storage_account_id    = azurerm_storage_account.main.id
   container_access_type = "private"
 }
 
 resource "azurerm_storage_container" "archive" {
   name                  = "archive"
-  storage_account_name  = azurerm_storage_account.main.name
+  storage_account_id    = azurerm_storage_account.main.id
   container_access_type = "private"
 }
 
 resource "azurerm_storage_container" "terraform-state" {
   name                  = "tfstate"
-  storage_account_name  = azurerm_storage_account.main.name
+  storage_account_id    = azurerm_storage_account.main.id
   container_access_type = "private"
 }
 
 resource "azurerm_storage_container" "asset-uploads" {
   name                  = "asset-uploads"
-  storage_account_name  = azurerm_storage_account.main.name
+  storage_account_id    = azurerm_storage_account.main.id
   container_access_type = "private"
 }
 

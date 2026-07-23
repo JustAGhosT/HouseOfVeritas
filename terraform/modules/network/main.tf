@@ -16,6 +16,8 @@ resource "azurerm_subnet" "gateway" {
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.gateway_subnet_prefix]
+
+  private_endpoint_network_policies = "Enabled"
 }
 
 resource "azurerm_subnet" "containers" {
@@ -23,6 +25,8 @@ resource "azurerm_subnet" "containers" {
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.container_subnet_prefix]
+
+  private_endpoint_network_policies = "Enabled"
 
   service_endpoints = ["Microsoft.KeyVault", "Microsoft.Storage"]
 
@@ -41,6 +45,8 @@ resource "azurerm_subnet" "database" {
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.database_subnet_prefix]
 
+  private_endpoint_network_policies = "Enabled"
+
   service_endpoints = ["Microsoft.Storage", "Microsoft.Sql"]
 
   delegation {
@@ -57,6 +63,8 @@ resource "azurerm_subnet" "app_service" {
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [var.app_service_subnet_prefix]
+
+  private_endpoint_network_policies = "Enabled"
 
   delegation {
     name = "app-service-delegation"

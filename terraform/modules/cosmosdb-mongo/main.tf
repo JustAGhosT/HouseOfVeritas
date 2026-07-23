@@ -4,7 +4,7 @@ resource "azurerm_cosmosdb_account" "main" {
   resource_group_name           = var.resource_group_name
   offer_type                    = "Standard"
   kind                          = "MongoDB"
-  enable_free_tier              = var.enable_free_tier
+  free_tier_enabled             = var.enable_free_tier
   public_network_access_enabled = var.public_network_access_enabled
 
   consistency_policy {
