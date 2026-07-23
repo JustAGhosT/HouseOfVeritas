@@ -33,10 +33,10 @@ env:
   AZURE_ENV: "prod"
 
 jobs:
-  build:
-    name: "Build Application"
+  quality-checks:
+    name: "Quality Checks"
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     services:
       mongodb:
         image: mongo:7
@@ -73,6 +73,40 @@ jobs:
       - name: Run Unit Tests
         run: pnpm test
 
+  build:
+    name: "Build Application"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      MONGODB_URI: mongodb://localhost:27017/house_of_veritas_test
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.30.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Build Application
         run: pnpm build
 
@@ -97,7 +131,7 @@ jobs:
     name: "Deploy Web App"
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [build]
+    needs: [quality-checks, build]
     environment: production
 
     steps:

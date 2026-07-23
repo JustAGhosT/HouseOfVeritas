@@ -13,6 +13,8 @@ const UPLOAD_CONFIG = {
   uploadDir: "/tmp/uploads", // Local fallback, Azure preferred
 }
 
+const LOCAL_UPLOAD_ROOT = "/tmp/uploads"
+
 // Azure Blob Storage configuration (optional)
 const AZURE_CONFIG = {
   connectionString: process.env.AZURE_STORAGE_CONNECTION_STRING,
@@ -29,7 +31,7 @@ function isAzureConfigured(): boolean {
 // Generate unique filename
 function generateUniqueFilename(originalName: string): string {
   const ext = path.extname(originalName)
-  const baseName = path.basename(originalName, ext)
+  const baseName = path.basename(originalName, ext).replace(/[^a-zA-Z0-9._-]/g, "-") || "file"
   const timestamp = Date.now()
   const hash = crypto.randomBytes(8).toString("hex")
   return `${baseName}-${timestamp}-${hash}${ext}`
@@ -111,14 +113,14 @@ async function uploadToLocal(
   filename: string,
   category: string
 ): Promise<{ url: string; path: string }> {
-  const uploadDir = path.join(UPLOAD_CONFIG.uploadDir, category)
+  const uploadDir = `${LOCAL_UPLOAD_ROOT}/${category}`
 
   // Ensure directory exists
   if (!existsSync(uploadDir)) {
     await mkdir(uploadDir, { recursive: true })
   }
 
-  const filePath = path.join(uploadDir, filename)
+  const filePath = `${uploadDir}/${filename}`
   await writeFile(filePath, buffer)
 
   const url = `/api/files/serve?category=${encodeURIComponent(category)}&filename=${encodeURIComponent(filename)}`
@@ -256,14 +258,14 @@ export const DELETE = withAuth(async (request) => {
           { status: 400 }
         )
       }
-      if (category !== normalizeStorageSegment(category, "") || filename !== path.basename(filename)) {
+      if (
+        category !== normalizeStorageSegment(category, "") ||
+        filename.includes("/") ||
+        filename.includes("\\")
+      ) {
         return NextResponse.json({ success: false, error: "Invalid path" }, { status: 400 })
       }
-      const baseDir = path.resolve(UPLOAD_CONFIG.uploadDir, category)
-      const filePath = path.resolve(baseDir, filename)
-      if (!filePath.startsWith(baseDir + path.sep)) {
-        return NextResponse.json({ success: false, error: "Invalid path" }, { status: 400 })
-      }
+      const filePath = `${LOCAL_UPLOAD_ROOT}/${category}/${filename}`
       await unlink(filePath)
     }
 
