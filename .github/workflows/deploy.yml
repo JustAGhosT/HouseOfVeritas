@@ -151,7 +151,7 @@ jobs:
         run: find .next/standalone -type f -name '*:*' -print -delete
 
       - name: Upload Build Artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: nextjs-build
           path: .next/standalone
