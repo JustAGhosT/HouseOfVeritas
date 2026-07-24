@@ -5,8 +5,12 @@ import { existsSync } from "fs"
 import path from "path"
 import { withAuth } from "@/lib/auth/rbac"
 import { isPostgresConfigured, withClient, query, ensureSchema } from "@/lib/db/postgres"
-
-const UPLOAD_DIR = "/tmp/hov-uploads"
+import {
+  deleteLocalUploadMetadata,
+  inMemoryUploadStore,
+  persistLocalUploadMetadata,
+  UPLOAD_DIR,
+} from "@/lib/uploads"
 
 const ALLOWED_TYPES: Record<string, string[]> = {
   image: ["image/jpeg", "image/png", "image/gif", "image/webp"],
@@ -25,22 +29,6 @@ const ALLOWED_TYPES: Record<string, string[]> = {
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
-
-const fileStore: Map<
-  string,
-  {
-    id: string
-    originalName: string
-    storedName: string
-    mimeType: string
-    size: number
-    uploadedBy: string
-    uploadedAt: Date
-    category: string
-    resourceType?: string
-    resourceId?: string
-  }
-> = new Map()
 
 let schemaEnsured = false
 
@@ -155,7 +143,7 @@ export const GET = withAuth(async (request) => {
     return NextResponse.json({ files, total: files.length })
   }
 
-  let files = Array.from(fileStore.values())
+  let files = Array.from(inMemoryUploadStore.values())
   if (userId) files = files.filter((f) => f.uploadedBy === userId)
   if (category) files = files.filter((f) => f.category === category)
   if (resourceType) files = files.filter((f) => f.resourceType === resourceType)
@@ -220,7 +208,8 @@ export const POST = withAuth(async (request, context) => {
       resourceType: resourceType || undefined,
       resourceId: resourceId || undefined,
     }
-    fileStore.set(fileId, metadata)
+    inMemoryUploadStore.set(fileId, metadata)
+    await persistLocalUploadMetadata(metadata)
     await persistToPostgres(metadata)
 
     return NextResponse.json({
@@ -243,7 +232,7 @@ export const DELETE = withAuth(async (request) => {
     return NextResponse.json({ error: "File ID required" }, { status: 400 })
   }
 
-  const file = fileStore.get(fileId)
+  const file = inMemoryUploadStore.get(fileId)
   if (isPostgresConfigured()) {
     await ensureSchemaOnce()
     const { rows } = await query<{ stored_name: string }>(
@@ -262,8 +251,9 @@ export const DELETE = withAuth(async (request) => {
     if (existsSync(filePath)) {
       await unlink(filePath).catch(() => {})
     }
-    fileStore.delete(fileId)
   }
+  inMemoryUploadStore.delete(fileId)
+  await deleteLocalUploadMetadata(fileId)
 
   return NextResponse.json({ success: true, deletedId: fileId })
 })

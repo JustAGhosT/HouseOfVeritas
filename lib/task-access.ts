@@ -1,4 +1,4 @@
-import type { Task } from "@/lib/services/baserow"
+import { getTasks, type Task } from "@/lib/services/baserow"
 import { getProjectNamesForMember } from "@/lib/projects"
 
 export const PERSONA_TO_ASSIGNED_ID: Record<string, number> = {
@@ -35,4 +35,20 @@ export function canAccessTask(task: Task, scope: TaskAccessScope): boolean {
     (scope.assignedId !== undefined && task.assignedTo === scope.assignedId) ||
     Boolean(task.project && scope.projectNames.includes(task.project))
   )
+}
+
+export type TaskAccessResult =
+  | { task: Task; status?: never }
+  | { task: null; status: 403 | 404 }
+
+export async function resolveTaskAccess(
+  taskId: string,
+  userId: string,
+  role: string
+): Promise<TaskAccessResult> {
+  const task = (await getTasks()).find((candidate) => String(candidate.id) === taskId)
+  if (!task) return { task: null, status: 404 }
+
+  const scope = await getTaskAccessScope(userId, role)
+  return canAccessTask(task, scope) ? { task } : { task: null, status: 403 }
 }

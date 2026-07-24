@@ -3,6 +3,7 @@ import { z } from "zod"
 import { withRole } from "@/lib/auth/rbac"
 import { generateTaskGuidanceWithSluice } from "@/lib/integrations/sluice"
 import { logger } from "@/lib/logger"
+import { resolveTaskAccess } from "@/lib/task-access"
 
 const requestSchema = z.object({
   taskId: z.string().trim().min(1).max(160),
@@ -13,32 +14,52 @@ const requestSchema = z.object({
   locale: z.enum(["en", "af"]).default("en"),
 })
 
-export const POST = withRole("admin", "operator", "employee", "resident")(async (request) => {
-  try {
-    const parsed = requestSchema.safeParse(await request.json())
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "A task description and a JPEG, PNG, or WebP photo are required." },
-        { status: 400 }
-      )
-    }
+export const POST = withRole("admin", "operator", "employee", "resident")(
+  async (request, context) => {
+    try {
+      const parsed = requestSchema.safeParse(await request.json())
+      if (!parsed.success) {
+        return NextResponse.json(
+          { error: "A task description and a JPEG, PNG, or WebP photo are required." },
+          { status: 400 }
+        )
+      }
 
-    const draft = await generateTaskGuidanceWithSluice(parsed.data)
-    if (!draft) {
-      return NextResponse.json(
-        { error: "Visual guidance is unavailable because Sluice is not configured or reachable." },
-        { status: 503 }
+      const taskAccess = await resolveTaskAccess(
+        parsed.data.taskId,
+        context.userId,
+        context.role
       )
-    }
+      if (taskAccess.status === 404) {
+        return NextResponse.json({ error: "Task not found." }, { status: 404 })
+      }
+      if (taskAccess.status === 403) {
+        return NextResponse.json(
+          { error: "You do not have access to this task." },
+          { status: 403 }
+        )
+      }
 
-    return NextResponse.json({
-      data: { draft },
-      summary: { aiPowered: true, requiresHumanReview: true },
-    })
-  } catch (error) {
-    logger.error("Failed to analyze task photo for guidance", {
-      error: error instanceof Error ? error.message : String(error),
-    })
-    return NextResponse.json({ error: "Failed to analyze the task photo." }, { status: 500 })
+      const draft = await generateTaskGuidanceWithSluice(parsed.data)
+      if (!draft) {
+        return NextResponse.json(
+          {
+            error:
+              "Visual guidance is unavailable because Sluice is not configured or reachable.",
+          },
+          { status: 503 }
+        )
+      }
+
+      return NextResponse.json({
+        data: { draft },
+        summary: { aiPowered: true, requiresHumanReview: true },
+      })
+    } catch (error) {
+      logger.error("Failed to analyze task photo for guidance", {
+        error: error instanceof Error ? error.message : String(error),
+      })
+      return NextResponse.json({ error: "Failed to analyze the task photo." }, { status: 500 })
+    }
   }
-})
+)

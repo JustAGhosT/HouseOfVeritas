@@ -182,6 +182,37 @@ describe("task guidance API", () => {
     expect(createAndBindGuidance).not.toHaveBeenCalled()
   })
 
+  it("does not spend Sluice capacity for a task outside the resident's access", async () => {
+    vi.mocked(getTasks).mockResolvedValue([
+      {
+        id: 99,
+        title: "Private task",
+        assignedTo: 1,
+        project: "Private",
+        priority: "High",
+        status: "Not Started",
+      },
+    ])
+
+    const response = await analyzePhoto(
+      new Request("http://localhost/api/guidance/analyze", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
+          taskId: "99",
+          title: "Private task",
+          description: "Analyze a task that the resident cannot access.",
+          imageBase64: "data:image/jpeg;base64,cGhvdG8tcGxhY2Vob2xkZXI=",
+          imageMimeType: "image/jpeg",
+          locale: "en",
+        }),
+      })
+    )
+
+    expect(response.status).toBe(403)
+    expect(generateTaskGuidanceWithSluice).not.toHaveBeenCalled()
+  })
+
   it("allows guidance access through project membership", async () => {
     vi.mocked(getTasks).mockResolvedValue([
       {

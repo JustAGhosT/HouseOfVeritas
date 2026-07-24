@@ -3,8 +3,7 @@ import { z } from "zod"
 import { withRole } from "@/lib/auth/rbac"
 import { guidanceDraftSchema } from "@/lib/guidance"
 import { logger } from "@/lib/logger"
-import { getTasks } from "@/lib/services/baserow"
-import { canAccessTask, getTaskAccessScope } from "@/lib/task-access"
+import { resolveTaskAccess } from "@/lib/task-access"
 import {
   createAndBindGuidance,
   getActiveGuidanceForTask,
@@ -26,13 +25,11 @@ const createSchema = z.object({
 })
 
 async function authorizeTask(taskId: string, userId: string, role: string) {
-  const task = (await getTasks()).find((candidate) => String(candidate.id) === taskId)
-  if (!task) {
+  const result = await resolveTaskAccess(taskId, userId, role)
+  if (result.status === 404) {
     return NextResponse.json({ error: "Task not found." }, { status: 404 })
   }
-
-  const accessScope = await getTaskAccessScope(userId, role)
-  if (!canAccessTask(task, accessScope)) {
+  if (result.status === 403) {
     return NextResponse.json({ error: "You do not have access to this task." }, { status: 403 })
   }
 
