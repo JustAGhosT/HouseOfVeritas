@@ -24,13 +24,13 @@ function asInt1To5(value: unknown): 1 | 2 | 3 | 4 | 5 | null {
   return value as 1 | 2 | 3 | 4 | 5
 }
 
-function asInt(value: unknown): number | null {
+function asInt(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isInteger(value)) return value
   if (typeof value === "string") {
     const parsed = Number.parseInt(value.trim(), 10)
-    return Number.isInteger(parsed) ? parsed : null
+    return Number.isInteger(parsed) ? parsed : undefined
   }
-  return null
+  return undefined
 }
 
 function canAccessRecipe(contextRole: string, contextUserId: string, audienceUserIds: string[]): boolean {
@@ -126,14 +126,18 @@ export const POST = withRole("admin", "operator", "employee", "resident")(
         return NextResponse.json({ error: "You are not assigned this rating task" }, { status: 403 })
       }
 
-      if (taskId !== null && !hasTaskForMeal(taskId, meal.ratingTaskIds)) {
+      if (taskId !== undefined && !hasTaskForMeal(taskId, meal.ratingTaskIds)) {
         return NextResponse.json(
           { error: "taskId does not match this meal instance" },
           { status: 400 }
         )
       }
 
-      if (taskId !== null && !taskBelongsToResident(taskId, meal, context.userId) && context.role !== "admin") {
+      if (
+        taskId !== undefined &&
+        !taskBelongsToResident(taskId, meal, context.userId) &&
+        context.role !== "admin"
+      ) {
         return NextResponse.json(
           { error: "taskId does not match this meal instance" },
           { status: 400 }
@@ -150,12 +154,12 @@ export const POST = withRole("admin", "operator", "employee", "resident")(
         residentUserId,
         score,
         comment: asString(body.comment),
-        taskId,
+        taskId: taskId ?? undefined,
         submittedBy: context.userId,
         submittedAt: ratingPayload?.submittedAt ?? new Date().toISOString(),
       })
 
-      if (taskId) {
+      if (taskId !== undefined) {
         await updateTask(taskId, {
           status: "Completed",
           completionNotes: `Rating submitted: ${score}/5`,

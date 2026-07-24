@@ -108,7 +108,7 @@ function requireProductionStore(): void {
   }
 }
 
-function useMemoryStore(): boolean {
+function isUsingMemoryStore(): boolean {
   return process.env.E2E_TEST === "1" || process.env.CI === "true" || !isMongoConfigured()
 }
 
@@ -201,7 +201,7 @@ function filterRecipesInMemory(recipes: RecipeRecord[], filters?: RecipeListFilt
 
 export async function listRecipes(filters?: RecipeListFilter): Promise<RecipeRecord[]> {
   requireProductionStore()
-  if (useMemoryStore()) {
+  if (isUsingMemoryStore()) {
     const items = await readRecipes()
     return sortByCreatedAtDescending(filterRecipesInMemory(items, filters))
   }
@@ -229,7 +229,7 @@ export async function listRecipes(filters?: RecipeListFilter): Promise<RecipeRec
 
 export async function countRecipes(): Promise<number> {
   requireProductionStore()
-  if (useMemoryStore()) {
+  if (isUsingMemoryStore()) {
     const recipes = await readRecipes()
     return recipes.length
   }
@@ -240,7 +240,7 @@ export async function countRecipes(): Promise<number> {
 
 export async function getRecipeById(id: string): Promise<RecipeRecord | null> {
   requireProductionStore()
-  if (useMemoryStore()) {
+  if (isUsingMemoryStore()) {
     const recipes = await readRecipes()
     return recipes.find((item) => item.id === id) ?? null
   }
@@ -295,7 +295,7 @@ export async function seedSampleRecipes(
 
 export async function createRecipe(data: RecipeRecord): Promise<RecipeRecord> {
   requireProductionStore()
-  if (useMemoryStore()) {
+  if (isUsingMemoryStore()) {
     const recipes = await readRecipes()
     const stored: RecipeRecord = {
       ...data,
@@ -315,7 +315,7 @@ export async function createRecipe(data: RecipeRecord): Promise<RecipeRecord> {
 
 export async function replaceRecipe(updated: RecipeRecord): Promise<RecipeRecord | null> {
   requireProductionStore()
-  if (useMemoryStore()) {
+  if (isUsingMemoryStore()) {
     const recipes = await readRecipes()
     const index = recipes.findIndex((recipe) => recipe.id === updated.id)
     if (index === -1) return null
@@ -336,7 +336,7 @@ export async function replaceRecipe(updated: RecipeRecord): Promise<RecipeRecord
 
 export async function listRecipeMealInstances(recipeId: string): Promise<RecipeMealInstance[]> {
   requireProductionStore()
-  if (useMemoryStore()) {
+  if (isUsingMemoryStore()) {
     const instances = await readMealInstances()
     return sortByServedAtDescending(instances.filter((instance) => instance.recipeId === recipeId))
   }
@@ -348,7 +348,7 @@ export async function listRecipeMealInstances(recipeId: string): Promise<RecipeM
 
 export async function getRecipeMealInstanceById(id: string): Promise<RecipeMealInstance | null> {
   requireProductionStore()
-  if (useMemoryStore()) {
+  if (isUsingMemoryStore()) {
     const instances = await readMealInstances()
     return instances.find((instance) => instance.id === id) ?? null
   }
@@ -363,7 +363,7 @@ export async function createRecipeMealInstance(
   meal: RecipeMealInstance
 ): Promise<RecipeMealInstance> {
   requireProductionStore()
-  if (useMemoryStore()) {
+  if (isUsingMemoryStore()) {
     const instances = await readMealInstances()
     const now = new Date().toISOString()
     const stored: RecipeMealInstance = {
@@ -387,7 +387,7 @@ export async function createRecipeMealInstance(
 
 export async function listRecipeRatings(recipeId: string): Promise<RecipeRating[]> {
   requireProductionStore()
-  if (useMemoryStore()) {
+  if (isUsingMemoryStore()) {
     return sortBySubmittedAtDescending(
       (await readRatings()).filter((rating) => rating.recipeId === recipeId)
     )
@@ -404,7 +404,7 @@ export async function getRecipeRating(
   residentUserId: string
 ): Promise<RecipeRating | null> {
   requireProductionStore()
-  if (useMemoryStore()) {
+  if (isUsingMemoryStore()) {
     return (
       (await readRatings()).find(
         (rating) =>
@@ -427,7 +427,7 @@ export async function getRecipeRating(
 
 export async function upsertRecipeRating(rating: RecipeRating): Promise<RecipeRating> {
   requireProductionStore()
-  if (useMemoryStore()) {
+  if (isUsingMemoryStore()) {
     const ratings = await readRatings()
     const now = new Date().toISOString()
     const normalized: RecipeRating = {
