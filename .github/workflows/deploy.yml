@@ -565,7 +565,8 @@ jobs:
     timeout-minutes: 10
     needs: [deploy-webapp]
     if: always() && needs.deploy-webapp.result == 'success'
-    continue-on-error: true
+    outputs:
+      probe_outcome: ${{ steps.run-probes.outputs.probe_outcome || 'unknown' }}
     environment: ${{ inputs.environment || 'production' }}
 
     steps:
@@ -590,6 +591,7 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run advisory API probes
+        id: run-probes
         continue-on-error: true
         env:
           BASE_URL: "https://${{ vars.WEBAPP_NAME || 'nl-prod-hov-app' }}.azurewebsites.net"
@@ -598,11 +600,36 @@ jobs:
           POST_DEPLOY_ADMIN_SESSION_COOKIE_NAME: ${{ vars.POST_DEPLOY_ADMIN_SESSION_COOKIE_NAME || '__Secure-authjs.session-token' }}
         run: |
           if [ -z "$POST_DEPLOY_ADMIN_SESSION" ]; then
+            echo "probe_outcome=skipped" >> "$GITHUB_OUTPUT"
             echo "## Optional post-deployment API probes" >> "$GITHUB_STEP_SUMMARY"
             echo "Skipped: configure a short-lived POST_DEPLOY_ADMIN_SESSION environment secret to enable authenticated probes." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
+          set +e
           pnpm run test:e2e -- tests/e2e/05-post-deploy-api-probes.spec.ts
+          probe_exit_code=$?
+          set -e
+
+          if [ "$probe_exit_code" -eq 0 ]; then
+            echo "probe_outcome=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "probe_outcome=failed" >> "$GITHUB_OUTPUT"
+          fi
+
+          exit "$probe_exit_code"
+
+      - name: Publish advisory API probe result
+        if: always()
+        env:
+          PROBE_OUTCOME: ${{ steps.run-probes.outputs.probe_outcome || 'unknown' }}
+        run: |
+          echo "## Optional post-deployment API probes" >> "$GITHUB_STEP_SUMMARY"
+          case "$PROBE_OUTCOME" in
+            success) echo "Passed: authenticated API probes completed." >> "$GITHUB_STEP_SUMMARY" ;;
+            skipped) echo "Skipped: POST_DEPLOY_ADMIN_SESSION is not configured." >> "$GITHUB_STEP_SUMMARY" ;;
+            failed) echo "Warning: authenticated API probes failed. Review this job before the next deployment." >> "$GITHUB_STEP_SUMMARY" ;;
+            *) echo "Warning: probe outcome was not recorded. Review this job." >> "$GITHUB_STEP_SUMMARY" ;;
+          esac
 
   # ============================================
   # Job 8: Deployment Summary
@@ -642,7 +669,7 @@ jobs:
           echo "| DocuSeal | ${{ needs.deploy-docuseal.result == 'success' && '✅' || needs.deploy-docuseal.result == 'skipped' && '⏭️' || '❌' }} ${{ needs.deploy-docuseal.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Baserow | ${{ needs.deploy-baserow.result == 'success' && '✅' || needs.deploy-baserow.result == 'skipped' && '⏭️' || '❌' }} ${{ needs.deploy-baserow.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Verification | ${{ needs.post-deploy-verification.result == 'success' && '✅' || '❌' }} ${{ needs.post-deploy-verification.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Advisory API probes | ${{ needs.post-deploy-api-probes.result == 'success' && '✅' || needs.post-deploy-api-probes.result == 'skipped' && '⏭️' || '⚠️' }} ${{ needs.post-deploy-api-probes.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Advisory API probes | ${{ needs.post-deploy-api-probes.outputs.probe_outcome == 'success' && '✅' || needs.post-deploy-api-probes.outputs.probe_outcome == 'skipped' && '⏭️' || '⚠️' }} ${{ needs.post-deploy-api-probes.outputs.probe_outcome || needs.post-deploy-api-probes.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # Overall status
