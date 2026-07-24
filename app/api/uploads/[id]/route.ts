@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
 import { readFile } from "fs/promises"
 import { existsSync } from "fs"
-import path from "path"
 import { withAuth } from "@/lib/auth/rbac"
 import { isPostgresConfigured, query, ensureSchema } from "@/lib/db/postgres"
 import { resolveTaskAccess } from "@/lib/task-access"
 import {
+  getUploadFilePath,
   inMemoryUploadStore,
   isUploadId,
   readLocalUploadMetadata,
@@ -85,10 +85,7 @@ export const GET = withAuth(async (_request, context) => {
       return NextResponse.json({ error: "File not found" }, { status: 404 })
     }
 
-    const filePath =
-      process.env.NODE_ENV === "production"
-        ? path.join(/*turbopackIgnore: true*/ "/home/hov-uploads", storedName)
-        : path.join(/*turbopackIgnore: true*/ "/tmp/hov-uploads", storedName)
+    const filePath = getUploadFilePath(storedName)
     if (!existsSync(filePath)) {
       return NextResponse.json({ error: "File not found" }, { status: 404 })
     }

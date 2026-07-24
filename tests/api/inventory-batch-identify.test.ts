@@ -1,5 +1,6 @@
 import { POST } from "@/app/api/inventory/batch-identify/route"
 import { mkdir, rm, writeFile } from "fs/promises"
+import { persistLocalUploadMetadata } from "@/lib/uploads"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 const authHeaders = {
@@ -14,6 +15,7 @@ describe("POST /api/inventory/batch-identify", () => {
     vi.unstubAllEnvs()
     vi.restoreAllMocks()
     await rm("/tmp/hov-uploads/file_sluice_payload.jpg", { force: true })
+    await rm("/tmp/hov-uploads/file_sluice_payload.metadata.json", { force: true })
   })
 
   it("returns preview-only manual suggestions when Sluice is not configured", async () => {
@@ -66,6 +68,17 @@ describe("POST /api/inventory/batch-identify", () => {
   it("sends service-readable image bytes to configured Sluice", async () => {
     await mkdir("/tmp/hov-uploads", { recursive: true })
     await writeFile("/tmp/hov-uploads/file_sluice_payload.jpg", "image-bytes")
+    await persistLocalUploadMetadata({
+      id: "file_sluice_payload",
+      originalName: "shelf.jpg",
+      storedName: "file_sluice_payload.jpg",
+      mimeType: "image/jpeg",
+      size: 11,
+      uploadedBy: "irma",
+      uploadedAt: new Date("2026-07-24T00:00:00.000Z"),
+      category: "image",
+      resourceType: "inventory",
+    })
     vi.stubEnv("SLUICE_API_URL", "https://sluice.example")
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(

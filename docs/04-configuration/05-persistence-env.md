@@ -62,6 +62,6 @@ Time-clock records are persisted to Baserow when `BASEROW_API_URL`, `BASEROW_TOK
 | API            | Storage                                                               | Metadata                                                          |
 | -------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | `/api/files`   | Azure Blob (asset-photos, invoice-scans, documents) or `/tmp/uploads` | Returned in response only                                         |
-| `/api/uploads` | `/tmp/hov-uploads`                                                    | PostgreSQL `file_uploads` when `DATABASE_URL` set; else in-memory |
+| `/api/uploads` | `/home/hov-uploads` in production; `/tmp/hov-uploads` locally/tests     | PostgreSQL `file_uploads` when `DATABASE_URL` set; else sidecar + in-memory |
 
 **Serving:** Files uploaded via `/api/uploads` are served at `GET /api/uploads/{fileId}`. Files in `/tmp/uploads` (from `/api/files` when Azure not configured) are served at `GET /api/files/serve?category=...&filename=...`.

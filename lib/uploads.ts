@@ -23,7 +23,14 @@ export const inMemoryUploadStore = new Map<string, UploadMetadata>()
 let schemaEnsured = false
 
 function metadataPath(id: string): string {
-  return path.join(/*turbopackIgnore: true*/ UPLOAD_DIR, `${id}.metadata.json`)
+  return getUploadFilePath(`${id}.metadata.json`)
+}
+
+export function getUploadFilePath(storedName: string): string {
+  const safeName = path.basename(storedName)
+  return process.env.NODE_ENV === "production"
+    ? path.join(/*turbopackIgnore: true*/ "/home/hov-uploads", safeName)
+    : path.join(/*turbopackIgnore: true*/ "/tmp/hov-uploads", safeName)
 }
 
 export function isUploadId(id: string): boolean {

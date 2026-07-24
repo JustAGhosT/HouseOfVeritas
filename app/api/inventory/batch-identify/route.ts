@@ -1,32 +1,12 @@
 import { NextResponse } from "next/server"
-import { readFile, readdir } from "fs/promises"
+import { readFile } from "fs/promises"
 import { existsSync } from "fs"
-import path from "path"
 import { withAuth } from "@/lib/auth/rbac"
-import { isPostgresConfigured, query, ensureSchema } from "@/lib/db/postgres"
 import {
   identifyInventoryBatchWithSluice,
   type SluiceInventoryImage,
 } from "@/lib/integrations/sluice"
-
-const UPLOAD_DIR = "/tmp/hov-uploads"
-
-const MIME_BY_EXT: Record<string, string> = {
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".png": "image/png",
-  ".gif": "image/gif",
-  ".webp": "image/webp",
-}
-
-let schemaEnsured = false
-
-async function ensureSchemaOnce() {
-  if (!schemaEnsured && isPostgresConfigured()) {
-    await ensureSchema()
-    schemaEnsured = true
-  }
-}
+import { getUploadFilePath, getUploadMetadataById } from "@/lib/uploads"
 
 function validImage(value: unknown): value is SluiceInventoryImage {
   if (!value || typeof value !== "object") return false
@@ -41,33 +21,11 @@ function validImage(value: unknown): value is SluiceInventoryImage {
 async function readUploadForService(image: SluiceInventoryImage): Promise<SluiceInventoryImage> {
   if (!/^file_[a-zA-Z0-9_-]+$/.test(image.uploadId)) return image
 
-  let storedName: string | null = null
-  let mimeType = image.mimeType || "application/octet-stream"
+  const metadata = await getUploadMetadataById(image.uploadId)
+  if (!metadata) return image
 
-  if (isPostgresConfigured()) {
-    await ensureSchemaOnce()
-    const { rows } = await query<{ stored_name: string; mime_type: string }>(
-      `SELECT stored_name, mime_type FROM file_uploads WHERE id = $1`,
-      [image.uploadId]
-    )
-    if (rows[0]) {
-      storedName = rows[0].stored_name
-      mimeType = rows[0].mime_type
-    }
-  }
-
-  if (!storedName && existsSync(UPLOAD_DIR)) {
-    const files = await readdir(UPLOAD_DIR)
-    const match = files.find((file) => path.basename(file, path.extname(file)) === image.uploadId)
-    if (match) {
-      storedName = match
-      mimeType = MIME_BY_EXT[path.extname(match).toLowerCase()] || mimeType
-    }
-  }
-
-  if (!storedName) return image
-
-  const filePath = path.join(UPLOAD_DIR, storedName)
+  const mimeType = metadata.mimeType || image.mimeType || "application/octet-stream"
+  const filePath = getUploadFilePath(metadata.storedName)
   if (!existsSync(filePath)) return image
 
   const buffer = await readFile(filePath)

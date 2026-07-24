@@ -7,6 +7,7 @@ import { withAuth } from "@/lib/auth/rbac"
 import { isPostgresConfigured, withClient, query, ensureSchema } from "@/lib/db/postgres"
 import {
   deleteLocalUploadMetadata,
+  getUploadFilePath,
   getUploadMetadataById,
   inMemoryUploadStore,
   persistLocalUploadMetadata,
@@ -74,7 +75,7 @@ async function persistToPostgres(metadata: {
         metadata.category,
         metadata.resourceType ?? null,
         metadata.resourceId ?? null,
-        path.join(UPLOAD_DIR, metadata.storedName),
+        getUploadFilePath(metadata.storedName),
       ]
     )
   })
@@ -238,7 +239,7 @@ export const POST = withAuth(async (request, context) => {
     const fileId = `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     const ext = path.extname(file.name)
     const storedName = `${fileId}${ext}`
-    const filePath = path.join(UPLOAD_DIR, storedName)
+    const filePath = getUploadFilePath(storedName)
 
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
@@ -305,14 +306,14 @@ export const DELETE = withAuth(async (request, context) => {
       [fileId]
     )
     if (rows[0]) {
-      const filePath = path.join(UPLOAD_DIR, rows[0].stored_name)
+      const filePath = getUploadFilePath(rows[0].stored_name)
       if (existsSync(filePath)) {
         await unlink(filePath).catch(() => {})
       }
       await withClient((client) => client.query(`DELETE FROM file_uploads WHERE id = $1`, [fileId]))
     }
   } else if (file) {
-    const filePath = path.join(UPLOAD_DIR, file.storedName)
+    const filePath = getUploadFilePath(file.storedName)
     if (existsSync(filePath)) {
       await unlink(filePath).catch(() => {})
     }
