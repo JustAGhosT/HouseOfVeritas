@@ -560,7 +560,49 @@ jobs:
           fi
 
   # ============================================
-  # Job 8: Deployment Summary
+  # Job 8: Post-Deployment Optional Smoke (Playwright)
+  # ============================================
+  post-deploy-smoke:
+    name: "Post-Deployment Smoke (Optional)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [deploy-webapp]
+    continue-on-error: true
+    env:
+      BASE_URL: "https://${{ vars.WEBAPP_NAME || 'nl-prod-hov-app' }}.azurewebsites.net"
+    if: always() && needs.deploy-webapp.result == 'success'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.30.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run Post-Deploy Smoke Tests
+        run: pnpm exec playwright test tests/e2e/01-api.spec.ts tests/e2e/03-mvp-smoke.spec.ts
+        env:
+          CI: true
+          BASE_URL: "https://${{ vars.WEBAPP_NAME || 'nl-prod-hov-app' }}.azurewebsites.net"
+          AUTH_TRUST_HOST: "true"
+          AUTH_SECRET: e2e-test-secret-do-not-use-in-production
+
+  # ============================================
+  # Job 9: Deployment Summary
   # ============================================
   deployment-summary:
     name: "Deployment Summary"
@@ -574,6 +616,7 @@ jobs:
         deploy-docuseal,
         deploy-baserow,
         post-deploy-verification,
+        post-deploy-smoke,
       ]
     if: always()
 
@@ -596,6 +639,7 @@ jobs:
           echo "| DocuSeal | ${{ needs.deploy-docuseal.result == 'success' && '✅' || needs.deploy-docuseal.result == 'skipped' && '⏭️' || '❌' }} ${{ needs.deploy-docuseal.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Baserow | ${{ needs.deploy-baserow.result == 'success' && '✅' || needs.deploy-baserow.result == 'skipped' && '⏭️' || '❌' }} ${{ needs.deploy-baserow.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Verification | ${{ needs.post-deploy-verification.result == 'success' && '✅' || '❌' }} ${{ needs.post-deploy-verification.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Optional Smoke | ${{ needs.post-deploy-smoke.result == 'success' && '✅' || needs.post-deploy-smoke.result == 'failure' && '⚠️' || needs.post-deploy-smoke.result == 'cancelled' && '⚪' || '➡️' }} ${{ needs.post-deploy-smoke.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # Overall status
