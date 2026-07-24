@@ -8,6 +8,7 @@ import {
 } from "@/lib/repositories/guidance-repository"
 import { getProjectNamesForMember } from "@/lib/projects"
 import { getTask } from "@/lib/services/baserow"
+import { getUploadMetadataById } from "@/lib/uploads"
 
 vi.mock("@/lib/integrations/sluice", () => ({
   generateTaskGuidanceWithSluice: vi.fn(),
@@ -24,6 +25,11 @@ vi.mock("@/lib/projects", () => ({
 
 vi.mock("@/lib/services/baserow", () => ({
   getTask: vi.fn(),
+}))
+
+vi.mock("@/lib/uploads", () => ({
+  getUploadMetadataById: vi.fn(),
+  isUploadId: (id: string) => /^file_[a-zA-Z0-9_-]+$/.test(id),
 }))
 
 const authHeaders = {
@@ -55,6 +61,18 @@ describe("task guidance API", () => {
       status: "Not Started",
     })
     vi.mocked(getProjectNamesForMember).mockResolvedValue([])
+    vi.mocked(getUploadMetadataById).mockResolvedValue({
+      id: "file_guidance_1",
+      originalName: "guidance.jpg",
+      storedName: "file_guidance_1.jpg",
+      mimeType: "image/jpeg",
+      size: 5,
+      uploadedBy: "irma",
+      uploadedAt: new Date("2026-07-24T00:00:00.000Z"),
+      category: "image",
+      resourceType: "task-guidance",
+      resourceId: "42",
+    })
   })
 
   it("returns a structured visual guidance draft", async () => {
@@ -87,7 +105,7 @@ describe("task guidance API", () => {
         version: 1,
         status: "published",
         steps: [{ ...draft.steps[0], id: "step-1" }],
-        source: { type: "photo", imageUrl: "/api/uploads/file-1" },
+        source: { type: "photo", imageUrl: "/api/uploads/file_guidance_1" },
         createdBy: "irma",
         createdAt: "2026-07-24T00:00:00.000Z",
         updatedAt: "2026-07-24T00:00:00.000Z",
@@ -110,7 +128,7 @@ describe("task guidance API", () => {
         body: JSON.stringify({
           taskId: "42",
           draft,
-          source: { type: "photo", imageUrl: "/api/uploads/file-1" },
+          source: { type: "photo", imageUrl: "/api/uploads/file_guidance_1" },
         }),
       })
     )
@@ -119,6 +137,54 @@ describe("task guidance API", () => {
     expect(createAndBindGuidance).toHaveBeenCalledWith(
       expect.objectContaining({ taskId: "42", createdBy: "irma" })
     )
+  })
+
+  it("rejects a remote guidance image URL", async () => {
+    const response = await saveGuidance(
+      new Request("http://localhost/api/guidance", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
+          taskId: "42",
+          draft,
+          source: { type: "photo", imageUrl: "https://attacker.example/photo.jpg" },
+        }),
+      })
+    )
+
+    expect(response.status).toBe(400)
+    expect(getUploadMetadataById).not.toHaveBeenCalled()
+    expect(createAndBindGuidance).not.toHaveBeenCalled()
+  })
+
+  it("rejects a guidance upload bound to another task", async () => {
+    vi.mocked(getUploadMetadataById).mockResolvedValue({
+      id: "file_guidance_1",
+      originalName: "guidance.jpg",
+      storedName: "file_guidance_1.jpg",
+      mimeType: "image/jpeg",
+      size: 5,
+      uploadedBy: "irma",
+      uploadedAt: new Date("2026-07-24T00:00:00.000Z"),
+      category: "image",
+      resourceType: "task-guidance",
+      resourceId: "99",
+    })
+
+    const response = await saveGuidance(
+      new Request("http://localhost/api/guidance", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
+          taskId: "42",
+          draft,
+          source: { type: "photo", imageUrl: "/api/uploads/file_guidance_1" },
+        }),
+      })
+    )
+
+    expect(response.status).toBe(400)
+    expect(createAndBindGuidance).not.toHaveBeenCalled()
   })
 
   it("returns no guidance as an explicit empty state", async () => {
@@ -167,7 +233,7 @@ describe("task guidance API", () => {
         body: JSON.stringify({
           taskId: "99",
           draft,
-          source: { type: "photo", imageUrl: "/api/uploads/file-1" },
+          source: { type: "photo", imageUrl: "/api/uploads/file_guidance_1" },
         }),
       })
     )

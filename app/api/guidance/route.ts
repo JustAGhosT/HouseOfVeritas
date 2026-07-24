@@ -4,6 +4,7 @@ import { withRole } from "@/lib/auth/rbac"
 import { guidanceDraftSchema } from "@/lib/guidance"
 import { logger } from "@/lib/logger"
 import { resolveTaskAccess } from "@/lib/task-access"
+import { getUploadMetadataById, isUploadId } from "@/lib/uploads"
 import {
   createAndBindGuidance,
   getActiveGuidanceForTask,
@@ -31,6 +32,44 @@ async function authorizeTask(taskId: string, userId: string, role: string) {
   }
   if (result.status === 403) {
     return NextResponse.json({ error: "You do not have access to this task." }, { status: 403 })
+  }
+
+  return null
+}
+
+async function validateSourceUpload(taskId: string, source: z.infer<typeof sourceSchema>) {
+  if (!source.imageUrl) {
+    if (source.type === "photo") {
+      return NextResponse.json(
+        { error: "Uploaded photo URL is required for photo guidance." },
+        { status: 400 }
+      )
+    }
+    return null
+  }
+
+  const uploadPrefix = "/api/uploads/"
+  const uploadId = source.imageUrl.startsWith(uploadPrefix)
+    ? source.imageUrl.slice(uploadPrefix.length)
+    : ""
+  if (!isUploadId(uploadId) || source.imageUrl !== `${uploadPrefix}${uploadId}`) {
+    return NextResponse.json(
+      { error: "Guidance images must reference a verified task upload." },
+      { status: 400 }
+    )
+  }
+
+  const upload = await getUploadMetadataById(uploadId)
+  if (
+    !upload ||
+    upload.resourceType !== "task-guidance" ||
+    upload.resourceId !== taskId ||
+    !upload.mimeType.startsWith("image/")
+  ) {
+    return NextResponse.json(
+      { error: "Guidance image is not valid for this task." },
+      { status: 400 }
+    )
   }
 
   return null
@@ -66,12 +105,6 @@ export const POST = withRole("admin", "operator", "employee", "resident")(
       if (!parsed.success) {
         return NextResponse.json({ error: "Invalid task guidance." }, { status: 400 })
       }
-      if (parsed.data.source.type === "photo" && !parsed.data.source.imageUrl) {
-        return NextResponse.json(
-          { error: "Uploaded photo URL is required for photo guidance." },
-          { status: 400 }
-        )
-      }
 
       const authorizationError = await authorizeTask(
         parsed.data.taskId,
@@ -79,6 +112,9 @@ export const POST = withRole("admin", "operator", "employee", "resident")(
         context.role
       )
       if (authorizationError) return authorizationError
+
+      const sourceError = await validateSourceUpload(parsed.data.taskId, parsed.data.source)
+      if (sourceError) return sourceError
 
       const result = await createAndBindGuidance({
         ...parsed.data,
