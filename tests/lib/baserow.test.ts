@@ -7,6 +7,8 @@ describe("baserow service", () => {
   beforeEach(() => {
     vi.resetModules()
     process.env = { ...originalEnv }
+    delete process.env.MONGODB_URI
+    delete process.env.MONGO_URL
   })
 
   describe("isBaserowConfigured", () => {
