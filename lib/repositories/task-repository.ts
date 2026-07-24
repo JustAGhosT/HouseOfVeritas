@@ -95,11 +95,12 @@ async function createMongoRepository(): Promise<TaskRepository> {
       return clone(created)
     },
     async update(id, updates) {
-      const document = await collection.findOneAndUpdate(
+      const result = await collection.findOneAndUpdate(
         { id },
         { $set: clone(updates) },
         { returnDocument: "after" }
       )
+      const document = result.value
       if (!document) return null
       const { _id: _ignored, ...task } = document
       return clone(task)
