@@ -68,6 +68,7 @@ async function createMongoRepository(): Promise<TaskRepository> {
     collection.createIndex({ assignedTo: 1 }),
     collection.createIndex({ assignedToName: 1 }),
     collection.createIndex({ status: 1 }),
+    collection.createIndex({ createdDate: -1, id: -1 }),
   ])
 
   return {

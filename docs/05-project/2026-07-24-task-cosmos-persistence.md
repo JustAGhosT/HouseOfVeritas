@@ -21,6 +21,8 @@ No new datastore or infrastructure is introduced.
 The production Cosmos account exposes the MongoDB 3.6 protocol (wire version 6). Keep the Node
 MongoDB driver on the latest 5.x release (`5.9.2`) unless the account is upgraded: driver 7.x
 requires MongoDB 4.2 / wire version 8 and fails topology selection before any query can run.
+The `tasks` collection also requires the compound `{ createdDate: -1, id: -1 }` index used by the
+default task-list sort; Cosmos does not serve that sort from the separate single-field indexes.
 
 ## Verification
 
