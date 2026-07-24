@@ -559,6 +559,51 @@ jobs:
             echo "🎉 Deployment verification complete!" >> $GITHUB_STEP_SUMMARY
           fi
 
+  post-deploy-api-probes:
+    name: "Optional Post-Deployment API Probes"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [deploy-webapp]
+    if: always() && needs.deploy-webapp.result == 'success'
+    continue-on-error: true
+    environment: ${{ inputs.environment || 'production' }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.30.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run advisory API probes
+        continue-on-error: true
+        env:
+          BASE_URL: "https://${{ vars.WEBAPP_NAME || 'nl-prod-hov-app' }}.azurewebsites.net"
+          POST_DEPLOY_PROBE: "true"
+          POST_DEPLOY_ADMIN_SESSION: ${{ secrets.POST_DEPLOY_ADMIN_SESSION }}
+          POST_DEPLOY_ADMIN_SESSION_COOKIE_NAME: ${{ vars.POST_DEPLOY_ADMIN_SESSION_COOKIE_NAME || '__Secure-authjs.session-token' }}
+        run: |
+          if [ -z "$POST_DEPLOY_ADMIN_SESSION" ]; then
+            echo "## Optional post-deployment API probes" >> "$GITHUB_STEP_SUMMARY"
+            echo "Skipped: configure a short-lived POST_DEPLOY_ADMIN_SESSION environment secret to enable authenticated probes." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          pnpm run test:e2e -- tests/e2e/05-post-deploy-api-probes.spec.ts
+
   # ============================================
   # Job 8: Deployment Summary
   # ============================================
@@ -574,6 +619,7 @@ jobs:
         deploy-docuseal,
         deploy-baserow,
         post-deploy-verification,
+        post-deploy-api-probes,
       ]
     if: always()
 
@@ -596,6 +642,7 @@ jobs:
           echo "| DocuSeal | ${{ needs.deploy-docuseal.result == 'success' && '✅' || needs.deploy-docuseal.result == 'skipped' && '⏭️' || '❌' }} ${{ needs.deploy-docuseal.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Baserow | ${{ needs.deploy-baserow.result == 'success' && '✅' || needs.deploy-baserow.result == 'skipped' && '⏭️' || '❌' }} ${{ needs.deploy-baserow.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Verification | ${{ needs.post-deploy-verification.result == 'success' && '✅' || '❌' }} ${{ needs.post-deploy-verification.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Advisory API probes | ${{ needs.post-deploy-api-probes.result == 'success' && '✅' || needs.post-deploy-api-probes.result == 'skipped' && '⏭️' || '⚠️' }} ${{ needs.post-deploy-api-probes.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # Overall status

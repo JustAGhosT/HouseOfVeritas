@@ -177,3 +177,48 @@ jobs:
             echo "Web App health endpoint failed after 10 attempts"
             exit 1
           fi
+
+  post-deploy-api-probes:
+    name: "Optional Post-Deployment API Probes"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [deploy-webapp]
+    if: always() && needs.deploy-webapp.result == 'success'
+    continue-on-error: true
+    environment: production
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.30.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run advisory API probes
+        continue-on-error: true
+        env:
+          BASE_URL: "https://${{ vars.WEBAPP_NAME || 'nl-prod-hov-app' }}.azurewebsites.net"
+          POST_DEPLOY_PROBE: "true"
+          POST_DEPLOY_ADMIN_SESSION: ${{ secrets.POST_DEPLOY_ADMIN_SESSION }}
+          POST_DEPLOY_ADMIN_SESSION_COOKIE_NAME: ${{ vars.POST_DEPLOY_ADMIN_SESSION_COOKIE_NAME || '__Secure-authjs.session-token' }}
+        run: |
+          if [ -z "$POST_DEPLOY_ADMIN_SESSION" ]; then
+            echo "## Optional post-deployment API probes" >> "$GITHUB_STEP_SUMMARY"
+            echo "Skipped: configure a short-lived POST_DEPLOY_ADMIN_SESSION environment secret to enable authenticated probes." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          pnpm run test:e2e -- tests/e2e/05-post-deploy-api-probes.spec.ts

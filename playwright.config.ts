@@ -32,7 +32,9 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
+  // Post-deploy probes target an already deployed application. Do not build or
+  // start a local server when BASE_URL points at that deployment.
+  webServer: process.env.POST_DEPLOY_PROBE === "true" ? undefined : {
     // Serve a production build so route compilation cannot consume an E2E
     // assertion timeout. This also keeps the suite on the same runtime path
     // used by deployment rather than relying on the dev server's bundler.
