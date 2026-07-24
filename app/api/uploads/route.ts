@@ -7,6 +7,7 @@ import { withAuth } from "@/lib/auth/rbac"
 import { isPostgresConfigured, withClient, query, ensureSchema } from "@/lib/db/postgres"
 import {
   deleteLocalUploadMetadata,
+  getUploadMetadataById,
   inMemoryUploadStore,
   persistLocalUploadMetadata,
   UPLOAD_DIR,
@@ -271,7 +272,7 @@ export const POST = withAuth(async (request, context) => {
   }
 })
 
-export const DELETE = withAuth(async (request) => {
+export const DELETE = withAuth(async (request, context) => {
   const { searchParams } = new URL(request.url)
   const fileId = searchParams.get("id")
 
@@ -279,7 +280,24 @@ export const DELETE = withAuth(async (request) => {
     return NextResponse.json({ error: "File ID required" }, { status: 400 })
   }
 
-  const file = inMemoryUploadStore.get(fileId)
+  const file = await getUploadMetadataById(fileId)
+  if (file?.resourceType === "task-guidance") {
+    if (!file.resourceId) {
+      return NextResponse.json({ error: "Upload task binding is missing." }, { status: 403 })
+    }
+
+    const taskAccess = await resolveTaskAccess(file.resourceId, context.userId, context.role)
+    if (taskAccess.status === 404) {
+      return NextResponse.json({ error: "Task not found." }, { status: 404 })
+    }
+    if (taskAccess.status === 403) {
+      return NextResponse.json(
+        { error: "You do not have access to this task." },
+        { status: 403 }
+      )
+    }
+  }
+
   if (isPostgresConfigured()) {
     await ensureSchemaOnce()
     const { rows } = await query<{ stored_name: string }>(

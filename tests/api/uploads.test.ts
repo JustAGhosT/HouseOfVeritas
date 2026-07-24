@@ -1,5 +1,5 @@
 import { GET as getUpload } from "@/app/api/uploads/[id]/route"
-import { GET as listUploads, POST } from "@/app/api/uploads/route"
+import { DELETE as deleteUpload, GET as listUploads, POST } from "@/app/api/uploads/route"
 import { getProjectNamesForMember } from "@/lib/projects"
 import { getTask } from "@/lib/services/baserow"
 import { inMemoryUploadStore } from "@/lib/uploads"
@@ -137,6 +137,18 @@ describe("POST /api/uploads", () => {
       )
     )
     expect(forbiddenList.status).toBe(403)
+
+    const forbiddenDelete = await deleteUpload(
+      new Request(`http://localhost/api/uploads?id=${upload.id}`, {
+        method: "DELETE",
+        headers: {
+          "x-user-id": "irma",
+          "x-user-role": "resident",
+          "x-user-email": "irma@example.com",
+        },
+      })
+    )
+    expect(forbiddenDelete.status).toBe(403)
 
     const genericList = await listUploads(
       new Request("http://localhost/api/uploads", {
