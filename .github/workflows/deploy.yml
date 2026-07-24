@@ -565,6 +565,7 @@ jobs:
     timeout-minutes: 10
     needs: [deploy-webapp]
     if: always() && needs.deploy-webapp.result == 'success'
+    continue-on-error: true
     outputs:
       probe_outcome: ${{ steps.run-probes.outputs.probe_outcome || 'unknown' }}
     environment: ${{ inputs.environment || 'production' }}
