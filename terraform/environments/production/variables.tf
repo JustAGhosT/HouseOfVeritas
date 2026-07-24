@@ -600,3 +600,26 @@ variable "mystira_oidc_client_secret_key_vault_secret_name" {
   type        = string
   default     = "mystira-oidc-client-secret"
 }
+
+variable "sluice_base_url" {
+  description = "OpenAI-compatible Sluice LiteLLM gateway base URL"
+  type        = string
+  default     = "https://litellm.sluice.phoenixvc.tech"
+}
+
+variable "sluice_guidance_model" {
+  description = "Sluice policy alias used for multimodal task guidance"
+  type        = string
+  default     = "cheap-long-context"
+
+  validation {
+    condition     = contains(["cheap-long-context", "premium"], var.sluice_guidance_model)
+    error_message = "sluice_guidance_model must be a vision-capable Sluice policy alias."
+  }
+}
+
+variable "sluice_api_key_key_vault_secret_name" {
+  description = "Name of the HOV Key Vault secret containing the Sluice service virtual key"
+  type        = string
+  default     = "sluice-api-key"
+}

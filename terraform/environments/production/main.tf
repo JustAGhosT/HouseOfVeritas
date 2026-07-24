@@ -273,10 +273,13 @@ module "webapp" {
   document_intelligence_endpoint                   = try(module.cognitive[0].endpoint, "")
   document_intelligence_key                        = try(module.cognitive[0].primary_access_key, "")
   extra_app_settings = {
-    DATABASE_URL = try(module.database[0].connection_string_app, "")
-    POSTGRES_URL = try(module.database[0].connection_string_app, "")
-    MONGODB_URI  = try(module.cosmos_mongo[0].mongo_connection_string, "")
-    DB_NAME      = try(module.cosmos_mongo[0].mongo_database_name, "")
+    DATABASE_URL          = try(module.database[0].connection_string_app, "")
+    POSTGRES_URL          = try(module.database[0].connection_string_app, "")
+    MONGODB_URI           = try(module.cosmos_mongo[0].mongo_connection_string, "")
+    DB_NAME               = try(module.cosmos_mongo[0].mongo_database_name, "")
+    SLUICE_BASE_URL       = var.sluice_base_url
+    SLUICE_GUIDANCE_MODEL = var.sluice_guidance_model
+    SLUICE_API_KEY        = var.sluice_api_key_key_vault_secret_name != "" ? "@Microsoft.KeyVault(SecretUri=${module.security.key_vault_uri}secrets/${var.sluice_api_key_key_vault_secret_name})" : ""
   }
 
   tags = local.common_tags

@@ -1,19 +1,15 @@
-import { NextRequest, NextResponse } from "next/server"
-import { readFile, readdir } from "fs/promises"
+import { NextResponse } from "next/server"
+import { readFile } from "fs/promises"
 import { existsSync } from "fs"
-import path from "path"
+import { withAuth } from "@/lib/auth/rbac"
 import { isPostgresConfigured, query, ensureSchema } from "@/lib/db/postgres"
-
-const UPLOAD_DIR = "/tmp/hov-uploads"
-
-const MIME_BY_EXT: Record<string, string> = {
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".png": "image/png",
-  ".gif": "image/gif",
-  ".webp": "image/webp",
-  ".pdf": "application/pdf",
-}
+import { resolveTaskAccess } from "@/lib/task-access"
+import {
+  getUploadFilePath,
+  inMemoryUploadStore,
+  isUploadId,
+  readLocalUploadMetadata,
+} from "@/lib/uploads"
 
 let schemaEnsured = false
 
@@ -24,34 +20,64 @@ async function ensureSchemaOnce() {
   }
 }
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
+export const GET = withAuth(async (_request, context) => {
+  const { id } = (await context.params) ?? {}
   if (!id) {
     return NextResponse.json({ error: "File ID required" }, { status: 400 })
+  }
+  if (!isUploadId(id)) {
+    return NextResponse.json({ error: "Invalid file ID." }, { status: 400 })
   }
 
   try {
     let storedName: string | null = null
     let mimeType = "application/octet-stream"
+    let resourceType: string | undefined
+    let resourceId: string | undefined
 
     if (isPostgresConfigured()) {
       await ensureSchemaOnce()
-      const { rows } = await query<{ stored_name: string; mime_type: string }>(
-        `SELECT stored_name, mime_type FROM file_uploads WHERE id = $1`,
+      const { rows } = await query<{
+        stored_name: string
+        mime_type: string
+        resource_type: string | null
+        resource_id: string | null
+      }>(
+        `SELECT stored_name, mime_type, resource_type, resource_id FROM file_uploads WHERE id = $1`,
         [id]
       )
       if (rows[0]) {
         storedName = rows[0].stored_name
         mimeType = rows[0].mime_type
+        resourceType = rows[0].resource_type ?? undefined
+        resourceId = rows[0].resource_id ?? undefined
       }
     }
 
-    if (!storedName && existsSync(UPLOAD_DIR)) {
-      const files = await readdir(UPLOAD_DIR)
-      const match = files.find((f) => path.basename(f, path.extname(f)) === id)
-      if (match) {
-        storedName = match
-        mimeType = MIME_BY_EXT[path.extname(match).toLowerCase()] || mimeType
+    if (!storedName) {
+      const metadata = inMemoryUploadStore.get(id) ?? (await readLocalUploadMetadata(id))
+      if (metadata) {
+        storedName = metadata.storedName
+        mimeType = metadata.mimeType
+        resourceType = metadata.resourceType
+        resourceId = metadata.resourceId
+      }
+    }
+
+    if (resourceType === "task-guidance") {
+      if (!resourceId) {
+        return NextResponse.json({ error: "Upload task binding is missing." }, { status: 403 })
+      }
+
+      const taskAccess = await resolveTaskAccess(resourceId, context.userId, context.role)
+      if (taskAccess.status === 404) {
+        return NextResponse.json({ error: "Task not found." }, { status: 404 })
+      }
+      if (taskAccess.status === 403) {
+        return NextResponse.json(
+          { error: "You do not have access to this task." },
+          { status: 403 }
+        )
       }
     }
 
@@ -59,7 +85,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "File not found" }, { status: 404 })
     }
 
-    const filePath = path.join(UPLOAD_DIR, storedName)
+    const filePath = getUploadFilePath(storedName)
     if (!existsSync(filePath)) {
       return NextResponse.json({ error: "File not found" }, { status: 404 })
     }
@@ -74,4 +100,4 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   } catch {
     return NextResponse.json({ error: "Failed to retrieve file" }, { status: 500 })
   }
-}
+})

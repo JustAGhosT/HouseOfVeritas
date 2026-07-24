@@ -5,8 +5,15 @@ import { existsSync } from "fs"
 import path from "path"
 import { withAuth } from "@/lib/auth/rbac"
 import { isPostgresConfigured, withClient, query, ensureSchema } from "@/lib/db/postgres"
-
-const UPLOAD_DIR = "/tmp/hov-uploads"
+import {
+  deleteLocalUploadMetadata,
+  getUploadFilePath,
+  getUploadMetadataById,
+  inMemoryUploadStore,
+  persistLocalUploadMetadata,
+  UPLOAD_DIR,
+} from "@/lib/uploads"
+import { resolveTaskAccess } from "@/lib/task-access"
 
 const ALLOWED_TYPES: Record<string, string[]> = {
   image: ["image/jpeg", "image/png", "image/gif", "image/webp"],
@@ -25,22 +32,6 @@ const ALLOWED_TYPES: Record<string, string[]> = {
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
-
-const fileStore: Map<
-  string,
-  {
-    id: string
-    originalName: string
-    storedName: string
-    mimeType: string
-    size: number
-    uploadedBy: string
-    uploadedAt: Date
-    category: string
-    resourceType?: string
-    resourceId?: string
-  }
-> = new Map()
 
 let schemaEnsured = false
 
@@ -84,7 +75,7 @@ async function persistToPostgres(metadata: {
         metadata.category,
         metadata.resourceType ?? null,
         metadata.resourceId ?? null,
-        path.join(UPLOAD_DIR, metadata.storedName),
+        getUploadFilePath(metadata.storedName),
       ]
     )
   })
@@ -135,7 +126,7 @@ async function getFilesFromPostgres(filters: {
   }))
 }
 
-export const GET = withAuth(async (request) => {
+export const GET = withAuth(async (request, context) => {
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get("userId")
   const category = searchParams.get("category")
@@ -149,17 +140,44 @@ export const GET = withAuth(async (request) => {
     resourceId: resourceId || undefined,
   }
 
+  const isAuthorizedTaskGuidanceList = resourceType === "task-guidance" && Boolean(resourceId)
+  if (resourceType === "task-guidance") {
+    if (!resourceId) {
+      return NextResponse.json(
+        { error: "resourceId is required when listing task guidance uploads." },
+        { status: 400 }
+      )
+    }
+
+    const taskAccess = await resolveTaskAccess(resourceId, context.userId, context.role)
+    if (taskAccess.status === 404) {
+      return NextResponse.json({ error: "Task not found." }, { status: 404 })
+    }
+    if (taskAccess.status === 403) {
+      return NextResponse.json(
+        { error: "You do not have access to this task." },
+        { status: 403 }
+      )
+    }
+  }
+
   if (isPostgresConfigured()) {
     await ensureSchemaOnce()
-    const files = await getFilesFromPostgres(filters)
+    let files = await getFilesFromPostgres(filters)
+    if (!isAuthorizedTaskGuidanceList) {
+      files = files.filter((file) => file.resourceType !== "task-guidance")
+    }
     return NextResponse.json({ files, total: files.length })
   }
 
-  let files = Array.from(fileStore.values())
+  let files = Array.from(inMemoryUploadStore.values())
   if (userId) files = files.filter((f) => f.uploadedBy === userId)
   if (category) files = files.filter((f) => f.category === category)
   if (resourceType) files = files.filter((f) => f.resourceType === resourceType)
   if (resourceId) files = files.filter((f) => f.resourceId === resourceId)
+  if (!isAuthorizedTaskGuidanceList) {
+    files = files.filter((file) => file.resourceType !== "task-guidance")
+  }
 
   return NextResponse.json({
     files: files.map((f) => ({ ...f, url: `/api/uploads/${f.id}` })),
@@ -169,13 +187,11 @@ export const GET = withAuth(async (request) => {
 
 export const POST = withAuth(async (request, context) => {
   try {
-    await ensureUploadDir()
-
     const formData = await request.formData()
     const file = formData.get("file") as File | null
     const category = (formData.get("category") as string) || "general"
-    const resourceType = formData.get("resourceType") as string | null
-    const resourceId = formData.get("resourceId") as string | null
+    const resourceType = (formData.get("resourceType") as string | null)?.trim() || null
+    const resourceId = (formData.get("resourceId") as string | null)?.trim() || null
     const uploader = context.userId
 
     if (!file) {
@@ -199,10 +215,31 @@ export const POST = withAuth(async (request, context) => {
       )
     }
 
+    if (resourceType === "task-guidance") {
+      if (!resourceId) {
+        return NextResponse.json(
+          { error: "resourceId is required for task guidance uploads." },
+          { status: 400 }
+        )
+      }
+
+      const taskAccess = await resolveTaskAccess(resourceId, context.userId, context.role)
+      if (taskAccess.status === 404) {
+        return NextResponse.json({ error: "Task not found." }, { status: 404 })
+      }
+      if (taskAccess.status === 403) {
+        return NextResponse.json(
+          { error: "You do not have access to this task." },
+          { status: 403 }
+        )
+      }
+    }
+
+    await ensureUploadDir()
     const fileId = `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     const ext = path.extname(file.name)
     const storedName = `${fileId}${ext}`
-    const filePath = path.join(UPLOAD_DIR, storedName)
+    const filePath = getUploadFilePath(storedName)
 
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
@@ -220,7 +257,8 @@ export const POST = withAuth(async (request, context) => {
       resourceType: resourceType || undefined,
       resourceId: resourceId || undefined,
     }
-    fileStore.set(fileId, metadata)
+    inMemoryUploadStore.set(fileId, metadata)
+    await persistLocalUploadMetadata(metadata)
     await persistToPostgres(metadata)
 
     return NextResponse.json({
@@ -235,7 +273,7 @@ export const POST = withAuth(async (request, context) => {
   }
 })
 
-export const DELETE = withAuth(async (request) => {
+export const DELETE = withAuth(async (request, context) => {
   const { searchParams } = new URL(request.url)
   const fileId = searchParams.get("id")
 
@@ -243,7 +281,24 @@ export const DELETE = withAuth(async (request) => {
     return NextResponse.json({ error: "File ID required" }, { status: 400 })
   }
 
-  const file = fileStore.get(fileId)
+  const file = await getUploadMetadataById(fileId)
+  if (file?.resourceType === "task-guidance") {
+    if (!file.resourceId) {
+      return NextResponse.json({ error: "Upload task binding is missing." }, { status: 403 })
+    }
+
+    const taskAccess = await resolveTaskAccess(file.resourceId, context.userId, context.role)
+    if (taskAccess.status === 404) {
+      return NextResponse.json({ error: "Task not found." }, { status: 404 })
+    }
+    if (taskAccess.status === 403) {
+      return NextResponse.json(
+        { error: "You do not have access to this task." },
+        { status: 403 }
+      )
+    }
+  }
+
   if (isPostgresConfigured()) {
     await ensureSchemaOnce()
     const { rows } = await query<{ stored_name: string }>(
@@ -251,19 +306,20 @@ export const DELETE = withAuth(async (request) => {
       [fileId]
     )
     if (rows[0]) {
-      const filePath = path.join(UPLOAD_DIR, rows[0].stored_name)
+      const filePath = getUploadFilePath(rows[0].stored_name)
       if (existsSync(filePath)) {
         await unlink(filePath).catch(() => {})
       }
       await withClient((client) => client.query(`DELETE FROM file_uploads WHERE id = $1`, [fileId]))
     }
   } else if (file) {
-    const filePath = path.join(UPLOAD_DIR, file.storedName)
+    const filePath = getUploadFilePath(file.storedName)
     if (existsSync(filePath)) {
       await unlink(filePath).catch(() => {})
     }
-    fileStore.delete(fileId)
   }
+  inMemoryUploadStore.delete(fileId)
+  await deleteLocalUploadMetadata(fileId)
 
   return NextResponse.json({ success: true, deletedId: fileId })
 })

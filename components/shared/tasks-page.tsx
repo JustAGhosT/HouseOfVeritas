@@ -30,11 +30,11 @@ import {
   AlertCircle,
   Loader2,
   RefreshCw,
-  ChevronRight,
   Plus,
   Sparkles,
 } from "lucide-react"
 import { AiSuggestIcon } from "@/components/ui/ai-suggest-icon"
+import { TaskGuidanceDialog } from "@/components/guidance/task-guidance-dialog"
 import { logger } from "@/lib/logger"
 import { apiFetch, apiFetchSafe } from "@/lib/api-client"
 
@@ -475,7 +475,7 @@ export function TasksPage({
               {filteredTasks.map((task) => (
                 <div
                   key={task.id}
-                  className="flex items-center gap-4 rounded-xl border border-border bg-muted/50 p-4 transition-colors hover:bg-muted"
+                  className="flex items-start gap-3 rounded-xl border border-border bg-muted/50 p-4 transition-colors hover:bg-muted sm:items-center sm:gap-4"
                 >
                   {getStatusIcon(task.status)}
                   <div className="min-w-0 flex-1">
@@ -503,7 +503,7 @@ export function TasksPage({
                       )}
                     </div>
                   </div>
-                  <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground/30" />
+                  <TaskGuidanceDialog task={task} />
                 </div>
               ))}
             </div>
