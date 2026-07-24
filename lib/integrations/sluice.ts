@@ -1,4 +1,9 @@
 import { logger } from "@/lib/logger"
+import {
+  parseGuidanceDraft,
+  type GuidanceDraft,
+  type GuidanceLocale,
+} from "@/lib/guidance"
 
 export interface SluiceInventoryImage {
   uploadId: string
@@ -94,5 +99,106 @@ export async function identifyInventoryBatchWithSluice(
     return { aiPowered: false, suggestions: images.map(fallbackSuggestion) }
   } finally {
     clearTimeout(timeout)
+  }
+}
+
+function getSluiceCompletionText(value: unknown): string | null {
+  if (typeof value === "string") return value
+  if (!Array.isArray(value)) return null
+
+  const text = value
+    .map((part) => {
+      if (!part || typeof part !== "object" || !("text" in part)) return ""
+      return typeof part.text === "string" ? part.text : ""
+    })
+    .filter(Boolean)
+    .join("\n")
+    .trim()
+  return text || null
+}
+
+export async function generateTaskGuidanceWithSluice(params: {
+  taskId: string
+  title: string
+  description: string
+  imageBase64: string
+  imageMimeType: string
+  locale: GuidanceLocale
+}): Promise<GuidanceDraft | null> {
+  const baseUrl = process.env.SLUICE_GATEWAY_URL || process.env.SLUICE_BASE_URL
+  const apiKey = process.env.SLUICE_API_KEY
+  if (!baseUrl || !apiKey || !params.imageBase64) return null
+
+  const dataUrl = params.imageBase64.startsWith("data:")
+    ? params.imageBase64
+    : `data:${params.imageMimeType};base64,${params.imageBase64}`
+  const language = params.locale === "af" ? "Afrikaans" : "English"
+  const model = process.env.SLUICE_GUIDANCE_MODEL || "cheap-long-context"
+  const prompt = `You create practical estate task guidance from a resident's photo and description.
+Return concise ${language} instructions grounded in visible evidence. Do not claim certainty about hidden conditions.
+Include materials and tools only when reasonably supported. Put visual observations in visualCue, a measurable completion signal in check, and a stop condition in warning.
+For structural, electrical, gas, asbestos, working-at-height, or similarly hazardous uncertainty, instruct the resident to stop and consult a qualified person.
+Return JSON only with this shape:
+{"kind":"procedure|checklist|troubleshooting|safety","locale":"${params.locale}","title":"...","summary":"...","materials":["..."],"tools":["..."],"safety":["..."],"steps":[{"order":1,"title":"...","instruction":"...","visualCue":"...","check":"...","warning":"...","timerMinutes":10}]}
+Provide 3 to 10 ordered steps. Omit optional fields when they do not apply.`
+
+  try {
+    const response = await fetch(`${baseUrl.replace(/\/$/, "")}/v1/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: prompt },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `Task: ${params.title}\nWhat needs to be done: ${params.description}`,
+              },
+              { type: "image_url", image_url: { url: dataUrl } },
+            ],
+          },
+        ],
+        max_tokens: 1_500,
+        temperature: 0.2,
+        metadata: {
+          consumer: "house-of-veritas",
+          capability: "task-guidance-vision",
+          route_hint: "cheap-long-context",
+          stage: process.env.NODE_ENV || "development",
+          task_id: params.taskId,
+        },
+      }),
+      signal: AbortSignal.timeout(30_000),
+    })
+
+    if (!response.ok) {
+      logger.warn("Sluice task guidance returned non-OK", {
+        status: response.status,
+        statusText: response.statusText,
+      })
+      return null
+    }
+
+    const result = (await response.json()) as {
+      choices?: Array<{ message?: { content?: unknown } }>
+    }
+    const content = getSluiceCompletionText(result.choices?.[0]?.message?.content)
+    if (!content) return null
+    const json = content
+      .replace(/```json?\s*/g, "")
+      .replace(/```\s*/g, "")
+      .trim()
+    return parseGuidanceDraft(JSON.parse(json) as unknown)
+  } catch (error) {
+    logger.warn("Sluice task guidance failed", {
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return null
   }
 }
