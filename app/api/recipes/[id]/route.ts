@@ -116,7 +116,10 @@ async function ensureEditableRecipe(
 export const GET = withRole("admin", "operator", "employee", "resident")(
   async (_request, context) => {
     try {
-      const { id } = await context.params
+      const params = await context.params
+      const id = params?.id
+      if (!id) return NextResponse.json({ error: "Recipe ID is required" }, { status: 400 })
+
       const recipe = await getRecipeById(id)
       if (!recipe) return NextResponse.json({ error: "Recipe not found" }, { status: 404 })
 
