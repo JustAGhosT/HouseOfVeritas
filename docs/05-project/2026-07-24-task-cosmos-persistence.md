@@ -1,0 +1,33 @@
+# Task Persistence on the Existing Cosmos Store
+
+## Context
+
+The authenticated production verification for PR #129 found that task creation was not durable
+when Baserow was unconfigured. `POST /api/tasks` returned a generated task object, but the immediate
+`GET /api/tasks` returned an empty list. That made task-guidance attach and reopen impossible even
+though production already had a configured Cosmos Mongo connection for guidance and inventory.
+
+## Decision
+
+Keep Baserow as the task source when its tasks table is configured. Otherwise:
+
+- use the existing `MONGODB_URI` / `DB_NAME` connection and a `tasks` collection;
+- preserve the existing empty/demo behavior when neither Baserow nor Mongo is configured;
+- report `dataSource: "mongodb"` and `configured: true` from the tasks API;
+- keep task IDs numeric for compatibility with existing UI, workflow, and access contracts.
+
+No new datastore or infrastructure is introduced.
+
+## Verification
+
+Run:
+
+```text
+pnpm run lint
+node .\node_modules\vitest\vitest.mjs run tests/lib/task-repository.test.ts tests/lib/baserow-task-store.test.ts tests/api/tasks.test.ts tests/lib/baserow.test.ts
+node .\node_modules\typescript\bin\tsc --noEmit --incremental false
+pnpm run build
+```
+
+After deployment, create one clearly labeled Irma task, refresh the resident task list, attach
+visual guidance, close and reopen the dialog, and then remove the verification artifacts.

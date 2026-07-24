@@ -1,14 +1,32 @@
 import { NextResponse } from "next/server"
-import { getTasks, createTask, updateTask, getEmployee } from "@/lib/services/baserow"
+import {
+  getTasks,
+  createTask,
+  updateTask,
+  getEmployee,
+  getTaskDataSource,
+} from "@/lib/services/baserow"
 import { withDataSource } from "@/lib/api/response"
 import { withRole } from "@/lib/auth/rbac"
 import { logger } from "@/lib/logger"
-import {
-  canAccessTask,
-  getTaskAccessScope,
-  PERSONA_TO_ASSIGNED_ID,
-} from "@/lib/task-access"
+import { canAccessTask, getTaskAccessScope, PERSONA_TO_ASSIGNED_ID } from "@/lib/task-access"
 import { routeToInngest } from "@/lib/workflows"
+
+function withTaskDataSource<T extends Record<string, unknown>>(data: T) {
+  const dataSource = getTaskDataSource()
+  return withDataSource(
+    { ...data, dataSource },
+    {
+      configured: dataSource !== "empty",
+      message:
+        dataSource === "baserow"
+          ? "Connected to Baserow"
+          : dataSource === "mongodb"
+            ? "Connected to Cosmos MongoDB"
+            : "Task datastore not configured",
+    }
+  )
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -53,7 +71,7 @@ export async function GET(request: Request) {
       ).length,
     }
 
-    return withDataSource({ tasks, summary })
+    return withTaskDataSource({ tasks, summary })
   } catch (error) {
     logger.error("Error fetching tasks", {
       error: error instanceof Error ? error.message : String(error),
@@ -98,7 +116,7 @@ export const POST = withRole(
       })
     }
 
-    return withDataSource({ task })
+    return withTaskDataSource({ task })
   } catch (error) {
     logger.error("Error creating task", {
       error: error instanceof Error ? error.message : String(error),
@@ -157,7 +175,7 @@ export const PATCH = withRole(
       return NextResponse.json({ error: "Task not found" }, { status: 404 })
     }
 
-    return withDataSource({ task })
+    return withTaskDataSource({ task })
   } catch (error) {
     logger.error("Error updating task", {
       error: error instanceof Error ? error.message : String(error),
