@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from "fs/promises"
 import { dirname, join } from "path"
-import type { Filter } from "mongodb"
+import type { Filter, ObjectId } from "mongodb"
 import { getCollection, isMongoConfigured, withoutMongoId } from "@/lib/db/mongodb"
 import { randomUUID } from "crypto"
 import {
@@ -23,9 +23,9 @@ const RECIPES_COLLECTION = "recipes"
 const RECIPE_MEAL_INSTANCES_COLLECTION = "recipe_meal_instances"
 const RECIPE_RATINGS_COLLECTION = "recipe_ratings"
 
-type RecipeDocument = RecipeRecord & { _id?: unknown }
-type RecipeMealInstanceDocument = RecipeMealInstance & { _id?: unknown }
-type RecipeRatingDocument = RecipeRating & { _id?: unknown }
+type RecipeDocument = RecipeRecord & { _id?: ObjectId }
+type RecipeMealInstanceDocument = RecipeMealInstance & { _id?: ObjectId }
+type RecipeRatingDocument = RecipeRating & { _id?: ObjectId }
 
 function asString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined
