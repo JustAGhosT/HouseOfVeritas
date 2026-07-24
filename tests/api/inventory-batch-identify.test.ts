@@ -16,6 +16,7 @@ describe("POST /api/inventory/batch-identify", () => {
     vi.restoreAllMocks()
     await rm("/tmp/hov-uploads/file_sluice_payload.jpg", { force: true })
     await rm("/tmp/hov-uploads/file_sluice_payload.metadata.json", { force: true })
+    await rm("/tmp/hov-uploads/file_private_guidance.metadata.json", { force: true })
   })
 
   it("returns preview-only manual suggestions when Sluice is not configured", async () => {
@@ -123,5 +124,44 @@ describe("POST /api/inventory/batch-identify", () => {
       imageBase64: Buffer.from("image-bytes").toString("base64"),
       dataUrl: `data:image/jpeg;base64,${Buffer.from("image-bytes").toString("base64")}`,
     })
+  })
+
+  it("does not forward a task-guidance upload through inventory analysis", async () => {
+    await mkdir("/tmp/hov-uploads", { recursive: true })
+    await persistLocalUploadMetadata({
+      id: "file_private_guidance",
+      originalName: "private-guidance.jpg",
+      storedName: "file_private_guidance.jpg",
+      mimeType: "image/jpeg",
+      size: 11,
+      uploadedBy: "charl",
+      uploadedAt: new Date("2026-07-24T00:00:00.000Z"),
+      category: "image",
+      resourceType: "task-guidance",
+      resourceId: "42",
+    })
+    vi.stubEnv("SLUICE_API_URL", "https://sluice.example")
+    vi.stubEnv("SLUICE_API_KEY", "test-key")
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+
+    const response = await POST(
+      new Request("http://localhost/api/inventory/batch-identify", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
+          images: [
+            {
+              uploadId: "file_private_guidance",
+              photoUrl: "/api/uploads/file_private_guidance",
+              originalName: "private-guidance.jpg",
+              mimeType: "image/jpeg",
+            },
+          ],
+        }),
+      })
+    )
+
+    expect(response.status).toBe(403)
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })

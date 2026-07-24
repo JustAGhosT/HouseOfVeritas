@@ -18,11 +18,15 @@ function validImage(value: unknown): value is SluiceInventoryImage {
   )
 }
 
-async function readUploadForService(image: SluiceInventoryImage): Promise<SluiceInventoryImage> {
+async function readUploadForService(
+  image: SluiceInventoryImage,
+  userId: string
+): Promise<SluiceInventoryImage | null> {
   if (!/^file_[a-zA-Z0-9_-]+$/.test(image.uploadId)) return image
 
   const metadata = await getUploadMetadataById(image.uploadId)
   if (!metadata) return image
+  if (metadata.resourceType !== "inventory" || metadata.uploadedBy !== userId) return null
 
   const mimeType = metadata.mimeType || image.mimeType || "application/octet-stream"
   const filePath = getUploadFilePath(metadata.storedName)
@@ -38,10 +42,12 @@ async function readUploadForService(image: SluiceInventoryImage): Promise<Sluice
   }
 }
 
-export const POST = withAuth(async (request: Request) => {
+export const POST = withAuth(async (request: Request, context) => {
   try {
     const body = await request.json()
-    const images = Array.isArray(body.images) ? body.images.filter(validImage) : []
+    const images: SluiceInventoryImage[] = Array.isArray(body.images)
+      ? body.images.filter(validImage)
+      : []
 
     if (images.length === 0) {
       return NextResponse.json({ error: "images are required" }, { status: 400 })
@@ -54,7 +60,18 @@ export const POST = withAuth(async (request: Request) => {
       )
     }
 
-    const serviceImages = await Promise.all(images.map(readUploadForService))
+    const resolvedImages = await Promise.all(
+      images.map((image) => readUploadForService(image, context.userId))
+    )
+    if (resolvedImages.some((image) => image === null)) {
+      return NextResponse.json(
+        { error: "You do not have access to one or more inventory uploads." },
+        { status: 403 }
+      )
+    }
+    const serviceImages = resolvedImages.filter(
+      (image): image is SluiceInventoryImage => image !== null
+    )
     const result = await identifyInventoryBatchWithSluice(serviceImages)
 
     return NextResponse.json({
