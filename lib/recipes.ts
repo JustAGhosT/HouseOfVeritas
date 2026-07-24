@@ -179,7 +179,7 @@ export function resolveTaskRecipientPersona(userId: string): string | undefined 
 
 export const SAMPLE_RECIPES: RecipeCreatePayload[] = [
   {
-    status: "draft",
+    status: "published",
     audienceUserIds: ["hans", "irma"],
     titleEn: "Mushroom & Egg Fried Rice (Budget-Friendly)",
     summaryEn:
@@ -255,7 +255,7 @@ export const SAMPLE_RECIPES: RecipeCreatePayload[] = [
     ],
   },
   {
-    status: "draft",
+    status: "published",
     audienceUserIds: ["hans", "irma"],
     titleEn: "Sampioen-, Spek- en Uie-Sous vir Mieliepap",
     summaryEn:

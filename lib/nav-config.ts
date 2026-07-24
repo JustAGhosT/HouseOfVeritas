@@ -21,6 +21,7 @@ import {
   Store,
   CheckSquare,
   FolderKanban,
+  ChefHat,
   type LucideIcon,
 } from "lucide-react"
 import {
@@ -137,6 +138,7 @@ const PAGE_DEFINITIONS: PageDef[] = [
   { name: "Marketplace", href: "/dashboard", icon: Store, category: "Tools", adminOnly: true },
   { name: "Reports", href: "/dashboard", icon: BarChart3, category: "Admin", adminOnly: true },
   { name: "Settings", href: "/dashboard", icon: Settings, category: "Admin" },
+  { name: "Recipes", href: "/dashboard", icon: ChefHat, category: "Operations" },
 ]
 
 const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
@@ -156,6 +158,7 @@ const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
     Marketplace: "/dashboard/hans/marketplace",
     Reports: "/dashboard/hans/reports",
     Settings: "/dashboard/hans/settings",
+    Recipes: "/dashboard/hans/recipes",
     Work: "/dashboard/hans/projects",
   },
   charl: {
@@ -186,6 +189,7 @@ const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
     "Household Tasks": "/dashboard/irma/tasks",
     Inventory: "/dashboard/irma/inventory",
     "My Documents": "/dashboard/irma/documents",
+    Recipes: "/dashboard/irma/recipes",
     Settings: "/dashboard/irma/settings",
   },
 }
