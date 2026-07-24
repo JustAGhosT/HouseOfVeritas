@@ -2,7 +2,8 @@ import { readFile, unlink, writeFile } from "fs/promises"
 import path from "path"
 import { ensureSchema, isPostgresConfigured, query } from "@/lib/db/postgres"
 
-export const UPLOAD_DIR = "/tmp/hov-uploads"
+export const UPLOAD_DIR =
+  process.env.NODE_ENV === "production" ? "/home/hov-uploads" : "/tmp/hov-uploads"
 
 export interface UploadMetadata {
   id: string
@@ -22,7 +23,7 @@ export const inMemoryUploadStore = new Map<string, UploadMetadata>()
 let schemaEnsured = false
 
 function metadataPath(id: string): string {
-  return path.join(/*turbopackIgnore: true*/ "/tmp/hov-uploads", `${id}.metadata.json`)
+  return path.join(/*turbopackIgnore: true*/ UPLOAD_DIR, `${id}.metadata.json`)
 }
 
 export function isUploadId(id: string): boolean {

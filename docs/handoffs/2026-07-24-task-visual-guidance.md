@@ -25,7 +25,8 @@ are stored separately and versioned.
 - Authenticated `POST /api/guidance/analyze` endpoint for photo analysis.
 - Authenticated `GET /api/guidance?taskId=...` and `POST /api/guidance` endpoints.
 - MongoDB persistence in production with JSON-backed non-production/test behavior.
-- Existing authenticated upload API reused for source-photo storage.
+- Existing authenticated upload API reused for source-photo storage, with production files and
+  metadata kept under App Service's persistent `/home/hov-uploads` volume.
 - Mobile-first photo capture and one-step-at-a-time instructions on every task card.
 - Desktop split photo/instruction layout with mouse tooltips, materials, tools, warnings,
   visual cues, quality checks, and step navigation.

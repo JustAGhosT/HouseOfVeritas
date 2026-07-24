@@ -85,7 +85,10 @@ export const GET = withAuth(async (_request, context) => {
       return NextResponse.json({ error: "File not found" }, { status: 404 })
     }
 
-    const filePath = path.join("/tmp/hov-uploads", storedName)
+    const filePath =
+      process.env.NODE_ENV === "production"
+        ? path.join(/*turbopackIgnore: true*/ "/home/hov-uploads", storedName)
+        : path.join(/*turbopackIgnore: true*/ "/tmp/hov-uploads", storedName)
     if (!existsSync(filePath)) {
       return NextResponse.json({ error: "File not found" }, { status: 404 })
     }
