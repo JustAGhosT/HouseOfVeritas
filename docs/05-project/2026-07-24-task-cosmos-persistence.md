@@ -18,6 +18,10 @@ Keep Baserow as the task source when its tasks table is configured. Otherwise:
 
 No new datastore or infrastructure is introduced.
 
+The production Cosmos account exposes the MongoDB 3.6 protocol (wire version 6). Keep the Node
+MongoDB driver on the latest 5.x release (`5.9.2`) unless the account is upgraded: driver 7.x
+requires MongoDB 4.2 / wire version 8 and fails topology selection before any query can run.
+
 ## Verification
 
 Run:
