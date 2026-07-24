@@ -4,6 +4,7 @@ name: "Deploy on Merge"
 # (terraform-apply.yml). Functions deploy only when function code changes
 # (deploy-functions.yml). This workflow deploys the web app when app code changes.
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
