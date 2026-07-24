@@ -6,6 +6,8 @@ import {
   createAndBindGuidance,
   getActiveGuidanceForTask,
 } from "@/lib/repositories/guidance-repository"
+import { getProjectNamesForMember } from "@/lib/projects"
+import { getTasks } from "@/lib/services/baserow"
 
 vi.mock("@/lib/integrations/sluice", () => ({
   generateTaskGuidanceWithSluice: vi.fn(),
@@ -14,6 +16,14 @@ vi.mock("@/lib/integrations/sluice", () => ({
 vi.mock("@/lib/repositories/guidance-repository", () => ({
   createAndBindGuidance: vi.fn(),
   getActiveGuidanceForTask: vi.fn(),
+}))
+
+vi.mock("@/lib/projects", () => ({
+  getProjectNamesForMember: vi.fn(),
+}))
+
+vi.mock("@/lib/services/baserow", () => ({
+  getTasks: vi.fn(),
 }))
 
 const authHeaders = {
@@ -36,6 +46,17 @@ const draft = {
 describe("task guidance API", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getTasks).mockResolvedValue([
+      {
+        id: 42,
+        title: "Repair window sill",
+        assignedTo: 4,
+        project: "Maintenance",
+        priority: "Medium",
+        status: "Not Started",
+      },
+    ])
+    vi.mocked(getProjectNamesForMember).mockResolvedValue([])
   })
 
   it("returns a structured visual guidance draft", async () => {
@@ -111,5 +132,75 @@ describe("task guidance API", () => {
 
     expect(response.status).toBe(200)
     expect((await response.json()).data.guidance).toBeNull()
+  })
+
+  it("does not expose guidance for a task outside the resident's assignment and projects", async () => {
+    vi.mocked(getTasks).mockResolvedValue([
+      {
+        id: 99,
+        title: "Private task",
+        assignedTo: 1,
+        project: "Private",
+        priority: "High",
+        status: "Not Started",
+      },
+    ])
+
+    const response = await GET(
+      new Request("http://localhost/api/guidance?taskId=99", { headers: authHeaders })
+    )
+
+    expect(response.status).toBe(403)
+    expect(getActiveGuidanceForTask).not.toHaveBeenCalled()
+  })
+
+  it("does not bind guidance to a task outside the resident's assignment and projects", async () => {
+    vi.mocked(getTasks).mockResolvedValue([
+      {
+        id: 99,
+        title: "Private task",
+        assignedTo: 1,
+        project: "Private",
+        priority: "High",
+        status: "Not Started",
+      },
+    ])
+
+    const response = await saveGuidance(
+      new Request("http://localhost/api/guidance", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
+          taskId: "99",
+          draft,
+          source: { type: "photo", imageUrl: "/api/uploads/file-1" },
+        }),
+      })
+    )
+
+    expect(response.status).toBe(403)
+    expect(createAndBindGuidance).not.toHaveBeenCalled()
+  })
+
+  it("allows guidance access through project membership", async () => {
+    vi.mocked(getTasks).mockResolvedValue([
+      {
+        id: 99,
+        title: "Project task",
+        assignedTo: 1,
+        project: "Maintenance",
+        priority: "High",
+        status: "Not Started",
+      },
+    ])
+    vi.mocked(getProjectNamesForMember).mockResolvedValue(["Maintenance"])
+    vi.mocked(getActiveGuidanceForTask).mockResolvedValue(null)
+
+    const response = await GET(
+      new Request("http://localhost/api/guidance?taskId=99", { headers: authHeaders })
+    )
+
+    expect(response.status).toBe(200)
+    expect(getActiveGuidanceForTask).toHaveBeenCalledWith("99")
   })
 })

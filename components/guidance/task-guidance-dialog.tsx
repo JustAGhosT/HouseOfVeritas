@@ -102,7 +102,9 @@ function GuidanceViewer({
                 fill
                 className="object-contain"
                 sizes="(min-width: 1024px) 36vw, 92vw"
-                unoptimized={imageUrl.startsWith("blob:")}
+                unoptimized={
+                  imageUrl.startsWith("blob:") || imageUrl.startsWith("/api/uploads/")
+                }
               />
             </div>
           )}
@@ -394,6 +396,14 @@ export function TaskGuidanceDialog({ task }: TaskGuidanceDialogProps) {
               guidance={draft}
               imageUrl={previewUrl}
             />
+            {error && (
+              <p
+                role="alert"
+                className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+              >
+                {error}
+              </p>
+            )}
             <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
               <Button type="button" variant="outline" onClick={() => setDraft(null)}>
                 Change photo or description

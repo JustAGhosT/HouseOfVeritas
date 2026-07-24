@@ -3,15 +3,12 @@ import { getTasks, createTask, updateTask, getEmployee } from "@/lib/services/ba
 import { withDataSource } from "@/lib/api/response"
 import { withRole } from "@/lib/auth/rbac"
 import { logger } from "@/lib/logger"
-import { getProjectNamesForMember } from "@/lib/projects"
+import {
+  canAccessTask,
+  getTaskAccessScope,
+  PERSONA_TO_ASSIGNED_ID,
+} from "@/lib/task-access"
 import { routeToInngest } from "@/lib/workflows"
-
-const PERSONA_TO_ASSIGNED_ID: Record<string, number> = {
-  hans: 1,
-  charl: 2,
-  lucky: 3,
-  irma: 4,
-}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -36,17 +33,8 @@ export async function GET(request: Request) {
     let tasks: Awaited<ReturnType<typeof getTasks>>
     if (applyProjectFilter) {
       tasks = await getTasks({ status: status || undefined })
-      const myAssignedId = PERSONA_TO_ASSIGNED_ID[userId.toLowerCase()]
-      const projectNames = await getProjectNamesForMember(userId)
-      if (myAssignedId === undefined && projectNames.length === 0) {
-        tasks = []
-      } else {
-        tasks = tasks.filter(
-          (t) =>
-            (myAssignedId !== undefined && t.assignedTo === myAssignedId) ||
-            (t.project && projectNames.includes(t.project))
-        )
-      }
+      const accessScope = await getTaskAccessScope(userId, userRole ?? "")
+      tasks = tasks.filter((task) => canAccessTask(task, accessScope))
     } else {
       tasks = await getTasks({
         assignedTo,
@@ -143,12 +131,8 @@ export const PATCH = withRole(
 
     let effectiveUpdates = updates
     if (!isAdmin) {
-      const myAssignedId = PERSONA_TO_ASSIGNED_ID[userId?.toLowerCase() ?? ""]
-      const projectNames = await getProjectNamesForMember(userId ?? "")
-      const canEdit =
-        (myAssignedId !== undefined && existing.assignedTo === myAssignedId) ||
-        (existing.project && projectNames.includes(existing.project))
-      if (!canEdit) {
+      const accessScope = await getTaskAccessScope(userId ?? "", userRole)
+      if (!canAccessTask(existing, accessScope)) {
         return NextResponse.json(
           { error: "You can only update tasks assigned to you or in your projects" },
           { status: 403 }
