@@ -373,6 +373,18 @@ export async function createEmployee(emp: Omit<Employee, "id">): Promise<Employe
 
 // ==================== TASKS ====================
 
+export async function getTask(id: number): Promise<Task | null> {
+  const tableIds = getTableIds()
+  if (!isBaserowConfigured() || !tableIds.tasks) {
+    return getMockTasks().find((task) => task.id === id) ?? null
+  }
+
+  const row = await baserowFetch<BaserowRow>(
+    `/database/rows/table/${tableIds.tasks}/${id}/?user_field_names=true`
+  )
+  return row ? mapRowToTask(row) : null
+}
+
 export async function getTasks(filters?: {
   assignedTo?: number
   assignedToName?: string

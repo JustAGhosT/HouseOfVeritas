@@ -1,4 +1,4 @@
-import { getTasks, type Task } from "@/lib/services/baserow"
+import { getTask, type Task } from "@/lib/services/baserow"
 import { getProjectNamesForMember } from "@/lib/projects"
 
 export const PERSONA_TO_ASSIGNED_ID: Record<string, number> = {
@@ -46,7 +46,12 @@ export async function resolveTaskAccess(
   userId: string,
   role: string
 ): Promise<TaskAccessResult> {
-  const task = (await getTasks()).find((candidate) => String(candidate.id) === taskId)
+  const numericTaskId = Number(taskId)
+  if (!Number.isSafeInteger(numericTaskId) || numericTaskId <= 0) {
+    return { task: null, status: 404 }
+  }
+
+  const task = await getTask(numericTaskId)
   if (!task) return { task: null, status: 404 }
 
   const scope = await getTaskAccessScope(userId, role)

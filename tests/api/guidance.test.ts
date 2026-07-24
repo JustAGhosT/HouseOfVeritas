@@ -7,7 +7,7 @@ import {
   getActiveGuidanceForTask,
 } from "@/lib/repositories/guidance-repository"
 import { getProjectNamesForMember } from "@/lib/projects"
-import { getTasks } from "@/lib/services/baserow"
+import { getTask } from "@/lib/services/baserow"
 
 vi.mock("@/lib/integrations/sluice", () => ({
   generateTaskGuidanceWithSluice: vi.fn(),
@@ -23,7 +23,7 @@ vi.mock("@/lib/projects", () => ({
 }))
 
 vi.mock("@/lib/services/baserow", () => ({
-  getTasks: vi.fn(),
+  getTask: vi.fn(),
 }))
 
 const authHeaders = {
@@ -46,16 +46,14 @@ const draft = {
 describe("task guidance API", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(getTasks).mockResolvedValue([
-      {
-        id: 42,
-        title: "Repair window sill",
-        assignedTo: 4,
-        project: "Maintenance",
-        priority: "Medium",
-        status: "Not Started",
-      },
-    ])
+    vi.mocked(getTask).mockResolvedValue({
+      id: 42,
+      title: "Repair window sill",
+      assignedTo: 4,
+      project: "Maintenance",
+      priority: "Medium",
+      status: "Not Started",
+    })
     vi.mocked(getProjectNamesForMember).mockResolvedValue([])
   })
 
@@ -135,16 +133,14 @@ describe("task guidance API", () => {
   })
 
   it("does not expose guidance for a task outside the resident's assignment and projects", async () => {
-    vi.mocked(getTasks).mockResolvedValue([
-      {
-        id: 99,
-        title: "Private task",
-        assignedTo: 1,
-        project: "Private",
-        priority: "High",
-        status: "Not Started",
-      },
-    ])
+    vi.mocked(getTask).mockResolvedValue({
+      id: 99,
+      title: "Private task",
+      assignedTo: 1,
+      project: "Private",
+      priority: "High",
+      status: "Not Started",
+    })
 
     const response = await GET(
       new Request("http://localhost/api/guidance?taskId=99", { headers: authHeaders })
@@ -155,16 +151,14 @@ describe("task guidance API", () => {
   })
 
   it("does not bind guidance to a task outside the resident's assignment and projects", async () => {
-    vi.mocked(getTasks).mockResolvedValue([
-      {
-        id: 99,
-        title: "Private task",
-        assignedTo: 1,
-        project: "Private",
-        priority: "High",
-        status: "Not Started",
-      },
-    ])
+    vi.mocked(getTask).mockResolvedValue({
+      id: 99,
+      title: "Private task",
+      assignedTo: 1,
+      project: "Private",
+      priority: "High",
+      status: "Not Started",
+    })
 
     const response = await saveGuidance(
       new Request("http://localhost/api/guidance", {
@@ -183,16 +177,14 @@ describe("task guidance API", () => {
   })
 
   it("does not spend Sluice capacity for a task outside the resident's access", async () => {
-    vi.mocked(getTasks).mockResolvedValue([
-      {
-        id: 99,
-        title: "Private task",
-        assignedTo: 1,
-        project: "Private",
-        priority: "High",
-        status: "Not Started",
-      },
-    ])
+    vi.mocked(getTask).mockResolvedValue({
+      id: 99,
+      title: "Private task",
+      assignedTo: 1,
+      project: "Private",
+      priority: "High",
+      status: "Not Started",
+    })
 
     const response = await analyzePhoto(
       new Request("http://localhost/api/guidance/analyze", {
@@ -214,16 +206,14 @@ describe("task guidance API", () => {
   })
 
   it("allows guidance access through project membership", async () => {
-    vi.mocked(getTasks).mockResolvedValue([
-      {
-        id: 99,
-        title: "Project task",
-        assignedTo: 1,
-        project: "Maintenance",
-        priority: "High",
-        status: "Not Started",
-      },
-    ])
+    vi.mocked(getTask).mockResolvedValue({
+      id: 99,
+      title: "Project task",
+      assignedTo: 1,
+      project: "Maintenance",
+      priority: "High",
+      status: "Not Started",
+    })
     vi.mocked(getProjectNamesForMember).mockResolvedValue(["Maintenance"])
     vi.mocked(getActiveGuidanceForTask).mockResolvedValue(null)
 

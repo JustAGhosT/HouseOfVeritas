@@ -1,7 +1,7 @@
 import { GET as getUpload } from "@/app/api/uploads/[id]/route"
-import { POST } from "@/app/api/uploads/route"
+import { GET as listUploads, POST } from "@/app/api/uploads/route"
 import { getProjectNamesForMember } from "@/lib/projects"
-import { getTasks } from "@/lib/services/baserow"
+import { getTask } from "@/lib/services/baserow"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("@/lib/projects", () => ({
@@ -9,7 +9,7 @@ vi.mock("@/lib/projects", () => ({
 }))
 
 vi.mock("@/lib/services/baserow", () => ({
-  getTasks: vi.fn(),
+  getTask: vi.fn(),
 }))
 
 const authHeaders = {
@@ -22,15 +22,13 @@ describe("POST /api/uploads", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(getProjectNamesForMember).mockResolvedValue([])
-    vi.mocked(getTasks).mockResolvedValue([
-      {
-        id: 42,
-        title: "Operator task",
-        assignedTo: 2,
-        priority: "Medium",
-        status: "Not Started",
-      },
-    ])
+    vi.mocked(getTask).mockResolvedValue({
+      id: 42,
+      title: "Operator task",
+      assignedTo: 2,
+      priority: "Medium",
+      status: "Not Started",
+    })
   })
 
   it("uses the authenticated user as uploader instead of a form userId", async () => {
@@ -92,11 +90,49 @@ describe("POST /api/uploads", () => {
     )
     expect(forbidden.status).toBe(403)
 
+    const forbiddenList = await listUploads(
+      new Request(
+        "http://localhost/api/uploads?resourceType=task-guidance&resourceId=42",
+        {
+          headers: {
+            "x-user-id": "irma",
+            "x-user-role": "resident",
+            "x-user-email": "irma@example.com",
+          },
+        }
+      )
+    )
+    expect(forbiddenList.status).toBe(403)
+
+    const genericList = await listUploads(
+      new Request("http://localhost/api/uploads", {
+        headers: {
+          "x-user-id": "irma",
+          "x-user-role": "resident",
+          "x-user-email": "irma@example.com",
+        },
+      })
+    )
+    expect((await genericList.json()).files).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: upload.id })])
+    )
+
     const allowed = await getUpload(
       new Request(`http://localhost${upload.url}`, { headers: authHeaders }),
       { params: Promise.resolve({ id: upload.id }) }
     )
     expect(allowed.status).toBe(200)
     expect(allowed.headers.get("content-type")).toBe("image/jpeg")
+
+    const allowedList = await listUploads(
+      new Request(
+        "http://localhost/api/uploads?resourceType=task-guidance&resourceId=42",
+        { headers: authHeaders }
+      )
+    )
+    expect(allowedList.status).toBe(200)
+    expect((await allowedList.json()).files).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: upload.id })])
+    )
   })
 })

@@ -11,6 +11,7 @@ import {
   persistLocalUploadMetadata,
   UPLOAD_DIR,
 } from "@/lib/uploads"
+import { resolveTaskAccess } from "@/lib/task-access"
 
 const ALLOWED_TYPES: Record<string, string[]> = {
   image: ["image/jpeg", "image/png", "image/gif", "image/webp"],
@@ -123,7 +124,7 @@ async function getFilesFromPostgres(filters: {
   }))
 }
 
-export const GET = withAuth(async (request) => {
+export const GET = withAuth(async (request, context) => {
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get("userId")
   const category = searchParams.get("category")
@@ -137,9 +138,33 @@ export const GET = withAuth(async (request) => {
     resourceId: resourceId || undefined,
   }
 
+  const isAuthorizedTaskGuidanceList = resourceType === "task-guidance" && Boolean(resourceId)
+  if (resourceType === "task-guidance") {
+    if (!resourceId) {
+      return NextResponse.json(
+        { error: "resourceId is required when listing task guidance uploads." },
+        { status: 400 }
+      )
+    }
+
+    const taskAccess = await resolveTaskAccess(resourceId, context.userId, context.role)
+    if (taskAccess.status === 404) {
+      return NextResponse.json({ error: "Task not found." }, { status: 404 })
+    }
+    if (taskAccess.status === 403) {
+      return NextResponse.json(
+        { error: "You do not have access to this task." },
+        { status: 403 }
+      )
+    }
+  }
+
   if (isPostgresConfigured()) {
     await ensureSchemaOnce()
-    const files = await getFilesFromPostgres(filters)
+    let files = await getFilesFromPostgres(filters)
+    if (!isAuthorizedTaskGuidanceList) {
+      files = files.filter((file) => file.resourceType !== "task-guidance")
+    }
     return NextResponse.json({ files, total: files.length })
   }
 
@@ -148,6 +173,9 @@ export const GET = withAuth(async (request) => {
   if (category) files = files.filter((f) => f.category === category)
   if (resourceType) files = files.filter((f) => f.resourceType === resourceType)
   if (resourceId) files = files.filter((f) => f.resourceId === resourceId)
+  if (!isAuthorizedTaskGuidanceList) {
+    files = files.filter((file) => file.resourceType !== "task-guidance")
+  }
 
   return NextResponse.json({
     files: files.map((f) => ({ ...f, url: `/api/uploads/${f.id}` })),
