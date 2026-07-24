@@ -5,7 +5,7 @@ import {
   sanitizeKioskDocs,
   type KioskRequestDoc,
 } from "@/lib/db/kiosk-store"
-import { restockByName } from "@/lib/inventory-store"
+import { getInventoryRepository } from "@/lib/repositories/inventory-repository"
 import { logger } from "@/lib/logger"
 import { NotificationChannel, sendNotification } from "@/lib/services/notification-service"
 import { routeToInngest } from "@/lib/workflows"
@@ -289,7 +289,8 @@ export const PATCH = withRole("admin")(async (request, context) => {
       const itemName = d?.itemName
       const quantity = typeof d?.quantity === "number" ? d.quantity : 0
       if (itemName && quantity > 0) {
-        const restocked = restockByName(itemName, quantity)
+        const { repository: inventoryRepository } = await getInventoryRepository()
+        const restocked = await inventoryRepository.restockByName(itemName, quantity)
         if (restocked) {
           logger.info("Kiosk: Auto-restocked inventory from approved stock order", {
             itemName,

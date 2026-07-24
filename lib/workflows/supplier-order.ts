@@ -1,12 +1,13 @@
 import { inngest } from "@/lib/inngest/client"
-import { getInventory } from "@/lib/inventory-store"
+import { getInventoryRepository } from "@/lib/repositories/inventory-repository"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { sendNotification } from "@/lib/services/notification-service"
 import { runNotificationStep } from "@/lib/workflows/utils"
 import type { StockOrderApprovedPayload } from "./schema"
 
-function findSupplierForItem(itemName: string): string | undefined {
-  const items = getInventory()
+async function findSupplierForItem(itemName: string): Promise<string | undefined> {
+  const { repository } = await getInventoryRepository()
+  const items = await repository.list()
   const lower = itemName.toLowerCase()
   const item = items.find(
     (i) => i.name.toLowerCase().includes(lower) || lower.includes(i.name.toLowerCase())
@@ -21,7 +22,7 @@ export const supplierOrderPlaced = inngest.createFunction(
     const { requestId, itemName, quantity, employeeId, reviewedBy } =
       event.data as StockOrderApprovedPayload
 
-    const supplier = findSupplierForItem(itemName)
+    const supplier = await findSupplierForItem(itemName)
 
     await runNotificationStep(step, async () => {
       await sendNotification({

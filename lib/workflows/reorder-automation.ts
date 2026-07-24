@@ -1,6 +1,6 @@
 import { getKioskStore } from "@/lib/db/kiosk-store"
 import { inngest } from "@/lib/inngest/client"
-import { getInventory } from "@/lib/inventory-store"
+import { getInventoryRepository } from "@/lib/repositories/inventory-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getLowStockNotificationRecipient } from "@/lib/workflows/notification-recipients"
 
@@ -28,7 +28,8 @@ export const reorderAutomation = inngest.createFunction(
   { id: "reorder-automation", retries: 2 },
   { cron: "0 10 * * *" },
   async ({ step }) => {
-    const items = getInventory().filter((i) => i.currentStock <= i.reorderPoint)
+    const { repository } = await getInventoryRepository()
+    const items = (await repository.list()).filter((i) => i.currentStock <= i.reorderPoint)
     if (items.length === 0) return { created: 0 }
 
     const PAGE_SIZE = 100
