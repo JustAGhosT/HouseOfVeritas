@@ -103,6 +103,7 @@ async function buildFilteredRecipesWithSummary(role: string, userId: string, fil
   const requestedStatus = asString(filters.get("status"))
   const includeStats = filters.get("withStats") === "true"
   const includeDrafts = filters.get("includeDrafts") === "true"
+  let requestedStatusFilter: RecipeRecord["status"] | undefined
 
   let filteredStatus: RecipeRecord["status"] | RecipeRecord["status"][] | undefined
   if (requestedStatus) {
@@ -112,14 +113,15 @@ async function buildFilteredRecipesWithSummary(role: string, userId: string, fil
     if (role !== "admin" && requestedStatus !== "published") {
       return NextResponse.json({ error: "Only published recipes can be listed by residents" }, { status: 403 })
     }
+    requestedStatusFilter = requestedStatus
   }
 
   if (role === "admin") {
-    if (requestedStatus) {
-      if (includeDrafts && (requestedStatus === "published" || requestedStatus === "draft")) {
+    if (requestedStatusFilter) {
+      if (includeDrafts && (requestedStatusFilter === "published" || requestedStatusFilter === "draft")) {
         filteredStatus = ["draft", "published"]
       } else {
-        filteredStatus = requestedStatus
+        filteredStatus = requestedStatusFilter
       }
     } else if (includeDrafts) {
       filteredStatus = ["published", "draft"]
