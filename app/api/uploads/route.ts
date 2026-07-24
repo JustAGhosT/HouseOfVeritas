@@ -185,13 +185,11 @@ export const GET = withAuth(async (request, context) => {
 
 export const POST = withAuth(async (request, context) => {
   try {
-    await ensureUploadDir()
-
     const formData = await request.formData()
     const file = formData.get("file") as File | null
     const category = (formData.get("category") as string) || "general"
-    const resourceType = formData.get("resourceType") as string | null
-    const resourceId = formData.get("resourceId") as string | null
+    const resourceType = (formData.get("resourceType") as string | null)?.trim() || null
+    const resourceId = (formData.get("resourceId") as string | null)?.trim() || null
     const uploader = context.userId
 
     if (!file) {
@@ -215,6 +213,27 @@ export const POST = withAuth(async (request, context) => {
       )
     }
 
+    if (resourceType === "task-guidance") {
+      if (!resourceId) {
+        return NextResponse.json(
+          { error: "resourceId is required for task guidance uploads." },
+          { status: 400 }
+        )
+      }
+
+      const taskAccess = await resolveTaskAccess(resourceId, context.userId, context.role)
+      if (taskAccess.status === 404) {
+        return NextResponse.json({ error: "Task not found." }, { status: 404 })
+      }
+      if (taskAccess.status === 403) {
+        return NextResponse.json(
+          { error: "You do not have access to this task." },
+          { status: 403 }
+        )
+      }
+    }
+
+    await ensureUploadDir()
     const fileId = `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     const ext = path.extname(file.name)
     const storedName = `${fileId}${ext}`

@@ -2,6 +2,7 @@ import { GET as getUpload } from "@/app/api/uploads/[id]/route"
 import { GET as listUploads, POST } from "@/app/api/uploads/route"
 import { getProjectNamesForMember } from "@/lib/projects"
 import { getTask } from "@/lib/services/baserow"
+import { inMemoryUploadStore } from "@/lib/uploads"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 vi.mock("@/lib/projects", () => ({
@@ -21,6 +22,7 @@ const authHeaders = {
 describe("POST /api/uploads", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    inMemoryUploadStore.clear()
     vi.mocked(getProjectNamesForMember).mockResolvedValue([])
     vi.mocked(getTask).mockResolvedValue({
       id: 42,
@@ -29,6 +31,38 @@ describe("POST /api/uploads", () => {
       priority: "Medium",
       status: "Not Started",
     })
+  })
+
+  it("rejects a task-guidance upload when the user cannot access the task", async () => {
+    vi.mocked(getTask).mockResolvedValue({
+      id: 42,
+      title: "Private task",
+      assignedTo: 1,
+      project: "Private",
+      priority: "Medium",
+      status: "Not Started",
+    })
+
+    const formData = new FormData()
+    formData.append("file", new File(["photo"], "guidance.jpg", { type: "image/jpeg" }))
+    formData.append("category", "image")
+    formData.append("resourceType", "task-guidance")
+    formData.append("resourceId", "42")
+
+    const response = await POST(
+      new Request("http://localhost/api/uploads", {
+        method: "POST",
+        headers: {
+          "x-user-id": "irma",
+          "x-user-role": "resident",
+          "x-user-email": "irma@example.com",
+        },
+        body: formData,
+      })
+    )
+
+    expect(response.status).toBe(403)
+    expect(inMemoryUploadStore.size).toBe(0)
   })
 
   it("uses the authenticated user as uploader instead of a form userId", async () => {
