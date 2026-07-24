@@ -17,13 +17,13 @@ function asString(value: unknown): string | undefined {
   return trimmed.length ? trimmed : undefined
 }
 
-function dedupeSorted(values: string[]): string[] {
+function dedupeSorted(values: readonly string[]): string[] {
   return [...new Set(values)]
 }
 
 function collectRatingTaskResidents(
   input: unknown,
-  fallbackResidents: string[]
+  fallbackResidents: readonly string[]
 ): string[] {
   if (Array.isArray(input) && input.length > 0) {
     return dedupeSorted(
