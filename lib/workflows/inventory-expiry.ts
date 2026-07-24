@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getInventory } from "@/lib/inventory-store"
+import { getInventoryRepository } from "@/lib/repositories/inventory-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { daysUntil, getAlertLevel, buildSummaryMessage } from "@/lib/workflows/utils"
@@ -8,7 +8,8 @@ export const inventoryExpiryCheck = inngest.createFunction(
   { id: "inventory-expiry-check", retries: 2 },
   { cron: "0 7 * * *" },
   async ({ step }) => {
-    const items = getInventory().filter((i) => i.expiryDate)
+    const { repository } = await getInventoryRepository()
+    const items = (await repository.list()).filter((i) => i.expiryDate)
     const alerts: Array<{
       item: { id: string; name: string; expiryDate: string }
       days: number

@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server"
 import { routeToInngest } from "@/lib/workflows"
-import {
-  getInventory,
-  restockByName,
-  findIndexById,
-  type InventoryItem,
-} from "@/lib/inventory-store"
+import type { InventoryItem } from "@/lib/inventory-store"
+import { getInventoryRepository } from "@/lib/repositories/inventory-repository"
 import { withRole } from "@/lib/auth/rbac"
 
 function guessCategory(name: string): InventoryItem["category"] {
@@ -108,7 +104,6 @@ export const GET = withRole(
   "employee",
   "resident"
 )(async (request: Request, context) => {
-  const inventory = getInventory()
   const { searchParams } = new URL(request.url)
   const category = searchParams.get("category")
   const lowStock = searchParams.get("lowStock") === "true"
@@ -116,6 +111,8 @@ export const GET = withRole(
   const barcode = searchParams.get("barcode")
   const search = searchParams.get("search")
 
+  const { repository } = await getInventoryRepository()
+  const inventory = await repository.list()
   let items =
     context.role === "resident"
       ? inventory.filter((item) => isLinkedToUser(item, context.userId))
@@ -183,8 +180,8 @@ export const POST = withRole(
   "employee",
   "resident"
 )(async (request: Request, context) => {
-  const inventory = getInventory()
   try {
+    const { repository } = await getInventoryRepository()
     const body = await request.json()
     const { action } = body
 
@@ -194,26 +191,26 @@ export const POST = withRole(
       }
       const { itemId, quantity, usedBy, purpose } = body
 
-      const index = findIndexById(itemId)
-      if (index === -1) {
+      const existing = await repository.findById(itemId)
+      if (!existing) {
         return NextResponse.json({ error: "Item not found" }, { status: 404 })
       }
 
-      if (inventory[index].currentStock < quantity) {
+      if (existing.currentStock < quantity) {
         return NextResponse.json({ error: "Insufficient stock" }, { status: 400 })
       }
 
-      inventory[index].currentStock -= quantity
-      inventory[index].totalValue = inventory[index].currentStock * inventory[index].unitCost
-      inventory[index].consumptionHistory.push({
+      existing.currentStock -= quantity
+      existing.totalValue = existing.currentStock * existing.unitCost
+      existing.consumptionHistory.push({
         date: new Date().toISOString().split("T")[0],
         quantity,
         usedBy,
         purpose,
       })
 
-      const needsAlert = inventory[index].currentStock <= inventory[index].reorderPoint
-      const item = inventory[index]
+      const item = await repository.update(existing)
+      const needsAlert = item.currentStock <= item.reorderPoint
 
       if (needsAlert) {
         const urgency =
@@ -251,21 +248,22 @@ export const POST = withRole(
       }
       const { itemId, quantity, unitCost } = body
 
-      const index = findIndexById(itemId)
-      if (index === -1) {
+      const existing = await repository.findById(itemId)
+      if (!existing) {
         return NextResponse.json({ error: "Item not found" }, { status: 404 })
       }
 
-      inventory[index].currentStock += quantity
+      existing.currentStock += quantity
       if (unitCost) {
-        inventory[index].unitCost = unitCost
+        existing.unitCost = unitCost
       }
-      inventory[index].totalValue = inventory[index].currentStock * inventory[index].unitCost
-      inventory[index].lastRestocked = new Date().toISOString().split("T")[0]
+      existing.totalValue = existing.currentStock * existing.unitCost
+      existing.lastRestocked = new Date().toISOString().split("T")[0]
+      const item = await repository.update(existing)
 
       return NextResponse.json({
         success: true,
-        item: inventory[index],
+        item,
       })
     }
 
@@ -334,7 +332,7 @@ export const POST = withRole(
       consumptionHistory: [],
     }
 
-    inventory.push(newItem)
+    await repository.create(newItem)
 
     return NextResponse.json({
       success: true,
@@ -351,8 +349,9 @@ export const PUT = withRole(
   "operator",
   "employee"
 )(async (request: Request) => {
-  const inventory = getInventory()
   try {
+    const { repository } = await getInventoryRepository()
+    const inventory = await repository.list()
     const body = await request.json()
     const { action, store } = body
 
@@ -379,7 +378,7 @@ export const PUT = withRole(
           existing.totalValue = existing.currentStock * existing.unitCost
           existing.lastRestocked = new Date().toISOString().split("T")[0]
           if (supplier) existing.supplier = supplier
-          updatedItems.push(existing)
+          updatedItems.push(await repository.update(existing))
         } else {
           const unitCost = price || (total && quantity ? total / quantity : 0)
           const newItem: InventoryItem = {
@@ -399,8 +398,7 @@ export const PUT = withRole(
             totalValue: (quantity || 1) * unitCost,
             consumptionHistory: [],
           }
-          inventory.push(newItem)
-          importedItems.push(newItem)
+          importedItems.push(await repository.create(newItem))
         }
       }
 
