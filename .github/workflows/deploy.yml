@@ -4,6 +4,11 @@ name: "Full Deployment Pipeline"
 on:
   workflow_dispatch:
     inputs:
+      run_post_deploy_smoke:
+        description: "Run optional post-deploy smoke tests"
+        required: false
+        type: boolean
+        default: true
       environment:
         description: "Deployment environment"
         required: true
@@ -570,7 +575,7 @@ jobs:
     continue-on-error: true
     env:
       BASE_URL: "https://${{ vars.WEBAPP_NAME || 'nl-prod-hov-app' }}.azurewebsites.net"
-    if: always() && needs.deploy-webapp.result == 'success'
+    if: always() && needs.deploy-webapp.result == 'success' && (github.event_name == 'release' || inputs.run_post_deploy_smoke == true)
 
     steps:
       - name: Checkout Repository
