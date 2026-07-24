@@ -3,6 +3,8 @@
 
 import { logger } from "@/lib/logger"
 import { toISODateString } from "@/lib/utils"
+import { isMongoConfigured } from "@/lib/db/mongodb"
+import { getTaskRepository } from "@/lib/repositories/task-repository"
 
 interface BaserowConfig {
   apiUrl: string
@@ -194,6 +196,15 @@ const getTableIds = (): TableIds => ({
 export const isBaserowConfigured = (): boolean => {
   const config = getConfig()
   return !!config.apiToken && !!config.databaseId
+}
+
+export type TaskDataSource = "baserow" | "mongodb" | "empty"
+
+export function getTaskDataSource(): TaskDataSource {
+  const tableIds = getTableIds()
+  if (isBaserowConfigured() && !!tableIds.tasks) return "baserow"
+  if (isMongoConfigured()) return "mongodb"
+  return "empty"
 }
 
 export function isIncidentsTableConfigured(): boolean {
@@ -393,6 +404,9 @@ export async function getTasks(filters?: {
   const tableIds = getTableIds()
 
   if (!isBaserowConfigured() || !tableIds.tasks) {
+    if (isMongoConfigured()) {
+      return (await getTaskRepository("mongodb")).list(filters)
+    }
     let tasks = getMockTasks()
     if (filters?.assignedTo) {
       tasks = tasks.filter((t) => t.assignedTo === filters.assignedTo)
@@ -431,6 +445,11 @@ export async function getTasksPaginated(
   const tableIds = getTableIds()
 
   if (!isBaserowConfigured() || !tableIds.tasks) {
+    if (isMongoConfigured()) {
+      const items = await (await getTaskRepository("mongodb")).list(filters)
+      const start = Math.max(0, page - 1) * size
+      return { items: items.slice(start, start + size), count: items.length }
+    }
     let items = getMockTasks()
     if (filters?.assignedTo) items = items.filter((t) => t.assignedTo === filters.assignedTo)
     if (filters?.status) items = items.filter((t) => t.status === filters.status)
@@ -460,6 +479,9 @@ export async function createTask(task: Omit<Task, "id">): Promise<Task | null> {
   const tableIds = getTableIds()
 
   if (!isBaserowConfigured() || !tableIds.tasks) {
+    if (isMongoConfigured()) {
+      return (await getTaskRepository("mongodb")).create(task)
+    }
     return { ...task, id: Date.now() } as Task
   }
 
@@ -478,6 +500,9 @@ export async function updateTask(id: number, updates: Partial<Task>): Promise<Ta
   const tableIds = getTableIds()
 
   if (!isBaserowConfigured() || !tableIds.tasks) {
+    if (isMongoConfigured()) {
+      return (await getTaskRepository("mongodb")).update(id, updates)
+    }
     const mockTask = getMockTasks().find((t) => t.id === id)
     return mockTask ? { ...mockTask, ...updates } : null
   }
