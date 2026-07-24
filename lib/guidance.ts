@@ -35,6 +35,10 @@ export interface GuidanceDraft {
   steps: GuidanceStepDraft[]
 }
 
+export function hasGuidanceSafetyBoundaries(draft: GuidanceDraft): boolean {
+  return draft.safety.length > 0 && draft.steps.some((step) => Boolean(step.warning?.trim()))
+}
+
 export interface GuidanceStep extends GuidanceStepDraft {
   id: string
 }

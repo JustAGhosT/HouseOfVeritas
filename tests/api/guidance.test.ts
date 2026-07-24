@@ -46,7 +46,14 @@ const draft = {
   materials: ["Sement"],
   tools: ["Troffel"],
   safety: ["Dra oogbeskerming"],
-  steps: [{ order: 1, title: "Berei voor", instruction: "Verwyder los materiaal." }],
+  steps: [
+    {
+      order: 1,
+      title: "Berei voor",
+      instruction: "Verwyder los materiaal.",
+      warning: "Stop as die vensterbank struktureel beskadig is.",
+    },
+  ],
 }
 
 describe("task guidance API", () => {
@@ -178,6 +185,27 @@ describe("task guidance API", () => {
         body: JSON.stringify({
           taskId: "42",
           draft,
+          source: { type: "photo", imageUrl: "/api/uploads/file_guidance_1" },
+        }),
+      })
+    )
+
+    expect(response.status).toBe(400)
+    expect(createAndBindGuidance).not.toHaveBeenCalled()
+  })
+
+  it("rejects tampered photo guidance without safety boundaries", async () => {
+    const response = await saveGuidance(
+      new Request("http://localhost/api/guidance", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
+          taskId: "42",
+          draft: {
+            ...draft,
+            safety: [],
+            steps: draft.steps.map(({ warning: _warning, ...step }) => step),
+          },
           source: { type: "photo", imageUrl: "/api/uploads/file_guidance_1" },
         }),
       })

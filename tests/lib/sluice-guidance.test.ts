@@ -116,6 +116,20 @@ describe("Sluice task guidance", () => {
     expect(result).toBeNull()
   })
 
+  it("rejects a data URL whose MIME type does not match the trusted photo type", async () => {
+    const result = await generateTaskGuidanceWithSluice({
+      taskId: "42",
+      title: "Repair window sill",
+      description: "Keep the drainage opening clear.",
+      imageBase64: "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=",
+      imageMimeType: "image/jpeg",
+      locale: "en",
+    })
+
+    expect(result).toBeNull()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it("fails closed when the Sluice virtual key is missing", async () => {
     vi.stubEnv("SLUICE_API_KEY", "")
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { withRole } from "@/lib/auth/rbac"
-import { guidanceDraftSchema } from "@/lib/guidance"
+import { guidanceDraftSchema, hasGuidanceSafetyBoundaries } from "@/lib/guidance"
 import { logger } from "@/lib/logger"
 import { resolveTaskAccess } from "@/lib/task-access"
 import { getUploadMetadataById, isUploadId } from "@/lib/uploads"
@@ -115,6 +115,16 @@ export const POST = withRole("admin", "operator", "employee", "resident")(
 
       const sourceError = await validateSourceUpload(parsed.data.taskId, parsed.data.source)
       if (sourceError) return sourceError
+
+      if (
+        parsed.data.source.type === "photo" &&
+        !hasGuidanceSafetyBoundaries(parsed.data.draft)
+      ) {
+        return NextResponse.json(
+          { error: "Photo guidance must include safety notes and a step stop condition." },
+          { status: 400 }
+        )
+      }
 
       const result = await createAndBindGuidance({
         ...parsed.data,
