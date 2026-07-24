@@ -215,6 +215,27 @@ describe("task guidance API", () => {
     expect(createAndBindGuidance).not.toHaveBeenCalled()
   })
 
+  it("does not allow a manual source to bypass safety boundaries", async () => {
+    const response = await saveGuidance(
+      new Request("http://localhost/api/guidance", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
+          taskId: "42",
+          draft: {
+            ...draft,
+            safety: [],
+            steps: draft.steps.map(({ warning: _warning, ...step }) => step),
+          },
+          source: { type: "manual", description: "Client-supplied instructions." },
+        }),
+      })
+    )
+
+    expect(response.status).toBe(400)
+    expect(createAndBindGuidance).not.toHaveBeenCalled()
+  })
+
   it("returns no guidance as an explicit empty state", async () => {
     vi.mocked(getActiveGuidanceForTask).mockResolvedValue(null)
 

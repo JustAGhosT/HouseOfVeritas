@@ -116,12 +116,9 @@ export const POST = withRole("admin", "operator", "employee", "resident")(
       const sourceError = await validateSourceUpload(parsed.data.taskId, parsed.data.source)
       if (sourceError) return sourceError
 
-      if (
-        parsed.data.source.type === "photo" &&
-        !hasGuidanceSafetyBoundaries(parsed.data.draft)
-      ) {
+      if (!hasGuidanceSafetyBoundaries(parsed.data.draft)) {
         return NextResponse.json(
-          { error: "Photo guidance must include safety notes and a step stop condition." },
+          { error: "Guidance must include safety notes and a step stop condition." },
           { status: 400 }
         )
       }
