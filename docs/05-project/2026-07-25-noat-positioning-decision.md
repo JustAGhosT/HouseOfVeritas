@@ -346,11 +346,105 @@ Ordering is an external financial action and must remain deterministic:
 
 ### Initial issue classes
 
-Select one issue class only after interviews. A provisional candidate is
-low-risk household maintenance triage such as a minor visible water leak where
-the safe outcome may be containment and professional escalation, not repair.
-Exclude electrical, gas, structural, fire, chemical, medical, security-response,
-working-at-height, and other high-consequence work from self-service guidance.
+Recommended first issue class: **minor visible under-sink drain-joint leak
+triage**.
+
+This recommendation uses the production-proven visual-guidance scenario while
+keeping the initial promised outcome narrow: make the situation safe, gather
+decision-quality evidence, determine whether use should stop, and prepare a
+qualified handoff. The pilot does not promise diagnosis or repair.
+
+In scope:
+
+- water appears only when the sink drains;
+- the visible source appears to be an exposed trap or drain joint;
+- the water can be contained with a tray/container and cloth;
+- the participant can inspect from floor level without moving a fixed appliance;
+- no tools, disassembly, chemical treatment, or purchase is required to complete
+  triage;
+- the participant can stop using the fixture and contact the household manager.
+
+Immediate stop and professional escalation:
+
+- active flooding or water that cannot be contained;
+- hidden source, wall/ceiling ingress, supply-line spray, or hot-water leak;
+- proximity to energized electrical equipment or damaged wiring;
+- sewage backup, strong sewer odor, contaminated water, mold, or health concern;
+- damaged cabinetry/structure, inaccessible joint, or need to work at height;
+- child/pet exposure or any participant uncertainty about safe containment.
+
+The first material output is a **reviewed draft repair/handoff list**, not an
+automatically purchased DIY kit. It may include the observed pipe/trap size,
+joint type, suspected seal/washer or exact replacement assembly, containment
+materials, and items a qualified plumber should confirm. HOV should not infer
+pipe diameter, thread, material compatibility, or replacement part solely from
+one unscaled image.
+
+Why start here:
+
+- it has a short and observable capture-to-safe-next-action cycle;
+- the existing fixture and production proof shorten experiment setup;
+- it exercises photos, clarifying questions, task persistence, guidance review,
+  escalation, completion evidence, and reopen;
+- recurrence is objectively observable;
+- it creates a controlled bridge to model/measurement capture, compatible parts,
+  local price comparison, and provider handoff.
+
+Why not start broader:
+
+- "all minor water leaks" mixes drain, pressurized supply, appliance, irrigation,
+  roof, structural, and contamination risks;
+- electrical, gas, structural, fire, chemical, medical, security-response, and
+  working-at-height classes have higher consequence and different qualified
+  owners;
+- starting with repair or automated ordering would conflate triage accuracy,
+  material compatibility, user competence, and transaction safety.
+
+Advance from triage to a repair/material pilot only after a qualified plumbing
+reviewer defines the eligible trap/joint variants, photo/measurement protocol,
+approved materials and substitutions, stop conditions, and verification window.
+
+### Recommended commercial and procurement model
+
+Use a **household-paid subscription with neutral procurement comparison** as the
+initial model.
+
+Phase 1:
+
+- HOV earns subscription revenue for the resolution workflow and household
+  memory, not for steering purchases;
+- comparisons include all authorized suppliers that meet the evidence and
+  freshness bar;
+- ranking follows the household policy and excludes commission;
+- the user approves a cart and completes checkout with the retailer;
+- HOV does not hold payment credentials, take title to goods, or become merchant
+  of record.
+
+Phase 2, only after comparison accuracy and customer trust are proven:
+
+- HOV may accept a disclosed referral or affiliate fee;
+- eligibility and ranking remain independent of commission;
+- every compensated offer is visibly labeled;
+- an uncompensated supplier can still rank first;
+- the customer sees the same product, quantity, landed-cost assumptions, and
+  retailer checkout price;
+- commercial relationships are included in audit and experiment reporting.
+
+Preferred economics:
+
+1. subscription for the core household workspace;
+2. optional fixed procurement/convenience fee for an explicitly requested,
+   approved service;
+3. disclosed retailer referral revenue as secondary upside;
+4. negotiated household savings or trade terms, with a transparent rule for how
+   savings are passed through.
+
+Do not begin as a reseller or marketplace merchant. Taking title, collecting
+payment, or guaranteeing fulfillment adds tax, Consumer Protection Act,
+returns/refunds, fraud, warranty, seller-quality, and support obligations before
+HOV has transaction volume or operational evidence. Revisit merchant-of-record
+status only if customers demonstrably value a single invoice enough to cover
+those obligations and neutral ranking can be preserved.
 
 ### Explicit non-goals through Gate 2
 
@@ -653,7 +747,7 @@ Before Gate 0 recruitment, the owner should decide:
    both? This decision recommends the private-property meaning only.
 4. Is the proposed photo-to-resolution wedge the right problem to test first?
 5. Who can provide qualified safety review for the selected issue class?
-6. Should procurement remain neutral comparison, or may it earn affiliate,
-   referral, transaction, or resale margin?
+6. Accept or revise the recommendation to begin with subscription-funded neutral
+   comparison, with disclosed referral revenue only after accuracy proof.
 7. What purchase amount and product classes, if any, may eventually be approved
    for one-click ordering?

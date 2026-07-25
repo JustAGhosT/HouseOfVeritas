@@ -527,9 +527,13 @@ Stop or narrow the moat thesis if:
 
 ## Decisions required before implementation
 
-1. Confirm the initial household segment and one issue class.
-2. Decide whether HOV is a neutral assistant, procurement agent, affiliate,
-   reseller, or marketplace.
+1. Confirm the initial household segment and the recommended first issue class:
+   minor visible under-sink drain-joint leak triage, with containment and
+   qualified handoff rather than promised repair.
+2. Accept or revise the recommended commercial sequence: household subscription
+   plus neutral comparison first; retailer checkout handoff; disclosed,
+   ranking-independent referral revenue only after accuracy proof; no early
+   reseller or merchant-of-record role.
 3. Set data-plane boundaries and cross-household learning defaults.
 4. Name the qualified owner of procedure and safety validation.
 5. Define which identities and product standards HOV will use for assets/SKUs.
