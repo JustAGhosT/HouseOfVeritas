@@ -150,7 +150,10 @@ export function getExpandedAudienceAliases(userId: string): string[] {
 export function isRecipeAudienceMatch(audienceUserIds: string[], userId: string): boolean {
   const candidateIds = getExpandedAudienceAliases(userId)
   const normalizedAudience = audienceUserIds.map((value) => value.toLowerCase().trim())
-  return normalizedAudience.length === 0 || normalizedAudience.some((value) => candidateIds.includes(value))
+  return (
+    normalizedAudience.length === 0 ||
+    normalizedAudience.some((value) => candidateIds.includes(value))
+  )
 }
 
 export function normalizeRecipeAudienceUserIds(audienceUserIds: unknown): string[] {
@@ -224,7 +227,8 @@ export const SAMPLE_RECIPES: RecipeCreatePayload[] = [
       {
         order: 2,
         instructionEn: "Beat the eggs with a pinch of salt. Fry as a soft scramble and set aside.",
-        instructionAf: "Klop die eiers met 'n knippie sout. Braai dit as 'n sagte scramble en sit dit op die kant.",
+        instructionAf:
+          "Klop die eiers met 'n knippie sout. Braai dit as 'n sagte scramble en sit dit op die kant.",
       },
       {
         order: 3,
@@ -302,8 +306,7 @@ export const SAMPLE_RECIPES: RecipeCreatePayload[] = [
       {
         order: 2,
         instructionEn: "Remove the bacon and keep it; reserve the rendered bacon fat in the pan.",
-        instructionAf:
-          "Verwyder die spek en hou dit eenkant. Laat die spekvet vir die pan oor.",
+        instructionAf: "Verwyder die spek en hou dit eenkant. Laat die spekvet vir die pan oor.",
       },
       {
         order: 3,
@@ -345,7 +348,8 @@ export const SAMPLE_RECIPES: RecipeCreatePayload[] = [
       },
       {
         order: 9,
-        instructionEn: "Optionally fold in peas or spinach for extra nutrition. Serve with mieliepap.",
+        instructionEn:
+          "Optionally fold in peas or spinach for extra nutrition. Serve with mieliepap.",
         instructionAf:
           "Opsioneel: voeg ertjies of spinasie by vir meer voeding. Bedien saam met mieliepap.",
       },
