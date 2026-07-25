@@ -47,7 +47,11 @@ export interface SeedSampleRecipesResult {
   forced: boolean
 }
 
-function buildSeedRecipeRecord(payload: RecipeCreatePayload, ownerUserId: string, now: string): RecipeRecord {
+function buildSeedRecipeRecord(
+  payload: RecipeCreatePayload,
+  ownerUserId: string,
+  now: string
+): RecipeRecord {
   const recipeId = `recipe-${randomUUID()}`
   const audienceUserIds = normalizeRecipeAudienceUserIds(payload.audienceUserIds ?? [])
   const normalizedImage = payload.image
@@ -57,21 +61,20 @@ function buildSeedRecipeRecord(payload: RecipeCreatePayload, ownerUserId: string
     .map((ingredient, index) => ({
       id: asString((ingredient as { id?: unknown }).id) ?? `ing-${recipeId}-${index + 1}`,
       quantity: ingredient.quantity,
-      unit: asString((ingredient as { unit?: unknown })),
+      unit: asString(ingredient as { unit?: unknown }),
       name: asString((ingredient as { name?: unknown }).name) as string,
-      preparationNote: asString((ingredient as { preparationNote?: unknown })),
-      section: asString((ingredient as { section?: unknown })),
+      preparationNote: asString(ingredient as { preparationNote?: unknown }),
+      section: asString(ingredient as { section?: unknown }),
     }))
 
-  const steps = (Array.isArray(payload.steps) ? payload.steps : [])
-    .map((step, index) => ({
-      id: asString((step as { id?: unknown }).id) ?? `step-${recipeId}-${index + 1}`,
-      order: asNonNegativeInt((step as { order?: unknown }).order) || index + 1,
-      instructionEn: asString((step as { instructionEn?: unknown }).instructionEn) ?? "",
-      instructionAf: asString((step as { instructionAf?: unknown }).instructionAf) ?? "",
-      timerMinutes: asNonNegativeInt((step as { timerMinutes?: unknown })),
-      section: asString((step as { section?: unknown })),
-    }))
+  const steps = (Array.isArray(payload.steps) ? payload.steps : []).map((step, index) => ({
+    id: asString((step as { id?: unknown }).id) ?? `step-${recipeId}-${index + 1}`,
+    order: asNonNegativeInt((step as { order?: unknown }).order) || index + 1,
+    instructionEn: asString((step as { instructionEn?: unknown }).instructionEn) ?? "",
+    instructionAf: asString((step as { instructionAf?: unknown }).instructionAf) ?? "",
+    timerMinutes: asNonNegativeInt(step as { timerMinutes?: unknown }),
+    section: asString(step as { section?: unknown }),
+  }))
 
   return {
     id: recipeId,
@@ -102,14 +105,27 @@ function buildSeedRecipeRecord(payload: RecipeCreatePayload, ownerUserId: string
   }
 }
 
+function isProductionStoreUnavailable(): boolean {
+  return (
+    process.env.NODE_ENV === "production" &&
+    process.env.CI !== "true" &&
+    process.env.E2E_TEST !== "1" &&
+    !isMongoConfigured()
+  )
+}
+
 function requireProductionStore(): void {
-  if (process.env.NODE_ENV === "production" && process.env.CI !== "true" && !isMongoConfigured()) {
+  if (isProductionStoreUnavailable()) {
     throw new Error("Recipe datastore is not configured. Set MONGODB_URI for production.")
   }
 }
 
 function isUsingMemoryStore(): boolean {
-  return process.env.E2E_TEST === "1" || process.env.CI === "true" || !isMongoConfigured()
+  return (
+    process.env.E2E_TEST === "1" ||
+    process.env.CI === "true" ||
+    (process.env.NODE_ENV !== "production" && !isMongoConfigured())
+  )
 }
 
 async function readJsonList<T>(filePath: string): Promise<T[]> {
@@ -175,7 +191,10 @@ export interface RecipeListFilter {
   audienceUserIds?: string[]
 }
 
-function filterRecipesInMemory(recipes: RecipeRecord[], filters?: RecipeListFilter): RecipeRecord[] {
+function filterRecipesInMemory(
+  recipes: RecipeRecord[],
+  filters?: RecipeListFilter
+): RecipeRecord[] {
   let results = [...recipes]
   if (!filters) return results
 
@@ -190,7 +209,9 @@ function filterRecipesInMemory(recipes: RecipeRecord[], filters?: RecipeListFilt
   }
 
   if (filters.audienceUserIds && filters.audienceUserIds.length > 0) {
-    const audienceLookup = new Set(filters.audienceUserIds.map((value) => value.toLowerCase().trim()))
+    const audienceLookup = new Set(
+      filters.audienceUserIds.map((value) => value.toLowerCase().trim())
+    )
     results = results.filter((recipe) =>
       recipe.audienceUserIds.some((userId) => audienceLookup.has(userId.toLowerCase().trim()))
     )
@@ -200,6 +221,7 @@ function filterRecipesInMemory(recipes: RecipeRecord[], filters?: RecipeListFilt
 }
 
 export async function listRecipes(filters?: RecipeListFilter): Promise<RecipeRecord[]> {
+  if (isProductionStoreUnavailable()) return []
   requireProductionStore()
   if (isUsingMemoryStore()) {
     const items = await readRecipes()
@@ -228,6 +250,7 @@ export async function listRecipes(filters?: RecipeListFilter): Promise<RecipeRec
 }
 
 export async function countRecipes(): Promise<number> {
+  if (isProductionStoreUnavailable()) return 0
   requireProductionStore()
   if (isUsingMemoryStore()) {
     const recipes = await readRecipes()
@@ -239,6 +262,7 @@ export async function countRecipes(): Promise<number> {
 }
 
 export async function getRecipeById(id: string): Promise<RecipeRecord | null> {
+  if (isProductionStoreUnavailable()) return null
   requireProductionStore()
   if (isUsingMemoryStore()) {
     const recipes = await readRecipes()
@@ -335,25 +359,31 @@ export async function replaceRecipe(updated: RecipeRecord): Promise<RecipeRecord
 }
 
 export async function listRecipeMealInstances(recipeId: string): Promise<RecipeMealInstance[]> {
+  if (isProductionStoreUnavailable()) return []
   requireProductionStore()
   if (isUsingMemoryStore()) {
     const instances = await readMealInstances()
     return sortByServedAtDescending(instances.filter((instance) => instance.recipeId === recipeId))
   }
 
-  const collection = await getCollection<RecipeMealInstanceDocument>(RECIPE_MEAL_INSTANCES_COLLECTION)
+  const collection = await getCollection<RecipeMealInstanceDocument>(
+    RECIPE_MEAL_INSTANCES_COLLECTION
+  )
   const instances = await collection.find({ recipeId }).sort({ servedAt: -1 }).toArray()
   return instances.map((instance) => withoutMongoId(instance))
 }
 
 export async function getRecipeMealInstanceById(id: string): Promise<RecipeMealInstance | null> {
+  if (isProductionStoreUnavailable()) return null
   requireProductionStore()
   if (isUsingMemoryStore()) {
     const instances = await readMealInstances()
     return instances.find((instance) => instance.id === id) ?? null
   }
 
-  const collection = await getCollection<RecipeMealInstanceDocument>(RECIPE_MEAL_INSTANCES_COLLECTION)
+  const collection = await getCollection<RecipeMealInstanceDocument>(
+    RECIPE_MEAL_INSTANCES_COLLECTION
+  )
   const instance = await collection.findOne({ id } as Filter<RecipeMealInstanceDocument>)
   if (!instance) return null
   return withoutMongoId(instance)
@@ -386,6 +416,7 @@ export async function createRecipeMealInstance(
 }
 
 export async function listRecipeRatings(recipeId: string): Promise<RecipeRating[]> {
+  if (isProductionStoreUnavailable()) return []
   requireProductionStore()
   if (isUsingMemoryStore()) {
     return sortBySubmittedAtDescending(
@@ -403,6 +434,7 @@ export async function getRecipeRating(
   mealInstanceId: string,
   residentUserId: string
 ): Promise<RecipeRating | null> {
+  if (isProductionStoreUnavailable()) return null
   requireProductionStore()
   if (isUsingMemoryStore()) {
     return (
@@ -499,7 +531,9 @@ export async function getRecipeRatingSummaries(
   recipeIds: string[]
 ): Promise<Record<string, RecipeRatingSummary>> {
   const uniqueRecipeIds = [...new Set(recipeIds)]
-  const summary = await Promise.all(uniqueRecipeIds.map((recipeId) => getRecipeRatingSummary(recipeId)))
+  const summary = await Promise.all(
+    uniqueRecipeIds.map((recipeId) => getRecipeRatingSummary(recipeId))
+  )
   return summary.reduce<Record<string, RecipeRatingSummary>>((acc, item) => {
     acc[item.recipeId] = item
     return acc
