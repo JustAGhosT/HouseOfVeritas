@@ -9,6 +9,9 @@ Repository: `C:\Users\smitj\repos\house-of-veritas`
 > phased gates are recorded in
 > [2026-07-25-noat-positioning-decision.md](2026-07-25-noat-positioning-decision.md).
 > This intake remains the scope and provenance record.
+>
+> The deeper defensibility model is recorded in
+> [2026-07-25-household-resolution-graph-moat.md](2026-07-25-household-resolution-graph-moat.md).
 
 ## Intake
 

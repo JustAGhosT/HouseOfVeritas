@@ -35,6 +35,10 @@ discovery and a concierge-style pilot using the task and visual-guidance
 capabilities that already exist. Build only the smallest gaps that block a real
 pilot after Gate 1 evidence is met.
 
+The expanded moat architecture, data planes, reinforcing flywheels, competitive
+attack analysis, scorecard, and staged entrenchment path are in
+[2026-07-25-household-resolution-graph-moat.md](2026-07-25-household-resolution-graph-moat.md).
+
 ## Scope and confidence
 
 ### Working scope
