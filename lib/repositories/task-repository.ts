@@ -10,6 +10,7 @@ export interface TaskFilters {
 }
 
 export interface TaskRepository {
+  get(id: number): Promise<Task | null>
   list(filters?: TaskFilters): Promise<Task[]>
   create(task: Omit<Task, "id">): Promise<Task>
   update(id: number, updates: Partial<Task>): Promise<Task | null>
@@ -41,6 +42,9 @@ function createTaskId(): number {
 }
 
 const memoryRepository: TaskRepository = {
+  async get(id) {
+    return clone(memoryTasks.find((task) => task.id === id) ?? null)
+  },
   async list(filters) {
     return memoryTasks.filter((task) => matchesFilters(task, filters)).map(clone)
   },
@@ -72,6 +76,12 @@ async function createMongoRepository(): Promise<TaskRepository> {
   ])
 
   return {
+    async get(id) {
+      const document = await collection.findOne({ id })
+      if (!document) return null
+      const { _id: _ignored, ...task } = document
+      return clone(task)
+    },
     async list(filters) {
       const query: Filter<TaskDocument> = {}
       if (filters?.assignedTo !== undefined) query.assignedTo = filters.assignedTo
