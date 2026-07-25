@@ -12,6 +12,7 @@ though production already had a configured Cosmos Mongo connection for guidance 
 Keep Baserow as the task source when its tasks table is configured. Otherwise:
 
 - use the existing `MONGODB_URI` / `DB_NAME` connection and a `tasks` collection;
+- route both list/mutation operations and individual task authorization lookups through it;
 - preserve the existing empty/demo behavior when neither Baserow nor Mongo is configured;
 - report `dataSource: "mongodb"` and `configured: true` from the tasks API;
 - keep task IDs numeric for compatibility with existing UI, workflow, and access contracts.

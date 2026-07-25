@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const taskRepository = vi.hoisted(() => ({
+  get: vi.fn(),
   list: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock("@/lib/repositories/task-repository", () => ({
 
 import {
   createTask,
+  getTask,
   getTaskDataSource,
   getTasks,
   getTasksPaginated,
@@ -41,6 +43,13 @@ describe("Baserow task service Mongo fallback", () => {
 
   it("reports MongoDB as the configured task data source", () => {
     expect(getTaskDataSource()).toBe("mongodb")
+  })
+
+  it("delegates individual task lookup to the persistent repository", async () => {
+    taskRepository.get.mockResolvedValue(storedTask)
+
+    await expect(getTask(storedTask.id)).resolves.toEqual(storedTask)
+    expect(taskRepository.get).toHaveBeenCalledWith(storedTask.id)
   })
 
   it("delegates task lists and pagination to the persistent repository", async () => {

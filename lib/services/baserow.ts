@@ -387,6 +387,9 @@ export async function createEmployee(emp: Omit<Employee, "id">): Promise<Employe
 export async function getTask(id: number): Promise<Task | null> {
   const tableIds = getTableIds()
   if (!isBaserowConfigured() || !tableIds.tasks) {
+    if (isMongoConfigured()) {
+      return (await getTaskRepository("mongodb")).get(id)
+    }
     return getMockTasks().find((task) => task.id === id) ?? null
   }
 

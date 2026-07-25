@@ -19,6 +19,8 @@ describe("task repository", () => {
 
     expect(created.id).toEqual(expect.any(Number))
     expect(created.createdDate).toEqual(expect.any(String))
+    await expect(repository.get(created.id)).resolves.toEqual(created)
+    await expect(repository.get(999)).resolves.toBeNull()
     await expect(repository.list({ assignedTo: 4 })).resolves.toEqual([created])
     await expect(repository.list({ assignedToName: "irma" })).resolves.toEqual([created])
     await expect(repository.list({ assignedTo: 1 })).resolves.toEqual([])
