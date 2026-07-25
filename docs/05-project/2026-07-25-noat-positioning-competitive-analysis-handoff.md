@@ -4,6 +4,12 @@ Date: 2026-07-25
 Baton task: `96cc20be-1cb4-4dd9-85cc-cd9790b06148`  
 Repository: `C:\Users\smitj\repos\house-of-veritas`
 
+> Continuation outcome: the provisional Phase 0 decision, live competitor
+> research, wedge recommendation, defensibility hypotheses, kill criteria, and
+> phased gates are recorded in
+> [2026-07-25-noat-positioning-decision.md](2026-07-25-noat-positioning-decision.md).
+> This intake remains the scope and provenance record.
+
 ## Intake
 
 Goal: determine what House of Veritas should build, in evidence-gated phases, to create a defensible NOAT. Start with positioning and competitors before recommending implementation.
