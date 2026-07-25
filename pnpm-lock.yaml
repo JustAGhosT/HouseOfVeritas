@@ -10,8 +10,8 @@ overrides:
   '@opentelemetry/core': 2.10.0
   '@opentelemetry/propagator-jaeger': 2.10.0
   axios: 1.18.1
-  brace-expansion@1: 1.1.16
-  brace-expansion@2: 2.1.2
+  brace-expansion@1: 5.0.8
+  brace-expansion@2: 5.0.8
   dompurify: 3.4.12
   esbuild: 0.28.1
   form-data: 4.0.6
@@ -23,6 +23,14 @@ overrides:
   sharp: 0.35.3
   vite: 7.3.6
   ws: 8.21.0
+
+patchedDependencies:
+  minimatch@3.1.5:
+    hash: 559be1b176ae448cfe4938727ca1a9d39dc1f1dc922a7ab82c31e88d0a104ed5
+    path: patches/minimatch@3.1.5.patch
+  minimatch@9.0.9:
+    hash: 27088658bef1edafbfd528edfa4699b7d3809aa735f083ae73359fafe5ed9b5f
+    path: patches/minimatch@9.0.9.patch
 
 importers:
 
@@ -3332,8 +3340,9 @@ packages:
     resolution: {integrity: sha512-qIj0G9wZbMGNLjLmg1PT6v2mE9AH2zlnADJD/2tC6E00hgmhUOfEB6greHPAfLRSufHqROIUTkw6E+M3lH0PTQ==}
     engines: {node: '>= 0.4'}
 
-  balanced-match@1.0.2:
-    resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
+  balanced-match@4.0.4:
+    resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
+    engines: {node: 18 || 20 || >=22}
 
   base64-arraybuffer@1.0.2:
     resolution: {integrity: sha512-I3yl4r9QB5ZRY3XuJVEPfc2XhZO6YweFPI+UovAzn+8/hb3oJ6lnysaFcjVpkCPfVWFUDvoZ8kmVDP7WyRtYtQ==}
@@ -3347,11 +3356,9 @@ packages:
   bignumber.js@9.3.1:
     resolution: {integrity: sha512-Ko0uX15oIUS7wJ3Rb30Fs6SkVbLmPBAKdlm7q9+ak9bbIeFf0MwuBsQV6z7+X768/cHsfg+WlysDWJcmthjsjQ==}
 
-  brace-expansion@1.1.16:
-    resolution: {integrity: sha512-IDw48K2/2kRkg9LdJxurvq3lV3aBgq0REY89duEqFRthjlPdXHKMj7EnQOXVckxzgisinf3nHfrcE2FufFLXMw==}
-
-  brace-expansion@2.1.2:
-    resolution: {integrity: sha512-w5JZcKgdhDOgOwm8H+KgbosopHMuGcl6qbulwjtz3SM7I7P3yW1eAjzMPLrIE+NQ9vjgANKHWeMHnrT0OXW1oA==}
+  brace-expansion@5.0.8:
+    resolution: {integrity: sha512-JZyDyq3D4AUifKTPOB7DELf6XsB3WdPuNxCtob1vFXPsSXhdAiHBWJ/tJ8HAc9aH84BK+5JFZLNkJKx3G9kzQg==}
+    engines: {node: 20 || >=22}
 
   braces@3.0.3:
     resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
@@ -3466,9 +3473,6 @@ packages:
   comment-json@4.5.1:
     resolution: {integrity: sha512-taEtr3ozUmOB7it68Jll7s0Pwm+aoiHyXKrEC8SEodL4rNpdfDLqa7PfBlrgFoCNNdR8ImL+muti5IGvktJAAg==}
     engines: {node: '>= 6'}
-
-  concat-map@0.0.1:
-    resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
 
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
@@ -6595,7 +6599,7 @@ snapshots:
     dependencies:
       '@eslint/object-schema': 2.1.7
       debug: 4.4.3
-      minimatch: 3.1.5
+      minimatch: 3.1.5(patch_hash=559be1b176ae448cfe4938727ca1a9d39dc1f1dc922a7ab82c31e88d0a104ed5)
     transitivePeerDependencies:
       - supports-color
 
@@ -6616,7 +6620,7 @@ snapshots:
       ignore: 5.3.2
       import-fresh: 3.3.1
       js-yaml: 4.3.0
-      minimatch: 3.1.5
+      minimatch: 3.1.5(patch_hash=559be1b176ae448cfe4938727ca1a9d39dc1f1dc922a7ab82c31e88d0a104ed5)
       strip-json-comments: 3.1.1
     transitivePeerDependencies:
       - supports-color
@@ -8941,7 +8945,7 @@ snapshots:
       '@typescript-eslint/types': 8.56.0
       '@typescript-eslint/visitor-keys': 8.56.0
       debug: 4.4.3
-      minimatch: 9.0.9
+      minimatch: 9.0.9(patch_hash=27088658bef1edafbfd528edfa4699b7d3809aa735f083ae73359fafe5ed9b5f)
       semver: 7.8.5
       tinyglobby: 0.2.17
       ts-api-utils: 2.4.0(typescript@5.9.3)
@@ -9246,7 +9250,7 @@ snapshots:
 
   axobject-query@4.1.0: {}
 
-  balanced-match@1.0.2: {}
+  balanced-match@4.0.4: {}
 
   base64-arraybuffer@1.0.2:
     optional: true
@@ -9255,14 +9259,9 @@ snapshots:
 
   bignumber.js@9.3.1: {}
 
-  brace-expansion@1.1.16:
+  brace-expansion@5.0.8:
     dependencies:
-      balanced-match: 1.0.2
-      concat-map: 0.0.1
-
-  brace-expansion@2.1.2:
-    dependencies:
-      balanced-match: 1.0.2
+      balanced-match: 4.0.4
 
   braces@3.0.3:
     dependencies:
@@ -9384,8 +9383,6 @@ snapshots:
       array-timsort: 1.0.3
       core-util-is: 1.0.3
       esprima: 4.0.1
-
-  concat-map@0.0.1: {}
 
   convert-source-map@2.0.0: {}
 
@@ -9868,7 +9865,7 @@ snapshots:
       hasown: 2.0.2
       is-core-module: 2.16.1
       is-glob: 4.0.3
-      minimatch: 3.1.5
+      minimatch: 3.1.5(patch_hash=559be1b176ae448cfe4938727ca1a9d39dc1f1dc922a7ab82c31e88d0a104ed5)
       object.fromentries: 2.0.8
       object.groupby: 1.0.3
       object.values: 1.2.1
@@ -9896,7 +9893,7 @@ snapshots:
       hasown: 2.0.2
       jsx-ast-utils: 3.3.5
       language-tags: 1.0.9
-      minimatch: 3.1.5
+      minimatch: 3.1.5(patch_hash=559be1b176ae448cfe4938727ca1a9d39dc1f1dc922a7ab82c31e88d0a104ed5)
       object.fromentries: 2.0.8
       safe-regex-test: 1.1.0
       string.prototype.includes: 2.0.1
@@ -9924,7 +9921,7 @@ snapshots:
       estraverse: 5.3.0
       hasown: 2.0.2
       jsx-ast-utils: 3.3.5
-      minimatch: 3.1.5
+      minimatch: 3.1.5(patch_hash=559be1b176ae448cfe4938727ca1a9d39dc1f1dc922a7ab82c31e88d0a104ed5)
       object.entries: 1.1.9
       object.fromentries: 2.0.8
       object.values: 1.2.1
@@ -9978,7 +9975,7 @@ snapshots:
       is-glob: 4.0.3
       json-stable-stringify-without-jsonify: 1.0.1
       lodash.merge: 4.6.2
-      minimatch: 3.1.5
+      minimatch: 3.1.5(patch_hash=559be1b176ae448cfe4938727ca1a9d39dc1f1dc922a7ab82c31e88d0a104ed5)
       natural-compare: 1.4.0
       optionator: 0.9.4
     optionalDependencies:
@@ -10801,13 +10798,13 @@ snapshots:
 
   minimalistic-assert@1.0.1: {}
 
-  minimatch@3.1.5:
+  minimatch@3.1.5(patch_hash=559be1b176ae448cfe4938727ca1a9d39dc1f1dc922a7ab82c31e88d0a104ed5):
     dependencies:
-      brace-expansion: 1.1.16
+      brace-expansion: 5.0.8
 
-  minimatch@9.0.9:
+  minimatch@9.0.9(patch_hash=27088658bef1edafbfd528edfa4699b7d3809aa735f083ae73359fafe5ed9b5f):
     dependencies:
-      brace-expansion: 2.1.2
+      brace-expansion: 5.0.8
 
   minimist@1.2.8: {}
 
