@@ -29,6 +29,92 @@ Recommended sourcing order:
 5. engineering/scientific expert networks only for later standards or design
    review, not as a substitute for the first plumbing reviewer.
 
+## Reviewer role abstraction
+
+Use separate capability profiles so a trusted personal reviewer can contribute
+to alpha testing without accidentally inheriting professional safety authority.
+
+| Capability                     | Who may be nominated                                                                                                                                 | Permitted decisions                                                                                                                                       | Prohibited decisions                                                                                                                                |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DomainSafetyReviewer`         | Independently verified professional who passes the domain profile.                                                                                   | Accept, narrow, reject, withdraw, or version the plumbing observation/escalation protocol within the contracted scope.                                    | Product launch, participant recruitment, commercial ranking, privacy approval, or owner funding.                                                    |
+| `AlphaExperienceReviewer`      | Owner-nominated person, trusted referral, target-role proxy, accessibility/language reviewer, or marketplace candidate who passes the alpha profile. | Evaluate workflow clarity, consent comprehension, burden, role fit, neutral-comparison wording, accessibility, and failure recovery using synthetic data. | Plumbing diagnosis, safety approval, credential claims, real-household triage, participant consent on another person's behalf, or Gate advancement. |
+| `CommercialNeutralityReviewer` | Independent procurement, consumer-trust, or policy reviewer with disclosed commercial interests.                                                     | Review whether comparison wording and ranking factors remain supplier-neutral and understandable.                                                         | Technical-fit decisions, checkout, purchasing, affiliate approval, or plumbing safety.                                                              |
+| `PrivacyResearchReviewer`      | Owner-approved privacy/legal or research-governance reviewer.                                                                                        | Approve or reject collection, consent, storage, retention, operator, correction, withdrawal, and incident controls.                                       | Plumbing safety or product-market claims.                                                                                                           |
+
+One person may hold more than one capability only when they independently pass
+every applicable profile and the overlap is recorded. A personal relationship or
+referral is not automatically disqualifying for alpha experience, but it is a
+conflict signal and may prevent the person from serving as the sole domain,
+privacy, or commercial-neutrality approver.
+
+### Generic nomination record
+
+`ReviewerNomination`:
+
+| Field                      | Meaning                                                                                                         |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `candidateId`              | Non-secret pseudonymous candidate identifier.                                                                   |
+| `capabilityRequested`      | One or more explicit reviewer capabilities.                                                                     |
+| `nominationSource`         | `registry`, `marketplace`, `owner_personal`, `trusted_referral`, `participant_referral`, or `open_application`. |
+| `relationshipToOwnerOrHov` | Relationship, duration, power imbalance, and any financial or household dependency.                             |
+| `recommendationChain`      | Who recommended whom and whether each recommender has a commercial interest.                                    |
+| `compensation`             | Paid, volunteer, in-kind, or waived; amount and conditions held in the restricted record.                       |
+| `conflicts`                | Supplier, retailer, provider, employment, household, referral, investment, product, or outcome interests.       |
+| `experienceEvidence`       | Evidence required by the requested capability profile.                                                          |
+| `allowedDataClass`         | Alpha defaults to `synthetic`; personal familiarity does not authorize household data.                          |
+| `trialVariant`             | Versioned trial pack allocated to the candidate.                                                                |
+| `decisionOwner`            | Human who may accept or reject the nomination.                                                                  |
+
+Keep the person's name, contact details, relationship detail, compensation, and
+supporting documents outside Git and Baton. Durable records may state only the
+candidate ID, nomination category, minimized conflict disposition, profile
+result, and owner decision.
+
+### Personal or recommended alpha reviewer
+
+An owner may nominate someone they know or accept a recommendation for alpha
+testing when all of these are true:
+
+- the candidate receives a direct invitation and may decline without effect on
+  employment, pay, household access, services, references, or relationships;
+- the relationship and recommendation chain are disclosed to the decision owner;
+- the candidate is scored against the same alpha trial as other candidates;
+- feedback is attributed to a conflict category during analysis rather than
+  presented as independent customer evidence;
+- the person uses synthetic scenarios and a dedicated alpha environment with no
+  production credentials or real household data;
+- compensation or volunteer status is disclosed and approved; and
+- the output is labelled `alpha experience review`, not customer discovery,
+  professional approval, or market validation.
+
+A principal, household manager, staff member, family member, friend, existing
+vendor, or HOV advocate may provide useful alpha feedback, but their feedback
+must not be counted as an independent plumbing review or one of the 12 Gate 0
+problem interviews unless they separately meet that study's recruitment,
+consent, independence, and evidence rules.
+
+### Alpha experience micro-trial
+
+Use a 30-45 minute paid or explicitly voluntary synthetic session:
+
+1. Explain the reviewer's limited authority and confirm consent to notes and any
+   separately approved recording.
+2. Give the reviewer a fictional issue report with no real address, person,
+   household, image, asset, or active safety condition.
+3. Ask them to narrate how they would report, assign, stop, escalate, review,
+   attach, close, and reopen the fictional issue.
+4. Test whether they can distinguish observation from diagnosis and neutral
+   comparison from supplier recommendation.
+5. Ask them to identify confusing language, missing choices, role/access
+   concerns, accessibility constraints, coercive wording, and unsafe confidence.
+6. End with correction, withdrawal, and deletion-path comprehension checks.
+
+Alpha scorecard dimensions are comprehension, task completion, error recovery,
+role-boundary recognition, consent comprehension, accessibility, neutrality,
+and trust concerns. Record severity and reproducibility, not a vanity average.
+Any real-world safety advice is discarded and escalated to the domain reviewer;
+any personal-information handling concern is escalated to the privacy reviewer.
+
 ## Current marketplace evidence
 
 ### RentAHuman
@@ -98,19 +184,21 @@ review, and owner approval.
 
 `ReviewerRequest`:
 
-| Field                        | Meaning                                                                            |
-| ---------------------------- | ---------------------------------------------------------------------------------- |
-| `requestId`                  | Non-secret stable identifier.                                                      |
-| `domainProfileVersion`       | Versioned domain eligibility and safety rules.                                     |
-| `jurisdiction`               | Jurisdiction whose credentials and standards apply.                                |
-| `reviewPurpose`              | Exact decision the review informs.                                                 |
-| `fictionalTrialPack`         | Synthetic material used before appointment.                                        |
-| `requiredOutputs`            | Versioned deliverables and definition of done.                                     |
-| `credentialEvidenceRequired` | Issuer, designation, number, expiry/current-status proof, and verification method. |
-| `conflictQuestions`          | HOV, supplier, referral, ranking, employer, and commercial interests.              |
-| `budgetCeiling`              | Owner-approved maximum including platform fees and tax.                            |
-| `dataClass`                  | `public`, `synthetic`, `restricted`, or `prohibited`. Trial must be `synthetic`.   |
-| `approvalOwner`              | Human authorized to fund, appoint, accept, or reject.                              |
+| Field                        | Meaning                                                                                 |
+| ---------------------------- | --------------------------------------------------------------------------------------- |
+| `requestId`                  | Non-secret stable identifier.                                                           |
+| `domainProfileVersion`       | Versioned domain eligibility and safety rules.                                          |
+| `jurisdiction`               | Jurisdiction whose credentials and standards apply.                                     |
+| `reviewPurpose`              | Exact decision the review informs.                                                      |
+| `fictionalTrialPack`         | Synthetic material used before appointment.                                             |
+| `requiredOutputs`            | Versioned deliverables and definition of done.                                          |
+| `credentialEvidenceRequired` | Issuer, designation, number, expiry/current-status proof, and verification method.      |
+| `conflictQuestions`          | HOV, supplier, referral, ranking, employer, and commercial interests.                   |
+| `budgetCeiling`              | Owner-approved maximum including platform fees and tax.                                 |
+| `dataClass`                  | `public`, `synthetic`, `restricted`, or `prohibited`. Trial must be `synthetic`.        |
+| `approvalOwner`              | Human authorized to fund, appoint, accept, or reject.                                   |
+| `capabilityProfile`          | Exact authority requested, such as `DomainSafetyReviewer` or `AlphaExperienceReviewer`. |
+| `nomination`                 | Pseudonymous nomination record and conflict disposition.                                |
 
 ### Outputs
 
@@ -132,14 +220,15 @@ hold candidate IDs, minimized results, and public source links only.
 
 ### Side effects and approval boundaries
 
-| Operation                                          | External effect                                                      | Required approval                                                                                    |
-| -------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Search public directories or marketplace inventory | Read-only discovery                                                  | None beyond approved research scope.                                                                 |
-| Render a platform `dryRun` or local bounty preview | No listing or payment, but may transmit draft text to a platform     | Owner-approved platform account and non-secret synthetic content.                                    |
-| Message a candidate or post a bounty/quote request | External communication and potential personal-information processing | Owner approval of wording, account, privacy path, and budget ceiling.                                |
-| Accept an application, book, escrow, or pay        | Contractual and financial commitment                                 | Explicit human approval for the named candidate and amount.                                          |
-| Share restricted or real household evidence        | Privacy and safety exposure                                          | Prohibited for the micro-trial; later use requires separate Gate approval and participant authority. |
-| Appoint or approve a protocol                      | Safety and governance decision                                       | Named human owner; never autonomous.                                                                 |
+| Operation                                          | External effect                                                      | Required approval                                                                                                 |
+| -------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Search public directories or marketplace inventory | Read-only discovery                                                  | None beyond approved research scope.                                                                              |
+| Render a platform `dryRun` or local bounty preview | No listing or payment, but may transmit draft text to a platform     | Owner-approved platform account and non-secret synthetic content.                                                 |
+| Message a candidate or post a bounty/quote request | External communication and potential personal-information processing | Owner approval of wording, account, privacy path, and budget ceiling.                                             |
+| Accept an application, book, escrow, or pay        | Contractual and financial commitment                                 | Explicit human approval for the named candidate and amount.                                                       |
+| Share restricted or real household evidence        | Privacy and safety exposure                                          | Prohibited for the micro-trial; later use requires separate Gate approval and participant authority.              |
+| Appoint or approve a protocol                      | Safety and governance decision                                       | Named human owner; never autonomous.                                                                              |
+| Invite a personal or recommended alpha reviewer    | External communication and relationship/power implications           | Owner approval of candidate ID, invitation, consent, compensation, conflict treatment, and synthetic environment. |
 
 Search and local scoring should be repeatable. Posting, messaging, booking,
 escrow, and payment are not idempotent unless the provider exposes and HOV stores
@@ -307,3 +396,7 @@ scoring remain inside HOV governance, not inside the adapter.
    exact preview and external effects.
 5. Run one paid trial at a time, score it, then decide whether a second route adds
    useful evidence before spending again.
+6. If the owner nominates a personal or recommended alpha reviewer, record only a
+   candidate ID and requested capability in Baton; keep identity and relationship
+   details restricted, and run the alpha experience trial separately from the
+   domain-safety trial.
