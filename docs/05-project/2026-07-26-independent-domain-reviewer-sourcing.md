@@ -144,16 +144,18 @@ this protocol.
 
 Live public API queries on 2026-07-26 found:
 
-| Query                              | Result                 | Decision implication                                                                                                                                     |
-| ---------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| South Africa plus skill `plumber`  | 0 profiles             | No direct inventory for the exact skill.                                                                                                                 |
-| South Africa plus skill `plumbing` | 1 profile              | The profile was unverified, had zero bookings/reviews, and claimed maintenance skills without visible trade credentials. It is not appointment evidence. |
-| All South African profiles         | 86 reported by the API | Country coverage exists, but broad marketplace size does not establish domain supply.                                                                    |
+| Query                              | Result                 | Decision implication                                                                  |
+| ---------------------------------- | ---------------------- | ------------------------------------------------------------------------------------- |
+| South Africa plus skill `plumber`  | 0 profiles             | No direct inventory for the exact skill.                                              |
+| South Africa plus skill `plumbing` | 1 profile              | Aggregate supply is too thin to establish qualified or appointable domain inventory.  |
+| All South African profiles         | 86 reported by the API | Country coverage exists, but broad marketplace size does not establish domain supply. |
 
-Do not name or shortlist the matching profile unless it submits current
-credential evidence through an approved application process. Do not post a
-bounty or expose an API key until the owner approves the budget, wording,
-account, and external-processing boundary.
+Do not promote public-search results into candidate records or retain
+profile-level observations in this public repository. Any applicant must enter
+through an approved application process and submit current credential evidence
+to the restricted reviewer record. Do not post a bounty or expose an API key
+until the owner approves the budget, wording, account, and external-processing
+boundary.
 
 ### Alternatives
 
@@ -262,7 +264,27 @@ professional work. Use a small, paid trial with synthetic material.
 
 ### Pass rules
 
-The trial passes only if the candidate:
+The first domain review cannot be scored against an HOV-authored safety answer
+key. Before any seeded defect becomes a pass/fail gate, its expected treatment
+and severity must be validated by an independently credentialed domain authority
+who did not write the candidate response, with the source and version recorded in
+the restricted trial record.
+
+For the initial appointment, use a calibration round instead of a safety pass:
+
+- commission two independently credential-verified candidates on the same
+  blinded synthetic pack where practical;
+- score only credential, conflict, process, evidence discipline, and fabricated
+  certainty until the safety key is independently validated;
+- treat divergent safety judgments as unresolved evidence, not as a candidate
+  failure;
+- use an authoritative source or a third independently credentialed adjudicator
+  to resolve material divergence; and
+- keep every initial appointment provisional and unable to approve a household
+  protocol or advance a Gate until calibration is complete.
+
+Once the answer key and scorer are independently domain-validated, the trial
+passes only if the candidate:
 
 - passes the domain credential and independence screens;
 - identifies every pre-seeded critical safety defect;
@@ -271,9 +293,10 @@ The trial passes only if the candidate:
 - produces actionable, plain-language revisions with traceable rationale; and
 - accepts versioning, incident withdrawal, and re-review obligations.
 
-Any missed critical safety defect, fabricated certainty, credential mismatch,
-unresolved conflict, or request for real household evidence is a fail. Price and
-marketplace rating cannot compensate for a fail.
+After that validation, any missed critical safety defect is a fail. At every
+stage, fabricated certainty, credential mismatch, unresolved conflict, or a
+request for real household evidence is a fail. Price and marketplace rating
+cannot compensate for a fail.
 
 ### Trial variants
 
