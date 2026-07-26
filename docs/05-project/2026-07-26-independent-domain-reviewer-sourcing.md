@@ -6,6 +6,8 @@
 - Baton task: `9bba1180-b6a4-49cb-b1fc-45bdcbb4cd3c`
 - Initial domain profile: South African domestic plumbing, limited to the Gate 0
   under-sink drain-joint triage protocol
+- Synthetic testing surface:
+  [PIRB domain reviewer testing surface](2026-07-26-pirb-domain-reviewer-testing-surface.md)
 
 ## Decision
 
@@ -413,19 +415,21 @@ scoring remain inside HOV governance, not inside the adapter.
 
 ## Recommended next action
 
-1. Owner approves or revises the abstraction, sourcing order, trial pack, and
+1. Complete and browser-verify the synthetic Domain Reviewer Lab before enabling
+   any PIRB registry or candidate-data integration.
+2. Owner approves or revises the abstraction, sourcing order, trial pack, and
    budget ceiling.
-2. Privacy owner approves which provider accounts may receive the synthetic
+3. Privacy owner approves which provider accounts may receive the synthetic
    bounty and candidate application data.
-3. Prepare three candidate slots: two from PIRB/IOPSA or Kandua and, only if the
+4. Prepare three candidate slots: two from PIRB/IOPSA or Kandua and, only if the
    owner wants an agent-marketplace comparison, one open RentAHuman bounty.
-4. Render previews only. Do not post or message until the owner approves the
+5. Render previews only. Do not post or message until the owner approves the
    exact preview and external effects.
-5. Run one paid trial at a time, score it, then decide whether a second route adds
+6. Run one paid trial at a time, score it, then decide whether a second route adds
    useful evidence before spending again.
-6. If the owner nominates a personal or recommended alpha reviewer, record only a
+7. If the owner nominates a personal or recommended alpha reviewer, record only a
    candidate ID and requested capability in Baton; keep identity and relationship
    details restricted, and run the alpha experience trial separately from the
    domain-safety trial.
-7. Internally dry-run the alpha pack before any invitation. Passing that rehearsal
+8. Internally dry-run the alpha pack before any invitation. Passing that rehearsal
    does not authorize contact, recording, compensation, or a live session.

@@ -20,7 +20,7 @@ describe("nav-config inventory access", () => {
     }
   })
 
-  it("shows governance only in the admin navigation", () => {
+  it("shows governance and the reviewer lab only in the admin navigation", () => {
     const adminItems = flatten(buildNavEntries("hans", "admin", []))
     const operatorItems = flatten(buildNavEntries("charl", "operator", []))
 
@@ -31,5 +31,12 @@ describe("nav-config inventory access", () => {
       })
     )
     expect(operatorItems).not.toContainEqual(expect.objectContaining({ name: "Governance" }))
+    expect(adminItems).toContainEqual(
+      expect.objectContaining({
+        name: "Reviewer Lab",
+        href: "/dashboard/hans/reviewer-lab",
+      })
+    )
+    expect(operatorItems).not.toContainEqual(expect.objectContaining({ name: "Reviewer Lab" }))
   })
 })
