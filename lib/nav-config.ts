@@ -23,6 +23,7 @@ import {
   FolderKanban,
   ChefHat,
   ShieldCheck,
+  FlaskConical,
   type LucideIcon,
 } from "lucide-react"
 import {
@@ -145,6 +146,13 @@ const PAGE_DEFINITIONS: PageDef[] = [
     category: "Admin",
     adminOnly: true,
   },
+  {
+    name: "Reviewer Lab",
+    href: "/dashboard/hans/reviewer-lab",
+    icon: FlaskConical,
+    category: "Admin",
+    adminOnly: true,
+  },
   { name: "Settings", href: "/dashboard", icon: Settings, category: "Admin" },
   { name: "Recipes", href: "/dashboard", icon: ChefHat, category: "Operations" },
 ]
@@ -166,6 +174,7 @@ const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
     Marketplace: "/dashboard/hans/marketplace",
     Reports: "/dashboard/hans/reports",
     Governance: "/dashboard/hans/governance",
+    "Reviewer Lab": "/dashboard/hans/reviewer-lab",
     Settings: "/dashboard/hans/settings",
     Recipes: "/dashboard/hans/recipes",
     Work: "/dashboard/hans/projects",
