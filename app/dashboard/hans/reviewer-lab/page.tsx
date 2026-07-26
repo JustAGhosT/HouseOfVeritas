@@ -411,6 +411,7 @@ export default function ReviewerLabPage() {
                           }))
                         }
                         className="border-input bg-background h-10 w-full rounded-md border px-3"
+                        data-testid={`quality-dimension-${dimension.id}`}
                       >
                         <option value="not_tested">Not tested</option>
                         <option value="clear">Clear</option>
