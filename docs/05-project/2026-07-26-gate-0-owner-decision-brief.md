@@ -126,19 +126,26 @@ Before recruitment, record:
 
 The privacy/legal reviewer must accept or replace these periods before outreach:
 
-| Record                                                                 | Proposed maximum                           | Deletion trigger                                                                        |
-| ---------------------------------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------- |
-| Unsuccessful prospect/contact lead                                     | 30 days after recruitment closes           | Delete unless separate future-contact consent exists.                                   |
-| Participant contact register                                           | 90 days after the signed Gate 0 decision   | Delete after withdrawals, corrections, incentives, and follow-ups are resolved.         |
-| Audio recording, if separately approved                                | 14 days after capture                      | Delete immediately after transcript verification when earlier.                          |
-| Redacted transcript or minimized notes                                 | 90 days after the signed Gate 0 decision   | Delete after coding reconciliation and outstanding participant requests.                |
-| De-identified incident codes and aggregate decision evidence           | 12 months after the signed Gate 0 decision | Review necessity at six months; delete earlier if the decision no longer needs support. |
-| Withdrawal, correction, deletion, consent, and incident audit evidence | Period set by privacy/legal reviewer       | Keep only the minimum evidence required to demonstrate handling.                        |
+| Record                                                                 | Event-relative maximum                     | Absolute outer deadline                                                                 | Earlier deletion trigger                                                                  |
+| ---------------------------------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Unsuccessful prospect/contact lead                                     | 30 days after recruitment closes           | 60 days after last contact                                                              | Delete unless separate future-contact consent exists.                                     |
+| Participant contact register                                           | 90 days after the signed Gate 0 decision   | 180 days after the participant's last contact                                           | Delete after withdrawals, corrections, incentives, and follow-ups are resolved.           |
+| Audio recording, if separately approved                                | 14 days after capture                      | 14 days after capture                                                                   | Delete immediately after transcript verification when earlier.                            |
+| Redacted transcript or minimized notes                                 | 90 days after the signed Gate 0 decision   | 180 days after the interview                                                            | Delete after coding reconciliation and outstanding participant requests.                  |
+| De-identified incident codes and aggregate decision evidence           | 12 months after the signed Gate 0 decision | 18 months after the first research record is collected                                  | Review necessity at six months; delete earlier if the decision no longer needs support.   |
+| Withdrawal, correction, deletion, consent, and incident audit evidence | Period set by privacy/legal reviewer       | Concrete calendar deletion or review date approved before the first participant contact | Keep only the minimum evidence required to demonstrate handling and meet approved duties. |
 
 These are maximums, not targets. A shorter period should be used whenever the
 research purpose can still be met. A participant request or security incident
 may require immediate restriction while the responsible owner determines the
 lawful next action.
+
+If recruitment or the study is paused without a restart date, the research owner
+must review all records within 30 days. If it is abandoned, delete contact data,
+recordings, transcripts, and other identifiable research material within 30 days
+of that decision unless the privacy/legal reviewer records a narrower, lawful
+exception with a concrete deletion date. The absolute deadlines still apply if
+no one formally closes or abandons the study.
 
 ### Rights and incident path
 

@@ -19,12 +19,14 @@ restricted research store before fieldwork.
 | Recruitment opened          | `not started`                    |
 | First interview             | `not started`                    |
 | Threshold lock timestamp    | `pending owner approval`         |
+| Responsible party           | `pending`                        |
 | Research owner              | `pending`                        |
 | Privacy/legal reviewer      | `pending`                        |
 | Restricted storage location | `pending`                        |
 | Authorized researchers      | `pending`                        |
 | Retention/deletion deadline | `pending`                        |
 | Correction/deletion contact | `pending`                        |
+| Security incident owner     | `pending`                        |
 | Plumbing reviewer           | `pending eligibility validation` |
 | Decision meeting owner/date | `pending`                        |
 
