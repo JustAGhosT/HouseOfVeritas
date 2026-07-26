@@ -22,6 +22,7 @@ import {
   CheckSquare,
   FolderKanban,
   ChefHat,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react"
 import {
@@ -137,6 +138,13 @@ const PAGE_DEFINITIONS: PageDef[] = [
   { name: "OCR Scanner", href: "/dashboard", icon: ScanLine, category: "Tools", adminOnly: true },
   { name: "Marketplace", href: "/dashboard", icon: Store, category: "Tools", adminOnly: true },
   { name: "Reports", href: "/dashboard", icon: BarChart3, category: "Admin", adminOnly: true },
+  {
+    name: "Governance",
+    href: "/dashboard/hans/governance",
+    icon: ShieldCheck,
+    category: "Admin",
+    adminOnly: true,
+  },
   { name: "Settings", href: "/dashboard", icon: Settings, category: "Admin" },
   { name: "Recipes", href: "/dashboard", icon: ChefHat, category: "Operations" },
 ]
@@ -157,6 +165,7 @@ const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
     "OCR Scanner": "/dashboard/hans/ocr",
     Marketplace: "/dashboard/hans/marketplace",
     Reports: "/dashboard/hans/reports",
+    Governance: "/dashboard/hans/governance",
     Settings: "/dashboard/hans/settings",
     Recipes: "/dashboard/hans/recipes",
     Work: "/dashboard/hans/projects",

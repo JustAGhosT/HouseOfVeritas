@@ -1,16 +1,36 @@
 # Gate 0 owner decision brief
 
 - Date: 2026-07-26
-- Status: Recommendation only; no owner approval, reviewer appointment, or fieldwork authorization
+- Status: O1-O4 and O7 approved; O5-O6 approved in principle with activation inputs pending; reviewer appointment and fieldwork authorization remain open
 - Baton task: `9bba1180-b6a4-49cb-b1fc-45bdcbb4cd3c`
 - Governing protocol: [Under-sink leak Gate 0 discovery package](2026-07-26-under-sink-leak-gate-0-discovery-package.md)
 
 ## Purpose
 
-This brief reduces the remaining Gate 0 owner decisions to a reviewable form. It
-does not approve the research, provide legal advice, appoint a plumbing reviewer,
-authorize participant contact, or permit collection of personal information or
-real household media.
+This brief records the owner's 2026-07-26 decisions and preserves the remaining
+Gate 0 activation boundaries. It does not provide legal advice, appoint a
+plumbing reviewer, authorize participant contact or fieldwork, or permit
+collection of personal information or real household media.
+
+## Decision update
+
+The owner approved O1-O4 and O7 as recommended. The owner also approved the O5
+qualified-reviewer requirement and eligibility profile in principle, but no
+reviewer is appointed until a pseudonymous candidate ID and current eligibility
+evidence are supplied and accepted. O6 is approved in principle, but that
+approval is not operational until the responsible party, privacy/legal reviewer,
+research owner, restricted store, authorized researcher IDs, retention/deletion
+deadline, correction/deletion owner, and incident owner are recorded.
+
+Recruitment, live alpha activity, fieldwork, and Gate 1 implementation therefore
+remain prohibited. The canonical statuses and constraints are recorded in the
+[evidence log](2026-07-26-under-sink-leak-gate-0-evidence-log.md).
+
+The bounded admin control-plane implementation is described in the
+[Gate governance admin control plane](2026-07-26-gate-governance-admin-control-plane.md).
+It does not seed these documented decisions into runtime storage automatically;
+an authenticated admin must record the corresponding immutable events after the
+feature is deployed and its durable datastore is verified.
 
 ## Recommended owner decisions
 
