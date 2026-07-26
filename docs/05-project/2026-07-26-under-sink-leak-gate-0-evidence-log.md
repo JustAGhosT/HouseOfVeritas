@@ -28,6 +28,8 @@ restricted research store before fieldwork.
 | Correction/deletion contact | `pending`                        |
 | Security incident owner     | `pending`                        |
 | Plumbing reviewer           | `pending eligibility validation` |
+| Reviewer sourcing route     | `pending owner approval`         |
+| Reviewer micro-trial        | `not started`                    |
 | Decision meeting owner/date | `pending`                        |
 
 ## Owner decisions

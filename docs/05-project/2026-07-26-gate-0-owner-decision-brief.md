@@ -32,6 +32,11 @@ Approval of O1-O4 or O7 does not remove the O5 and O6 preconditions.
 
 ## Plumbing reviewer sourcing and verification
 
+The reusable sourcing routes, provider adapter boundary, and paid fictional
+micro-trial are specified in the
+[independent domain reviewer sourcing note](2026-07-26-independent-domain-reviewer-sourcing.md).
+That abstraction does not relax the plumbing profile below.
+
 ### Sourcing route
 
 1. Use the [PIRB company and individual verification tools](https://www.pirb.co.za/)
