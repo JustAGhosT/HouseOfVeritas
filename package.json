@@ -19,6 +19,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:install": "npx playwright install chromium",
+    "verify:alpha-review-e2e": "node scripts/verify-alpha-review-e2e.mjs tests/fixtures/alpha-review/synthetic-complete.json",
     "inngest:dev": "npx --ignore-scripts=false @inngest/cli@1.17.1 dev",
     "verify": "npm run build && npm run lint && npm run format:check && npm test",
     "spell": "cspell \"**/*\"",

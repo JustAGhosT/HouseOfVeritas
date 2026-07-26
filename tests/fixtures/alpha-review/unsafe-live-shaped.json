@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "alpha-review-e2e-v1",
+  "mode": "live",
+  "candidateId": "AER-SIM-UNSAFE",
+  "packVersion": "AER-SYNTH-001-v1",
+  "variant": "B",
+  "dataClass": "restricted",
+  "externalEffects": {
+    "contacted": true,
+    "invited": true,
+    "recorded": false,
+    "paid": false,
+    "posted": false,
+    "productionAccess": false
+  },
+  "simulatedEscalationRoutes": {},
+  "events": [],
+  "evidenceClaims": {
+    "participant": true,
+    "usability": true,
+    "customer": false,
+    "market": false,
+    "safety": false,
+    "gateAdvancement": false
+  }
+}

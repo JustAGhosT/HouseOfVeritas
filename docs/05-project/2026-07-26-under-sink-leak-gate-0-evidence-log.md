@@ -33,6 +33,7 @@ restricted research store before fieldwork.
 | Alpha reviewer capability   | `pending owner approval`                                                      |
 | Alpha reviewer micro-trial  | `not started`                                                                 |
 | Alpha synthetic trial pack  | `AER-SYNTH-001-v1 internal structural dry-run passed; activation gate closed` |
+| Alpha operational E2E       | `alpha-review-e2e-v1 synthetic harness passed; live activation blocked`       |
 | Decision meeting owner/date | `pending`                                                                     |
 
 ## Owner decisions

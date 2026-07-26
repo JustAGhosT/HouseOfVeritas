@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "alpha-review-e2e-v1",
+  "mode": "synthetic_harness",
+  "candidateId": "AER-SIM-001",
+  "packVersion": "AER-SYNTH-001-v1",
+  "variant": "B",
+  "dataClass": "synthetic",
+  "externalEffects": {
+    "contacted": false,
+    "invited": false,
+    "recorded": false,
+    "paid": false,
+    "posted": false,
+    "productionAccess": false
+  },
+  "simulatedEscalationRoutes": {
+    "domainSafety": {
+      "routeClass": "simulated_not_live",
+      "preflight": "passed"
+    },
+    "privacy": {
+      "routeClass": "simulated_not_live",
+      "preflight": "passed"
+    }
+  },
+  "events": [
+    {
+      "type": "nomination_proposed",
+      "source": "synthetic_fixture",
+      "conflictDisposition": "accepted_for_harness_only"
+    },
+    {
+      "type": "activation_preflight",
+      "result": "synthetic_only"
+    },
+    {
+      "type": "invitation_previewed",
+      "delivery": "preview_only",
+      "variant": "B"
+    },
+    {
+      "type": "consent_simulated",
+      "notes": "none_created",
+      "result": "fixture_acknowledged"
+    },
+    {
+      "type": "session_started",
+      "variant": "B",
+      "firstExposure": true,
+      "baselineShown": false
+    },
+    {
+      "type": "finding_recorded",
+      "severity": "high",
+      "reproducibility": "variant_specific",
+      "behaviorCategory": "ordering_interpreted_as_endorsement"
+    },
+    {
+      "type": "session_closed",
+      "disposition": "revise_before_more_alpha",
+      "reliance": "none"
+    },
+    {
+      "type": "retention_scheduled",
+      "reviewDue": "2026-08-25",
+      "restrictedRecord": "simulated_not_created"
+    }
+  ],
+  "evidenceClaims": {
+    "participant": false,
+    "usability": false,
+    "customer": false,
+    "market": false,
+    "safety": false,
+    "gateAdvancement": false
+  }
+}

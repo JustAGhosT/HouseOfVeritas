@@ -7,6 +7,8 @@
 - Baton task: `9bba1180-b6a4-49cb-b1fc-45bdcbb4cd3c`
 - Governing boundary:
   [Independent domain reviewer sourcing and micro-trial](2026-07-26-independent-domain-reviewer-sourcing.md)
+- Operational proof:
+  [Alpha review operational E2E rehearsal](2026-07-26-alpha-review-operational-e2e.md)
 
 ## Purpose
 

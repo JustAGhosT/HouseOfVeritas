@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "alpha-review-e2e-v1",
+  "mode": "synthetic_harness",
+  "candidateId": "AER-SIM-PII",
+  "candidateName": "Forbidden Example",
+  "packVersion": "AER-SYNTH-001-v1",
+  "variant": "A",
+  "dataClass": "synthetic",
+  "externalEffects": {
+    "contacted": false,
+    "invited": false,
+    "recorded": false,
+    "paid": false,
+    "posted": false,
+    "productionAccess": false
+  },
+  "simulatedEscalationRoutes": {},
+  "events": [],
+  "evidenceClaims": {
+    "participant": false,
+    "usability": false,
+    "customer": false,
+    "market": false,
+    "safety": false,
+    "gateAdvancement": false
+  }
+}
