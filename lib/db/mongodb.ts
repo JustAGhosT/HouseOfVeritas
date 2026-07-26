@@ -4,6 +4,8 @@ import { logger } from "@/lib/logger"
 let client: MongoClient | null = null
 let db: Db | null = null
 let activeConnectionKey: string | null = null
+let connectionPromise: Promise<Db> | null = null
+let pendingConnectionKey: string | null = null
 
 function getMongoUrl(): string {
   return process.env.MONGODB_URI || process.env.MONGO_URL || "mongodb://localhost:27017"
@@ -23,25 +25,50 @@ export async function getDatabase(): Promise<Db> {
   const connectionKey = `${mongoUrl}|${databaseName}`
   if (db && activeConnectionKey === connectionKey) return db
 
-  if (client) {
-    await client.close()
-    client = null
-    db = null
-    activeConnectionKey = null
+  if (connectionPromise) {
+    if (pendingConnectionKey === connectionKey) return connectionPromise
+
+    await connectionPromise.catch(() => undefined)
+    return getDatabase()
   }
 
+  const pending = (async (): Promise<Db> => {
+    if (client) {
+      await client.close()
+      client = null
+      db = null
+      activeConnectionKey = null
+    }
+
+    const nextClient = new MongoClient(mongoUrl)
+
+    try {
+      await nextClient.connect()
+      const nextDb = nextClient.db(databaseName)
+      client = nextClient
+      db = nextDb
+      activeConnectionKey = connectionKey
+      logger.info(`MongoDB connected to ${databaseName}`)
+      return nextDb
+    } catch (error) {
+      await nextClient.close().catch(() => undefined)
+      logger.error("MongoDB connection error", {
+        error: error instanceof Error ? error.message : String(error),
+      })
+      throw error
+    }
+  })()
+
+  connectionPromise = pending
+  pendingConnectionKey = connectionKey
+
   try {
-    client = new MongoClient(mongoUrl)
-    await client.connect()
-    db = client.db(databaseName)
-    activeConnectionKey = connectionKey
-    logger.info(`MongoDB connected to ${databaseName}`)
-    return db
-  } catch (error) {
-    logger.error("MongoDB connection error", {
-      error: error instanceof Error ? error.message : String(error),
-    })
-    throw error
+    return await pending
+  } finally {
+    if (connectionPromise === pending) {
+      connectionPromise = null
+      pendingConnectionKey = null
+    }
   }
 }
 
@@ -54,12 +81,19 @@ export async function getCollection<T extends object>(
 
 // Close connection (for cleanup)
 export async function closeConnection(): Promise<void> {
+  if (connectionPromise) {
+    await connectionPromise.catch(() => undefined)
+  }
+
   if (client) {
     await client.close()
     client = null
     db = null
     activeConnectionKey = null
   }
+
+  connectionPromise = null
+  pendingConnectionKey = null
 }
 
 export function withoutMongoId<T extends { _id?: unknown }>(doc: T): Omit<T, "_id"> {
