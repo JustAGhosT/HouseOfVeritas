@@ -1,7 +1,7 @@
 # Under-sink leak Gate 0 evidence log
 
 - Date created: 2026-07-26
-- Status: Empty template; no field evidence collected
+- Status: Owner decisions recorded for O1-O4 and O7; O5-O6 approved in principle but activation inputs remain incomplete; no field evidence collected
 - Baton task: `9bba1180-b6a4-49cb-b1fc-45bdcbb4cd3c`
 - Protocol: [Gate 0 discovery package](2026-07-26-under-sink-leak-gate-0-discovery-package.md)
 
@@ -34,19 +34,20 @@ restricted research store before fieldwork.
 | Alpha reviewer micro-trial  | `not started`                                                                 |
 | Alpha synthetic trial pack  | `AER-SYNTH-001-v1 internal structural dry-run passed; activation gate closed` |
 | Alpha operational E2E       | `alpha-review-e2e-v1 synthetic harness passed; live activation blocked`       |
+| Admin governance control    | `implemented locally; deployment and production decision entry pending`       |
 | Decision meeting owner/date | `pending`                                                                     |
 
 ## Owner decisions
 
-| ID  | Decision                                                              | Status  | Owner/date | Rationale or constraint |
-| --- | --------------------------------------------------------------------- | ------- | ---------- | ----------------------- |
-| O1  | Use `moat`, not `NOAT`                                                | Pending | —          | —                       |
-| O2  | South Africa first                                                    | Pending | —          | —                       |
-| O3  | Private staffed household/small private estate is the customer unit   | Pending | —          | —                       |
-| O4  | Photo-to-resolution is the first problem test                         | Pending | —          | —                       |
-| O5  | Qualified plumbing reviewer nominated and eligibility accepted        | Pending | —          | —                       |
-| O6  | Privacy/safety protocol approved                                      | Pending | —          | —                       |
-| O7  | Subscription-funded neutral comparison hypothesis accepted or revised | Pending | —          | —                       |
+| ID  | Decision                                                              | Status                | Owner/date         | Rationale or constraint                                                                                                                                                                                                                                 |
+| --- | --------------------------------------------------------------------- | --------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| O1  | Use `moat`, not `NOAT`                                                | Approved              | Owner / 2026-07-26 | Recommendation accepted.                                                                                                                                                                                                                                |
+| O2  | South Africa first                                                    | Approved              | Owner / 2026-07-26 | Recommendation accepted as the bounded first test market.                                                                                                                                                                                               |
+| O3  | Private staffed household/small private estate is the customer unit   | Approved              | Owner / 2026-07-26 | Recommendation accepted; broader property-management and community-estate units remain excluded.                                                                                                                                                        |
+| O4  | Photo-to-resolution is the first problem test                         | Approved              | Owner / 2026-07-26 | Recommendation accepted within the coordination-only boundary; no automated diagnosis, DIY repair, or automatic purchasing.                                                                                                                             |
+| O5  | Qualified plumbing reviewer nominated and eligibility accepted        | Approved in principle | Owner / 2026-07-26 | Independent qualified-reviewer requirement and eligibility profile accepted; activation remains blocked until a pseudonymous candidate ID and current eligibility evidence are supplied and accepted.                                                   |
+| O6  | Privacy/safety protocol approved                                      | Approved in principle | Owner / 2026-07-26 | Proposed protocol accepted, but it is not operational until the responsible party, privacy reviewer, research owner, restricted store, authorized researchers, retention/deletion deadline, correction/deletion owner, and incident owner are recorded. |
+| O7  | Subscription-funded neutral comparison hypothesis accepted or revised | Approved              | Owner / 2026-07-26 | Subscription-funded neutral comparison accepted; checkout, purchasing, affiliate ranking, and supplier steering remain excluded.                                                                                                                        |
 
 ## Threshold change register
 
