@@ -207,8 +207,18 @@ Requires explicit human approval for the exact target/action:
 - transmitting candidate/application data to a provider;
 - booking, contracting, escrow, or payment;
 - creating a restricted record or recording;
-- using real household/participant evidence; and
 - approving a reviewer, protocol, Gate, production policy, or purchase.
+
+Prohibited throughout this alpha trial, including after ordinary owner approval:
+
+- real household or participant evidence, images, addresses, issue records, or
+  active safety conditions; and
+- using an alpha session to diagnose, recommend a repair or supplier, certify
+  compliance, or provide plumbing-safety approval.
+
+Any later non-alpha use of real evidence requires a separately approved Gate,
+participant authority, privacy/safety protocol, and purpose-specific reviewer
+scope. It is not authorized by this handoff or the alpha activation record.
 
 Before retrying any external action, query the provider state. Messaging, posting,
 booking, escrow, and payment are not assumed idempotent.
