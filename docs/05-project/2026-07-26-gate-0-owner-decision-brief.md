@@ -37,6 +37,11 @@ micro-trial are specified in the
 [independent domain reviewer sourcing note](2026-07-26-independent-domain-reviewer-sourcing.md).
 That abstraction does not relax the plumbing profile below.
 
+A personal or recommended alpha reviewer follows the separate
+[synthetic alpha experience trial pack](2026-07-26-alpha-experience-reviewer-trial-pack.md).
+That reviewer may test usability and comprehension only and cannot satisfy O5,
+approve O6, count as a Gate 0 interview, or advance a Gate.
+
 ### Sourcing route
 
 1. Use the [PIRB company and individual verification tools](https://www.pirb.co.za/)

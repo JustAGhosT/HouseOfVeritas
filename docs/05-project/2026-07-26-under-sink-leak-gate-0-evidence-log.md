@@ -13,26 +13,27 @@ restricted research store before fieldwork.
 
 ## Protocol control
 
-| Field                       | Value                            |
-| --------------------------- | -------------------------------- |
-| Protocol version            | `v1-draft`                       |
-| Recruitment opened          | `not started`                    |
-| First interview             | `not started`                    |
-| Threshold lock timestamp    | `pending owner approval`         |
-| Responsible party           | `pending`                        |
-| Research owner              | `pending`                        |
-| Privacy/legal reviewer      | `pending`                        |
-| Restricted storage location | `pending`                        |
-| Authorized researchers      | `pending`                        |
-| Retention/deletion deadline | `pending`                        |
-| Correction/deletion contact | `pending`                        |
-| Security incident owner     | `pending`                        |
-| Plumbing reviewer           | `pending eligibility validation` |
-| Reviewer sourcing route     | `pending owner approval`         |
-| Reviewer micro-trial        | `not started`                    |
-| Alpha reviewer capability   | `pending owner approval`         |
-| Alpha reviewer micro-trial  | `not started`                    |
-| Decision meeting owner/date | `pending`                        |
+| Field                       | Value                                                                         |
+| --------------------------- | ----------------------------------------------------------------------------- |
+| Protocol version            | `v1-draft`                                                                    |
+| Recruitment opened          | `not started`                                                                 |
+| First interview             | `not started`                                                                 |
+| Threshold lock timestamp    | `pending owner approval`                                                      |
+| Responsible party           | `pending`                                                                     |
+| Research owner              | `pending`                                                                     |
+| Privacy/legal reviewer      | `pending`                                                                     |
+| Restricted storage location | `pending`                                                                     |
+| Authorized researchers      | `pending`                                                                     |
+| Retention/deletion deadline | `pending`                                                                     |
+| Correction/deletion contact | `pending`                                                                     |
+| Security incident owner     | `pending`                                                                     |
+| Plumbing reviewer           | `pending eligibility validation`                                              |
+| Reviewer sourcing route     | `pending owner approval`                                                      |
+| Reviewer micro-trial        | `not started`                                                                 |
+| Alpha reviewer capability   | `pending owner approval`                                                      |
+| Alpha reviewer micro-trial  | `not started`                                                                 |
+| Alpha synthetic trial pack  | `AER-SYNTH-001-v1 internal structural dry-run passed; activation gate closed` |
+| Decision meeting owner/date | `pending`                                                                     |
 
 ## Owner decisions
 
