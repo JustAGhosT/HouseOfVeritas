@@ -139,12 +139,16 @@ jobs:
         run: pnpm test
 
       - name: Build Application
+        env:
+          NEXT_PUBLIC_BUILD_COMMIT: ${{ github.sha }}
         run: pnpm build
 
       - name: Prepare Standalone for Deployment
         run: |
           cp -r .next/static .next/standalone/.next/static
           cp -r public .next/standalone/public
+          mkdir -p .next/standalone/scripts
+          cp scripts/verify-deployment-build.mjs .next/standalone/scripts/
           jq '.scripts = ((.scripts // {}) + {"start": "node server.js"})' .next/standalone/package.json > .next/standalone/package.json.tmp && mv .next/standalone/package.json.tmp .next/standalone/package.json
 
       - name: Remove Files with Invalid Characters
@@ -327,24 +331,12 @@ jobs:
           app-name: ${{ vars.WEBAPP_NAME || 'nl-prod-hov-app' }}
           package: deploy.zip
 
-      - name: Verify Web App Health
+      - name: Verify Exact Web App Deployment
         run: |
-          APP_URL="https://${{ vars.WEBAPP_NAME || 'nl-prod-hov-app' }}.azurewebsites.net"
-          healthy=false
-          for i in {1..10}; do
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL" || echo "000")
-            if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "302" ]; then
-              echo "Web App is healthy (HTTP $HTTP_STATUS)"
-              healthy=true
-              break
-            fi
-            echo "Waiting for Web App... (attempt $i/10, got HTTP $HTTP_STATUS)"
-            sleep 15
-          done
-          if [ "$healthy" != "true" ]; then
-            echo "Web App health check failed after 10 attempts"
-            exit 1
-          fi
+          HEALTH_URL="https://${{ vars.WEBAPP_NAME || 'nl-prod-hov-app' }}.azurewebsites.net/api/health"
+          node scripts/verify-deployment-build.mjs \
+            --url "$HEALTH_URL" \
+            --expected "${{ github.sha }}"
 
   # ============================================
   # Job 5: Deploy DocuSeal

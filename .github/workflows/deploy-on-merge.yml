@@ -23,6 +23,7 @@ on:
       - "tailwind.config*"
       - "postcss.config*"
       - "instrumentation.ts"
+      - "scripts/verify-deployment-build.mjs"
       - ".github/workflows/deploy-on-merge.yml"
 
 permissions:
@@ -109,12 +110,16 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build Application
+        env:
+          NEXT_PUBLIC_BUILD_COMMIT: ${{ github.sha }}
         run: pnpm build
 
       - name: Prepare Standalone for Deployment
         run: |
           cp -r .next/static .next/standalone/.next/static
           cp -r public .next/standalone/public
+          mkdir -p .next/standalone/scripts
+          cp scripts/verify-deployment-build.mjs .next/standalone/scripts/
           jq '.scripts = ((.scripts // {}) + {"start": "node server.js"})' .next/standalone/package.json > .next/standalone/package.json.tmp && mv .next/standalone/package.json.tmp .next/standalone/package.json
 
       - name: Remove Files with Invalid Characters
@@ -160,24 +165,12 @@ jobs:
           app-name: ${{ vars.WEBAPP_NAME || 'nl-prod-hov-app' }}
           package: deploy.zip
 
-      - name: Verify Web App Health
+      - name: Verify Exact Web App Deployment
         run: |
           HEALTH_URL="https://${{ vars.WEBAPP_NAME || 'nl-prod-hov-app' }}.azurewebsites.net/api/health"
-          healthy=false
-          for i in {1..10}; do
-            RESPONSE=$(curl -fsS "$HEALTH_URL" || true)
-            if echo "$RESPONSE" | grep -q '"status":"healthy"'; then
-              echo "Web App health endpoint is healthy"
-              healthy=true
-              break
-            fi
-            echo "Waiting for Web App health endpoint... (attempt $i/10)"
-            sleep 15
-          done
-          if [ "$healthy" != "true" ]; then
-            echo "Web App health endpoint failed after 10 attempts"
-            exit 1
-          fi
+          node scripts/verify-deployment-build.mjs \
+            --url "$HEALTH_URL" \
+            --expected "${{ github.sha }}"
 
   post-deploy-api-probes:
     name: "Optional Post-Deployment API Probes"
