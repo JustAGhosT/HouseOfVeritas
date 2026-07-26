@@ -106,6 +106,67 @@ variable "storage_network_default_action" {
   }
 }
 
+# O6 restricted evidence storage remains disabled until private role IDs and
+# the full privacy-accountability record are approved outside Git and Baton.
+variable "enable_restricted_evidence_store" {
+  description = "Whether to provision the dedicated O6 restricted evidence store"
+  type        = bool
+  default     = false
+}
+
+variable "restricted_evidence_storage_account_name" {
+  description = "Globally unique name for the dedicated O6 restricted evidence storage account"
+  type        = string
+  default     = "nlprodhovrestricted"
+}
+
+variable "restricted_evidence_replication_type" {
+  description = "Replication type for restricted evidence storage"
+  type        = string
+  default     = "LRS"
+
+  validation {
+    condition     = contains(["LRS", "ZRS", "GRS", "GZRS"], var.restricted_evidence_replication_type)
+    error_message = "restricted_evidence_replication_type must be LRS, ZRS, GRS, or GZRS."
+  }
+}
+
+variable "restricted_evidence_container_name" {
+  description = "Private container for O6 reviewer evidence"
+  type        = string
+  default     = "reviewer-evidence"
+}
+
+variable "restricted_evidence_researcher_object_ids" {
+  description = "Approved Microsoft Entra object IDs for named restricted-evidence researchers"
+  type        = set(string)
+  default     = []
+}
+
+variable "restricted_evidence_retention_days" {
+  description = "Maximum age before restricted evidence blobs, versions, and snapshots are deleted"
+  type        = number
+  default     = 90
+}
+
+variable "restricted_evidence_soft_delete_days" {
+  description = "Short recovery period for accidental restricted evidence deletion"
+  type        = number
+  default     = 7
+}
+
+variable "restricted_evidence_audit_workspace_name" {
+  description = "Dedicated Log Analytics workspace for restricted Blob access events"
+  type        = string
+  default     = "nl-prod-hov-restricted-law"
+}
+
+variable "restricted_evidence_audit_retention_days" {
+  description = "Retention period for restricted Blob access audit events"
+  type        = number
+  default     = 180
+}
+
 # Security variables
 variable "key_vault_name" {
   description = "Key Vault name (must be globally unique)"

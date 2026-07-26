@@ -12,6 +12,10 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.5"
     }
+    azapi = {
+      source  = "Azure/azapi"
+      version = "~> 2.11"
+    }
   }
 
   backend "azurerm" {
@@ -72,6 +76,34 @@ module "storage" {
   deployer_ip_addresses    = local.ci_ip_rules_storage
 
   tags = local.common_tags
+}
+
+# O6 restricted evidence storage is isolated from the application's general
+# storage account and remains absent unless human privacy prerequisites are
+# supplied through private Terraform inputs.
+module "restricted_evidence_storage" {
+  source = "../../modules/restricted-storage"
+  count  = var.enable_restricted_evidence_store ? 1 : 0
+
+  resource_group_name              = azurerm_resource_group.main.name
+  location                         = azurerm_resource_group.main.location
+  storage_account_name             = var.restricted_evidence_storage_account_name
+  account_replication_type         = var.restricted_evidence_replication_type
+  container_name                   = var.restricted_evidence_container_name
+  private_endpoint_subnet_id       = module.network.private_endpoint_subnet_id
+  vnet_id                          = module.network.vnet_id
+  authorized_researcher_object_ids = var.restricted_evidence_researcher_object_ids
+  retention_days                   = var.restricted_evidence_retention_days
+  soft_delete_days                 = var.restricted_evidence_soft_delete_days
+  audit_workspace_name             = var.restricted_evidence_audit_workspace_name
+  audit_log_retention_days         = var.restricted_evidence_audit_retention_days
+
+  tags = merge(local.common_tags, {
+    DataClass = "Restricted"
+    Purpose   = "O6ReviewerEvidence"
+  })
+
+  depends_on = [module.network]
 }
 
 # Security Module (Key Vault)

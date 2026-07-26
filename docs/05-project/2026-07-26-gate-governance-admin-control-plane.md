@@ -74,6 +74,11 @@ O6 cannot become active without non-sensitive IDs or approvals for:
 - correction/deletion owner; and
 - incident owner.
 
+The technical restricted-store preparation and its remaining human/deployment
+gates are documented in the
+[O6 restricted evidence store runbook](../03-deployment/09-o6-restricted-evidence-store.md).
+Terraform preparation alone does not satisfy these activation inputs.
+
 Names, contact details, credentials, registration artifacts, consent evidence,
 raw notes, and restricted-store details remain prohibited from the general
 application datastore. The interface stores references, not the restricted
