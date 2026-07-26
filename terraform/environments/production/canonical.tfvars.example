@@ -18,6 +18,19 @@ vnet_name           = "nl-prod-hov-vnet"
 storage_account_name             = "nlprodhovst"
 storage_account_replication_type = "LRS"
 storage_network_default_action   = "Allow"
+
+# O6 restricted reviewer evidence is a separate, opt-in store. Keep disabled
+# until private owner/reviewer approvals and Entra object IDs are supplied via
+# an untracked tfvars file or approved secure automation.
+enable_restricted_evidence_store             = false
+restricted_evidence_storage_account_name     = "nlprodhovrestricted"
+restricted_evidence_replication_type         = "LRS"
+restricted_evidence_container_name           = "reviewer-evidence"
+restricted_evidence_researcher_object_ids    = []
+restricted_evidence_retention_days           = 90
+restricted_evidence_soft_delete_days         = 7
+restricted_evidence_audit_workspace_name     = "nl-prod-hov-restricted-law"
+restricted_evidence_audit_retention_days     = 180
 key_vault_name                   = "nl-prod-hov-kv"
 key_vault_network_default_action = "Allow"
 terraform_key_vault_access_policy_object_id = "593a093c-d4fd-4390-977b-a64abfc97606"

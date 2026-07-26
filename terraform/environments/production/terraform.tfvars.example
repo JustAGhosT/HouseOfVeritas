@@ -19,6 +19,15 @@
 # storage_account_replication_type = "LRS"
 # storage_network_default_action = "Allow"
 
+# O6 restricted evidence store. Activation values belong in untracked tfvars or
+# approved secure automation; never commit real researcher object IDs here.
+# enable_restricted_evidence_store          = false
+# restricted_evidence_storage_account_name  = "nlprodhovrestricted"
+# restricted_evidence_researcher_object_ids = []
+# restricted_evidence_retention_days        = 90
+# restricted_evidence_soft_delete_days      = 7
+# restricted_evidence_audit_retention_days  = 180
+
 # Key Vault - globally unique within Azure DNS.
 # key_vault_name = "nl-prod-hov-kv"
 # key_vault_network_default_action = "Allow"

@@ -18,6 +18,26 @@ output "storage_blob_endpoint" {
   value       = module.storage.primary_blob_endpoint
 }
 
+output "restricted_evidence_storage_account_id" {
+  description = "Restricted evidence storage account ID when O6 storage is provisioned"
+  value       = try(module.restricted_evidence_storage[0].storage_account_id, null)
+}
+
+output "restricted_evidence_container_resource_id" {
+  description = "Restricted evidence container resource ID when O6 storage is provisioned"
+  value       = try(module.restricted_evidence_storage[0].container_resource_id, null)
+}
+
+output "restricted_evidence_private_endpoint_id" {
+  description = "Restricted evidence Blob private endpoint ID when provisioned"
+  value       = try(module.restricted_evidence_storage[0].private_endpoint_id, null)
+}
+
+output "restricted_evidence_audit_workspace_id" {
+  description = "Restricted evidence audit workspace ID when provisioned"
+  value       = try(module.restricted_evidence_storage[0].audit_workspace_id, null)
+}
+
 output "key_vault_uri" {
   description = "URI of the Key Vault"
   value       = module.security.key_vault_uri

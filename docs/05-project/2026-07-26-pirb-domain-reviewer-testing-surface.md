@@ -80,6 +80,10 @@ Before enabling that adapter:
 6. an authenticated browser acceptance must prove admin access, non-admin denial,
    synthetic evaluation, and zero persistence/external effects.
 
+The repository preparation for prerequisite 1 is defined in the
+[O6 restricted evidence store runbook](../03-deployment/09-o6-restricted-evidence-store.md).
+It is disabled by default and is not deployment or O6 approval.
+
 No candidate contact, appointment, payment, safety reliance, O5 activation, or
 Gate progression is authorized by this surface.
 
