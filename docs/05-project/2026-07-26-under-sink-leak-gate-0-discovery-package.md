@@ -24,6 +24,12 @@ This package is grounded in:
 - [the provisional positioning decision](2026-07-25-noat-positioning-decision.md);
 - [the Household Resolution Graph moat](2026-07-25-household-resolution-graph-moat.md).
 
+The non-authorizing
+[owner decision brief](2026-07-26-gate-0-owner-decision-brief.md) provides a
+current South African reviewer-sourcing path, conservative research-governance
+defaults, and a compact response template. It does not replace the approvals in
+this package.
+
 No interview, household issue, plumbing review, price observation, willingness
 to pay, or pilot outcome has yet been recorded. The accompanying
 [evidence log](2026-07-26-under-sink-leak-gate-0-evidence-log.md) is deliberately
