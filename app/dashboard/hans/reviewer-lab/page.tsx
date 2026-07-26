@@ -100,6 +100,18 @@ export default function ReviewerLabPage() {
   const load = useCallback(async () => {
     setLoading(true)
     setLoadError(null)
+    setDefinition(null)
+    setVariant("A")
+    setCriticalGates({})
+    setQualityDimensions({})
+    setFindingSeverity("none")
+    setFindingCategory("unsafe_authority_inference")
+    setFindingStep("classify")
+    setReproducibility("variant_specific")
+    setAcknowledgements([false, false, false])
+    setSubmitting(false)
+    setSubmitError(null)
+    setEvaluation(null)
     try {
       const response = await apiFetch<LabDefinitionResponse>("/api/reviewer-trials/domain-safety", {
         label: "DomainReviewerLab",

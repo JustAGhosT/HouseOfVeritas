@@ -62,6 +62,7 @@ const evaluation = {
       criticalFailures: [],
       incompleteCriticalGates: ["credential_process"],
       qualityFailures: [],
+      incompleteQualityDimensions: [],
       findingCounts: { critical: 0, high: 0, medium: 0, low: 0 },
       reliance: "none",
       pirbEligibility: "not_evaluated",
@@ -120,5 +121,27 @@ describe("Domain Reviewer Lab page", () => {
     expect(await screen.findByTestId("domain-rehearsal-result")).toHaveTextContent(
       "close without reliance"
     )
+  })
+
+  it("resets all run-specific state before reloading the rehearsal", async () => {
+    const user = userEvent.setup()
+    render(<ReviewerLabPage />)
+
+    await user.click(await screen.findByTestId("reviewer-variant-B"))
+    await user.click(screen.getByTestId("lab-acknowledgement-1"))
+    await user.click(screen.getByTestId("lab-acknowledgement-2"))
+    await user.click(screen.getByTestId("lab-acknowledgement-3"))
+    await user.click(screen.getByTestId("evaluate-domain-rehearsal"))
+    expect(await screen.findByTestId("domain-rehearsal-result")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Reset rehearsal" }))
+
+    await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(3))
+    expect(screen.queryByTestId("domain-rehearsal-result")).not.toBeInTheDocument()
+    expect(screen.getByTestId("reviewer-variant-A")).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByTestId("evaluate-domain-rehearsal")).toBeDisabled()
+    expect(screen.getByTestId("lab-acknowledgement-1")).not.toBeChecked()
+    expect(screen.getByTestId("lab-acknowledgement-2")).not.toBeChecked()
+    expect(screen.getByTestId("lab-acknowledgement-3")).not.toBeChecked()
   })
 })

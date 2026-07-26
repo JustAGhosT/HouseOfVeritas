@@ -195,6 +195,7 @@ export interface DomainSafetyTrialEvaluation {
   criticalFailures: DomainSafetyCriticalGateId[]
   incompleteCriticalGates: DomainSafetyCriticalGateId[]
   qualityFailures: DomainSafetyQualityId[]
+  incompleteQualityDimensions: DomainSafetyQualityId[]
   findingCounts: Record<"critical" | "high" | "medium" | "low", number>
   reliance: "none"
   pirbEligibility: "not_evaluated"
@@ -248,6 +249,9 @@ export function evaluateDomainSafetyTrial(
   const qualityFailures = DOMAIN_SAFETY_QUALITY_DIMENSIONS.filter(
     ({ id }) => submission.qualityDimensions[id] === "failure"
   ).map(({ id }) => id)
+  const incompleteQualityDimensions = DOMAIN_SAFETY_QUALITY_DIMENSIONS.filter(
+    ({ id }) => submission.qualityDimensions[id] === "not_tested"
+  ).map(({ id }) => id)
   const findingCounts = { critical: 0, high: 0, medium: 0, low: 0 }
   if (submission.finding) findingCounts[submission.finding.severity] += 1
 
@@ -259,7 +263,7 @@ export function evaluateDomainSafetyTrial(
     findingCounts.high > 0
   ) {
     disposition = "revise_test_surface"
-  } else if (incompleteCriticalGates.length > 0) {
+  } else if (incompleteCriticalGates.length > 0 || incompleteQualityDimensions.length > 0) {
     disposition = "close_without_reliance"
   }
 
@@ -271,6 +275,7 @@ export function evaluateDomainSafetyTrial(
     criticalFailures,
     incompleteCriticalGates,
     qualityFailures,
+    incompleteQualityDimensions,
     findingCounts,
     reliance: "none",
     pirbEligibility: "not_evaluated",

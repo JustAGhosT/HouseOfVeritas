@@ -78,6 +78,16 @@ describe("domain safety reviewer trial contract", () => {
     })
   })
 
+  it("closes without reliance while any quality dimension is not tested", () => {
+    const run = submission()
+    run.qualityDimensions.ambiguity_handling = "not_tested"
+
+    expect(evaluateDomainSafetyTrial(run)).toMatchObject({
+      disposition: "close_without_reliance",
+      incompleteQualityDimensions: ["ambiguity_handling"],
+    })
+  })
+
   it("rejects external effects and detects restricted keys before parsing", () => {
     const unsafe = {
       ...submission(),
