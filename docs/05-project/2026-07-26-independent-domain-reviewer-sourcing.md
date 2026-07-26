@@ -97,6 +97,10 @@ consent, independence, and evidence rules.
 
 Use a 30-45 minute paid or explicitly voluntary synthetic session:
 
+The executable script, fictional text prototype, variants, evidence capture, and
+severity-based decision rules are in the
+[alpha experience reviewer synthetic trial pack](2026-07-26-alpha-experience-reviewer-trial-pack.md).
+
 1. Explain the reviewer's limited authority and confirm consent to notes and any
    separately approved recording.
 2. Give the reviewer a fictional issue report with no real address, person,
@@ -423,3 +427,5 @@ scoring remain inside HOV governance, not inside the adapter.
    candidate ID and requested capability in Baton; keep identity and relationship
    details restricted, and run the alpha experience trial separately from the
    domain-safety trial.
+7. Internally dry-run the alpha pack before any invitation. Passing that rehearsal
+   does not authorize contact, recording, compensation, or a live session.
