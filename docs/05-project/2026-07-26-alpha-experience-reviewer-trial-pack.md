@@ -33,7 +33,17 @@ outside this public repository:
   access, services, references, vendor work, or personal relationships;
 - approved note-taking and, if proposed, separately approved recording terms;
 - approved restricted store and deletion owner; and
-- exact trial-pack version and facilitator.
+- exact trial-pack version and facilitator;
+- named, reachable `DomainSafetyReviewer` escalation owner and approved contact
+  path for any real-world safety advice or concern; and
+- named, reachable privacy escalation owner and approved contact path for any
+  personal-information, consent, recording, correction, withdrawal, deletion, or
+  incident concern.
+
+The facilitator must test both escalation paths before the session without
+transmitting candidate or household information. A pending role, unmonitored
+mailbox, or instruction to decide the concern within the alpha session leaves the
+activation gate closed.
 
 `Proceed`, a repository merge, a Baton update, or a completed internal dry-run is
 not approval to contact a person, spend funds, record a session, or process real
@@ -171,14 +181,14 @@ evidence or escalation is required. This is not proof of a successful repair.
 
 ## Facilitator run sheet
 
-| Time      | Activity                                                                                   |
-| --------- | ------------------------------------------------------------------------------------------ |
-| 0-5 min   | Read the opening statement, confirm consent choices, and explain think-aloud.              |
-| 5-10 min  | Ask the reviewer to restate the purpose, their authority, and what data they believe real. |
-| 10-25 min | Walk through Screens A-E without teaching the intended path.                               |
-| 25-35 min | Run one assigned variant and ask the reviewer to recover or stop.                          |
-| 35-40 min | Test correction, withdrawal, deletion, visibility, and escalation comprehension.           |
-| 40-45 min | Invite final criticism, confirm note accuracy, and restate the withdrawal path.            |
+| Time      | Activity                                                                                     |
+| --------- | -------------------------------------------------------------------------------------------- |
+| 0-5 min   | Read the opening statement, confirm consent choices, and explain think-aloud.                |
+| 5-10 min  | Ask the reviewer to restate the purpose, their authority, and what data they believe real.   |
+| 10-30 min | Walk through the assigned-variant version of Screens A-E without teaching the intended path. |
+| 30-35 min | Probe the resulting decision, recovery, or stop without revealing or replacing the variant.  |
+| 35-40 min | Test correction, withdrawal, deletion, visibility, and escalation comprehension.             |
+| 40-45 min | Invite final criticism, confirm note accuracy, and restate the withdrawal path.              |
 
 Use neutral prompts:
 
@@ -194,8 +204,16 @@ Do not ask whether they "like" the concept as a substitute for observed behavior
 
 ## Assigned variants
 
-Use the core pack unchanged and assign one variant before the session. Record the
-variant, but do not describe it as a trick.
+Assign exactly one variant before invitation. Apply it to the candidate's first
+exposure rather than showing the base pack and changing it later:
+
+- include Variant C's recommendation-chain disclosure in the original invitation;
+- render Variants A, B, or D in the relevant screen before the walkthrough starts;
+- use Variant E only as a pre-invitation facilitator check; and
+- do not show the reviewer the base version for comparison during the session.
+
+Keep every unaffected part of the core pack unchanged. Record the variant, but do
+not describe it as a trick.
 
 | Variant | Synthetic change                                                                                       | Evidence sought                                                                 |
 | ------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
@@ -205,9 +223,10 @@ variant, but do not describe it as a trick.
 | `D`     | Screen B uses dense wording and the correction control is available only through an unlabeled icon.    | Accessibility and discoverability failure is identified and severity recorded.  |
 | `E`     | The fictional inviter is described as controlling the reviewer's future work allocation.               | Reviewer or facilitator recognizes coercion and stops the session.              |
 
-Variant E is a facilitator safety check, not a scenario to run with a real power
-imbalance. If that relationship exists, resolve it before invitation; do not use
-the session to test whether the candidate tolerates coercion.
+Variant E is a facilitator safety check, not a scenario to present to a reviewer
+or run with a real power imbalance. If that relationship exists, resolve it before
+invitation; do not use the session to test whether the candidate tolerates
+coercion.
 
 ## Evidence capture
 
@@ -297,8 +316,10 @@ without impersonating a candidate and without generating participant evidence:
   and reopen prompts are present;
 - rehearse the minimized finding and closeout records;
 - verify the assigned variant does not expose or exploit a real relationship;
+- test that the named domain and privacy escalation owners and approved contact
+  paths are reachable, without transmitting candidate or household information;
 - confirm the facilitator knows which concern routes to the domain, privacy, or
-  decision owner; and
+  decision owner and must not adjudicate it in-session; and
 - record only `internal dry-run passed/failed`, pack version, and corrections.
 
 Passing the internal dry-run leaves the activation gate closed.
@@ -312,12 +333,16 @@ The repository-only structural rehearsal passed on 2026-07-26 for
   or synthetic;
 - the opening statement preserves limited authority, voluntary participation,
   and no-negative-effect language;
+- every assigned variant is applied before invitation or first screen exposure,
+  and the baseline is not used to prime the reviewer;
 - the prototype exposes stop, cancel, correction, withdrawal, visibility,
   deletion, escalation, and reopen paths;
 - diagnosis, repair, parts, safe-delay, supplier-preference, purchasing, and
   compliance assertions are prohibited rather than supplied;
 - evidence capture uses a candidate ID and minimized categories, with restricted
   records kept outside Git and Baton; and
+- activation requires tested, reachable domain-safety and privacy escalation
+  routes, which remain pending; and
 - the closeout rule cannot produce a product, safety, market, or Gate decision.
 
 This was a document/control rehearsal, not a usability session. It provides no
