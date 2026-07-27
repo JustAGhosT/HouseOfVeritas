@@ -63,7 +63,7 @@ function TechPattern() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {/* Circuit board pattern */}
-      <svg className="absolute top-10 right-10 h-64 w-64 text-blue-500/5" viewBox="0 0 100 100">
+      <svg className="text-primary/5 absolute top-10 right-10 h-64 w-64" viewBox="0 0 100 100">
         <circle cx="20" cy="20" r="5" fill="currentColor" />
         <circle cx="80" cy="20" r="5" fill="currentColor" />
         <circle cx="50" cy="50" r="8" fill="currentColor" />
@@ -77,7 +77,7 @@ function TechPattern() {
         />
       </svg>
       {/* Network nodes */}
-      <svg className="absolute bottom-20 left-10 h-48 w-48 text-blue-500/5" viewBox="0 0 100 100">
+      <svg className="text-primary/5 absolute bottom-20 left-10 h-48 w-48" viewBox="0 0 100 100">
         <circle cx="50" cy="50" r="15" fill="currentColor" />
         <circle cx="20" cy="30" r="8" fill="currentColor" />
         <circle cx="80" cy="30" r="8" fill="currentColor" />
@@ -89,16 +89,13 @@ function TechPattern() {
         <line x1="50" y1="50" x2="80" y2="70" stroke="currentColor" strokeWidth="2" />
       </svg>
       {/* Monitor/Screen */}
-      <svg className="absolute top-1/3 left-1/5 h-40 w-40 text-blue-500/5" viewBox="0 0 100 100">
+      <svg className="text-primary/5 absolute top-1/3 left-1/5 h-40 w-40" viewBox="0 0 100 100">
         <rect x="10" y="15" width="80" height="55" rx="3" fill="currentColor" />
         <rect x="40" y="70" width="20" height="10" fill="currentColor" />
         <rect x="30" y="80" width="40" height="5" rx="2" fill="currentColor" />
       </svg>
       {/* Chip/CPU */}
-      <svg
-        className="absolute right-1/5 bottom-1/3 h-36 w-36 text-blue-500/5"
-        viewBox="0 0 100 100"
-      >
+      <svg className="text-primary/5 absolute right-1/5 bottom-1/3 h-36 w-36" viewBox="0 0 100 100">
         <rect x="25" y="25" width="50" height="50" rx="5" fill="currentColor" />
         {[30, 40, 50, 60, 70].map((pos) => (
           <g key={pos}>
@@ -119,8 +116,8 @@ function TechPattern() {
 const CustomTooltip = ({ active, payload, label }: ChartTooltipProps) => {
   if (active && payload && payload.length) {
     return (
-      <div className="rounded-lg border border-blue-500/20 bg-blue-950 p-3 shadow-xl">
-        <p className="mb-1 font-medium text-blue-100">{label}</p>
+      <div className="border-primary/20 bg-primary/15 rounded-lg border p-3 shadow-xl">
+        <p className="text-foreground mb-1 font-medium">{label}</p>
         {payload.map((entry, index) => (
           <p key={index} className="text-sm" style={{ color: entry.color }}>
             {entry.name}:{" "}
@@ -157,7 +154,7 @@ function StatCard({
   color: StatCardColor
 }) {
   const colorClasses: Record<StatCardColor, string> = {
-    blue: "from-blue-600/30 to-blue-600/10 border-blue-500/30",
+    blue: "from-primary/30 to-primary/10 border-primary/30",
     green: "from-green-600/30 to-green-600/10 border-green-500/30",
     amber: "from-amber-600/30 to-amber-600/10 border-amber-500/30",
     red: "from-red-600/30 to-red-600/10 border-red-500/30",
@@ -165,7 +162,7 @@ function StatCard({
   }
 
   const iconColors: Record<StatCardColor, string> = {
-    blue: "text-blue-400",
+    blue: "text-primary",
     green: "text-green-400",
     amber: "text-amber-400",
     red: "text-red-400",
@@ -180,7 +177,7 @@ function StatCard({
       <div className="flex items-start justify-between">
         <div>
           <p className="mb-1 text-sm text-blue-200/60">{title}</p>
-          <p className="text-3xl font-bold text-blue-100">{value}</p>
+          <p className="text-foreground text-3xl font-bold">{value}</p>
           {change && (
             <div className="mt-2 flex items-center gap-1">
               {changeType === "up" && <TrendingUp className="h-4 w-4 text-green-400" />}
@@ -194,7 +191,7 @@ function StatCard({
           )}
         </div>
         <div
-          className={`rounded-xl border border-blue-500/20 bg-blue-950/50 p-3 ${iconColors[color as keyof typeof iconColors]}`}
+          className={`border-primary/20 bg-primary/15 rounded-xl border p-3 ${iconColors[color as keyof typeof iconColors]}`}
         >
           <Icon className="h-6 w-6" />
         </div>
@@ -205,10 +202,10 @@ function StatCard({
 
 function EmptyPanel({ title, action }: { title: string; action?: string }) {
   return (
-    <div className="flex h-full min-h-40 items-center justify-center rounded-xl border border-blue-500/10 bg-blue-950/30 p-6 text-center">
+    <div className="border-primary/10 bg-primary/10 flex h-full min-h-40 items-center justify-center rounded-xl border p-6 text-center">
       <div>
-        <p className="font-medium text-blue-100">{title}</p>
-        {action && <p className="mt-2 text-sm text-blue-200/50">{action}</p>}
+        <p className="text-foreground font-medium">{title}</p>
+        {action && <p className="text-muted-foreground mt-2 text-sm">{action}</p>}
       </div>
     </div>
   )
@@ -233,7 +230,7 @@ export default function DashboardPage() {
     return (
       <DashboardLayout persona="hans">
         <div className="flex h-64 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500/30 border-t-blue-500" />
+          <div className="border-primary/30 border-t-primary h-8 w-8 animate-spin rounded-full border-2" />
         </div>
       </DashboardLayout>
     )
@@ -266,15 +263,15 @@ export default function DashboardPage() {
   return (
     <DashboardLayout persona="hans">
       {/* Persona-specific background */}
-      <div className="fixed inset-0 -z-10 bg-linear-to-br from-blue-950/40 via-[#0a0a0f] to-cyan-950/30" />
+      <div className="from-primary/10 to-secondary/10 fixed inset-0 -z-10 bg-linear-to-br via-[#0a0a0f]" />
       <TechPattern />
 
       {/* Specialty Tags */}
       <div className="mb-6 flex flex-wrap gap-2">
-        <span className="flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/20 px-3 py-1.5 text-sm font-medium text-blue-400">
+        <span className="border-primary/30 bg-primary/20 text-primary flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium">
           <Monitor className="h-4 w-4" /> Tech Lead
         </span>
-        <span className="flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/20 px-3 py-1.5 text-sm font-medium text-cyan-400">
+        <span className="border-secondary/30 bg-secondary/20 text-secondary flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium">
           <Cpu className="h-4 w-4" /> Electronics
         </span>
         <span className="flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-500/20 px-3 py-1.5 text-sm font-medium text-purple-400">
@@ -334,17 +331,17 @@ export default function DashboardPage() {
         {/* Budget Overview */}
         <WidgetErrorBoundary className="lg:col-span-2">
           <div
-            className="rounded-2xl border border-blue-500/20 bg-blue-950/40 p-6 backdrop-blur-sm"
+            className="border-primary/20 bg-primary/10 rounded-2xl border p-6 backdrop-blur-sm"
             data-testid="budget-chart"
           >
             <div className="mb-6 flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-blue-100">Budget Overview</h3>
-                <p className="text-sm text-blue-200/50">6-month spending trend</p>
+                <h3 className="text-foreground font-semibold">Budget Overview</h3>
+                <p className="text-muted-foreground text-sm">6-month spending trend</p>
               </div>
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-blue-500" />
+                  <div className="bg-primary h-3 w-3 rounded-full" />
                   <span className="text-blue-200/60">Allocated</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -387,11 +384,11 @@ export default function DashboardPage() {
         {/* Task Status */}
         <WidgetErrorBoundary>
           <div
-            className="rounded-2xl border border-blue-500/20 bg-blue-950/40 p-6 backdrop-blur-sm"
+            className="border-primary/20 bg-primary/10 rounded-2xl border p-6 backdrop-blur-sm"
             data-testid="task-status-chart"
           >
-            <h3 className="mb-2 font-semibold text-blue-100">Task Status</h3>
-            <p className="mb-4 text-sm text-blue-200/50">Current overview</p>
+            <h3 className="text-foreground mb-2 font-semibold">Task Status</h3>
+            <p className="text-muted-foreground mb-4 text-sm">Current overview</p>
             <div className="h-48">
               {hasTaskStatus ? (
                 <ResponsiveContainer width="100%" height="100%">
@@ -430,7 +427,7 @@ export default function DashboardPage() {
                       />
                       <span className="text-blue-200/60">{status.name}</span>
                     </div>
-                    <span className="font-medium text-blue-100">{status.value}</span>
+                    <span className="text-foreground font-medium">{status.value}</span>
                   </div>
                 ))}
               </div>
@@ -444,13 +441,13 @@ export default function DashboardPage() {
         {/* Employee Task Performance */}
         <WidgetErrorBoundary>
           <div
-            className="rounded-2xl border border-blue-500/20 bg-blue-950/40 p-6 backdrop-blur-sm"
+            className="border-primary/20 bg-primary/10 rounded-2xl border p-6 backdrop-blur-sm"
             data-testid="employee-performance-chart"
           >
             <div className="mb-6 flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-blue-100">Employee Performance</h3>
-                <p className="text-sm text-blue-200/50">Tasks completed this month</p>
+                <h3 className="text-foreground font-semibold">Employee Performance</h3>
+                <p className="text-muted-foreground text-sm">Tasks completed this month</p>
               </div>
             </div>
             <div className="h-64">
@@ -465,17 +462,17 @@ export default function DashboardPage() {
         {/* Compliance Trend */}
         <WidgetErrorBoundary>
           <div
-            className="rounded-2xl border border-blue-500/20 bg-blue-950/40 p-6 backdrop-blur-sm"
+            className="border-primary/20 bg-primary/10 rounded-2xl border p-6 backdrop-blur-sm"
             data-testid="compliance-chart"
           >
             <div className="mb-6 flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-blue-100">Document Compliance</h3>
-                <p className="text-sm text-blue-200/50">6-month trend</p>
+                <h3 className="text-foreground font-semibold">Document Compliance</h3>
+                <p className="text-muted-foreground text-sm">6-month trend</p>
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-blue-200/60">—</p>
-                <p className="text-sm text-blue-200/50">Current</p>
+                <p className="text-muted-foreground text-sm">Current</p>
               </div>
             </div>
             <div className="h-64">
@@ -493,13 +490,13 @@ export default function DashboardPage() {
         {/* Pending Approvals - 2 columns */}
         <WidgetErrorBoundary className="lg:col-span-2">
           <div
-            className="overflow-hidden rounded-2xl border border-blue-500/20 bg-blue-950/40 backdrop-blur-sm"
+            className="border-primary/20 bg-primary/10 overflow-hidden rounded-2xl border backdrop-blur-sm"
             data-testid="pending-approvals"
           >
-            <div className="flex items-center justify-between border-b border-blue-500/20 p-6">
+            <div className="border-primary/20 flex items-center justify-between border-b p-6">
               <div>
-                <h3 className="text-lg font-semibold text-blue-100">Pending Approvals</h3>
-                <p className="text-sm text-blue-200/50">Items requiring your action</p>
+                <h3 className="text-foreground text-lg font-semibold">Pending Approvals</h3>
+                <p className="text-muted-foreground text-sm">Items requiring your action</p>
               </div>
               <span className="rounded-full border border-amber-500/30 bg-amber-500/20 px-3 py-1 text-sm font-medium text-amber-400">
                 {expenses.pending} pending
@@ -511,9 +508,9 @@ export default function DashboardPage() {
                 action="Submitted expenses or approval workflows will appear here."
               />
             </div>
-            <div className="border-t border-blue-500/20 p-4">
+            <div className="border-primary/20 border-t p-4">
               <button
-                className="flex w-full items-center justify-center gap-2 text-center text-sm font-medium text-blue-400 hover:text-blue-300"
+                className="text-primary flex w-full items-center justify-center gap-2 text-center text-sm font-medium hover:text-blue-300"
                 onClick={() => router.push("/dashboard/hans/approvals")}
                 aria-label="View all pending items"
               >
@@ -529,13 +526,13 @@ export default function DashboardPage() {
           {/* Document Expiry Alerts */}
           <WidgetErrorBoundary>
             <div
-              className="overflow-hidden rounded-2xl border border-blue-500/20 bg-blue-950/40 backdrop-blur-sm"
+              className="border-primary/20 bg-primary/10 overflow-hidden rounded-2xl border backdrop-blur-sm"
               data-testid="document-expiry"
             >
-              <div className="flex items-center justify-between border-b border-blue-500/20 p-6">
+              <div className="border-primary/20 flex items-center justify-between border-b p-6">
                 <div>
-                  <h3 className="font-semibold text-blue-100">Expiring Documents</h3>
-                  <p className="text-sm text-blue-200/50">Requiring review</p>
+                  <h3 className="text-foreground font-semibold">Expiring Documents</h3>
+                  <p className="text-muted-foreground text-sm">Requiring review</p>
                 </div>
                 <AlertTriangle className="h-5 w-5 text-amber-400" />
               </div>
@@ -551,13 +548,13 @@ export default function DashboardPage() {
           {/* Recent Activity */}
           <WidgetErrorBoundary>
             <div
-              className="overflow-hidden rounded-2xl border border-blue-500/20 bg-blue-950/40 backdrop-blur-sm"
+              className="border-primary/20 bg-primary/10 overflow-hidden rounded-2xl border backdrop-blur-sm"
               data-testid="recent-activity"
             >
-              <div className="border-b border-blue-500/20 p-6">
-                <h3 className="font-semibold text-blue-100">Recent Activity</h3>
+              <div className="border-primary/20 border-b p-6">
+                <h3 className="text-foreground font-semibold">Recent Activity</h3>
               </div>
-              <div className="divide-y divide-blue-500/10 p-4">
+              <div className="divide-primary/10 divide-y p-4">
                 <EmptyPanel
                   title="No recent activity"
                   action="Live events will appear here after work is recorded."
@@ -569,27 +566,27 @@ export default function DashboardPage() {
           {/* System Status */}
           <WidgetErrorBoundary>
             <div
-              className="rounded-2xl border border-blue-500/20 bg-blue-950/40 p-6 backdrop-blur-sm"
+              className="border-primary/20 bg-primary/10 rounded-2xl border p-6 backdrop-blur-sm"
               data-testid="system-status"
             >
               <div className="mb-4 flex items-center gap-3">
-                <Server className="h-5 w-5 text-blue-400" />
-                <h3 className="font-semibold text-blue-100">System Status</h3>
+                <Server className="text-primary h-5 w-5" />
+                <h3 className="text-foreground font-semibold">System Status</h3>
               </div>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-blue-200/60">Data mode</span>
-                  <span className="text-sm font-medium text-blue-100">
+                  <span className="text-foreground text-sm font-medium">
                     {stats?.dataSource ?? "empty"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-blue-200/60">Tasks tracked</span>
-                  <span className="text-sm font-medium text-blue-100">{tasks.total}</span>
+                  <span className="text-foreground text-sm font-medium">{tasks.total}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-blue-200/60">Employees tracked</span>
-                  <span className="text-sm font-medium text-blue-100">{users.active}</span>
+                  <span className="text-foreground text-sm font-medium">{users.active}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-blue-200/60">API Status</span>

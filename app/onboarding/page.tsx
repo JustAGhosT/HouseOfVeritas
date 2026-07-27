@@ -1,6 +1,7 @@
 "use client"
 
 import { ErrorBoundary } from "@/components/error-boundary"
+import { UserThemePicker } from "@/components/user-theme-picker"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -10,6 +11,7 @@ import { apiFetch, apiFetchSafe } from "@/lib/api-client"
 import { useAuth } from "@/lib/auth-context"
 import { logger } from "@/lib/logger"
 import { useLoginModal } from "@/lib/login-modal-context"
+import { defaultUserThemeForColor, isUserThemeId, type UserThemeId } from "@/lib/user-themes"
 import {
   ArrowRight,
   Bell,
@@ -18,6 +20,7 @@ import {
   ChevronDown,
   FileSignature,
   Loader2,
+  Palette,
   Shield,
   User,
   Users,
@@ -37,7 +40,7 @@ const ROLES = ["operator", "employee", "resident"] as const
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, refresh } = useAuth()
   const { openLoginModal } = useLoginModal()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -47,6 +50,8 @@ export default function OnboardingPage() {
     name: string
     role: string
     responsibilities?: string[]
+    color?: string
+    themeId?: UserThemeId
   } | null>(null)
 
   const profileUser = fetchedUser ?? user
@@ -70,6 +75,7 @@ export default function OnboardingPage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [notifPrefs, setNotifPrefs] = useState({ email: true, sms: false, push: true })
   const [twoFaEnabled, setTwoFaEnabled] = useState(false)
+  const [selectedTheme, setSelectedTheme] = useState<UserThemeId>("sanctum")
 
   useEffect(() => {
     apiFetchSafe<{
@@ -78,6 +84,8 @@ export default function OnboardingPage() {
         name: string
         role: string
         responsibilities?: string[]
+        color?: string
+        themeId?: UserThemeId
         onboardingStatus?: string
       }
     } | null>("/api/users/me", null, { label: "UsersMe" })
@@ -88,8 +96,15 @@ export default function OnboardingPage() {
             name: string
             role: string
             responsibilities?: string[]
+            color?: string
+            themeId?: UserThemeId
           }
           setFetchedUser(u)
+          const initialTheme = isUserThemeId(u.themeId)
+            ? u.themeId
+            : defaultUserThemeForColor(u.color)
+          setSelectedTheme(initialTheme)
+          document.documentElement.dataset.userTheme = initialTheme
           setSelectedResponsibilities(new Set(u.responsibilities || []))
           setLoading(false)
           if (data.user.onboardingStatus === "completed") {
@@ -210,14 +225,30 @@ export default function OnboardingPage() {
     if (!profileUser?.id) return
     await handleSaveResponsibilities()
     try {
+      await apiFetch("/api/users/me", {
+        method: "PATCH",
+        body: { themeId: selectedTheme },
+        label: "OnboardingTheme",
+      })
       await apiFetch("/api/users/me/onboard", { method: "POST", label: "Onboard" })
+      await refresh()
       router.push(`/dashboard/${profileUser.id}?tutorial=1`)
     } catch {
       router.push(`/dashboard/${profileUser.id}?tutorial=1`)
     }
   }
 
-  const handleClose = () => {
+  const handleClose = async () => {
+    try {
+      await apiFetch("/api/users/me", {
+        method: "PATCH",
+        body: { themeId: selectedTheme },
+        label: "OnboardingTheme",
+      })
+      await refresh()
+    } catch {
+      // Leaving onboarding remains available if preference persistence is unavailable.
+    }
     router.push(`/dashboard/${profileUser?.id || ""}`)
   }
 
@@ -337,6 +368,24 @@ export default function OnboardingPage() {
                     I confirm this is my correct role
                   </Label>
                 </div>
+              </div>
+
+              <div>
+                <p className="mb-2 flex items-center gap-2 text-sm font-medium text-white/80">
+                  <Palette className="h-4 w-4" />
+                  Choose your workspace theme
+                </p>
+                <p className="mb-3 text-sm text-white/50">
+                  This changes your colours only. Your role and access stay the same.
+                </p>
+                <UserThemePicker
+                  value={selectedTheme}
+                  onChange={(themeId) => {
+                    setSelectedTheme(themeId)
+                    document.documentElement.dataset.userTheme = themeId
+                  }}
+                  compact
+                />
               </div>
 
               <div>

@@ -1,4 +1,5 @@
 import { isPostgresConfigured, query, withClient, ensureSchema } from "@/lib/db/postgres"
+import { defaultUserThemeForColor, isUserThemeId, type UserThemeId } from "@/lib/user-themes"
 
 export interface User {
   id: string
@@ -8,6 +9,7 @@ export interface User {
   role: UserRole
   description: string
   color: string
+  themeId?: UserThemeId
   icon: string
   specialty: string[]
   photoUrl?: string
@@ -27,6 +29,7 @@ const DEMO_SEED_USERS: Record<string, User> = DEMO_USERS_ENABLED
         role: "admin",
         description: "Demo Administrator account",
         color: "blue",
+        themeId: "ocean",
         icon: "🛡️",
         specialty: ["Administration", "Compliance"],
       },
@@ -38,6 +41,7 @@ const DEMO_SEED_USERS: Record<string, User> = DEMO_USERS_ENABLED
         role: "operator",
         description: "Demo Operator account",
         color: "amber",
+        themeId: "ember",
         icon: "🔧",
         specialty: ["Operations", "Maintenance"],
       },
@@ -49,6 +53,7 @@ const DEMO_SEED_USERS: Record<string, User> = DEMO_USERS_ENABLED
         role: "resident",
         description: "Demo Resident account",
         color: "purple",
+        themeId: "amethyst",
         icon: "🏠",
         specialty: ["Household", "Management"],
       },
@@ -60,6 +65,7 @@ const DEMO_SEED_USERS: Record<string, User> = DEMO_USERS_ENABLED
         role: "employee",
         description: "Demo Employee account",
         color: "green",
+        themeId: "garden",
         icon: "👤",
         specialty: ["Tasks", "Support"],
       },
@@ -75,6 +81,7 @@ export const USERS: Record<string, User> = {
     role: "admin",
     description: "Full platform access, approvals, and oversight",
     color: "blue",
+    themeId: "ocean",
     icon: "👔",
     specialty: ["Tech", "Leadership", "Electronics"],
   },
@@ -86,6 +93,7 @@ export const USERS: Record<string, User> = {
     role: "resident",
     description: "Household tasks, documents, limited access",
     color: "purple",
+    themeId: "amethyst",
     icon: "🏠",
     specialty: ["Babysitting", "Cleaning", "Food"],
   },
@@ -97,6 +105,7 @@ export const USERS: Record<string, User> = {
     role: "operator",
     description: "Tasks, assets, time tracking, vehicles coming soon",
     color: "amber",
+    themeId: "ember",
     icon: "🔧",
     specialty: ["Tinkerer", "Electrician", "Plumber", "Magicman"],
   },
@@ -108,6 +117,7 @@ export const USERS: Record<string, User> = {
     role: "employee",
     description: "Tasks, expenses, time tracking, vehicles coming soon",
     color: "green",
+    themeId: "garden",
     icon: "🌿",
     specialty: ["Gardening", "Painting", "Manual Labour"],
   },
@@ -131,6 +141,7 @@ type UserRow = {
   role: string
   description: string
   color: string
+  theme_id?: string | null
   icon: string
   specialty: string[]
   photo_url?: string
@@ -145,6 +156,7 @@ function rowToUser(row: UserRow): User {
     role: row.role as UserRole,
     description: row.description || "",
     color: row.color || "gray",
+    themeId: isUserThemeId(row.theme_id) ? row.theme_id : defaultUserThemeForColor(row.color),
     icon: row.icon || "👤",
     specialty: Array.isArray(row.specialty) ? row.specialty : [],
     photoUrl: row.photo_url,
@@ -158,7 +170,7 @@ export async function findUserByEmailAsync(email: string): Promise<User | undefi
   await ensureUsersSchemaOnce()
   await seedUsersIfEmpty()
   const { rows } = await query<UserRow>(
-    `SELECT id, name, email, phone, role, description, color, icon, specialty
+    `SELECT id, name, email, phone, role, description, color, theme_id, icon, specialty
      FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1`,
     [email]
   )
@@ -194,6 +206,7 @@ export async function findOrCreateOidcUserAsync(
     role: "resident",
     description: "Self-provisioned via Mystira sign-in",
     color: "gray",
+    themeId: "sanctum",
     icon: "👤",
     specialty: [],
   }
@@ -201,8 +214,8 @@ export async function findOrCreateOidcUserAsync(
   if (isPostgresConfigured()) {
     await ensureUsersSchemaOnce()
     await query(
-      `INSERT INTO users (id, name, email, phone, role, description, color, icon, specialty)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO users (id, name, email, phone, role, description, color, theme_id, icon, specialty)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        ON CONFLICT (email) DO NOTHING`,
       [
         user.id,
@@ -212,6 +225,7 @@ export async function findOrCreateOidcUserAsync(
         user.role,
         user.description,
         user.color,
+        user.themeId,
         user.icon,
         user.specialty,
       ]
@@ -232,7 +246,7 @@ export async function getAllUsersAsync(): Promise<User[]> {
   await ensureUsersSchemaOnce()
   await seedUsersIfEmpty()
   const { rows } = await query<UserRow>(
-    `SELECT id, name, email, phone, role, description, color, icon, specialty FROM users`
+    `SELECT id, name, email, phone, role, description, color, theme_id, icon, specialty FROM users`
   )
   return rows.map(rowToUser)
 }
@@ -244,7 +258,7 @@ export async function findUserByIdAsync(id: string): Promise<User | undefined> {
   await ensureUsersSchemaOnce()
   await seedUsersIfEmpty()
   const { rows } = await query<UserRow>(
-    `SELECT id, name, email, phone, role, description, color, icon, specialty, photo_url
+    `SELECT id, name, email, phone, role, description, color, theme_id, icon, specialty, photo_url
      FROM users WHERE LOWER(id) = LOWER($1) LIMIT 1`,
     [id]
   )
@@ -260,8 +274,8 @@ export async function seedUsersIfEmpty(): Promise<void> {
   await withClient(async (client) => {
     for (const user of Object.values(USERS)) {
       await client.query(
-        `INSERT INTO users (id, name, email, phone, role, description, color, icon, specialty)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `INSERT INTO users (id, name, email, phone, role, description, color, theme_id, icon, specialty)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          ON CONFLICT (id) DO NOTHING`,
         [
           user.id,
@@ -271,6 +285,7 @@ export async function seedUsersIfEmpty(): Promise<void> {
           user.role,
           user.description,
           user.color,
+          user.themeId,
           user.icon,
           user.specialty,
         ]
@@ -294,7 +309,7 @@ export function findUserByPhone(phone: string): User | undefined {
 
 export async function updateUserProfileAsync(
   id: string,
-  updates: { name?: string; phone?: string; photoUrl?: string }
+  updates: { name?: string; phone?: string; photoUrl?: string; themeId?: UserThemeId }
 ): Promise<User | null> {
   if (isPostgresConfigured()) {
     await ensureUsersSchemaOnce()
@@ -313,6 +328,10 @@ export async function updateUserProfileAsync(
       setClauses.push(`photo_url = $${idx++}`)
       values.push(updates.photoUrl)
     }
+    if (updates.themeId !== undefined) {
+      setClauses.push(`theme_id = $${idx++}`)
+      values.push(updates.themeId)
+    }
     if (setClauses.length === 0) return (await findUserByIdAsync(id)) ?? null
     setClauses.push(`updated_at = NOW()`)
     values.push(id)
@@ -327,6 +346,7 @@ export async function updateUserProfileAsync(
   if (updates.name != null) user.name = updates.name
   if (updates.phone != null) user.phone = updates.phone
   if (updates.photoUrl !== undefined) (user as User).photoUrl = updates.photoUrl
+  if (updates.themeId !== undefined) user.themeId = updates.themeId
   return user
 }
 

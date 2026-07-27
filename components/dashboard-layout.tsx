@@ -145,13 +145,6 @@ export default function DashboardLayout({ children, persona }: DashboardLayoutPr
     isViewingOwnDashboard ? user?.responsibilities : undefined
   )
 
-  const colorClasses = {
-    blue: "bg-primary",
-    amber: "bg-muted",
-    green: "bg-secondary",
-    purple: "bg-accent",
-  }
-
   const handleLogout = () => {
     logout()
   }
@@ -180,7 +173,7 @@ export default function DashboardLayout({ children, persona }: DashboardLayoutPr
           </div>
           <Link href="/" className="flex items-center gap-3 relative z-10">
             <div
-              className={`h-10 w-10 rounded-xl ${colorClasses[personaInfo.color as keyof typeof colorClasses]} flex items-center justify-center`}
+              className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center"
             >
               <span className="font-serif text-2xl leading-none text-primary-foreground">
                 {crest.core}
@@ -218,7 +211,7 @@ export default function DashboardLayout({ children, persona }: DashboardLayoutPr
                             onClick={() => setSidebarOpen(false)}
                             className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${
                               isActive
-                                ? `${colorClasses[personaInfo.color as keyof typeof colorClasses]} text-primary-foreground`
+                                ? "bg-primary text-primary-foreground"
                                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
                             } `}
                           >
@@ -241,7 +234,7 @@ export default function DashboardLayout({ children, persona }: DashboardLayoutPr
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-all ${
                   isActive
-                    ? `${colorClasses[personaInfo.color as keyof typeof colorClasses]} text-primary-foreground`
+                    ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 } `}
               >

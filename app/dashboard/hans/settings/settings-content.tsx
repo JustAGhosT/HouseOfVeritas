@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react"
 import DashboardLayout from "@/components/dashboard-layout"
+import { UserThemePicker } from "@/components/user-theme-picker"
 import { useI18n, LanguageSelector } from "@/lib/i18n/context"
 import { usePWA } from "@/lib/hooks/use-pwa"
 import { useAuth } from "@/lib/auth-context"
 import { apiFetch, apiFetchSafe } from "@/lib/api-client"
+import { defaultUserThemeForColor, isUserThemeId, type UserThemeId } from "@/lib/user-themes"
 import {
   User,
   Globe,
@@ -19,6 +21,7 @@ import {
   CheckCircle,
   Trash2,
   Download,
+  Palette,
 } from "lucide-react"
 
 function ToggleSetting({
@@ -53,7 +56,7 @@ function ToggleSetting({
 }
 
 export function SettingsPageContent({ persona }: { persona: "hans" | "charl" | "lucky" | "irma" }) {
-  const { user } = useAuth()
+  const { user, refresh } = useAuth()
   const { t } = useI18n()
   const { isInstalled, canInstall, installApp, requestNotificationPermission } = usePWA()
   const [saved, setSaved] = useState(false)
@@ -68,6 +71,12 @@ export function SettingsPageContent({ persona }: { persona: "hans" | "charl" | "
   const [storageOptions, setStorageOptions] = useState<string[]>([])
   const [newStorageOption, setNewStorageOption] = useState("")
   const [storageOptionsSaved, setStorageOptionsSaved] = useState(false)
+  const [themeOverride, setThemeOverride] = useState<UserThemeId | null>(null)
+  const [saveError, setSaveError] = useState(false)
+  const persistedTheme = isUserThemeId(user?.themeId)
+    ? user.themeId
+    : defaultUserThemeForColor(user?.color)
+  const selectedTheme = themeOverride ?? persistedTheme
 
   useEffect(() => {
     apiFetchSafe<{ options?: string[] }>(
@@ -77,10 +86,22 @@ export function SettingsPageContent({ persona }: { persona: "hans" | "charl" | "
     ).then((d) => setStorageOptions(d?.options || []))
   }, [])
 
-  const handleSave = () => {
-    localStorage.setItem("hov_settings", JSON.stringify(settings))
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+  const handleSave = async () => {
+    setSaveError(false)
+    try {
+      await apiFetch("/api/users/me", {
+        method: "PATCH",
+        body: { themeId: selectedTheme },
+        label: "SaveTheme",
+      })
+      localStorage.setItem("hov_settings", JSON.stringify(settings))
+      await refresh()
+      setThemeOverride(null)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch {
+      setSaveError(true)
+    }
   }
 
   const handleEnablePush = async () => {
@@ -122,6 +143,25 @@ export function SettingsPageContent({ persona }: { persona: "hans" | "charl" | "
         <div>
           <h1 className="text-2xl font-bold text-white">{t("settings.profile")}</h1>
           <p className="mt-1 text-white/60">Manage your account settings and preferences</p>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+          <div className="flex items-center gap-3 border-b border-white/10 p-6">
+            <Palette className="text-primary h-5 w-5" />
+            <div>
+              <h2 className="font-semibold text-white">Appearance</h2>
+              <p className="text-sm text-white/50">Choose your personal workspace colours.</p>
+            </div>
+          </div>
+          <div className="p-6">
+            <UserThemePicker
+              value={selectedTheme}
+              onChange={(themeId) => {
+                setThemeOverride(themeId)
+                document.documentElement.dataset.userTheme = themeId
+              }}
+            />
+          </div>
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
@@ -378,6 +418,11 @@ export function SettingsPageContent({ persona }: { persona: "hans" | "charl" | "
             <span className="flex items-center gap-2 text-green-400">
               <CheckCircle className="h-4 w-4" />
               Settings saved
+            </span>
+          )}
+          {saveError && (
+            <span className="text-sm text-red-400" role="alert">
+              Settings could not be saved. Please try again.
             </span>
           )}
           <button
