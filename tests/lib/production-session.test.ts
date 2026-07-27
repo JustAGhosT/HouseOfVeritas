@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { productionSessionCookies } from "./production-session"
+import { productionSessionCookies } from "../e2e/helpers/production-session"
 
 describe("productionSessionCookies", () => {
   it("preserves the single-cookie environment contract", () => {
