@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest"
-import { productionProbePolicy } from "../e2e/helpers/production-probe-policy"
+import {
+  productionProbePolicy,
+  resolveProductionProbePolicy,
+} from "../e2e/helpers/production-probe-policy"
 
 describe("productionProbePolicy", () => {
   it("disables retries and tracing for legitimate production sessions", () => {
@@ -20,6 +23,20 @@ describe("productionProbePolicy", () => {
     expect(productionProbePolicy(false, false)).toEqual({
       retries: 0,
       trace: "on-first-retry",
+    })
+  })
+
+  it("loads environment files before deciding whether production tracing is safe", () => {
+    const environment: Record<string, string | undefined> = { CI: "true" }
+
+    expect(
+      resolveProductionProbePolicy(environment, () => {
+        environment.POST_DEPLOY_PROBE = "true"
+      })
+    ).toEqual({
+      isPostDeployProbe: true,
+      retries: 0,
+      trace: "off",
     })
   })
 })

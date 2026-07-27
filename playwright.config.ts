@@ -1,11 +1,8 @@
 import { defineConfig, devices } from "@playwright/test"
 import { loadEnvConfig } from "@next/env"
-import { productionProbePolicy } from "./tests/e2e/helpers/production-probe-policy"
+import { resolveProductionProbePolicy } from "./tests/e2e/helpers/production-probe-policy"
 
 process.env.E2E_TEST = "1"
-
-const isPostDeployProbe = process.env.POST_DEPLOY_PROBE === "true"
-const probePolicy = productionProbePolicy(isPostDeployProbe, !!process.env.CI)
 
 // Resolve AUTH_SECRET the same way the dev server (booted below) will — Next
 // loads .env.local via @next/env — so the session cookie the auth helper mints
@@ -14,7 +11,8 @@ const probePolicy = productionProbePolicy(isPostDeployProbe, !!process.env.CI)
 // both sides agree whether or not a .env.local is present (e.g. CI has none, so
 // the fallback below applies on both sides). Keep the fallback in sync with the
 // helper.
-loadEnvConfig(process.cwd())
+const probePolicy = resolveProductionProbePolicy(process.env, () => loadEnvConfig(process.cwd()))
+const { isPostDeployProbe } = probePolicy
 process.env.AUTH_SECRET =
   process.env.AUTH_SECRET ?? "e2e-insecure-test-secret-do-not-use-in-production"
 
