@@ -1,7 +1,11 @@
 import { defineConfig, devices } from "@playwright/test"
 import { loadEnvConfig } from "@next/env"
+import { productionProbePolicy } from "./tests/e2e/helpers/production-probe-policy"
 
 process.env.E2E_TEST = "1"
+
+const isPostDeployProbe = process.env.POST_DEPLOY_PROBE === "true"
+const probePolicy = productionProbePolicy(isPostDeployProbe, !!process.env.CI)
 
 // Resolve AUTH_SECRET the same way the dev server (booted below) will — Next
 // loads .env.local via @next/env — so the session cookie the auth helper mints
@@ -18,12 +22,14 @@ export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: probePolicy.retries,
   workers: 1,
   reporter: process.env.CI ? "github" : "html",
   use: {
     baseURL: process.env.BASE_URL || "http://localhost:3000",
-    trace: "on-first-retry",
+    // Production traces retain raw Cookie request headers. Never write a trace
+    // when legitimate short-lived production sessions are injected.
+    trace: probePolicy.trace,
     screenshot: "only-on-failure",
   },
   projects: [
@@ -34,17 +40,19 @@ export default defineConfig({
   ],
   // Post-deploy probes target an already deployed application. Do not build or
   // start a local server when BASE_URL points at that deployment.
-  webServer: process.env.POST_DEPLOY_PROBE === "true" ? undefined : {
-    // Serve a production build so route compilation cannot consume an E2E
-    // assertion timeout. This also keeps the suite on the same runtime path
-    // used by deployment rather than relying on the dev server's bundler.
-    command: "pnpm run build && pnpm start",
-    url: "http://localhost:3000",
-    reuseExistingServer: true,
-    timeout: 300_000,
-    // Auth.js rejects localhost unless the host is explicitly trusted. Without
-    // this, the login page's session probe never resolves and every browser
-    // authentication flow remains on its loading spinner.
-    env: { ...process.env, E2E_TEST: "1", AUTH_TRUST_HOST: "true" },
-  },
+  webServer: isPostDeployProbe
+    ? undefined
+    : {
+        // Serve a production build so route compilation cannot consume an E2E
+        // assertion timeout. This also keeps the suite on the same runtime path
+        // used by deployment rather than relying on the dev server's bundler.
+        command: "pnpm run build && pnpm start",
+        url: "http://localhost:3000",
+        reuseExistingServer: true,
+        timeout: 300_000,
+        // Auth.js rejects localhost unless the host is explicitly trusted. Without
+        // this, the login page's session probe never resolves and every browser
+        // authentication flow remains on its loading spinner.
+        env: { ...process.env, E2E_TEST: "1", AUTH_TRUST_HOST: "true" },
+      },
 })

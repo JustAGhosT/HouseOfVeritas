@@ -62,6 +62,10 @@ The probe accepts only the configured Auth.js session-cookie base name and its
 numeric chunk suffixes. Supply the JSON through the process environment without
 printing it or placing it on the command line.
 
+Production-probe mode also forces Playwright retries to zero and tracing off.
+This prevents a retry trace from retaining raw Cookie request headers in
+`test-results/**/trace.zip`. Do not override tracing for a production-auth run.
+
 Do not place values on a command line, in shell history, logs, screenshots,
 GitHub output, Baton, Git, or this document. Once the environment is prepared,
 run:
