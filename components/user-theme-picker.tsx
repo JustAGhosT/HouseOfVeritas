@@ -1,5 +1,6 @@
 "use client"
 
+import { useRef, type KeyboardEvent } from "react"
 import { Check } from "lucide-react"
 import { USER_THEME_OPTIONS, type UserThemeId } from "@/lib/user-themes"
 
@@ -16,6 +17,35 @@ export function UserThemePicker({
   disabled = false,
   compact = false,
 }: UserThemePickerProps) {
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([])
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    let nextIndex: number | null = null
+    switch (event.key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        nextIndex = (index + 1) % USER_THEME_OPTIONS.length
+        break
+      case "ArrowLeft":
+      case "ArrowUp":
+        nextIndex = (index - 1 + USER_THEME_OPTIONS.length) % USER_THEME_OPTIONS.length
+        break
+      case "Home":
+        nextIndex = 0
+        break
+      case "End":
+        nextIndex = USER_THEME_OPTIONS.length - 1
+        break
+      default:
+        return
+    }
+
+    event.preventDefault()
+    const nextTheme = USER_THEME_OPTIONS[nextIndex]
+    onChange(nextTheme.id)
+    optionRefs.current[nextIndex]?.focus()
+  }
+
   return (
     <div
       className={compact ? "grid gap-3 sm:grid-cols-2" : "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"}
@@ -23,16 +53,21 @@ export function UserThemePicker({
       aria-label="Workspace theme"
       data-testid="user-theme-picker"
     >
-      {USER_THEME_OPTIONS.map((theme) => {
+      {USER_THEME_OPTIONS.map((theme, index) => {
         const selected = value === theme.id
         return (
           <button
             key={theme.id}
+            ref={(element) => {
+              optionRefs.current[index] = element
+            }}
             type="button"
             role="radio"
             aria-checked={selected}
+            tabIndex={selected ? 0 : -1}
             disabled={disabled}
             onClick={() => onChange(theme.id)}
+            onKeyDown={(event) => handleKeyDown(event, index)}
             className={`focus-visible:ring-primary relative rounded-xl border p-3 text-left transition-all focus-visible:ring-2 disabled:opacity-50 ${
               selected
                 ? "border-primary bg-primary/15 shadow-[0_0_24px_color-mix(in_srgb,var(--primary)_18%,transparent)]"

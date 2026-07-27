@@ -22,4 +22,11 @@ describe("user themes", () => {
     expect(defaultUserThemeForColor("purple")).toBe("amethyst")
     expect(defaultUserThemeForColor("gray")).toBe("sanctum")
   })
+
+  it("keeps the picker swatches aligned with accessible primary colors", () => {
+    expect(USER_THEME_OPTIONS.find((theme) => theme.id === "ocean")?.swatches[0]).toBe("#2563eb")
+    expect(USER_THEME_OPTIONS.find((theme) => theme.id === "amethyst")?.swatches[0]).toBe(
+      "#9333ea"
+    )
+  })
 })

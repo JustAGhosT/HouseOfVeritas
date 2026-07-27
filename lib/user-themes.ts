@@ -20,7 +20,7 @@ export const USER_THEME_OPTIONS: readonly UserThemeOption[] = [
     id: "ocean",
     name: "Ocean Blue",
     description: "A calm blue and cyan workspace.",
-    swatches: ["#3b82f6", "#06b6d4", "#6366f1"],
+    swatches: ["#2563eb", "#06b6d4", "#6366f1"],
   },
   {
     id: "ember",
@@ -38,7 +38,7 @@ export const USER_THEME_OPTIONS: readonly UserThemeOption[] = [
     id: "amethyst",
     name: "Amethyst",
     description: "Rich purple and rose accents.",
-    swatches: ["#a855f7", "#ec4899", "#8b5cf6"],
+    swatches: ["#9333ea", "#ec4899", "#8b5cf6"],
   },
 ] as const
 

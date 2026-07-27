@@ -76,6 +76,20 @@ export default function OnboardingPage() {
   const [notifPrefs, setNotifPrefs] = useState({ email: true, sms: false, push: true })
   const [twoFaEnabled, setTwoFaEnabled] = useState(false)
   const [selectedTheme, setSelectedTheme] = useState<UserThemeId>("sanctum")
+  const persistedTheme = profileUser
+    ? isUserThemeId(profileUser.themeId)
+      ? profileUser.themeId
+      : defaultUserThemeForColor(profileUser.color)
+    : null
+
+  useEffect(() => {
+    if (!persistedTheme) return
+
+    document.documentElement.dataset.userTheme = selectedTheme
+    return () => {
+      document.documentElement.dataset.userTheme = persistedTheme
+    }
+  }, [persistedTheme, selectedTheme])
 
   useEffect(() => {
     apiFetchSafe<{
@@ -104,7 +118,6 @@ export default function OnboardingPage() {
             ? u.themeId
             : defaultUserThemeForColor(u.color)
           setSelectedTheme(initialTheme)
-          document.documentElement.dataset.userTheme = initialTheme
           setSelectedResponsibilities(new Set(u.responsibilities || []))
           setLoading(false)
           if (data.user.onboardingStatus === "completed") {
@@ -384,10 +397,7 @@ export default function OnboardingPage() {
                 </p>
                 <UserThemePicker
                   value={selectedTheme}
-                  onChange={(themeId) => {
-                    setSelectedTheme(themeId)
-                    document.documentElement.dataset.userTheme = themeId
-                  }}
+                  onChange={setSelectedTheme}
                   compact
                 />
               </div>
