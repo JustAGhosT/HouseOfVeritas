@@ -79,6 +79,16 @@ export function SettingsPageContent({ persona }: { persona: "hans" | "charl" | "
   const selectedTheme = themeOverride ?? persistedTheme
 
   useEffect(() => {
+    if (themeOverride) {
+      document.documentElement.dataset.userTheme = themeOverride
+    }
+
+    return () => {
+      document.documentElement.dataset.userTheme = persistedTheme
+    }
+  }, [persistedTheme, themeOverride])
+
+  useEffect(() => {
     apiFetchSafe<{ options?: string[] }>(
       "/api/settings/storage-options",
       { options: [] },
@@ -156,10 +166,7 @@ export function SettingsPageContent({ persona }: { persona: "hans" | "charl" | "
           <div className="p-6">
             <UserThemePicker
               value={selectedTheme}
-              onChange={(themeId) => {
-                setThemeOverride(themeId)
-                document.documentElement.dataset.userTheme = themeId
-              }}
+              onChange={setThemeOverride}
             />
           </div>
         </div>

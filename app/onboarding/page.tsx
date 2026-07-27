@@ -230,6 +230,10 @@ export default function OnboardingPage() {
         body: { themeId: selectedTheme },
         label: "OnboardingTheme",
       })
+    } catch {
+      // Theme selection is optional and must not block onboarding completion.
+    }
+    try {
       await apiFetch("/api/users/me/onboard", { method: "POST", label: "Onboard" })
       await refresh()
       router.push(`/dashboard/${profileUser.id}?tutorial=1`)
