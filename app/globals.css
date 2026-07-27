@@ -106,18 +106,18 @@ html[data-user-theme="sanctum"] {
 }
 
 html[data-user-theme="ocean"] {
-  --primary: #3B82F6;
+  --primary: #2563EB;
   --primary-foreground: #F8FAFC;
   --secondary: #0891B2;
   --secondary-foreground: #F8FAFC;
   --accent: #6366F1;
   --accent-foreground: #F8FAFC;
   --ring: #60A5FA;
-  --chart-1: #3B82F6;
+  --chart-1: #2563EB;
   --chart-2: #06B6D4;
   --chart-3: #6366F1;
   --chart-4: #22C55E;
-  --sidebar-primary: #3B82F6;
+  --sidebar-primary: #2563EB;
   --sidebar-primary-foreground: #F8FAFC;
   --sidebar-ring: #60A5FA;
 }
@@ -157,18 +157,18 @@ html[data-user-theme="garden"] {
 }
 
 html[data-user-theme="amethyst"] {
-  --primary: #A855F7;
+  --primary: #9333EA;
   --primary-foreground: #FAF5FF;
   --secondary: #DB2777;
   --secondary-foreground: #FDF2F8;
   --accent: #7C3AED;
   --accent-foreground: #F5F3FF;
   --ring: #C084FC;
-  --chart-1: #A855F7;
+  --chart-1: #9333EA;
   --chart-2: #EC4899;
   --chart-3: #8B5CF6;
   --chart-4: #F59E0B;
-  --sidebar-primary: #A855F7;
+  --sidebar-primary: #9333EA;
   --sidebar-primary-foreground: #FAF5FF;
   --sidebar-ring: #C084FC;
 }
