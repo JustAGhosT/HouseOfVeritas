@@ -44,6 +44,24 @@ Supply these values only through the approved short-lived process environment:
 - optional role-specific cookie-name variables when the deployment does not use
   `__Secure-authjs.session-token`.
 
+The single-session variables remain supported when Auth.js emits one cookie. If
+Auth.js splits a session into numbered chunks, leave the corresponding
+single-session variable unset and provide every chunk through
+`POST_DEPLOY_ADMIN_SESSION_COOKIES` or
+`POST_DEPLOY_OPERATOR_SESSION_COOKIES`. Each plural variable is a JSON array of
+name/value objects, for example:
+
+```json
+[
+  { "name": "__Secure-authjs.session-token.0", "value": "<chunk-0>" },
+  { "name": "__Secure-authjs.session-token.1", "value": "<chunk-1>" }
+]
+```
+
+The probe accepts only the configured Auth.js session-cookie base name and its
+numeric chunk suffixes. Supply the JSON through the process environment without
+printing it or placing it on the command line.
+
 Do not place values on a command line, in shell history, logs, screenshots,
 GitHub output, Baton, Git, or this document. Once the environment is prepared,
 run:

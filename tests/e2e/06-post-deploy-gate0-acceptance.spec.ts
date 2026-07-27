@@ -1,11 +1,14 @@
 import { expect, test, type BrowserContext } from "@playwright/test"
 import { seedSession } from "./helpers/auth"
-
-type ProbeRole = "admin" | "operator"
+import {
+  productionSessionCookies,
+  type ProbeRole,
+  type SessionCookie,
+} from "./helpers/production-session"
 
 const baseUrl = process.env.BASE_URL
-const adminSession = process.env.POST_DEPLOY_ADMIN_SESSION
-const operatorSession = process.env.POST_DEPLOY_OPERATOR_SESSION
+const adminSessionCookies = productionSessionCookies("admin")
+const operatorSessionCookies = productionSessionCookies("operator")
 const isPostDeployProbe = process.env.POST_DEPLOY_PROBE === "true"
 
 test.describe.configure({ timeout: 60_000 })
@@ -29,37 +32,28 @@ const qualityDimensionIds = [
   "version_incident_governance",
 ] as const
 
-function cookieName(role: ProbeRole) {
-  const roleSpecificName =
-    role === "admin"
-      ? process.env.POST_DEPLOY_ADMIN_SESSION_COOKIE_NAME
-      : process.env.POST_DEPLOY_OPERATOR_SESSION_COOKIE_NAME
-
-  return roleSpecificName ?? "__Secure-authjs.session-token"
-}
-
-async function addSessionCookie(context: BrowserContext, role: ProbeRole, sessionToken: string) {
+async function addSessionCookies(context: BrowserContext, sessionCookies: SessionCookie[]) {
   const hostname = new URL(baseUrl!).hostname
-  await context.addCookies([
-    {
-      name: cookieName(role),
-      value: sessionToken,
+  await context.addCookies(
+    sessionCookies.map(({ name, value }) => ({
+      name,
+      value,
       domain: hostname,
       path: "/",
       httpOnly: true,
       secure: true,
       sameSite: "Lax",
-    },
-  ])
+    }))
+  )
 }
 
 async function prepareRoleSession(
   context: BrowserContext,
   role: ProbeRole,
-  sessionToken: string | undefined
+  sessionCookies: SessionCookie[]
 ) {
   if (isPostDeployProbe) {
-    await addSessionCookie(context, role, sessionToken!)
+    await addSessionCookies(context, sessionCookies)
     return
   }
 
@@ -72,12 +66,12 @@ async function prepareRoleSession(
 
 test.describe("Post-deployment Gate 0 admin acceptance", () => {
   test.skip(
-    isPostDeployProbe && (!baseUrl || !adminSession),
+    isPostDeployProbe && (!baseUrl || adminSessionCookies.length === 0),
     "Requires POST_DEPLOY_PROBE, BASE_URL, and a legitimate short-lived admin session."
   )
 
   test.beforeEach(async ({ context }) => {
-    await prepareRoleSession(context, "admin", adminSession)
+    await prepareRoleSession(context, "admin", adminSessionCookies)
   })
 
   test("completes a fictional reviewer rehearsal without persistence or external effects", async ({
@@ -137,12 +131,12 @@ test.describe("Post-deployment Gate 0 admin acceptance", () => {
 
 test.describe("Post-deployment Gate 0 operator denial", () => {
   test.skip(
-    isPostDeployProbe && (!baseUrl || !operatorSession),
+    isPostDeployProbe && (!baseUrl || operatorSessionCookies.length === 0),
     "Requires POST_DEPLOY_PROBE, BASE_URL, and a legitimate short-lived operator session."
   )
 
   test.beforeEach(async ({ context }) => {
-    await prepareRoleSession(context, "operator", operatorSession)
+    await prepareRoleSession(context, "operator", operatorSessionCookies)
   })
 
   for (const path of ["/api/reviewer-trials/domain-safety", "/api/governance/gates"] as const) {
