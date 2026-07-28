@@ -433,6 +433,52 @@ describe("recipe guidance contracts", () => {
     expect(
       parseRecipeGuidanceDocument({
         ...publishedDocument,
+        sections: publishedDocument.sections.map((section) => ({
+          ...section,
+          blocks: [
+            ...section.blocks,
+            ...(section.kind === "ingredients"
+              ? [
+                  {
+                    id: "block:ingredient-media",
+                    type: "media_reference",
+                    mediaAssetId: "asset:ingredient-layout",
+                  },
+                ]
+              : []),
+            ...(section.kind === "storage_and_reheating"
+              ? [
+                  {
+                    id: "block:storage-media",
+                    type: "media_reference",
+                    mediaAssetId: "asset:storage",
+                  },
+                ]
+              : []),
+          ],
+        })),
+        mediaAssets: [
+          ...publishedDocument.mediaAssets,
+          {
+            ...publishedDocument.mediaAssets[0],
+            id: "asset:ingredient-layout",
+            sectionId: "section:ingredients",
+            role: "ingredient_layout",
+            storage: { type: "external", url: "https://images.example/ingredients.jpg" },
+          },
+          {
+            ...publishedDocument.mediaAssets[0],
+            id: "asset:storage",
+            sectionId: "section:storage_and_reheating",
+            role: "storage",
+            storage: { type: "external", url: "https://images.example/storage.jpg" },
+          },
+        ],
+      })
+    ).not.toBeNull()
+    expect(
+      parseRecipeGuidanceDocument({
+        ...publishedDocument,
         imageBriefs: [
           {
             id: "brief:wrong-role",

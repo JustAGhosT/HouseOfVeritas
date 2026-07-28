@@ -358,11 +358,11 @@ const PUBLISHABLE_SECTION_BLOCK_TYPES = {
   identity: ["text", "metrics"],
   hero: ["media_reference"],
   before_start: ["text", "notice"],
-  ingredients: ["ingredient_references"],
+  ingredients: ["ingredient_references", "media_reference"],
   preparation: ["text", "step_reference", "media_reference"],
   cooking: ["step_reference", "media_reference"],
   finish_and_serve: ["text", "step_reference", "media_reference"],
-  storage_and_reheating: ["text", "notice"],
+  storage_and_reheating: ["text", "notice", "media_reference"],
   provenance_and_feedback: ["text"],
 } as const satisfies Record<RecipeGuidanceSectionKind, readonly RecipeGuidanceBlock["type"][]>
 
