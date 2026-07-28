@@ -7,7 +7,8 @@
 - **Base:** `origin/main` at `fcc959ef1716f4ac88f5eace7fa6314392470873`
 - **Source plan:** PR [#155](https://github.com/neuralliquid/house-of-veritas/pull/155)
 - **Baton task:** `72faced1-f208-4fec-84e5-c3a1275d6223`
-- **Risk tier:** isolated recipe/guidance data contracts; no API, persistence, UI, provider, or deployment change
+- **Risk tier:** recipe/guidance contracts plus server-side recipe provenance validation on the
+  existing guidance POST route; no persistence shape, UI, provider, or deployment change
 
 ## Outcome
 
@@ -34,19 +35,22 @@ typed and schema-validated contracts needed before persistence or UI work begins
 - rejection of every unreviewed or section-inappropriate populated block at publication;
 - published identity metrics and step-media references in preparation/cooking sections;
 - tuple-level immutable recipe provenance validation for shared guidance drafts and sourced steps;
+- server-side recipe existence, current-revision, ingredient/step, source tuple, publication, and
+  audience validation before recipe-backed task guidance is persisted;
 - alt text forbidden before media approval, keeping unreviewed descriptions out of durable assets;
 - a truthful adapter for legacy hero images that preserves attribution while marking them
   `review_required` instead of fabricating alt text or approval, including normalization of accepted
   relative image paths; and
 - stable source recipe, ingredient, and step references in `recipeToGuidanceDraft()`.
 
-No Sluice request is possible through this slice. It does not add routes, persistence, migrations,
+No Sluice request is added through this slice. It does not add routes, persistence, migrations,
 uploads, authoring UI, reader UI, public packages, OmniPost handoff, demo data, or deployment.
 
 ## Changed files
 
 - `lib/recipe-guidance.ts`
 - `lib/guidance.ts`
+- `app/api/guidance/route.ts`
 - `tests/lib/recipe-guidance.test.ts`
 - `tests/lib/guidance.test.ts`
 - `docs/handoffs/2026-07-28-recipe-guidance-phase1-contracts.md`

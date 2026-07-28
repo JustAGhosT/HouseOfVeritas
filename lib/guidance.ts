@@ -180,6 +180,27 @@ export function parseGuidanceDraft(input: unknown): GuidanceDraft | null {
   }
 }
 
+export function guidanceMatchesRecipeSnapshot(draft: GuidanceDraft, recipe: RecipeRecord): boolean {
+  const revisionId = createRecipeRevisionId(recipe.id, recipe.updatedAt)
+  if (
+    draft.sourceRecipeId !== recipe.id ||
+    draft.sourceRecipeUpdatedAt !== recipe.updatedAt ||
+    draft.sourceRecipeRevisionId !== revisionId
+  ) {
+    return false
+  }
+
+  const ingredientIds = new Set(recipe.ingredients.map((ingredient) => ingredient.id))
+  if (draft.sourceRecipeIngredientIds?.some((id) => !ingredientIds.has(id))) return false
+
+  const stepIds = new Set(recipe.steps.map((step) => step.id))
+  return draft.steps.every(
+    (step) =>
+      step.sourceRecipeStepId === undefined ||
+      (step.sourceRecipeRevisionId === revisionId && stepIds.has(step.sourceRecipeStepId))
+  )
+}
+
 export function recipeToGuidanceDraft(recipe: RecipeRecord, locale: GuidanceLocale): GuidanceDraft {
   const isAfrikaans = locale === "af"
   const sourceRecipeRevisionId = createRecipeRevisionId(recipe.id, recipe.updatedAt)

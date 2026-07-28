@@ -362,6 +362,16 @@ function isPublishableSectionBlock(
   return allowedTypes.includes(block.type) && (block.type !== "text" || block.source === "reviewed")
 }
 
+function isFoundationalCompletionBlock(
+  sectionKind: RecipeGuidanceSectionKind,
+  block: RecipeGuidanceBlock
+): boolean {
+  if (sectionKind === "identity") return block.type === "text" && block.source === "reviewed"
+  if (sectionKind === "ingredients") return block.type === "ingredient_references"
+  if (sectionKind === "cooking") return block.type === "step_reference"
+  return isPublishableSectionBlock(sectionKind, block)
+}
+
 export const recipeGuidanceSectionSchema = z.object({
   id: nonEmptyId,
   kind: z.enum(RECIPE_GUIDANCE_SECTION_KINDS),
@@ -544,7 +554,7 @@ export const recipeGuidanceDocumentSchema = z
 
         if (
           (section.applicability === "required" || FOUNDATIONAL_SECTION_KINDS.has(section.kind)) &&
-          !section.blocks.some((block) => isPublishableSectionBlock(section.kind, block))
+          !section.blocks.some((block) => isFoundationalCompletionBlock(section.kind, block))
         ) {
           context.addIssue({
             code: z.ZodIssueCode.custom,

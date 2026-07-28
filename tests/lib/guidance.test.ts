@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { parseGuidanceDraft, recipeToGuidanceDraft } from "@/lib/guidance"
+import {
+  guidanceMatchesRecipeSnapshot,
+  parseGuidanceDraft,
+  recipeToGuidanceDraft,
+} from "@/lib/guidance"
 import type { RecipeRecord } from "@/lib/recipes"
 
 describe("task guidance", () => {
@@ -101,5 +105,12 @@ describe("task guidance", () => {
     expect(guidance.sourceRecipeIngredientIds).toEqual(["rice"])
     expect(guidance.steps[0].sourceRecipeStepId).toBe("cook")
     expect(guidance.steps[0].sourceRecipeRevisionId).toBe("recipe-1@2026-07-24T00:00:00.000Z")
+    expect(guidanceMatchesRecipeSnapshot(guidance, recipe)).toBe(true)
+    expect(
+      guidanceMatchesRecipeSnapshot(guidance, {
+        ...recipe,
+        updatedAt: "2026-07-25T00:00:00.000Z",
+      })
+    ).toBe(false)
   })
 })
