@@ -51,7 +51,7 @@ Results:
 
 - ESLint passed.
 - TypeScript passed.
-- Focused theme/navigation suite passed: 4 files, 12 tests.
+- Focused theme/navigation suite passed: 5 files, 16 tests.
 - Production build passed and generated 125 routes/pages.
 - `git diff --check` passed.
 - Exact-head GitHub checks passed: Infrastructure Verification, Validate Configuration, Lint,
@@ -60,7 +60,7 @@ Results:
 ## Review feedback
 
 The ready-for-review Codex pass on `d5a797e` raised two actionable P2 findings, and the follow-up
-review on `f8406c0` raised one related P2. All three were addressed before merge:
+reviews on `f8406c0` and `99b8630` each raised one related P2. All four were addressed before merge:
 
 - dashboard persona roots now match exactly instead of labeling unmapped nested routes as
   Overview; nested section routes still inherit their real navigation label, with focused
@@ -68,7 +68,11 @@ review on `f8406c0` raised one related P2. All three were addressed before merge
 - the Settings page heading uses the existing `nav.settings` translation key so Afrikaans and
   Zulu users retain a localized primary heading; and
 - the sidebar now reuses the same nested-route predicate, so project detail pages expand and
-  highlight their parent navigation item and expose `aria-current` consistently.
+  highlight their parent navigation item and expose `aria-current` consistently; and
+- renamed Charl, Lucky, and Irma navigation entries now derive href overrides from their original
+  page keys, and every reachable persona entry now has a unique persona-scoped href. This prevents
+  duplicate dashboard-root links and restores correct task/document/time routes and mobile page
+  identity.
 
 ## Browser evidence
 
