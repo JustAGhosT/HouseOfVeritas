@@ -825,9 +825,10 @@ describe("recipe guidance contracts", () => {
       updatedAt: now,
     } satisfies RecipeRecord
 
-    const asset = recipeHeroToReviewRequiredMedia(recipe)
+    const asset = recipeHeroToReviewRequiredMedia(recipe, "section:hero")
 
     expect(asset.status).toBe("review_required")
+    expect(asset.sectionId).toBe("section:hero")
     expect(asset.source).toMatchObject({
       type: "licensed",
       license: "CC BY 4.0",
@@ -858,7 +859,7 @@ describe("recipe guidance contracts", () => {
       updatedAt: now,
     } satisfies RecipeRecord
 
-    const asset = recipeHeroToReviewRequiredMedia(recipe)
+    const asset = recipeHeroToReviewRequiredMedia(recipe, "section:hero")
 
     expect(asset.storage).toEqual({ type: "external", url: "/images/rice.jpg" })
     expect(recipeMediaAssetSchema.safeParse(asset).success).toBe(true)
@@ -884,7 +885,7 @@ describe("recipe guidance contracts", () => {
       updatedAt: now,
     } satisfies RecipeRecord
 
-    const asset = recipeHeroToReviewRequiredMedia(recipe)
+    const asset = recipeHeroToReviewRequiredMedia(recipe, "section:hero")
 
     expect(asset.status).toBe("unavailable")
     expect(asset.unavailableReason).toBe("Legacy hero retrieval evidence is missing")
@@ -913,7 +914,7 @@ describe("recipe guidance contracts", () => {
       updatedAt: now,
     } satisfies RecipeRecord
 
-    const asset = recipeHeroToReviewRequiredMedia(recipe)
+    const asset = recipeHeroToReviewRequiredMedia(recipe, "section:hero")
 
     expect(asset.status).toBe("unavailable")
     expect(asset.unavailableReason).toBe("Legacy hero retrieval evidence is invalid")
@@ -942,7 +943,7 @@ describe("recipe guidance contracts", () => {
       updatedAt: now,
     } satisfies RecipeRecord
 
-    const asset = recipeHeroToReviewRequiredMedia(recipe)
+    const asset = recipeHeroToReviewRequiredMedia(recipe, "section:hero")
 
     expect(asset.status).toBe("unavailable")
     expect(asset).not.toHaveProperty("storage")

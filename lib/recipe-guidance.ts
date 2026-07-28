@@ -728,7 +728,10 @@ export function parseRecipeGuidanceDocument(input: unknown): RecipeGuidanceDocum
   return parsed.success ? parsed.data : null
 }
 
-export function recipeHeroToReviewRequiredMedia(recipe: RecipeRecord): RecipeMediaAsset {
+export function recipeHeroToReviewRequiredMedia(
+  recipe: RecipeRecord,
+  heroSectionId: string
+): RecipeMediaAsset {
   const normalizedUrl = normalizeLegacyMediaUrl(recipe.image.url)
   const legacyRetrievedAt = recipe.image.retrievedAt?.trim()
   const retrievedAt =
@@ -745,7 +748,7 @@ export function recipeHeroToReviewRequiredMedia(recipe: RecipeRecord): RecipeMed
 
   return {
     id: `${recipe.id}:hero`,
-    sectionId: `${recipe.id}:hero-section`,
+    sectionId: heroSectionId,
     role: "hero",
     status: unavailableReason ? "unavailable" : "review_required",
     source: {
