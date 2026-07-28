@@ -52,6 +52,14 @@ const isHttpMediaUrl = (value: string) => {
     return false
   }
 }
+const normalizeLegacyMediaUrl = (value: string) => {
+  const trimmed = value.trim()
+  if (isInternalMediaPath(trimmed) || isHttpMediaUrl(trimmed)) return trimmed
+  if (trimmed.startsWith("//") || /^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return null
+
+  const relativePath = trimmed.replace(/^\.\//, "")
+  return relativePath ? `/${relativePath}` : null
+}
 const safeMediaUrl = z
   .string()
   .trim()
@@ -183,6 +191,18 @@ export const recipeMediaAssetSchema = z
         code: z.ZodIssueCode.custom,
         path: ["source"],
         message: "generated media requires generation provenance",
+      })
+    }
+
+    if (
+      asset.source?.type === "generated" &&
+      ["generated", "review_required", "approved"].includes(asset.status) &&
+      !asset.imageBriefId
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["imageBriefId"],
+        message: `${asset.status} generated media requires an approved image brief`,
       })
     }
 
@@ -333,7 +353,7 @@ export const recipeGuidanceDocumentSchema = z
 
     const sectionIds = new Set(document.sections.map((section) => section.id))
     const mediaAssetIds = new Set(document.mediaAssets.map((asset) => asset.id))
-    const imageBriefIds = new Set(document.imageBriefs.map((brief) => brief.id))
+    const imageBriefsById = new Map(document.imageBriefs.map((brief) => [brief.id, brief]))
 
     document.mediaAssets.forEach((asset, index) => {
       if (!sectionIds.has(asset.sectionId)) {
@@ -343,11 +363,27 @@ export const recipeGuidanceDocumentSchema = z
           message: "media asset must reference a section in this document",
         })
       }
-      if (asset.imageBriefId && !imageBriefIds.has(asset.imageBriefId)) {
+      const imageBrief = asset.imageBriefId ? imageBriefsById.get(asset.imageBriefId) : undefined
+      if (asset.imageBriefId && !imageBrief) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["mediaAssets", index, "imageBriefId"],
           message: "media asset must reference an image brief in this document",
+        })
+      }
+      if (
+        asset.source?.type === "generated" &&
+        ["generated", "review_required", "approved"].includes(asset.status) &&
+        imageBrief &&
+        (imageBrief.status !== "approved" ||
+          imageBrief.sectionId !== asset.sectionId ||
+          imageBrief.role !== asset.role)
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["mediaAssets", index, "imageBriefId"],
+          message:
+            "generated media must reference an approved brief with the same section and role",
         })
       }
     })
@@ -383,11 +419,13 @@ export function parseRecipeGuidanceDocument(input: unknown): RecipeGuidanceDocum
 }
 
 export function recipeHeroToReviewRequiredMedia(recipe: RecipeRecord): RecipeMediaAsset {
+  const normalizedUrl = normalizeLegacyMediaUrl(recipe.image.url)
+
   return {
     id: `${recipe.id}:hero`,
     sectionId: `${recipe.id}:hero-section`,
     role: "hero",
-    status: "review_required",
+    status: normalizedUrl ? "review_required" : "unavailable",
     source: {
       type: "licensed",
       source: recipe.image.source,
@@ -396,9 +434,8 @@ export function recipeHeroToReviewRequiredMedia(recipe: RecipeRecord): RecipeMed
       attributionText: recipe.image.attributionText,
       retrievedAt: recipe.image.retrievedAt,
     },
-    storage: {
-      type: "external",
-      url: recipe.image.url,
-    },
+    ...(normalizedUrl
+      ? { storage: { type: "external" as const, url: normalizedUrl } }
+      : { unavailableReason: "Legacy hero URL could not be represented safely" }),
   }
 }

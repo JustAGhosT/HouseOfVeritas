@@ -17,6 +17,8 @@ typed and schema-validated contracts needed before persistence or UI work begins
 - the canonical nine-section recipe document order and typed board blocks;
 - document draft, review, publish, and archive states;
 - image brief and media lifecycle states, with bilingual alt text required only at approval;
+- a document-level invariant that generated media references an approved brief with the same section
+  and role before it can enter generated, review-required, or approved states;
 - licensed, uploaded, and generated provenance shapes;
 - external media locations and HOV-managed media with an internal storage ID, internal application
   path, and immutable SHA-256 identifier, with complete HTTP(S) URL validation for external media;
@@ -24,7 +26,8 @@ typed and schema-validated contracts needed before persistence or UI work begins
 - structured exact, range, and seconds-based timers;
 - document-internal section, image-brief, media-asset, and media-block reference validation;
 - a truthful adapter for legacy hero images that preserves attribution while marking them
-  `review_required` instead of fabricating alt text or approval; and
+  `review_required` instead of fabricating alt text or approval, including normalization of accepted
+  relative image paths; and
 - stable source recipe, ingredient, and step references in `recipeToGuidanceDraft()`.
 
 No Sluice request is possible through this slice. It does not add routes, persistence, migrations,
@@ -52,7 +55,7 @@ pnpm exec prettier --check lib/recipe-guidance.ts lib/guidance.ts tests/lib/reci
 git diff --check
 ```
 
-- Focused result at the final review-fix head: 2 files, 13 tests passed.
+- Focused result at the latest review-fix head: 2 files, 15 tests passed.
 - Production build completed and generated 125 routes/pages.
 - No browser check was required because no route, component, or interaction changed.
 

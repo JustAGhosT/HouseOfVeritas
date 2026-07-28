@@ -158,6 +158,7 @@ describe("recipe guidance contracts", () => {
     const result = recipeMediaAssetSchema.safeParse({
       id: "asset-1",
       sectionId: "section:hero",
+      imageBriefId: "brief-1",
       role: "hero",
       status: "approved",
       source: {
@@ -179,6 +180,56 @@ describe("recipe guidance contracts", () => {
     })
 
     expect(result.success).toBe(true)
+  })
+
+  it("requires generated media to reference an approved matching brief", () => {
+    const document = buildDocument()
+    const generatedAsset = {
+      id: "asset-1",
+      sectionId: "section:hero",
+      imageBriefId: "brief-1",
+      role: "hero",
+      status: "review_required",
+      source: {
+        type: "generated",
+        requestId: "request-1",
+        modelAlias: "recipe-image",
+        generatedAt: now,
+        rightsBasis: "Approved provider terms",
+      },
+      storage: { type: "external", url: "https://provider.example/preview.jpg" },
+    }
+    const approvedBrief = {
+      id: "brief-1",
+      sectionId: "section:hero",
+      role: "hero",
+      status: "approved",
+      description: { en: "Finished dish.", af: "Voltooide gereg." },
+      approvedBy: "hans",
+      approvedAt: now,
+    }
+
+    expect(
+      parseRecipeGuidanceDocument({
+        ...document,
+        mediaAssets: [generatedAsset],
+        imageBriefs: [{ ...approvedBrief, role: "step" }],
+      })
+    ).toBeNull()
+    expect(
+      parseRecipeGuidanceDocument({
+        ...document,
+        mediaAssets: [generatedAsset],
+        imageBriefs: [{ ...approvedBrief, status: "draft", approvedBy: undefined }],
+      })
+    ).toBeNull()
+    expect(
+      parseRecipeGuidanceDocument({
+        ...document,
+        mediaAssets: [generatedAsset],
+        imageBriefs: [approvedBrief],
+      })
+    ).not.toBeNull()
   })
 
   it("preserves legacy hero provenance without fabricating approval or alt text", () => {
@@ -212,6 +263,33 @@ describe("recipe guidance contracts", () => {
       attributionText: "Example Author, CC BY 4.0",
     })
     expect(asset).not.toHaveProperty("altText")
+    expect(recipeMediaAssetSchema.safeParse(asset).success).toBe(true)
+  })
+
+  it("normalizes a legacy relative hero URL to an internal application path", () => {
+    const recipe = {
+      id: "recipe-1",
+      status: "published",
+      ownerUserId: "hans",
+      audienceUserIds: ["irma"],
+      titleEn: "Fried rice",
+      titleAf: "Gebraaide rys",
+      image: {
+        url: "images/rice.jpg",
+        source: "Example library",
+        license: "CC BY 4.0",
+        attributionText: "Example Author, CC BY 4.0",
+        retrievedAt: "2026-07-28",
+      },
+      ingredients: [],
+      steps: [],
+      createdAt: now,
+      updatedAt: now,
+    } satisfies RecipeRecord
+
+    const asset = recipeHeroToReviewRequiredMedia(recipe)
+
+    expect(asset.storage).toEqual({ type: "external", url: "/images/rice.jpg" })
     expect(recipeMediaAssetSchema.safeParse(asset).success).toBe(true)
   })
 })
