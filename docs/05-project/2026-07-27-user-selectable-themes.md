@@ -24,9 +24,8 @@ navigation, responsibilities, or RBAC.
 - `pnpm exec tsc --noEmit`
 - `pnpm run lint`
 - `pnpm run build`
-- `pnpm test -- tests/lib/user-themes.test.ts tests/api/user-theme.test.ts`
+- `pnpm test -- --run tests/lib/user-theme-contrast.test.ts tests/components/user-theme-picker.test.tsx tests/lib/user-themes.test.ts tests/api/onboarding-feedback.test.ts`
 
-The complete unit suite currently has a pre-existing two-test failure in
-`tests/lib/deployment-workflow-contract.test.ts`: its deploy-job substring includes later workflow
-jobs and therefore sees their valid `actions/checkout` steps. The theming tests and the other 413
-tests pass.
+The focused suite passes 15 tests across four files. The production build generates 125 pages and
+routes. PR #153 also passed Infrastructure Verification, Validate Configuration, Lint, Unit Tests,
+Production Build, E2E Tests, and Pipeline Summary on the final feature head.

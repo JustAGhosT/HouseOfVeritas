@@ -47,13 +47,13 @@
 
 ## 03-deployment/ -- Deployment and Operations
 
-| Document                                                                                           | Description                                                                      |
-| -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| [01-deployment-guide.md](03-deployment/01-deployment-guide.md)                                     | End-to-end Azure deployment: auth, Terraform, DNS, SSL, integrations, secrets    |
-| [02-local-development.md](03-deployment/02-local-development.md)                                   | Docker Compose setup, prerequisites, local vs production comparison              |
-| [03-ci-cd-workflows.md](03-deployment/03-ci-cd-workflows.md)                                       | GitHub Actions workflows: plan, apply, deploy, destroy, checklist                |
-| [04-rollback-procedure.md](03-deployment/04-rollback-procedure.md)                                 | Rollback procedure for Next.js, Functions, Terraform, containers                 |
-| [05-terraform-firewall-troubleshooting.md](03-deployment/05-terraform-firewall-troubleshooting.md) | Key Vault/Storage 403, container IP type, consumption budget, self-hosted runner |
+| Document                                                                                           | Description                                                                               |
+| -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [01-deployment-guide.md](03-deployment/01-deployment-guide.md)                                     | End-to-end Azure deployment: auth, Terraform, DNS, SSL, integrations, secrets             |
+| [02-local-development.md](03-deployment/02-local-development.md)                                   | Docker Compose setup, prerequisites, local vs production comparison                       |
+| [03-ci-cd-workflows.md](03-deployment/03-ci-cd-workflows.md)                                       | GitHub Actions workflows: plan, apply, deploy, destroy, checklist                         |
+| [04-rollback-procedure.md](03-deployment/04-rollback-procedure.md)                                 | Rollback procedure for Next.js, Functions, Terraform, containers                          |
+| [05-terraform-firewall-troubleshooting.md](03-deployment/05-terraform-firewall-troubleshooting.md) | Key Vault/Storage 403, container IP type, consumption budget, self-hosted runner          |
 | [07-self-hosted-runner-setup.md](03-deployment/07-self-hosted-runner-setup.md)                     | _Historical:_ self-hosted runner setup (no longer in use — workflows use `ubuntu-latest`) |
 
 _Note: 06 reserved for future deployment documentation._
@@ -86,8 +86,9 @@ _Note: 06 reserved for future deployment documentation._
 
 Dated session continuity notes (root cause, files changed, verification, next-owner steps).
 
-| Document                                                                                        | Description                                                                          |
-| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| [2026-07-11-mystira-oidc-prod-login-fix.md](handoffs/2026-07-11-mystira-oidc-prod-login-fix.md) | Production login `/api/auth/error` fix — Mystira OIDC app settings + AUTH_TRUST_HOST |
-| [2026-07-20-prod-telemetry-project-store.md](handoffs/2026-07-20-prod-telemetry-project-store.md) | Production telemetry and project datastore remediation handoff                       |
+| Document                                                                                              | Description                                                                          |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| [2026-07-11-mystira-oidc-prod-login-fix.md](handoffs/2026-07-11-mystira-oidc-prod-login-fix.md)       | Production login `/api/auth/error` fix — Mystira OIDC app settings + AUTH_TRUST_HOST |
+| [2026-07-20-prod-telemetry-project-store.md](handoffs/2026-07-20-prod-telemetry-project-store.md)     | Production telemetry and project datastore remediation handoff                       |
 | [2026-07-22-project-datastore-ai-hardening.md](handoffs/2026-07-22-project-datastore-ai-hardening.md) | Project datastore API and AI project suggestion hardening closeout                   |
+| [2026-07-28-user-selectable-themes.md](handoffs/2026-07-28-user-selectable-themes.md)                 | User-selectable workspace themes implementation, review, and merge handoff           |
