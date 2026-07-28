@@ -524,6 +524,14 @@ export const recipeGuidanceDocumentSchema = z
       }
 
       document.sections.forEach((section, index) => {
+        if (FOUNDATIONAL_SECTION_KINDS.has(section.kind) && section.applicability !== "required") {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["sections", index, "applicability"],
+            message: `${section.kind} must remain required at publication`,
+          })
+        }
+
         section.blocks.forEach((block, blockIndex) => {
           if (!isPublishableSectionBlock(section.kind, block)) {
             context.addIssue({

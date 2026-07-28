@@ -487,6 +487,35 @@ describe("recipe guidance contracts", () => {
       sections: document.sections.map((section) => ({
         ...section,
         applicability: "not_applicable",
+        blocks:
+          section.kind === "identity"
+            ? [
+                {
+                  id: "block:identity",
+                  type: "text",
+                  source: "reviewed",
+                  text: { en: "Recipe identity.", af: "Resepidentiteit." },
+                },
+              ]
+            : section.kind === "ingredients"
+              ? [
+                  {
+                    id: "block:ingredients",
+                    type: "ingredient_references",
+                    recipeRevisionId: document.recipeRevisionId,
+                    ingredientIds: ["ingredient-1"],
+                  },
+                ]
+              : section.kind === "cooking"
+                ? [
+                    {
+                      id: "block:cooking",
+                      type: "step_reference",
+                      recipeRevisionId: document.recipeRevisionId,
+                      recipeStepId: "step-1",
+                    },
+                  ]
+                : [],
       })),
     }
 

@@ -30,8 +30,7 @@ typed and schema-validated contracts needed before persistence or UI work begins
 - document-internal section, image-brief, media-asset, and media-block reference validation;
 - same-section ownership for media blocks and publication gates for review metadata, required-section
   section-appropriate substantive content, approved referenced media, and terminal asset states;
-- non-bypassable identity, ingredients, and cooking content at publication even if applicability is
-  changed;
+- non-bypassable required identity, ingredients, and cooking content at publication;
 - rejection of every unreviewed or section-inappropriate populated block at publication;
 - published identity metrics and step-media references in preparation/cooking sections;
 - tuple-level immutable recipe provenance validation for shared guidance drafts and sourced steps;
