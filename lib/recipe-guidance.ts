@@ -730,12 +730,18 @@ export function parseRecipeGuidanceDocument(input: unknown): RecipeGuidanceDocum
 
 export function recipeHeroToReviewRequiredMedia(recipe: RecipeRecord): RecipeMediaAsset {
   const normalizedUrl = normalizeLegacyMediaUrl(recipe.image.url)
-  const retrievedAt = recipe.image.retrievedAt?.trim()
+  const legacyRetrievedAt = recipe.image.retrievedAt?.trim()
+  const retrievedAt =
+    legacyRetrievedAt && licensedRetrievalTimestamp.safeParse(legacyRetrievedAt).success
+      ? legacyRetrievedAt
+      : undefined
   const unavailableReason = !normalizedUrl
     ? "Legacy hero URL could not be represented safely"
-    : !retrievedAt
+    : !legacyRetrievedAt
       ? "Legacy hero retrieval evidence is missing"
-      : undefined
+      : !retrievedAt
+        ? "Legacy hero retrieval evidence is invalid"
+        : undefined
 
   return {
     id: `${recipe.id}:hero`,
