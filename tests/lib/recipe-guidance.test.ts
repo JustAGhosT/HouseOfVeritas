@@ -115,7 +115,7 @@ describe("recipe guidance contracts", () => {
     expect(result.success).toBe(false)
   })
 
-  it("requires approved generated media to live in HOV-managed storage", () => {
+  it("rejects a provider URL mislabeled as HOV-managed storage", () => {
     const result = recipeMediaAssetSchema.safeParse({
       id: "asset-1",
       sectionId: "section:hero",
@@ -128,13 +128,45 @@ describe("recipe guidance contracts", () => {
         generatedAt: now,
         rightsBasis: "Approved provider terms",
       },
-      storage: { type: "external", url: "https://provider.example/temporary.jpg" },
+      storage: {
+        type: "hov",
+        storageId: "asset-1-original",
+        url: "https://provider.example/temporary.jpg",
+        contentHash: `sha256:${"a".repeat(64)}`,
+      },
       altText: { en: "Finished dish.", af: "Voltooide gereg." },
       reviewedBy: "hans",
       reviewedAt: now,
     })
 
     expect(result.success).toBe(false)
+  })
+
+  it("accepts approved generated media with an HOV storage ID and internal path", () => {
+    const result = recipeMediaAssetSchema.safeParse({
+      id: "asset-1",
+      sectionId: "section:hero",
+      role: "hero",
+      status: "approved",
+      source: {
+        type: "generated",
+        requestId: "request-1",
+        modelAlias: "recipe-image",
+        generatedAt: now,
+        rightsBasis: "Approved provider terms",
+      },
+      storage: {
+        type: "hov",
+        storageId: "asset-1-original",
+        url: "/api/uploads/asset-1-original",
+        contentHash: `sha256:${"a".repeat(64)}`,
+      },
+      altText: { en: "Finished dish.", af: "Voltooide gereg." },
+      reviewedBy: "hans",
+      reviewedAt: now,
+    })
+
+    expect(result.success).toBe(true)
   })
 
   it("preserves legacy hero provenance without fabricating approval or alt text", () => {

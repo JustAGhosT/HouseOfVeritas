@@ -52,6 +52,15 @@ const safeMediaUrl = z
     (value) => (value.startsWith("/") && !value.startsWith("//")) || /^https?:\/\//i.test(value),
     "media URL must be an application path or an HTTP(S) URL"
   )
+const hovMediaPath = z
+  .string()
+  .trim()
+  .min(1)
+  .max(2_000)
+  .refine(
+    (value) => value.startsWith("/") && !value.startsWith("//"),
+    "HOV-managed media must use an internal application path"
+  )
 const localizedTextSchema = z.object({
   en: z.string().trim().min(1).max(2_000),
   af: z.string().trim().min(1).max(2_000),
@@ -112,9 +121,10 @@ export const recipeMediaStorageSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("hov"),
-    url: safeMediaUrl,
+    storageId: nonEmptyId,
+    url: hovMediaPath,
     contentHash: z.string().regex(/^sha256:[a-f0-9]{64}$/),
-    thumbnailUrl: safeMediaUrl.optional(),
+    thumbnailUrl: hovMediaPath.optional(),
   }),
 ])
 

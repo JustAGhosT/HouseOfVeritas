@@ -18,7 +18,8 @@ typed and schema-validated contracts needed before persistence or UI work begins
 - document draft, review, publish, and archive states;
 - image brief and media lifecycle states, with bilingual alt text required only at approval;
 - licensed, uploaded, and generated provenance shapes;
-- external and HOV-managed media locations with immutable SHA-256 identifiers;
+- external media locations and HOV-managed media with an internal storage ID, internal application
+  path, and immutable SHA-256 identifier;
 - a fail-closed rule that generated media cannot be approved until copied into HOV storage;
 - structured exact, range, and seconds-based timers;
 - document-internal section, image-brief, media-asset, and media-block reference validation;
