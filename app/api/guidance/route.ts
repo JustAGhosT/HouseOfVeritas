@@ -86,8 +86,17 @@ async function validateRecipeSource(
   source: z.infer<typeof sourceSchema>,
   context: { userId: string; role: string }
 ) {
-  if (!draft.sourceRecipeId) return null
-  if (source.type !== "recipe" || source.recipeId !== draft.sourceRecipeId) {
+  const sourceDeclaresRecipe = source.type === "recipe" || source.recipeId !== undefined
+  const draftDeclaresRecipe = draft.sourceRecipeId !== undefined
+  if (!sourceDeclaresRecipe && !draftDeclaresRecipe) return null
+  if (sourceDeclaresRecipe !== draftDeclaresRecipe) {
+    return NextResponse.json({ error: "Invalid recipe guidance provenance." }, { status: 400 })
+  }
+  if (
+    !draft.sourceRecipeId ||
+    source.type !== "recipe" ||
+    source.recipeId !== draft.sourceRecipeId
+  ) {
     return NextResponse.json({ error: "Invalid recipe guidance provenance." }, { status: 400 })
   }
 
