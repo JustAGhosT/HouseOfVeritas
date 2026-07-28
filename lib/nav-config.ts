@@ -40,19 +40,22 @@ export function isCategory(e: NavEntry): e is NavCategory {
   return "category" in e && "items" in e
 }
 
+export function isNavHrefActive(href: string, pathname: string | null): boolean {
+  if (!pathname) return false
+  if (pathname === href) return true
+
+  // Overview routes are persona roots, not catch-alls for every unmapped
+  // dashboard page. Nested matching is still useful for real section roots.
+  const isDashboardRoot = /^\/dashboard(?:\/[^/]+)?$/.test(href)
+  return !isDashboardRoot && pathname.startsWith(`${href}/`)
+}
+
 export function getActiveNavName(entries: NavEntry[], pathname: string | null): string {
   if (!pathname) return "Workspace"
 
   const items = entries.flatMap((entry) => (isCategory(entry) ? entry.items : [entry]))
   const active = items
-    .filter((item) => {
-      if (pathname === item.href) return true
-
-      // Overview routes are persona roots, not catch-alls for every unmapped
-      // dashboard page. Nested matching is still useful for real section roots.
-      const isDashboardRoot = /^\/dashboard(?:\/[^/]+)?$/.test(item.href)
-      return !isDashboardRoot && pathname.startsWith(`${item.href}/`)
-    })
+    .filter((item) => isNavHrefActive(item.href, pathname))
     .sort((left, right) => right.href.length - left.href.length)[0]
 
   return active?.name ?? "Workspace"

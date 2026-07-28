@@ -14,7 +14,7 @@ import { apiFetch } from "@/lib/api-client"
 import { useAuth } from "@/lib/auth-context"
 import { useLoginModal } from "@/lib/login-modal-context"
 import type { NavEntry } from "@/lib/nav-config"
-import { getActiveNavName, getNavForPersona, isCategory } from "@/lib/nav-config"
+import { getActiveNavName, getNavForPersona, isCategory, isNavHrefActive } from "@/lib/nav-config"
 import { generateCrest } from "@/lib/design/crest"
 import { getDashboardPath, isPersonaId } from "@/lib/auth/dashboard-path"
 import { ChevronRight, Menu, X } from "lucide-react"
@@ -194,7 +194,7 @@ export default function DashboardLayout({ children, persona }: DashboardLayoutPr
         <nav className="h-[calc(100%-180px)] space-y-1 overflow-y-auto p-4">
           {navEntries.map((entry, idx) => {
             if (isCategory(entry)) {
-              const hasActive = entry.items.some((i) => pathname === i.href)
+              const hasActive = entry.items.some((i) => isNavHrefActive(i.href, pathname))
               return (
                 <Collapsible key={entry.category} defaultOpen={hasActive}>
                   <CollapsibleTrigger className="group text-muted-foreground hover:bg-muted hover:text-foreground flex w-full items-center gap-3 rounded-xl px-4 py-3 transition-all">
@@ -206,7 +206,7 @@ export default function DashboardLayout({ children, persona }: DashboardLayoutPr
                   <CollapsibleContent>
                     <div className="border-border mt-1 ml-4 space-y-1 border-l pl-3">
                       {entry.items.map((item) => {
-                        const isActive = pathname === item.href
+                        const isActive = isNavHrefActive(item.href, pathname)
                         const Icon = item.icon
                         return (
                           <Link
@@ -230,7 +230,7 @@ export default function DashboardLayout({ children, persona }: DashboardLayoutPr
                 </Collapsible>
               )
             }
-            const isActive = pathname === entry.href
+            const isActive = isNavHrefActive(entry.href, pathname)
             const Icon = entry.icon
             return (
               <Link

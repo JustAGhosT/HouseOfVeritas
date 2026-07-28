@@ -59,14 +59,16 @@ Results:
 
 ## Review feedback
 
-The ready-for-review Codex pass on `d5a797e` raised two actionable P2 findings. Both were addressed
-before merge:
+The ready-for-review Codex pass on `d5a797e` raised two actionable P2 findings, and the follow-up
+review on `f8406c0` raised one related P2. All three were addressed before merge:
 
 - dashboard persona roots now match exactly instead of labeling unmapped nested routes as
   Overview; nested section routes still inherit their real navigation label, with focused
   regression coverage; and
 - the Settings page heading uses the existing `nav.settings` translation key so Afrikaans and
-  Zulu users retain a localized primary heading.
+  Zulu users retain a localized primary heading; and
+- the sidebar now reuses the same nested-route predicate, so project detail pages expand and
+  highlight their parent navigation item and expose `aria-current` consistently.
 
 ## Browser evidence
 

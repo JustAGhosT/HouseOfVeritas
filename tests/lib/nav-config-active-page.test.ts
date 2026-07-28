@@ -1,6 +1,6 @@
 import { Home, Settings } from "lucide-react"
 import { describe, expect, it } from "vitest"
-import { getActiveNavName, type NavEntry } from "@/lib/nav-config"
+import { getActiveNavName, isNavHrefActive, type NavEntry } from "@/lib/nav-config"
 
 const navEntries: NavEntry[] = [
   { name: "Overview", href: "/dashboard/hans", icon: Home },
@@ -15,5 +15,9 @@ describe("getActiveNavName", () => {
 
   it("keeps nested section routes associated with their navigation entry", () => {
     expect(getActiveNavName(navEntries, "/dashboard/hans/settings/profile")).toBe("Settings")
+    expect(isNavHrefActive("/dashboard/hans/settings", "/dashboard/hans/settings/profile")).toBe(
+      true
+    )
+    expect(isNavHrefActive("/dashboard/hans", "/dashboard/hans/maintenance")).toBe(false)
   })
 })
