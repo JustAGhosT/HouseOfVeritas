@@ -204,15 +204,19 @@ export const recipeMediaAssetSchema = z
       })
     }
 
-    if (
-      asset.source?.type === "generated" &&
-      ["generated", "review_required", "approved"].includes(asset.status) &&
-      !asset.imageBriefId
-    ) {
+    if (asset.source?.type === "generated" && !asset.imageBriefId) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["imageBriefId"],
-        message: `${asset.status} generated media requires an approved image brief`,
+        message: "generated media must retain its approved image brief",
+      })
+    }
+
+    if (asset.status !== "approved" && asset.altText) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["altText"],
+        message: "altText may only be recorded after media approval",
       })
     }
 
@@ -325,6 +329,26 @@ const recipeGuidanceBlockSchema = z
 
 export type RecipeGuidanceBlock = z.infer<typeof recipeGuidanceBlockSchema>
 
+const PUBLISHABLE_SECTION_BLOCK_TYPES = {
+  identity: ["text"],
+  hero: ["media_reference"],
+  before_start: ["text", "notice"],
+  ingredients: ["ingredient_references"],
+  preparation: ["text", "step_reference"],
+  cooking: ["step_reference"],
+  finish_and_serve: ["text", "step_reference", "media_reference"],
+  storage_and_reheating: ["text", "notice"],
+  provenance_and_feedback: ["text"],
+} as const satisfies Record<RecipeGuidanceSectionKind, readonly RecipeGuidanceBlock["type"][]>
+
+function isPublishableSectionBlock(
+  sectionKind: RecipeGuidanceSectionKind,
+  block: RecipeGuidanceBlock
+): boolean {
+  const allowedTypes = PUBLISHABLE_SECTION_BLOCK_TYPES[sectionKind] as readonly string[]
+  return allowedTypes.includes(block.type) && (block.type !== "text" || block.source === "reviewed")
+}
+
 export const recipeGuidanceSectionSchema = z.object({
   id: nonEmptyId,
   kind: z.enum(RECIPE_GUIDANCE_SECTION_KINDS),
@@ -400,9 +424,7 @@ export const recipeGuidanceDocumentSchema = z
         })
       }
       const requiresApprovedBrief =
-        asset.status === "requested" ||
-        (asset.source?.type === "generated" &&
-          ["generated", "review_required", "approved"].includes(asset.status))
+        asset.status === "requested" || asset.source?.type === "generated"
       if (
         requiresApprovedBrief &&
         imageBrief &&
@@ -467,11 +489,14 @@ export const recipeGuidanceDocumentSchema = z
       }
 
       document.sections.forEach((section, index) => {
-        if (section.applicability === "required" && section.blocks.length === 0) {
+        if (
+          section.applicability === "required" &&
+          !section.blocks.some((block) => isPublishableSectionBlock(section.kind, block))
+        ) {
           context.addIssue({
             code: z.ZodIssueCode.custom,
             path: ["sections", index, "blocks"],
-            message: "required sections must contain reviewed content before publication",
+            message: `${section.kind} requires section-appropriate reviewed content before publication`,
           })
         }
       })

@@ -18,7 +18,7 @@ typed and schema-validated contracts needed before persistence or UI work begins
 - document draft, review, publish, and archive states;
 - image brief and media lifecycle states, with bilingual alt text required only at approval;
 - a document-level invariant that generated media references an approved brief with the same section
-  and role before it can enter generated, review-required, or approved states;
+  and role throughout its lifecycle, including rejected and unavailable terminal states;
 - an approved matching brief before media can enter the cost-bearing requested state;
 - licensed, uploaded, and generated provenance shapes;
 - external media locations and HOV-managed media with an internal storage ID, internal application
@@ -27,7 +27,8 @@ typed and schema-validated contracts needed before persistence or UI work begins
 - structured exact, range, and seconds-based timers;
 - document-internal section, image-brief, media-asset, and media-block reference validation;
 - same-section ownership for media blocks and publication gates for review metadata, required-section
-  substantive content, approved referenced media, and terminal asset states;
+  section-appropriate substantive content, approved referenced media, and terminal asset states;
+- alt text forbidden before media approval, keeping unreviewed descriptions out of durable assets;
 - a truthful adapter for legacy hero images that preserves attribution while marking them
   `review_required` instead of fabricating alt text or approval, including normalization of accepted
   relative image paths; and
@@ -58,7 +59,7 @@ pnpm exec prettier --check lib/recipe-guidance.ts lib/guidance.ts tests/lib/reci
 git diff --check
 ```
 
-- Focused result at the latest review-fix head: 2 files, 19 tests passed.
+- Focused result at the latest review-fix head: 2 files, 21 tests passed.
 - Production build completed and generated 125 routes/pages.
 - No browser check was required because no route, component, or interaction changed.
 

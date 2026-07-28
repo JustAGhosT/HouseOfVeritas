@@ -194,6 +194,38 @@ describe("recipe guidance contracts", () => {
     expect(result.success).toBe(true)
   })
 
+  it("retains approved-brief provenance for terminal generated media", () => {
+    const result = recipeMediaAssetSchema.safeParse({
+      id: "asset-1",
+      sectionId: "section:hero",
+      role: "hero",
+      status: "rejected",
+      source: {
+        type: "generated",
+        requestId: "request-1",
+        modelAlias: "recipe-image",
+        generatedAt: now,
+        rightsBasis: "Approved provider terms",
+      },
+      rejectionReason: "The image does not match the reviewed facts.",
+    })
+
+    expect(result.success).toBe(false)
+  })
+
+  it("rejects alt text before media approval", () => {
+    const result = recipeMediaAssetSchema.safeParse({
+      id: "asset-1",
+      sectionId: "section:hero",
+      role: "hero",
+      status: "review_required",
+      storage: { type: "external", url: "https://images.example/hero.jpg" },
+      altText: { en: "Unreviewed image.", af: "Onhersiene beeld." },
+    })
+
+    expect(result.success).toBe(false)
+  })
+
   it("requires generated media to reference an approved matching brief", () => {
     const document = buildDocument()
     const generatedAsset = {
@@ -310,17 +342,67 @@ describe("recipe guidance contracts", () => {
       reviewedAt: now,
       publishedBy: "hans",
       publishedAt: now,
-      sections: document.sections.map((section) => ({
-        ...section,
-        blocks: [
-          {
-            id: `block:${section.kind}`,
-            type: "text",
-            source: "reviewed",
-            text: { en: "Reviewed guidance.", af: "Hersiene leiding." },
+      sections: document.sections.map((section) => {
+        const id = `block:${section.kind}`
+        const blocks = (() => {
+          switch (section.kind) {
+            case "hero":
+              return [{ id, type: "media_reference", mediaAssetId: "asset-1" }]
+            case "before_start":
+              return [
+                {
+                  id,
+                  type: "notice",
+                  noticeType: "preparation",
+                  text: { en: "Prepare first.", af: "Berei eers voor." },
+                },
+              ]
+            case "ingredients":
+              return [{ id, type: "ingredient_references", ingredientIds: ["ingredient-1"] }]
+            case "preparation":
+            case "cooking":
+              return [{ id, type: "step_reference", recipeStepId: `step:${section.kind}` }]
+            case "storage_and_reheating":
+              return [
+                {
+                  id,
+                  type: "notice",
+                  noticeType: "storage",
+                  text: { en: "Store safely.", af: "Berg veilig." },
+                },
+              ]
+            default:
+              return [
+                {
+                  id,
+                  type: "text",
+                  source: "reviewed",
+                  text: { en: "Reviewed guidance.", af: "Hersiene leiding." },
+                },
+              ]
+          }
+        })()
+        return { ...section, blocks }
+      }),
+      mediaAssets: [
+        {
+          id: "asset-1",
+          sectionId: "section:hero",
+          role: "hero",
+          status: "approved",
+          source: {
+            type: "licensed",
+            source: "Example library",
+            license: "CC BY 4.0",
+            attributionText: "Example Author, CC BY 4.0",
+            retrievedAt: "2026-07-28",
           },
-        ],
-      })),
+          storage: { type: "external", url: "https://images.example/hero.jpg" },
+          altText: { en: "Finished dish.", af: "Voltooide gereg." },
+          reviewedBy: "hans",
+          reviewedAt: now,
+        },
+      ],
     }
 
     expect(parseRecipeGuidanceDocument(publishedDocument)).not.toBeNull()
@@ -329,7 +411,7 @@ describe("recipe guidance contracts", () => {
         ...publishedDocument,
         sections: publishedDocument.sections.map((section) => ({
           ...section,
-          blocks: [{ id: `block:${section.kind}`, type: "metrics" }],
+          blocks: [{ id: `block:${section.kind}`, type: "metrics", servings: 4 }],
         })),
       })
     ).toBeNull()
