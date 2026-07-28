@@ -27,7 +27,7 @@ import {
   X,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrator",
@@ -76,6 +76,7 @@ export default function OnboardingPage() {
   const [notifPrefs, setNotifPrefs] = useState({ email: true, sms: false, push: true })
   const [twoFaEnabled, setTwoFaEnabled] = useState(false)
   const [selectedTheme, setSelectedTheme] = useState<UserThemeId>("sanctum")
+  const persistedThemeRef = useRef<UserThemeId>("sanctum")
   const persistedTheme = profileUser
     ? isUserThemeId(profileUser.themeId)
       ? profileUser.themeId
@@ -85,9 +86,10 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (!persistedTheme) return
 
+    persistedThemeRef.current = persistedTheme
     document.documentElement.dataset.userTheme = selectedTheme
     return () => {
-      document.documentElement.dataset.userTheme = persistedTheme
+      document.documentElement.dataset.userTheme = persistedThemeRef.current
     }
   }, [persistedTheme, selectedTheme])
 
@@ -243,6 +245,8 @@ export default function OnboardingPage() {
         body: { themeId: selectedTheme },
         label: "OnboardingTheme",
       })
+      persistedThemeRef.current = selectedTheme
+      setFetchedUser((current) => (current ? { ...current, themeId: selectedTheme } : current))
     } catch {
       // Theme selection is optional and must not block onboarding completion.
     }
@@ -262,6 +266,8 @@ export default function OnboardingPage() {
         body: { themeId: selectedTheme },
         label: "OnboardingTheme",
       })
+      persistedThemeRef.current = selectedTheme
+      setFetchedUser((current) => (current ? { ...current, themeId: selectedTheme } : current))
       await refresh()
     } catch {
       // Leaving onboarding remains available if preference persistence is unavailable.
