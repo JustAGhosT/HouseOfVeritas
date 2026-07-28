@@ -235,6 +235,26 @@ describe("recipe guidance contracts", () => {
     ).toBe(false)
   })
 
+  it("allows generated provenance to terminate as unavailable", () => {
+    expect(
+      recipeMediaAssetSchema.safeParse({
+        id: "asset-1",
+        sectionId: "section:hero",
+        imageBriefId: "brief-1",
+        role: "hero",
+        status: "unavailable",
+        source: {
+          type: "generated",
+          requestId: "request-1",
+          modelAlias: "recipe-image",
+          generatedAt: now,
+          rightsBasis: "Approved provider terms",
+        },
+        unavailableReason: "Temporary provider output could not be retained.",
+      }).success
+    ).toBe(true)
+  })
+
   it("rejects alt text before media approval", () => {
     const result = recipeMediaAssetSchema.safeParse({
       id: "asset-1",
@@ -395,7 +415,7 @@ describe("recipe guidance contracts", () => {
                   id,
                   type: "step_reference",
                   recipeRevisionId: document.recipeRevisionId,
-                  recipeStepId: `step:${section.kind}`,
+                  recipeStepId: "step:cooking",
                 },
               ]
             case "storage_and_reheating":
@@ -446,6 +466,22 @@ describe("recipe guidance contracts", () => {
       parseRecipeGuidanceDocument({
         ...publishedDocument,
         recipeIngredientIds: ["ingredient-1", "ingredient-2"],
+      })
+    ).toBeNull()
+    expect(
+      parseRecipeGuidanceDocument({
+        ...publishedDocument,
+        sections: publishedDocument.sections.map((section) =>
+          section.kind === "preparation"
+            ? {
+                ...section,
+                blocks: section.blocks.map((block) => ({
+                  ...block,
+                  recipeStepId: "step:outside-manifest",
+                })),
+              }
+            : section
+        ),
       })
     ).toBeNull()
     expect(

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { POST as analyzePhoto } from "@/app/api/guidance/analyze/route"
 import { GET, POST as saveGuidance } from "@/app/api/guidance/route"
 import { generateTaskGuidanceWithSluice } from "@/lib/integrations/sluice"
+import { recipeToGuidanceDraft } from "@/lib/guidance"
 import {
   createAndBindGuidance,
   getActiveGuidanceForTask,
@@ -337,6 +338,59 @@ describe("task guidance API", () => {
 
     expect(response.status).toBe(200)
     expect((await response.json()).data.guidance).toEqual(legacyGuidance)
+  })
+
+  it("does not let an admin bind guidance from an unpublished recipe", async () => {
+    const recipe = {
+      id: "recipe-draft",
+      status: "draft" as const,
+      ownerUserId: "hans",
+      audienceUserIds: ["irma"],
+      titleEn: "Draft recipe",
+      titleAf: "Konsepresép",
+      image: {
+        url: "/draft.jpg",
+        source: "House",
+        license: "Owned",
+        attributionText: "House",
+        retrievedAt: "2026-07-24",
+      },
+      ingredients: [{ id: "ingredient-1", name: "Rice" }],
+      steps: [
+        {
+          id: "step-1",
+          order: 1,
+          instructionEn: "Cook the rice.",
+          instructionAf: "Kook die rys.",
+        },
+      ],
+      createdAt: "2026-07-24T00:00:00.000Z",
+      updatedAt: "2026-07-24T00:00:00.000Z",
+    }
+    const recipeDraft = recipeToGuidanceDraft(recipe, "en")
+    vi.mocked(getRecipeById).mockResolvedValue(recipe)
+
+    const response = await saveGuidance(
+      new Request("http://localhost/api/guidance", {
+        method: "POST",
+        headers: { ...authHeaders, "x-user-id": "hans", "x-user-role": "admin" },
+        body: JSON.stringify({
+          taskId: "42",
+          draft: {
+            ...recipeDraft,
+            safety: ["Use heat-safe equipment."],
+            steps: recipeDraft.steps.map((step) => ({
+              ...step,
+              warning: "Stop if the equipment is unsafe.",
+            })),
+          },
+          source: { type: "recipe", recipeId: recipe.id },
+        }),
+      })
+    )
+
+    expect(response.status).toBe(403)
+    expect(createAndBindGuidance).not.toHaveBeenCalled()
   })
 
   it("does not expose guidance for a task outside the resident's assignment and projects", async () => {

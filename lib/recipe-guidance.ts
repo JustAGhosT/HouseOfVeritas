@@ -231,7 +231,9 @@ export const recipeMediaAssetSchema = z
 
     if (
       asset.source?.type === "generated" &&
-      !["generated", "review_required", "approved", "rejected"].includes(asset.status)
+      !["generated", "review_required", "approved", "rejected", "unavailable"].includes(
+        asset.status
+      )
     ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -560,6 +562,26 @@ export const recipeGuidanceDocumentSchema = z
             code: z.ZodIssueCode.custom,
             path: ["sections", sectionIndex, "blocks", blockIndex, "recipeRevisionId"],
             message: "recipe references must target this document's immutable recipe revision",
+          })
+        }
+        if (
+          block.type === "ingredient_references" &&
+          block.ingredientIds.some((id) => !document.recipeIngredientIds.includes(id))
+        ) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["sections", sectionIndex, "blocks", blockIndex, "ingredientIds"],
+            message: "ingredient references must target the canonical recipe ingredient manifest",
+          })
+        }
+        if (
+          block.type === "step_reference" &&
+          !document.recipeStepIds.includes(block.recipeStepId)
+        ) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["sections", sectionIndex, "blocks", blockIndex, "recipeStepId"],
+            message: "step references must target the canonical recipe step manifest",
           })
         }
         if (block.type === "media_reference") {

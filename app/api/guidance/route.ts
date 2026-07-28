@@ -106,9 +106,8 @@ async function validateRecipeSource(
     return NextResponse.json({ error: "Invalid recipe guidance provenance." }, { status: 400 })
   }
   if (
-    context.role !== "admin" &&
-    (recipe.status !== "published" ||
-      !isRecipeAudienceMatch(recipe.audienceUserIds, context.userId))
+    recipe.status !== "published" ||
+    (context.role !== "admin" && !isRecipeAudienceMatch(recipe.audienceUserIds, context.userId))
   ) {
     return NextResponse.json({ error: "You do not have access to this recipe." }, { status: 403 })
   }
@@ -136,9 +135,8 @@ async function authorizeRecipeGuidanceRead(
   const recipe = await getRecipeById(recipeId)
   if (
     !recipe ||
-    (context.role !== "admin" &&
-      (recipe.status !== "published" ||
-        !isRecipeAudienceMatch(recipe.audienceUserIds, context.userId)))
+    recipe.status !== "published" ||
+    (context.role !== "admin" && !isRecipeAudienceMatch(recipe.audienceUserIds, context.userId))
   ) {
     return NextResponse.json({ error: "You do not have access to this recipe." }, { status: 403 })
   }
