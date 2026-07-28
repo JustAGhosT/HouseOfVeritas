@@ -24,6 +24,7 @@ label[for] {
   --popover: #FFFFFF;
   --popover-foreground: #1A1A1A;
   --primary: #D4AF37; /* Sigil Gold */
+  --primary-text: #87662D;
   --primary-foreground: #0F0F12; /* Obsidian */
   --secondary: #4B2E83; /* Arcane Violet */
   --secondary-foreground: #F5F1E6; /* Parchment */
@@ -60,6 +61,7 @@ label[for] {
   --popover: #1B1B1F;
   --popover-foreground: #F5F1E6;
   --primary: #D4AF37; /* Sigil Gold */
+  --primary-text: #D4AF37;
   --primary-foreground: #0F0F12;
   --secondary: #4B2E83; /* Arcane Violet */
   --secondary-foreground: #F5F1E6;
@@ -90,6 +92,7 @@ label[for] {
 /* User-selected accents are independent of roles and permissions. */
 html[data-user-theme="sanctum"] {
   --primary: #D4AF37;
+  --primary-text: #D4AF37;
   --primary-foreground: #0F0F12;
   --secondary: #4B2E83;
   --secondary-foreground: #F5F1E6;
@@ -107,6 +110,7 @@ html[data-user-theme="sanctum"] {
 
 html[data-user-theme="ocean"] {
   --primary: #2563EB;
+  --primary-text: #60A5FA;
   --primary-foreground: #F8FAFC;
   --secondary: #0891B2;
   --secondary-foreground: #F8FAFC;
@@ -124,6 +128,7 @@ html[data-user-theme="ocean"] {
 
 html[data-user-theme="ember"] {
   --primary: #F59E0B;
+  --primary-text: #FBBF24;
   --primary-foreground: #1C1917;
   --secondary: #EA580C;
   --secondary-foreground: #FFF7ED;
@@ -141,6 +146,7 @@ html[data-user-theme="ember"] {
 
 html[data-user-theme="garden"] {
   --primary: #22C55E;
+  --primary-text: #4ADE80;
   --primary-foreground: #052E16;
   --secondary: #0D9488;
   --secondary-foreground: #F0FDFA;
@@ -158,6 +164,7 @@ html[data-user-theme="garden"] {
 
 html[data-user-theme="amethyst"] {
   --primary: #9333EA;
+  --primary-text: #C084FC;
   --primary-foreground: #FAF5FF;
   --secondary: #DB2777;
   --secondary-foreground: #FDF2F8;
@@ -194,6 +201,7 @@ html[data-user-theme="amethyst"] {
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-primary-text: var(--primary-text);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);

@@ -65,21 +65,21 @@ function GardenPattern() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {/* Leaf patterns */}
-      <svg className="text-primary/5 absolute top-10 right-10 h-64 w-64" viewBox="0 0 100 100">
+      <svg className="text-primary-text/5 absolute top-10 right-10 h-64 w-64" viewBox="0 0 100 100">
         <path
           d="M50 10 Q80 30 70 60 Q60 80 50 90 Q40 80 30 60 Q20 30 50 10 Z"
           fill="currentColor"
         />
         <path d="M50 20 L50 85" stroke="currentColor" strokeWidth="2" fill="none" />
       </svg>
-      <svg className="text-primary/5 absolute bottom-20 left-10 h-48 w-48" viewBox="0 0 100 100">
+      <svg className="text-primary-text/5 absolute bottom-20 left-10 h-48 w-48" viewBox="0 0 100 100">
         <ellipse cx="50" cy="40" rx="30" ry="35" fill="currentColor" />
         <path d="M50 75 L50 95" stroke="currentColor" strokeWidth="3" />
         <path d="M50 40 Q30 50 20 70" stroke="currentColor" strokeWidth="1" fill="none" />
         <path d="M50 40 Q70 50 80 70" stroke="currentColor" strokeWidth="1" fill="none" />
       </svg>
       {/* Flower */}
-      <svg className="text-primary/5 absolute top-1/3 left-1/4 h-32 w-32" viewBox="0 0 100 100">
+      <svg className="text-primary-text/5 absolute top-1/3 left-1/4 h-32 w-32" viewBox="0 0 100 100">
         {[0, 72, 144, 216, 288].map((angle, i) => (
           <ellipse
             key={i}
@@ -94,7 +94,7 @@ function GardenPattern() {
         <circle cx="50" cy="50" r="12" fill="currentColor" />
       </svg>
       {/* Tree */}
-      <svg className="text-primary/5 absolute right-1/4 bottom-1/4 h-40 w-40" viewBox="0 0 100 100">
+      <svg className="text-primary-text/5 absolute right-1/4 bottom-1/4 h-40 w-40" viewBox="0 0 100 100">
         <polygon points="50,10 80,50 65,50 85,80 15,80 35,50 20,50" fill="currentColor" />
         <rect x="45" y="80" width="10" height="15" fill="currentColor" />
       </svg>
@@ -178,7 +178,7 @@ export default function LuckyDashboard() {
         <div className="relative flex flex-col items-center justify-between gap-4 md:flex-row">
           <div className="flex items-center gap-4">
             <div className="border-primary/30 from-primary/30 to-secondary/30 flex h-16 w-16 items-center justify-center rounded-xl border bg-linear-to-br">
-              <Clock className="text-primary h-8 w-8" />
+              <Clock className="text-primary-text h-8 w-8" />
             </div>
             <div>
               <p className="text-sm text-green-200/60">Today&apos;s Work Time</p>
@@ -200,7 +200,7 @@ export default function LuckyDashboard() {
               className={`flex items-center gap-2 rounded-xl border px-6 py-3 font-medium transition-colors ${
                 isClockRunning
                   ? "border-red-500/30 bg-red-500/20 text-red-400 hover:bg-red-500/30"
-                  : "border-primary/30 bg-primary/20 text-primary hover:bg-primary/30"
+                  : "border-primary/30 bg-primary/20 text-primary-text hover:bg-primary/30"
               } `}
             >
               {isClockRunning ? (
@@ -222,7 +222,7 @@ export default function LuckyDashboard() {
       {/* Specialty Tags & Weather */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap gap-2">
-          <span className="border-primary/30 bg-primary/20 text-primary flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium">
+          <span className="border-primary/30 bg-primary/20 text-primary-text flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium">
             <Leaf className="h-4 w-4" /> Gardening
           </span>
           <span className="flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/20 px-3 py-1.5 text-sm font-medium text-blue-400">
@@ -255,7 +255,7 @@ export default function LuckyDashboard() {
         >
           <p className="text-sm text-green-200/60">Active Tasks</p>
           <p className="text-foreground text-2xl font-bold">{tasks.total}</p>
-          <p className="text-primary text-sm">{tasks.completed} completed</p>
+          <p className="text-primary-text text-sm">{tasks.completed} completed</p>
         </div>
         <div
           className="border-primary/20 bg-primary/10 rounded-xl border p-4 backdrop-blur-sm"
@@ -335,7 +335,7 @@ export default function LuckyDashboard() {
         >
           <div className="border-primary/20 flex items-center justify-between border-b p-6">
             <div className="flex items-center gap-3">
-              <ClipboardList className="text-primary h-5 w-5" />
+              <ClipboardList className="text-primary-text h-5 w-5" />
               <div>
                 <h3 className="text-foreground font-semibold">My Tasks</h3>
                 <p className="text-muted-foreground text-sm">Today&apos;s garden work</p>
@@ -357,14 +357,14 @@ export default function LuckyDashboard() {
         >
           <div className="border-primary/20 flex items-center justify-between border-b p-6">
             <div className="flex items-center gap-3">
-              <DollarSign className="text-primary h-5 w-5" />
+              <DollarSign className="text-primary-text h-5 w-5" />
               <div>
                 <h3 className="text-foreground font-semibold">My Expenses</h3>
                 <p className="text-muted-foreground text-sm">Recent submissions</p>
               </div>
             </div>
             <button
-              className="border-primary/30 bg-primary/20 text-primary hover:bg-primary/30 flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-colors"
+              className="border-primary/30 bg-primary/20 text-primary-text hover:bg-primary/30 flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-colors"
               data-testid="new-expense-btn"
             >
               <Plus className="h-4 w-4" />
@@ -424,13 +424,13 @@ export default function LuckyDashboard() {
         >
           <div className="border-primary/20 flex items-center justify-between border-b p-6">
             <div className="flex items-center gap-3">
-              <Car className="text-primary h-5 w-5" />
+              <Car className="text-primary-text h-5 w-5" />
               <div>
                 <h3 className="text-foreground font-semibold">Vehicles</h3>
                 <p className="text-muted-foreground text-sm">Coming soon</p>
               </div>
             </div>
-            <span className="border-primary/30 bg-primary/20 text-primary rounded-full border px-3 py-1 text-sm font-medium">
+            <span className="border-primary/30 bg-primary/20 text-primary-text rounded-full border px-3 py-1 text-sm font-medium">
               Coming soon
             </span>
           </div>

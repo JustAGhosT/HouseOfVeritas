@@ -63,7 +63,7 @@ function TechPattern() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {/* Circuit board pattern */}
-      <svg className="text-primary/5 absolute top-10 right-10 h-64 w-64" viewBox="0 0 100 100">
+      <svg className="text-primary-text/5 absolute top-10 right-10 h-64 w-64" viewBox="0 0 100 100">
         <circle cx="20" cy="20" r="5" fill="currentColor" />
         <circle cx="80" cy="20" r="5" fill="currentColor" />
         <circle cx="50" cy="50" r="8" fill="currentColor" />
@@ -77,7 +77,7 @@ function TechPattern() {
         />
       </svg>
       {/* Network nodes */}
-      <svg className="text-primary/5 absolute bottom-20 left-10 h-48 w-48" viewBox="0 0 100 100">
+      <svg className="text-primary-text/5 absolute bottom-20 left-10 h-48 w-48" viewBox="0 0 100 100">
         <circle cx="50" cy="50" r="15" fill="currentColor" />
         <circle cx="20" cy="30" r="8" fill="currentColor" />
         <circle cx="80" cy="30" r="8" fill="currentColor" />
@@ -89,13 +89,13 @@ function TechPattern() {
         <line x1="50" y1="50" x2="80" y2="70" stroke="currentColor" strokeWidth="2" />
       </svg>
       {/* Monitor/Screen */}
-      <svg className="text-primary/5 absolute top-1/3 left-1/5 h-40 w-40" viewBox="0 0 100 100">
+      <svg className="text-primary-text/5 absolute top-1/3 left-1/5 h-40 w-40" viewBox="0 0 100 100">
         <rect x="10" y="15" width="80" height="55" rx="3" fill="currentColor" />
         <rect x="40" y="70" width="20" height="10" fill="currentColor" />
         <rect x="30" y="80" width="40" height="5" rx="2" fill="currentColor" />
       </svg>
       {/* Chip/CPU */}
-      <svg className="text-primary/5 absolute right-1/5 bottom-1/3 h-36 w-36" viewBox="0 0 100 100">
+      <svg className="text-primary-text/5 absolute right-1/5 bottom-1/3 h-36 w-36" viewBox="0 0 100 100">
         <rect x="25" y="25" width="50" height="50" rx="5" fill="currentColor" />
         {[30, 40, 50, 60, 70].map((pos) => (
           <g key={pos}>
@@ -162,7 +162,7 @@ function StatCard({
   }
 
   const iconColors: Record<StatCardColor, string> = {
-    blue: "text-primary",
+    blue: "text-primary-text",
     green: "text-green-400",
     amber: "text-amber-400",
     red: "text-red-400",
@@ -268,7 +268,7 @@ export default function DashboardPage() {
 
       {/* Specialty Tags */}
       <div className="mb-6 flex flex-wrap gap-2">
-        <span className="border-primary/30 bg-primary/20 text-primary flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium">
+        <span className="border-primary/30 bg-primary/20 text-primary-text flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium">
           <Monitor className="h-4 w-4" /> Tech Lead
         </span>
         <span className="border-secondary/30 bg-secondary/20 text-secondary flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium">
@@ -510,7 +510,7 @@ export default function DashboardPage() {
             </div>
             <div className="border-primary/20 border-t p-4">
               <button
-                className="text-primary flex w-full items-center justify-center gap-2 text-center text-sm font-medium hover:text-blue-300"
+                className="text-primary-text flex w-full items-center justify-center gap-2 text-center text-sm font-medium hover:text-blue-300"
                 onClick={() => router.push("/dashboard/hans/approvals")}
                 aria-label="View all pending items"
               >
@@ -570,7 +570,7 @@ export default function DashboardPage() {
               data-testid="system-status"
             >
               <div className="mb-4 flex items-center gap-3">
-                <Server className="text-primary h-5 w-5" />
+                <Server className="text-primary-text h-5 w-5" />
                 <h3 className="text-foreground font-semibold">System Status</h3>
               </div>
               <div className="space-y-4">

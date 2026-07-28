@@ -29,13 +29,13 @@ function WorkshopPattern() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {/* Gear/Tool patterns */}
-      <svg className="text-primary/5 absolute top-10 right-10 h-64 w-64" viewBox="0 0 100 100">
+      <svg className="text-primary-text/5 absolute top-10 right-10 h-64 w-64" viewBox="0 0 100 100">
         <path
           d="M50 20 L55 35 L70 35 L58 45 L63 60 L50 50 L37 60 L42 45 L30 35 L45 35 Z"
           fill="currentColor"
         />
       </svg>
-      <svg className="text-primary/5 absolute bottom-20 left-10 h-48 w-48" viewBox="0 0 100 100">
+      <svg className="text-primary-text/5 absolute bottom-20 left-10 h-48 w-48" viewBox="0 0 100 100">
         <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="8" />
         <circle cx="50" cy="50" r="15" fill="currentColor" />
         {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
@@ -50,13 +50,13 @@ function WorkshopPattern() {
           />
         ))}
       </svg>
-      <svg className="text-primary/5 absolute top-1/3 left-1/4 h-32 w-32" viewBox="0 0 100 100">
+      <svg className="text-primary-text/5 absolute top-1/3 left-1/4 h-32 w-32" viewBox="0 0 100 100">
         <path d="M20 80 L30 50 L50 50 L60 20 L70 50 L90 50 L80 80 Z" fill="currentColor" />
         <rect x="45" y="50" width="10" height="40" fill="currentColor" />
       </svg>
       {/* Wrench */}
       <svg
-        className="text-primary/5 absolute right-1/3 bottom-1/4 h-40 w-40 rotate-45"
+        className="text-primary-text/5 absolute right-1/3 bottom-1/4 h-40 w-40 rotate-45"
         viewBox="0 0 100 100"
       >
         <path
@@ -135,7 +135,7 @@ export default function CharlDashboard() {
         <div className="relative flex flex-col items-center justify-between gap-4 md:flex-row">
           <div className="flex items-center gap-4">
             <div className="border-primary/30 from-primary/30 to-secondary/30 flex h-16 w-16 items-center justify-center rounded-xl border bg-linear-to-br">
-              <Clock className="text-primary h-8 w-8" />
+              <Clock className="text-primary-text h-8 w-8" />
             </div>
             <div>
               <p className="text-sm text-amber-200/60">Today&apos;s Work Time</p>
@@ -178,7 +178,7 @@ export default function CharlDashboard() {
 
       {/* Specialty Tags */}
       <div className="mb-6 flex flex-wrap gap-2">
-        <span className="border-primary/30 bg-primary/20 text-primary flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium">
+        <span className="border-primary/30 bg-primary/20 text-primary-text flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium">
           <Zap className="h-4 w-4" /> Electrician
         </span>
         <span className="flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/20 px-3 py-1.5 text-sm font-medium text-blue-400">
@@ -202,7 +202,7 @@ export default function CharlDashboard() {
         >
           <p className="text-sm text-amber-200/60">Active Tasks</p>
           <p className="text-foreground text-2xl font-bold">{tasks.total}</p>
-          <p className="text-primary text-sm">{tasks.completed} completed</p>
+          <p className="text-primary-text text-sm">{tasks.completed} completed</p>
         </div>
         <div
           className="border-primary/20 bg-primary/10 rounded-xl border p-4 backdrop-blur-sm"
@@ -286,13 +286,13 @@ export default function CharlDashboard() {
         >
           <div className="border-primary/20 flex items-center justify-between border-b p-6">
             <div className="flex items-center gap-3">
-              <ClipboardList className="text-primary h-5 w-5" />
+              <ClipboardList className="text-primary-text h-5 w-5" />
               <div>
                 <h3 className="text-foreground font-semibold">My Tasks</h3>
                 <p className="text-muted-foreground text-sm">Today&apos;s assignments</p>
               </div>
             </div>
-            <span className="border-primary/30 bg-primary/20 text-primary rounded-full border px-3 py-1 text-sm">
+            <span className="border-primary/30 bg-primary/20 text-primary-text rounded-full border px-3 py-1 text-sm">
               {tasks.total} tasks
             </span>
           </div>
@@ -311,7 +311,7 @@ export default function CharlDashboard() {
         >
           <div className="border-primary/20 flex items-center justify-between border-b p-6">
             <div className="flex items-center gap-3">
-              <Package className="text-primary h-5 w-5" />
+              <Package className="text-primary-text h-5 w-5" />
               <div>
                 <h3 className="text-foreground font-semibold">Workshop Assets</h3>
                 <p className="text-muted-foreground text-sm">Equipment status</p>
@@ -333,13 +333,13 @@ export default function CharlDashboard() {
         >
           <div className="border-primary/20 flex items-center justify-between border-b p-6">
             <div className="flex items-center gap-3">
-              <Car className="text-primary h-5 w-5" />
+              <Car className="text-primary-text h-5 w-5" />
               <div>
                 <h3 className="text-foreground font-semibold">Vehicles</h3>
                 <p className="text-muted-foreground text-sm">Coming soon</p>
               </div>
             </div>
-            <span className="border-primary/30 bg-primary/20 text-primary rounded-full border px-3 py-1 text-sm font-medium">
+            <span className="border-primary/30 bg-primary/20 text-primary-text rounded-full border px-3 py-1 text-sm font-medium">
               Coming soon
             </span>
           </div>

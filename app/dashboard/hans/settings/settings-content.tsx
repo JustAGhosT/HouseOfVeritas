@@ -98,17 +98,17 @@ export function SettingsPageContent({ persona }: { persona: "hans" | "charl" | "
 
   const handleSave = async () => {
     setSaveError(false)
+    localStorage.setItem("hov_settings", JSON.stringify(settings))
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
     try {
       await apiFetch("/api/users/me", {
         method: "PATCH",
         body: { themeId: selectedTheme },
         label: "SaveTheme",
       })
-      localStorage.setItem("hov_settings", JSON.stringify(settings))
       await refresh()
       setThemeOverride(null)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
     } catch {
       setSaveError(true)
     }
@@ -157,7 +157,7 @@ export function SettingsPageContent({ persona }: { persona: "hans" | "charl" | "
 
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
           <div className="flex items-center gap-3 border-b border-white/10 p-6">
-            <Palette className="text-primary h-5 w-5" />
+            <Palette className="text-primary-text h-5 w-5" />
             <div>
               <h2 className="font-semibold text-white">Appearance</h2>
               <p className="text-sm text-white/50">Choose your personal workspace colours.</p>
@@ -429,7 +429,7 @@ export function SettingsPageContent({ persona }: { persona: "hans" | "charl" | "
           )}
           {saveError && (
             <span className="text-sm text-red-400" role="alert">
-              Settings could not be saved. Please try again.
+              Local settings saved, but your theme could not be synced. Please try again.
             </span>
           )}
           <button

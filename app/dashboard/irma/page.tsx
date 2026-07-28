@@ -31,21 +31,21 @@ function HomePattern() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {/* Heart patterns */}
-      <svg className="text-primary/5 absolute top-10 right-10 h-64 w-64" viewBox="0 0 100 100">
+      <svg className="text-primary-text/5 absolute top-10 right-10 h-64 w-64" viewBox="0 0 100 100">
         <path
           d="M50 88 C20 60 5 40 5 25 C5 10 20 5 35 15 C42 20 47 28 50 35 C53 28 58 20 65 15 C80 5 95 10 95 25 C95 40 80 60 50 88 Z"
           fill="currentColor"
         />
       </svg>
       {/* House */}
-      <svg className="text-primary/5 absolute bottom-20 left-10 h-48 w-48" viewBox="0 0 100 100">
+      <svg className="text-primary-text/5 absolute bottom-20 left-10 h-48 w-48" viewBox="0 0 100 100">
         <polygon points="50,10 90,45 90,90 10,90 10,45" fill="currentColor" />
         <rect x="40" y="60" width="20" height="30" fill="rgba(10,10,15,0.5)" />
         <rect x="60" y="50" width="15" height="15" fill="rgba(10,10,15,0.3)" />
         <rect x="25" y="50" width="15" height="15" fill="rgba(10,10,15,0.3)" />
       </svg>
       {/* Sparkle/Star */}
-      <svg className="text-primary/5 absolute top-1/3 left-1/4 h-32 w-32" viewBox="0 0 100 100">
+      <svg className="text-primary-text/5 absolute top-1/3 left-1/4 h-32 w-32" viewBox="0 0 100 100">
         <path d="M50 5 L55 40 L90 50 L55 60 L50 95 L45 60 L10 50 L45 40 Z" fill="currentColor" />
       </svg>
       {/* Baby/Child icon */}
@@ -179,7 +179,7 @@ export default function IrmaDashboard() {
 
       {/* Specialty Tags */}
       <div className="mb-6 flex flex-wrap gap-2">
-        <span className="border-primary/30 bg-primary/20 text-primary flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium">
+        <span className="border-primary/30 bg-primary/20 text-primary-text flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium">
           <Sparkles className="h-4 w-4" /> Cleaning
         </span>
         <span className="flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/20 px-3 py-1.5 text-sm font-medium text-amber-400">
@@ -204,18 +204,18 @@ export default function IrmaDashboard() {
           data-testid="stat-tasks-today"
         >
           <div className="mb-2 flex items-center gap-3">
-            <ClipboardList className="text-primary h-5 w-5" />
+            <ClipboardList className="text-primary-text h-5 w-5" />
             <p className="text-sm text-purple-200/60">Today&apos;s Tasks</p>
           </div>
           <p className="text-foreground text-2xl font-bold">{loading ? "—" : tasksToday.length}</p>
-          <p className="text-primary text-sm">{loading ? "…" : `${completedToday} completed`}</p>
+          <p className="text-primary-text text-sm">{loading ? "…" : `${completedToday} completed`}</p>
         </div>
         <div
           className="border-primary/20 bg-primary/10 rounded-xl border p-4 backdrop-blur-sm"
           data-testid="stat-documents"
         >
           <div className="mb-2 flex items-center gap-3">
-            <FileText className="text-primary h-5 w-5" />
+            <FileText className="text-primary-text h-5 w-5" />
             <p className="text-sm text-purple-200/60">Documents</p>
           </div>
           <p className="text-foreground text-2xl font-bold">{loading ? "—" : documents.length}</p>
@@ -232,7 +232,7 @@ export default function IrmaDashboard() {
           data-testid="stat-weekly"
         >
           <div className="mb-2 flex items-center gap-3">
-            <Calendar className="text-primary h-5 w-5" />
+            <Calendar className="text-primary-text h-5 w-5" />
             <p className="text-sm text-purple-200/60">This Week</p>
           </div>
           <p className="text-foreground text-2xl font-bold">{loading ? "—" : completedThisWeek}</p>
@@ -243,7 +243,7 @@ export default function IrmaDashboard() {
           data-testid="stat-meals"
         >
           <div className="mb-2 flex items-center gap-3">
-            <UtensilsCrossed className="text-primary h-5 w-5" />
+            <UtensilsCrossed className="text-primary-text h-5 w-5" />
             <p className="text-sm text-purple-200/60">Meals Planned</p>
           </div>
           <p className="text-foreground text-2xl font-bold">0</p>
@@ -301,7 +301,7 @@ export default function IrmaDashboard() {
         >
           <div className="border-primary/20 flex items-center justify-between border-b p-6">
             <div className="flex items-center gap-3">
-              <Home className="text-primary h-5 w-5" />
+              <Home className="text-primary-text h-5 w-5" />
               <div>
                 <h3 className="text-foreground font-semibold">Household Tasks</h3>
                 <p className="text-muted-foreground text-sm">Today&apos;s roster</p>
@@ -334,7 +334,7 @@ export default function IrmaDashboard() {
                   >
                     <Icon className={`h-5 w-5 ${iconColor}`} />
                     <div className="bg-primary/20 flex h-8 w-8 items-center justify-center rounded-lg">
-                      <Sparkles className="text-primary h-4 w-4" />
+                      <Sparkles className="text-primary-text h-4 w-4" />
                     </div>
                     <div className="flex-1">
                       <p
@@ -354,14 +354,14 @@ export default function IrmaDashboard() {
                             : ""}
                       </p>
                     </div>
-                    <ChevronRight className="text-primary/40 group-hover:text-primary/60 h-4 w-4" />
+                    <ChevronRight className="text-primary-text/40 group-hover:text-primary-text/60 h-4 w-4" />
                   </div>
                 )
               })
             )}
           </div>
           <div className="border-primary/20 border-t p-4">
-            <button className="text-primary w-full text-center text-sm font-medium hover:text-purple-300">
+            <button className="text-primary-text w-full text-center text-sm font-medium hover:text-purple-300">
               View weekly schedule
             </button>
           </div>
@@ -374,13 +374,13 @@ export default function IrmaDashboard() {
         >
           <div className="border-primary/20 flex items-center justify-between border-b p-6">
             <div className="flex items-center gap-3">
-              <UtensilsCrossed className="text-primary h-5 w-5" />
+              <UtensilsCrossed className="text-primary-text h-5 w-5" />
               <div>
                 <h3 className="text-foreground font-semibold">Meal Planning</h3>
                 <p className="text-muted-foreground text-sm">Upcoming meals</p>
               </div>
             </div>
-            <button className="border-primary/30 bg-primary/20 text-primary hover:bg-primary/30 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors">
+            <button className="border-primary/30 bg-primary/20 text-primary-text hover:bg-primary/30 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors">
               + Add Meal
             </button>
           </div>
@@ -399,7 +399,7 @@ export default function IrmaDashboard() {
         >
           <div className="border-primary/20 flex items-center justify-between border-b p-6">
             <div className="flex items-center gap-3">
-              <FileText className="text-primary h-5 w-5" />
+              <FileText className="text-primary-text h-5 w-5" />
               <div>
                 <h3 className="text-foreground font-semibold">My Documents</h3>
                 <p className="text-muted-foreground text-sm">Signed agreements</p>
@@ -438,7 +438,7 @@ export default function IrmaDashboard() {
                           : (doc.status ?? "Pending")}
                       </p>
                     </div>
-                    <button className="text-primary text-sm hover:text-purple-300">View</button>
+                    <button className="text-primary-text text-sm hover:text-purple-300">View</button>
                   </div>
                 )
               })
@@ -453,7 +453,7 @@ export default function IrmaDashboard() {
         >
           <div className="border-primary/20 border-b p-6">
             <div className="flex items-center gap-3">
-              <Calendar className="text-primary h-5 w-5" />
+              <Calendar className="text-primary-text h-5 w-5" />
               <div>
                 <h3 className="text-foreground font-semibold">This Week&apos;s Schedule</h3>
                 <p className="text-muted-foreground text-sm">Household task roster</p>
