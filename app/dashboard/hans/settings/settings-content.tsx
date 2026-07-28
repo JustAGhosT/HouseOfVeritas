@@ -160,7 +160,9 @@ export function SettingsPageContent({ persona }: { persona: "hans" | "charl" | "
             <p className="text-primary-text text-xs font-semibold tracking-[0.18em] uppercase">
               Workspace preferences
             </p>
-            <h1 className="text-foreground mt-1 text-3xl font-bold tracking-tight">Settings</h1>
+            <h1 className="text-foreground mt-1 text-3xl font-bold tracking-tight">
+              {t("nav.settings")}
+            </h1>
             <p className="text-muted-foreground mt-1">
               Personalise your workspace without changing your role or access.
             </p>

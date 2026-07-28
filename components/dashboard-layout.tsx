@@ -14,7 +14,7 @@ import { apiFetch } from "@/lib/api-client"
 import { useAuth } from "@/lib/auth-context"
 import { useLoginModal } from "@/lib/login-modal-context"
 import type { NavEntry } from "@/lib/nav-config"
-import { getNavForPersona, isCategory } from "@/lib/nav-config"
+import { getActiveNavName, getNavForPersona, isCategory } from "@/lib/nav-config"
 import { generateCrest } from "@/lib/design/crest"
 import { getDashboardPath, isPersonaId } from "@/lib/auth/dashboard-path"
 import { ChevronRight, Menu, X } from "lucide-react"
@@ -45,14 +45,6 @@ function getFlatNavItems(entries: NavEntry[]): { name: string; href: string }[] 
     }
   }
   return items
-}
-
-function getActivePageName(entries: NavEntry[], pathname: string | null): string {
-  if (!pathname) return "Workspace"
-  const active = getFlatNavItems(entries)
-    .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
-    .sort((left, right) => right.href.length - left.href.length)[0]
-  return active?.name ?? "Workspace"
 }
 
 export default function DashboardLayout({ children, persona }: DashboardLayoutProps) {
@@ -152,7 +144,7 @@ export default function DashboardLayout({ children, persona }: DashboardLayoutPr
       : undefined,
     isViewingOwnDashboard ? user?.responsibilities : undefined
   )
-  const activePageName = getActivePageName(navEntries, pathname)
+  const activePageName = getActiveNavName(navEntries, pathname)
 
   const handleLogout = () => {
     logout()

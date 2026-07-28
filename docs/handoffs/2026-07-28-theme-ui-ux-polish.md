@@ -51,11 +51,22 @@ Results:
 
 - ESLint passed.
 - TypeScript passed.
-- Focused theme suite passed: 3 files, 10 tests.
+- Focused theme/navigation suite passed: 4 files, 12 tests.
 - Production build passed and generated 125 routes/pages.
 - `git diff --check` passed.
 - Exact-head GitHub checks passed: Infrastructure Verification, Validate Configuration, Lint,
   Unit Tests, Production Build, E2E Tests, and Pipeline Summary.
+
+## Review feedback
+
+The ready-for-review Codex pass on `d5a797e` raised two actionable P2 findings. Both were addressed
+before merge:
+
+- dashboard persona roots now match exactly instead of labeling unmapped nested routes as
+  Overview; nested section routes still inherit their real navigation label, with focused
+  regression coverage; and
+- the Settings page heading uses the existing `nav.settings` translation key so Afrikaans and
+  Zulu users retain a localized primary heading.
 
 ## Browser evidence
 
