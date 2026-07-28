@@ -255,6 +255,39 @@ describe("recipe guidance contracts", () => {
     ).toBe(true)
   })
 
+  it("rejects stale terminal reasons after a media status transition", () => {
+    const approvedAsset = {
+      id: "asset-1",
+      sectionId: "section:hero",
+      role: "hero" as const,
+      status: "approved" as const,
+      source: {
+        type: "licensed" as const,
+        source: "Example library",
+        license: "CC BY 4.0",
+        attributionText: "Example Author, CC BY 4.0",
+        retrievedAt: "2026-07-28",
+      },
+      storage: { type: "external" as const, url: "https://images.example/hero.jpg" },
+      altText: { en: "Finished dish.", af: "Voltooide gereg." },
+      reviewedBy: "hans",
+      reviewedAt: now,
+    }
+
+    expect(
+      recipeMediaAssetSchema.safeParse({
+        ...approvedAsset,
+        rejectionReason: "Stale rejection.",
+      }).success
+    ).toBe(false)
+    expect(
+      recipeMediaAssetSchema.safeParse({
+        ...approvedAsset,
+        unavailableReason: "Stale outage.",
+      }).success
+    ).toBe(false)
+  })
+
   it("rejects alt text before media approval", () => {
     const result = recipeMediaAssetSchema.safeParse({
       id: "asset-1",

@@ -265,12 +265,26 @@ export const recipeMediaAssetSchema = z
         message: "rejectionReason is required for rejected media",
       })
     }
+    if (asset.status !== "rejected" && asset.rejectionReason) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["rejectionReason"],
+        message: "rejectionReason is only valid for rejected media",
+      })
+    }
 
     if (asset.status === "unavailable" && !asset.unavailableReason) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["unavailableReason"],
         message: "unavailableReason is required for unavailable media",
+      })
+    }
+    if (asset.status !== "unavailable" && asset.unavailableReason) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["unavailableReason"],
+        message: "unavailableReason is only valid for unavailable media",
       })
     }
   })
