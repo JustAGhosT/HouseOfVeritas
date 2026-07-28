@@ -25,9 +25,13 @@ typed and schema-validated contracts needed before persistence or UI work begins
   path, and immutable SHA-256 identifier, with complete HTTP(S) URL validation for external media;
 - a fail-closed rule that generated media cannot be approved until copied into HOV storage;
 - structured exact, range, and seconds-based timers;
+- an explicit immutable recipe revision ID on documents, ingredient references, step references, and
+  adapted shared-guidance source fields;
 - document-internal section, image-brief, media-asset, and media-block reference validation;
 - same-section ownership for media blocks and publication gates for review metadata, required-section
   section-appropriate substantive content, approved referenced media, and terminal asset states;
+- non-bypassable identity, ingredients, and cooking content at publication even if applicability is
+  changed;
 - alt text forbidden before media approval, keeping unreviewed descriptions out of durable assets;
 - a truthful adapter for legacy hero images that preserves attribution while marking them
   `review_required` instead of fabricating alt text or approval, including normalization of accepted
@@ -59,7 +63,7 @@ pnpm exec prettier --check lib/recipe-guidance.ts lib/guidance.ts tests/lib/reci
 git diff --check
 ```
 
-- Focused result at the latest review-fix head: 2 files, 21 tests passed.
+- Focused result at the latest review-fix head: 2 files, 23 tests passed.
 - Production build completed and generated 125 routes/pages.
 - No browser check was required because no route, component, or interaction changed.
 

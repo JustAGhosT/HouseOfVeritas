@@ -16,6 +16,7 @@ function buildDocument() {
   return {
     id: "recipe-1:guidance:1",
     recipeId: "recipe-1",
+    recipeRevisionId: `recipe-1@${now}`,
     recipeUpdatedAt: now,
     version: 1,
     status: "draft",
@@ -358,10 +359,24 @@ describe("recipe guidance contracts", () => {
                 },
               ]
             case "ingredients":
-              return [{ id, type: "ingredient_references", ingredientIds: ["ingredient-1"] }]
+              return [
+                {
+                  id,
+                  type: "ingredient_references",
+                  recipeRevisionId: document.recipeRevisionId,
+                  ingredientIds: ["ingredient-1"],
+                },
+              ]
             case "preparation":
             case "cooking":
-              return [{ id, type: "step_reference", recipeStepId: `step:${section.kind}` }]
+              return [
+                {
+                  id,
+                  type: "step_reference",
+                  recipeRevisionId: document.recipeRevisionId,
+                  recipeStepId: `step:${section.kind}`,
+                },
+              ]
             case "storage_and_reheating":
               return [
                 {
@@ -415,6 +430,48 @@ describe("recipe guidance contracts", () => {
         })),
       })
     ).toBeNull()
+  })
+
+  it("cannot bypass foundational publication sections via applicability", () => {
+    const document = buildDocument()
+    const emptyPublishedDocument = {
+      ...document,
+      status: "published",
+      reviewedBy: "hans",
+      reviewedAt: now,
+      publishedBy: "hans",
+      publishedAt: now,
+      sections: document.sections.map((section) => ({
+        ...section,
+        applicability: "not_applicable",
+      })),
+    }
+
+    expect(parseRecipeGuidanceDocument(emptyPublishedDocument)).toBeNull()
+  })
+
+  it("rejects recipe references to a different immutable revision", () => {
+    const document = buildDocument()
+    const invalidDocument = {
+      ...document,
+      sections: document.sections.map((section) =>
+        section.kind === "cooking"
+          ? {
+              ...section,
+              blocks: [
+                {
+                  id: "block:cooking",
+                  type: "step_reference",
+                  recipeRevisionId: "recipe-1@older-revision",
+                  recipeStepId: "step-1",
+                },
+              ],
+            }
+          : section
+      ),
+    }
+
+    expect(parseRecipeGuidanceDocument(invalidDocument)).toBeNull()
   })
 
   it("preserves legacy hero provenance without fabricating approval or alt text", () => {

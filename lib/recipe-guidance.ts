@@ -42,6 +42,7 @@ export type RecipeMediaStatus = (typeof RECIPE_MEDIA_STATUSES)[number]
 export type RecipeImageBriefStatus = (typeof RECIPE_IMAGE_BRIEF_STATUSES)[number]
 
 const nonEmptyId = z.string().trim().min(1).max(200)
+const immutableRecipeRevisionId = z.string().trim().min(1).max(500)
 const isoDateTime = z.string().datetime({ offset: true })
 const mediaPathOrigin = "https://hov.invalid"
 const isInternalMediaPath = (value: string) => {
@@ -106,6 +107,10 @@ export const guidanceTimerSchema = z
   })
 
 export type GuidanceTimer = z.infer<typeof guidanceTimerSchema>
+
+export function createRecipeRevisionId(recipeId: string, recipeUpdatedAt: string): string {
+  return `${recipeId}@${recipeUpdatedAt}`
+}
 
 const licensedMediaSourceSchema = z.object({
   type: z.literal("licensed"),
@@ -293,11 +298,13 @@ const recipeGuidanceBlockSchema = z
     z.object({
       id: nonEmptyId,
       type: z.literal("ingredient_references"),
+      recipeRevisionId: immutableRecipeRevisionId,
       ingredientIds: z.array(nonEmptyId).min(1),
     }),
     z.object({
       id: nonEmptyId,
       type: z.literal("step_reference"),
+      recipeRevisionId: immutableRecipeRevisionId,
       recipeStepId: nonEmptyId,
       timer: guidanceTimerSchema.optional(),
     }),
@@ -328,6 +335,12 @@ const recipeGuidanceBlockSchema = z
   })
 
 export type RecipeGuidanceBlock = z.infer<typeof recipeGuidanceBlockSchema>
+
+const FOUNDATIONAL_SECTION_KINDS = new Set<RecipeGuidanceSectionKind>([
+  "identity",
+  "ingredients",
+  "cooking",
+])
 
 const PUBLISHABLE_SECTION_BLOCK_TYPES = {
   identity: ["text"],
@@ -362,6 +375,7 @@ export const recipeGuidanceDocumentSchema = z
   .object({
     id: nonEmptyId,
     recipeId: nonEmptyId,
+    recipeRevisionId: immutableRecipeRevisionId,
     recipeUpdatedAt: isoDateTime,
     version: z.number().int().positive(),
     status: z.enum(RECIPE_GUIDANCE_STATUSES),
@@ -452,6 +466,16 @@ export const recipeGuidanceDocumentSchema = z
 
     document.sections.forEach((section, sectionIndex) => {
       section.blocks.forEach((block, blockIndex) => {
+        if (
+          (block.type === "ingredient_references" || block.type === "step_reference") &&
+          block.recipeRevisionId !== document.recipeRevisionId
+        ) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["sections", sectionIndex, "blocks", blockIndex, "recipeRevisionId"],
+            message: "recipe references must target this document's immutable recipe revision",
+          })
+        }
         if (block.type === "media_reference") {
           const mediaAsset = mediaAssetsById.get(block.mediaAssetId)
           if (!mediaAsset) {
@@ -490,7 +514,7 @@ export const recipeGuidanceDocumentSchema = z
 
       document.sections.forEach((section, index) => {
         if (
-          section.applicability === "required" &&
+          (section.applicability === "required" || FOUNDATIONAL_SECTION_KINDS.has(section.kind)) &&
           !section.blocks.some((block) => isPublishableSectionBlock(section.kind, block))
         ) {
           context.addIssue({

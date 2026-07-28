@@ -1,6 +1,10 @@
 import { z } from "zod"
 import type { RecipeRecord } from "@/lib/recipes"
-import { guidanceTimerSchema, type GuidanceTimer } from "@/lib/recipe-guidance"
+import {
+  createRecipeRevisionId,
+  guidanceTimerSchema,
+  type GuidanceTimer,
+} from "@/lib/recipe-guidance"
 
 export const GUIDANCE_KINDS = [
   "procedure",
@@ -25,6 +29,7 @@ export interface GuidanceStepDraft {
   timerMinutes?: number
   timer?: GuidanceTimer
   sourceRecipeStepId?: string
+  sourceRecipeRevisionId?: string
 }
 
 export interface GuidanceDraft {
@@ -38,6 +43,7 @@ export interface GuidanceDraft {
   steps: GuidanceStepDraft[]
   sourceRecipeId?: string
   sourceRecipeUpdatedAt?: string
+  sourceRecipeRevisionId?: string
   sourceRecipeIngredientIds?: string[]
 }
 
@@ -91,6 +97,7 @@ export const guidanceStepDraftSchema = z.object({
   timerMinutes: z.number().int().positive().max(1_440).optional(),
   timer: guidanceTimerSchema.optional(),
   sourceRecipeStepId: z.string().trim().min(1).max(200).optional(),
+  sourceRecipeRevisionId: z.string().trim().min(1).max(500).optional(),
 })
 
 export const guidanceDraftSchema = z.object({
@@ -104,6 +111,7 @@ export const guidanceDraftSchema = z.object({
   steps: z.array(guidanceStepDraftSchema).min(1).max(20),
   sourceRecipeId: z.string().trim().min(1).max(200).optional(),
   sourceRecipeUpdatedAt: z.string().datetime({ offset: true }).optional(),
+  sourceRecipeRevisionId: z.string().trim().min(1).max(500).optional(),
   sourceRecipeIngredientIds: z.array(z.string().trim().min(1).max(200)).max(100).optional(),
 })
 
@@ -122,6 +130,7 @@ export function parseGuidanceDraft(input: unknown): GuidanceDraft | null {
 
 export function recipeToGuidanceDraft(recipe: RecipeRecord, locale: GuidanceLocale): GuidanceDraft {
   const isAfrikaans = locale === "af"
+  const sourceRecipeRevisionId = createRecipeRevisionId(recipe.id, recipe.updatedAt)
   return {
     kind: "recipe",
     locale,
@@ -136,6 +145,7 @@ export function recipeToGuidanceDraft(recipe: RecipeRecord, locale: GuidanceLoca
     safety: [],
     sourceRecipeId: recipe.id,
     sourceRecipeUpdatedAt: recipe.updatedAt,
+    sourceRecipeRevisionId,
     sourceRecipeIngredientIds: recipe.ingredients.map((ingredient) => ingredient.id),
     steps: recipe.steps
       .slice()
@@ -148,6 +158,7 @@ export function recipeToGuidanceDraft(recipe: RecipeRecord, locale: GuidanceLoca
         timer:
           step.timerMinutes === undefined ? undefined : { minimumSeconds: step.timerMinutes * 60 },
         sourceRecipeStepId: step.id,
+        sourceRecipeRevisionId,
       })),
   }
 }
