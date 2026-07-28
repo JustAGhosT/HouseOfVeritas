@@ -6,6 +6,7 @@ import {
   recipeHeroToReviewRequiredMedia,
   recipeImageBriefSchema,
   recipeMediaAssetSchema,
+  recipeMediaStorageSchema,
 } from "@/lib/recipe-guidance"
 import type { RecipeRecord } from "@/lib/recipes"
 
@@ -127,6 +128,17 @@ describe("recipe guidance contracts", () => {
     expect(result.success).toBe(false)
   })
 
+  it("rejects backslash paths that URL resolution treats as cross-origin", () => {
+    expect(
+      recipeMediaStorageSchema.safeParse({
+        type: "hov",
+        storageId: "asset-1-original",
+        url: "/\\evil.example/x",
+        contentHash: `sha256:${"a".repeat(64)}`,
+      }).success
+    ).toBe(false)
+  })
+
   it("rejects a provider URL mislabeled as HOV-managed storage", () => {
     const result = recipeMediaAssetSchema.safeParse({
       id: "asset-1",
@@ -230,6 +242,88 @@ describe("recipe guidance contracts", () => {
         imageBriefs: [approvedBrief],
       })
     ).not.toBeNull()
+
+    expect(
+      parseRecipeGuidanceDocument({
+        ...document,
+        mediaAssets: [
+          {
+            id: "asset-1",
+            sectionId: "section:hero",
+            imageBriefId: "brief-1",
+            role: "hero",
+            status: "requested",
+          },
+        ],
+        imageBriefs: [{ ...approvedBrief, status: "draft", approvedBy: undefined }],
+      })
+    ).toBeNull()
+  })
+
+  it("keeps media references within the asset's owning section", () => {
+    const document = buildDocument()
+    const invalidDocument = {
+      ...document,
+      sections: document.sections.map((section) =>
+        section.kind === "cooking"
+          ? {
+              ...section,
+              blocks: [
+                {
+                  id: "block:wrong-section",
+                  type: "media_reference",
+                  mediaAssetId: "asset-1",
+                },
+              ],
+            }
+          : section
+      ),
+      mediaAssets: [
+        {
+          id: "asset-1",
+          sectionId: "section:hero",
+          role: "hero",
+          status: "review_required",
+          source: {
+            type: "licensed",
+            source: "Example library",
+            license: "CC BY 4.0",
+            attributionText: "Example Author, CC BY 4.0",
+            retrievedAt: "2026-07-28",
+          },
+          storage: { type: "external", url: "https://images.example/hero.jpg" },
+        },
+      ],
+    }
+
+    expect(parseRecipeGuidanceDocument(invalidDocument)).toBeNull()
+  })
+
+  it("requires review evidence and completed required sections before publication", () => {
+    const document = buildDocument()
+    expect(parseRecipeGuidanceDocument({ ...document, status: "published" })).toBeNull()
+
+    const publishedDocument = {
+      ...document,
+      status: "published",
+      reviewedBy: "hans",
+      reviewedAt: now,
+      publishedBy: "hans",
+      publishedAt: now,
+      sections: document.sections.map((section) => ({
+        ...section,
+        blocks: [
+          {
+            id: `block:${section.kind}`,
+            type: "text",
+            source: "reviewed",
+            text: { en: "Reviewed guidance.", af: "Hersiene leiding." },
+          },
+        ],
+      })),
+    }
+
+    expect(parseRecipeGuidanceDocument(publishedDocument)).not.toBeNull()
   })
 
   it("preserves legacy hero provenance without fabricating approval or alt text", () => {

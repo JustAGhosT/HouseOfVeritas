@@ -43,7 +43,16 @@ export type RecipeImageBriefStatus = (typeof RECIPE_IMAGE_BRIEF_STATUSES)[number
 
 const nonEmptyId = z.string().trim().min(1).max(200)
 const isoDateTime = z.string().datetime({ offset: true })
-const isInternalMediaPath = (value: string) => value.startsWith("/") && !value.startsWith("//")
+const mediaPathOrigin = "https://hov.invalid"
+const isInternalMediaPath = (value: string) => {
+  if (!value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return false
+
+  try {
+    return new URL(value, mediaPathOrigin).origin === mediaPathOrigin
+  } catch {
+    return false
+  }
+}
 const isHttpMediaUrl = (value: string) => {
   try {
     const url = new URL(value)
@@ -325,6 +334,10 @@ export const recipeGuidanceDocumentSchema = z
     createdBy: nonEmptyId,
     createdAt: isoDateTime,
     updatedAt: isoDateTime,
+    reviewedBy: nonEmptyId.optional(),
+    reviewedAt: isoDateTime.optional(),
+    publishedBy: nonEmptyId.optional(),
+    publishedAt: isoDateTime.optional(),
   })
   .superRefine((document, context) => {
     document.sections.forEach((section, index) => {
@@ -352,7 +365,7 @@ export const recipeGuidanceDocumentSchema = z
     }
 
     const sectionIds = new Set(document.sections.map((section) => section.id))
-    const mediaAssetIds = new Set(document.mediaAssets.map((asset) => asset.id))
+    const mediaAssetsById = new Map(document.mediaAssets.map((asset) => [asset.id, asset]))
     const imageBriefsById = new Map(document.imageBriefs.map((brief) => [brief.id, brief]))
 
     document.mediaAssets.forEach((asset, index) => {
@@ -371,9 +384,12 @@ export const recipeGuidanceDocumentSchema = z
           message: "media asset must reference an image brief in this document",
         })
       }
+      const requiresApprovedBrief =
+        asset.status === "requested" ||
+        (asset.source?.type === "generated" &&
+          ["generated", "review_required", "approved"].includes(asset.status))
       if (
-        asset.source?.type === "generated" &&
-        ["generated", "review_required", "approved"].includes(asset.status) &&
+        requiresApprovedBrief &&
         imageBrief &&
         (imageBrief.status !== "approved" ||
           imageBrief.sectionId !== asset.sectionId ||
@@ -382,8 +398,7 @@ export const recipeGuidanceDocumentSchema = z
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["mediaAssets", index, "imageBriefId"],
-          message:
-            "generated media must reference an approved brief with the same section and role",
+          message: "media generation requires an approved brief with the same section and role",
         })
       }
     })
@@ -400,15 +415,62 @@ export const recipeGuidanceDocumentSchema = z
 
     document.sections.forEach((section, sectionIndex) => {
       section.blocks.forEach((block, blockIndex) => {
-        if (block.type === "media_reference" && !mediaAssetIds.has(block.mediaAssetId)) {
-          context.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["sections", sectionIndex, "blocks", blockIndex, "mediaAssetId"],
-            message: "media block must reference an asset in this document",
-          })
+        if (block.type === "media_reference") {
+          const mediaAsset = mediaAssetsById.get(block.mediaAssetId)
+          if (!mediaAsset) {
+            context.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ["sections", sectionIndex, "blocks", blockIndex, "mediaAssetId"],
+              message: "media block must reference an asset in this document",
+            })
+          } else if (mediaAsset.sectionId !== section.id) {
+            context.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ["sections", sectionIndex, "blocks", blockIndex, "mediaAssetId"],
+              message: "media block must reference an asset owned by the same section",
+            })
+          } else if (document.status === "published" && mediaAsset.status !== "approved") {
+            context.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ["sections", sectionIndex, "blocks", blockIndex, "mediaAssetId"],
+              message: "published media blocks must reference approved assets",
+            })
+          }
         }
       })
     })
+
+    if (document.status === "published") {
+      for (const field of ["reviewedBy", "reviewedAt", "publishedBy", "publishedAt"] as const) {
+        if (!document[field]) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [field],
+            message: `${field} is required for a published guidance document`,
+          })
+        }
+      }
+
+      document.sections.forEach((section, index) => {
+        if (section.applicability === "required" && section.blocks.length === 0) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["sections", index, "blocks"],
+            message: "required sections must contain reviewed content before publication",
+          })
+        }
+      })
+
+      document.mediaAssets.forEach((asset, index) => {
+        if (!["approved", "rejected", "unavailable"].includes(asset.status)) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["mediaAssets", index, "status"],
+            message: "published guidance cannot contain unfinished media",
+          })
+        }
+      })
+    }
   })
 
 export type RecipeGuidanceDocument = z.infer<typeof recipeGuidanceDocumentSchema>
