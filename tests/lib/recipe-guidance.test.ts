@@ -119,6 +119,25 @@ describe("recipe guidance contracts", () => {
     expect(result.success).toBe(false)
   })
 
+  it("rejects malformed licensed-media retrieval dates", () => {
+    const result = recipeMediaAssetSchema.safeParse({
+      id: "asset-1",
+      sectionId: "section:hero",
+      role: "hero",
+      status: "review_required",
+      source: {
+        type: "licensed",
+        source: "Example library",
+        license: "CC BY 4.0",
+        attributionText: "Example Author, CC BY 4.0",
+        retrievedAt: "2026-99-99",
+      },
+      storage: { type: "external", url: "https://images.example/hero.jpg" },
+    })
+
+    expect(result.success).toBe(false)
+  })
+
   it("rejects an incomplete HTTP URL for external media storage", () => {
     const result = recipeMediaAssetSchema.safeParse({
       id: "asset-1",
@@ -363,6 +382,34 @@ describe("recipe guidance contracts", () => {
           },
         ],
         imageBriefs: [{ ...approvedBrief, status: "draft", approvedBy: undefined }],
+      })
+    ).toBeNull()
+  })
+
+  it("keeps planned media aligned with its image brief", () => {
+    const document = buildDocument()
+
+    expect(
+      parseRecipeGuidanceDocument({
+        ...document,
+        mediaAssets: [
+          {
+            id: "asset-1",
+            sectionId: "section:hero",
+            imageBriefId: "brief-1",
+            role: "hero",
+            status: "planned",
+          },
+        ],
+        imageBriefs: [
+          {
+            id: "brief-1",
+            sectionId: "section:cooking",
+            role: "step",
+            status: "draft",
+            description: { en: "Cooking step.", af: "Kookstap." },
+          },
+        ],
       })
     ).toBeNull()
   })

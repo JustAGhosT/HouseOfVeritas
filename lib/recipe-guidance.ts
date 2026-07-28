@@ -44,6 +44,17 @@ export type RecipeImageBriefStatus = (typeof RECIPE_IMAGE_BRIEF_STATUSES)[number
 const nonEmptyId = z.string().trim().min(1).max(200)
 const immutableRecipeRevisionId = z.string().trim().min(1).max(500)
 const isoDateTime = z.string().datetime({ offset: true })
+const licensedRetrievalTimestamp = z
+  .string()
+  .trim()
+  .max(100)
+  .refine((value) => {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const parsed = new Date(`${value}T00:00:00.000Z`)
+      return !Number.isNaN(parsed.getTime()) && parsed.toISOString().startsWith(value)
+    }
+    return isoDateTime.safeParse(value).success
+  }, "retrievedAt must be an ISO date or date-time")
 const mediaPathOrigin = "https://hov.invalid"
 const isInternalMediaPath = (value: string) => {
   if (!value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return false
@@ -118,7 +129,7 @@ const licensedMediaSourceSchema = z.object({
   author: z.string().trim().min(1).max(300).optional(),
   license: z.string().trim().min(1).max(300),
   attributionText: z.string().trim().min(1).max(1_000),
-  retrievedAt: z.string().trim().min(1).max(100).optional(),
+  retrievedAt: licensedRetrievalTimestamp.optional(),
 })
 
 const uploadedMediaSourceSchema = z.object({
@@ -535,16 +546,20 @@ export const recipeGuidanceDocumentSchema = z
       const requiresApprovedBrief =
         asset.status === "requested" || asset.source?.type === "generated"
       if (
-        requiresApprovedBrief &&
         imageBrief &&
-        (imageBrief.status !== "approved" ||
-          imageBrief.sectionId !== asset.sectionId ||
-          imageBrief.role !== asset.role)
+        (imageBrief.sectionId !== asset.sectionId || imageBrief.role !== asset.role)
       ) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["mediaAssets", index, "imageBriefId"],
-          message: "media generation requires an approved brief with the same section and role",
+          message: "media assets and image briefs must use the same section and role",
+        })
+      }
+      if (requiresApprovedBrief && imageBrief && imageBrief.status !== "approved") {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["mediaAssets", index, "imageBriefId"],
+          message: "media generation requires an approved image brief",
         })
       }
     })
