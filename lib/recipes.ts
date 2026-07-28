@@ -24,7 +24,7 @@ export interface RecipeImageMetadata {
   author?: string
   license: string
   attributionText: string
-  retrievedAt: string
+  retrievedAt?: string
 }
 
 export interface RecipeRecord {

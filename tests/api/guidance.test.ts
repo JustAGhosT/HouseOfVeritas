@@ -7,6 +7,7 @@ import {
   getActiveGuidanceForTask,
 } from "@/lib/repositories/guidance-repository"
 import { getProjectNamesForMember } from "@/lib/projects"
+import { getRecipeById } from "@/lib/repositories/recipe-repository"
 import { getTask } from "@/lib/services/baserow"
 import { getUploadMetadataById } from "@/lib/uploads"
 
@@ -21,6 +22,10 @@ vi.mock("@/lib/repositories/guidance-repository", () => ({
 
 vi.mock("@/lib/projects", () => ({
   getProjectNamesForMember: vi.fn(),
+}))
+
+vi.mock("@/lib/repositories/recipe-repository", () => ({
+  getRecipeById: vi.fn(),
 }))
 
 vi.mock("@/lib/services/baserow", () => ({
@@ -245,6 +250,51 @@ describe("task guidance API", () => {
 
     expect(response.status).toBe(200)
     expect((await response.json()).data.guidance).toBeNull()
+  })
+
+  it("rechecks recipe publication and audience before returning recipe guidance", async () => {
+    vi.mocked(getActiveGuidanceForTask).mockResolvedValue({
+      ...draft,
+      kind: "recipe",
+      id: "guidance-1",
+      version: 1,
+      status: "published",
+      sourceRecipeId: "recipe-private",
+      sourceRecipeUpdatedAt: "2026-07-24T00:00:00.000Z",
+      sourceRecipeRevisionId: "recipe-private@2026-07-24T00:00:00.000Z",
+      sourceRecipeIngredientIds: [],
+      steps: [{ ...draft.steps[0], id: "step-1" }],
+      source: { type: "recipe", recipeId: "recipe-private" },
+      createdBy: "hans",
+      createdAt: "2026-07-24T00:00:00.000Z",
+      updatedAt: "2026-07-24T00:00:00.000Z",
+    })
+    vi.mocked(getRecipeById).mockResolvedValue({
+      id: "recipe-private",
+      status: "draft",
+      ownerUserId: "hans",
+      audienceUserIds: ["charl"],
+      titleEn: "Private recipe",
+      titleAf: "Private resep",
+      image: {
+        url: "/private.jpg",
+        source: "House",
+        license: "Owned",
+        attributionText: "House",
+        retrievedAt: "2026-07-24",
+      },
+      ingredients: [],
+      steps: [],
+      createdAt: "2026-07-24T00:00:00.000Z",
+      updatedAt: "2026-07-24T00:00:00.000Z",
+    })
+
+    const response = await GET(
+      new Request("http://localhost/api/guidance?taskId=42", { headers: authHeaders })
+    )
+
+    expect(response.status).toBe(403)
+    expect((await response.json()).error).toBe("You do not have access to this recipe.")
   })
 
   it("does not expose guidance for a task outside the resident's assignment and projects", async () => {

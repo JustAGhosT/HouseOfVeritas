@@ -5,6 +5,7 @@ import {
   guidanceDraftSchema,
   guidanceMatchesRecipeSnapshot,
   hasGuidanceSafetyBoundaries,
+  type GuidancePack,
 } from "@/lib/guidance"
 import { logger } from "@/lib/logger"
 import { resolveTaskAccess } from "@/lib/task-access"
@@ -115,6 +116,36 @@ async function validateRecipeSource(
   return null
 }
 
+async function authorizeRecipeGuidanceRead(
+  guidance: GuidancePack | null,
+  context: { userId: string; role: string }
+) {
+  if (!guidance) return null
+
+  const declaresRecipe =
+    guidance.source.type === "recipe" ||
+    guidance.source.recipeId !== undefined ||
+    guidance.sourceRecipeId !== undefined
+  if (!declaresRecipe) return null
+
+  const recipeId = guidance.sourceRecipeId
+  if (!recipeId || guidance.source.type !== "recipe" || guidance.source.recipeId !== recipeId) {
+    return NextResponse.json({ error: "You do not have access to this recipe." }, { status: 403 })
+  }
+
+  const recipe = await getRecipeById(recipeId)
+  if (
+    !recipe ||
+    (context.role !== "admin" &&
+      (recipe.status !== "published" ||
+        !isRecipeAudienceMatch(recipe.audienceUserIds, context.userId)))
+  ) {
+    return NextResponse.json({ error: "You do not have access to this recipe." }, { status: 403 })
+  }
+
+  return null
+}
+
 export const GET = withRole(
   "admin",
   "operator",
@@ -131,6 +162,9 @@ export const GET = withRole(
     if (authorizationError) return authorizationError
 
     const guidance = await getActiveGuidanceForTask(taskId)
+    const recipeAuthorizationError = await authorizeRecipeGuidanceRead(guidance, context)
+    if (recipeAuthorizationError) return recipeAuthorizationError
+
     return NextResponse.json({ data: { guidance } })
   } catch (error) {
     logger.error("Failed to load task guidance", {

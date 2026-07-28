@@ -642,6 +642,34 @@ describe("recipe guidance contracts", () => {
     expect(recipeMediaAssetSchema.safeParse(asset).success).toBe(true)
   })
 
+  it("marks legacy hero media without retrieval evidence unavailable", () => {
+    const recipe = {
+      id: "recipe-1",
+      status: "published",
+      ownerUserId: "hans",
+      audienceUserIds: ["irma"],
+      titleEn: "Fried rice",
+      titleAf: "Gebraaide rys",
+      image: {
+        url: "https://images.example/hero.jpg",
+        source: "Example library",
+        license: "CC BY 4.0",
+        attributionText: "Example Author, CC BY 4.0",
+      },
+      ingredients: [],
+      steps: [],
+      createdAt: now,
+      updatedAt: now,
+    } satisfies RecipeRecord
+
+    const asset = recipeHeroToReviewRequiredMedia(recipe)
+
+    expect(asset.status).toBe("unavailable")
+    expect(asset.unavailableReason).toBe("Legacy hero retrieval evidence is missing")
+    expect(asset).not.toHaveProperty("storage")
+    expect(recipeMediaAssetSchema.safeParse(asset).success).toBe(true)
+  })
+
   it("marks an unsafe Windows-style legacy hero path unavailable", () => {
     const recipe = {
       id: "recipe-1",

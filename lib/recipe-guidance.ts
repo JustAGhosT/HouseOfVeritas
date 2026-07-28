@@ -118,7 +118,7 @@ const licensedMediaSourceSchema = z.object({
   author: z.string().trim().min(1).max(300).optional(),
   license: z.string().trim().min(1).max(300),
   attributionText: z.string().trim().min(1).max(1_000),
-  retrievedAt: z.string().trim().min(1).max(100),
+  retrievedAt: z.string().trim().min(1).max(100).optional(),
 })
 
 const uploadedMediaSourceSchema = z.object({
@@ -173,6 +173,18 @@ export const recipeMediaAssetSchema = z
     unavailableReason: z.string().trim().min(1).max(1_000).optional(),
   })
   .superRefine((asset, context) => {
+    if (
+      asset.source?.type === "licensed" &&
+      !asset.source.retrievedAt &&
+      asset.status !== "unavailable"
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["source", "retrievedAt"],
+        message: "retrievedAt is required for usable licensed media",
+      })
+    }
+
     if (asset.status === "approved") {
       for (const field of ["source", "storage", "altText", "reviewedBy", "reviewedAt"] as const) {
         if (asset[field] === undefined) {
@@ -585,22 +597,28 @@ export function parseRecipeGuidanceDocument(input: unknown): RecipeGuidanceDocum
 
 export function recipeHeroToReviewRequiredMedia(recipe: RecipeRecord): RecipeMediaAsset {
   const normalizedUrl = normalizeLegacyMediaUrl(recipe.image.url)
+  const retrievedAt = recipe.image.retrievedAt?.trim()
+  const unavailableReason = !normalizedUrl
+    ? "Legacy hero URL could not be represented safely"
+    : !retrievedAt
+      ? "Legacy hero retrieval evidence is missing"
+      : undefined
 
   return {
     id: `${recipe.id}:hero`,
     sectionId: `${recipe.id}:hero-section`,
     role: "hero",
-    status: normalizedUrl ? "review_required" : "unavailable",
+    status: unavailableReason ? "unavailable" : "review_required",
     source: {
       type: "licensed",
       source: recipe.image.source,
       author: recipe.image.author,
       license: recipe.image.license,
       attributionText: recipe.image.attributionText,
-      retrievedAt: recipe.image.retrievedAt,
+      ...(retrievedAt ? { retrievedAt } : {}),
     },
-    ...(normalizedUrl
+    ...(normalizedUrl && !unavailableReason
       ? { storage: { type: "external" as const, url: normalizedUrl } }
-      : { unavailableReason: "Legacy hero URL could not be represented safely" }),
+      : { unavailableReason }),
   }
 }
