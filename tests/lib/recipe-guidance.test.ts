@@ -18,6 +18,8 @@ function buildDocument() {
     recipeId: "recipe-1",
     recipeRevisionId: `recipe-1@${now}`,
     recipeUpdatedAt: now,
+    recipeIngredientIds: ["ingredient-1"],
+    recipeStepIds: ["step:cooking"],
     version: 1,
     status: "draft",
     ownerUserId: "hans",
@@ -212,6 +214,25 @@ describe("recipe guidance contracts", () => {
     })
 
     expect(result.success).toBe(false)
+  })
+
+  it("rejects generated provenance while media is still requested", () => {
+    expect(
+      recipeMediaAssetSchema.safeParse({
+        id: "asset-1",
+        sectionId: "section:hero",
+        imageBriefId: "brief-1",
+        role: "hero",
+        status: "requested",
+        source: {
+          type: "generated",
+          requestId: "request-1",
+          modelAlias: "recipe-image",
+          generatedAt: now,
+          rightsBasis: "Approved provider terms",
+        },
+      }).success
+    ).toBe(false)
   })
 
   it("rejects alt text before media approval", () => {
@@ -421,6 +442,18 @@ describe("recipe guidance contracts", () => {
     }
 
     expect(parseRecipeGuidanceDocument(publishedDocument)).not.toBeNull()
+    expect(
+      parseRecipeGuidanceDocument({
+        ...publishedDocument,
+        recipeIngredientIds: ["ingredient-1", "ingredient-2"],
+      })
+    ).toBeNull()
+    expect(
+      parseRecipeGuidanceDocument({
+        ...publishedDocument,
+        recipeStepIds: ["step:cooking", "step:finish"],
+      })
+    ).toBeNull()
     expect(
       parseRecipeGuidanceDocument({
         ...publishedDocument,

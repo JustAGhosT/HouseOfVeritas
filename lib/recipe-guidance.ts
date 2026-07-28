@@ -229,6 +229,17 @@ export const recipeMediaAssetSchema = z
       })
     }
 
+    if (
+      asset.source?.type === "generated" &&
+      !["generated", "review_required", "approved", "rejected"].includes(asset.status)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["status"],
+        message: "generated provenance requires a post-generation media status",
+      })
+    }
+
     if (asset.status !== "approved" && asset.altText) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -411,6 +422,8 @@ export const recipeGuidanceDocumentSchema = z
     recipeId: nonEmptyId,
     recipeRevisionId: immutableRecipeRevisionId,
     recipeUpdatedAt: isoDateTime,
+    recipeIngredientIds: z.array(nonEmptyId).min(1),
+    recipeStepIds: z.array(nonEmptyId).min(1),
     version: z.number().int().positive(),
     status: z.enum(RECIPE_GUIDANCE_STATUSES),
     ownerUserId: nonEmptyId,
@@ -436,6 +449,19 @@ export const recipeGuidanceDocumentSchema = z
         path: ["recipeRevisionId"],
         message: "recipeRevisionId must identify this document's immutable recipe snapshot",
       })
+    }
+
+    for (const [field, ids] of [
+      ["recipeIngredientIds", document.recipeIngredientIds],
+      ["recipeStepIds", document.recipeStepIds],
+    ] as const) {
+      if (new Set(ids).size !== ids.length) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [field],
+          message: `${field} must contain unique canonical IDs`,
+        })
+      }
     }
 
     document.sections.forEach((section, index) => {
@@ -602,6 +628,35 @@ export const recipeGuidanceDocumentSchema = z
           })
         }
       })
+
+      const ingredientSection = document.sections.find((section) => section.kind === "ingredients")
+      const referencedIngredientIds =
+        ingredientSection?.blocks.flatMap((block) =>
+          block.type === "ingredient_references" ? block.ingredientIds : []
+        ) ?? []
+      if (
+        JSON.stringify(referencedIngredientIds) !== JSON.stringify(document.recipeIngredientIds)
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["sections", RECIPE_GUIDANCE_SECTION_KINDS.indexOf("ingredients"), "blocks"],
+          message:
+            "published ingredient references must cover the canonical recipe ingredients in order",
+        })
+      }
+
+      const cookingSection = document.sections.find((section) => section.kind === "cooking")
+      const referencedStepIds =
+        cookingSection?.blocks.flatMap((block) =>
+          block.type === "step_reference" ? [block.recipeStepId] : []
+        ) ?? []
+      if (JSON.stringify(referencedStepIds) !== JSON.stringify(document.recipeStepIds)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["sections", RECIPE_GUIDANCE_SECTION_KINDS.indexOf("cooking"), "blocks"],
+          message: "published cooking references must cover the canonical recipe steps in order",
+        })
+      }
 
       document.mediaAssets.forEach((asset, index) => {
         if (!["approved", "rejected", "unavailable"].includes(asset.status)) {
