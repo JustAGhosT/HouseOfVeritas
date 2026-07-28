@@ -56,9 +56,7 @@ describe("task guidance", () => {
         attributionText: "House",
         retrievedAt: "2026-07-24",
       },
-      ingredients: [
-        { id: "rice", quantity: "2", unit: "cups", name: "rice" },
-      ],
+      ingredients: [{ id: "rice", quantity: "2", unit: "cups", name: "rice" }],
       steps: [
         {
           id: "cook",
@@ -75,5 +73,8 @@ describe("task guidance", () => {
     expect(guidance.kind).toBe("recipe")
     expect(guidance.title).toBe("Gebraaide rys")
     expect(guidance.steps[0].instruction).toBe("Kook die rys.")
+    expect(guidance.sourceRecipeId).toBe("recipe-1")
+    expect(guidance.sourceRecipeIngredientIds).toEqual(["rice"])
+    expect(guidance.steps[0].sourceRecipeStepId).toBe("cook")
   })
 })

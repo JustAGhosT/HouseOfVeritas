@@ -1,5 +1,6 @@
 import { z } from "zod"
 import type { RecipeRecord } from "@/lib/recipes"
+import { guidanceTimerSchema, type GuidanceTimer } from "@/lib/recipe-guidance"
 
 export const GUIDANCE_KINDS = [
   "procedure",
@@ -22,6 +23,8 @@ export interface GuidanceStepDraft {
   check?: string
   warning?: string
   timerMinutes?: number
+  timer?: GuidanceTimer
+  sourceRecipeStepId?: string
 }
 
 export interface GuidanceDraft {
@@ -33,6 +36,9 @@ export interface GuidanceDraft {
   tools: string[]
   safety: string[]
   steps: GuidanceStepDraft[]
+  sourceRecipeId?: string
+  sourceRecipeUpdatedAt?: string
+  sourceRecipeIngredientIds?: string[]
 }
 
 export function hasGuidanceSafetyBoundaries(draft: GuidanceDraft): boolean {
@@ -83,6 +89,8 @@ export const guidanceStepDraftSchema = z.object({
   check: optionalShortText,
   warning: optionalShortText,
   timerMinutes: z.number().int().positive().max(1_440).optional(),
+  timer: guidanceTimerSchema.optional(),
+  sourceRecipeStepId: z.string().trim().min(1).max(200).optional(),
 })
 
 export const guidanceDraftSchema = z.object({
@@ -94,6 +102,9 @@ export const guidanceDraftSchema = z.object({
   tools: z.array(z.string().trim().min(1).max(160)).max(40).default([]),
   safety: z.array(z.string().trim().min(1).max(500)).max(20).default([]),
   steps: z.array(guidanceStepDraftSchema).min(1).max(20),
+  sourceRecipeId: z.string().trim().min(1).max(200).optional(),
+  sourceRecipeUpdatedAt: z.string().datetime({ offset: true }).optional(),
+  sourceRecipeIngredientIds: z.array(z.string().trim().min(1).max(200)).max(100).optional(),
 })
 
 export function parseGuidanceDraft(input: unknown): GuidanceDraft | null {
@@ -109,18 +120,13 @@ export function parseGuidanceDraft(input: unknown): GuidanceDraft | null {
   }
 }
 
-export function recipeToGuidanceDraft(
-  recipe: RecipeRecord,
-  locale: GuidanceLocale
-): GuidanceDraft {
+export function recipeToGuidanceDraft(recipe: RecipeRecord, locale: GuidanceLocale): GuidanceDraft {
   const isAfrikaans = locale === "af"
   return {
     kind: "recipe",
     locale,
     title: isAfrikaans ? recipe.titleAf : recipe.titleEn,
-    summary: isAfrikaans
-      ? recipe.summaryAf || recipe.titleAf
-      : recipe.summaryEn || recipe.titleEn,
+    summary: isAfrikaans ? recipe.summaryAf || recipe.titleAf : recipe.summaryEn || recipe.titleEn,
     materials: recipe.ingredients.map((ingredient) =>
       [ingredient.quantity, ingredient.unit, ingredient.name, ingredient.preparationNote]
         .filter(Boolean)
@@ -128,6 +134,9 @@ export function recipeToGuidanceDraft(
     ),
     tools: [],
     safety: [],
+    sourceRecipeId: recipe.id,
+    sourceRecipeUpdatedAt: recipe.updatedAt,
+    sourceRecipeIngredientIds: recipe.ingredients.map((ingredient) => ingredient.id),
     steps: recipe.steps
       .slice()
       .sort((left, right) => left.order - right.order)
@@ -136,6 +145,9 @@ export function recipeToGuidanceDraft(
         title: step.section || `${isAfrikaans ? "Stap" : "Step"} ${index + 1}`,
         instruction: isAfrikaans ? step.instructionAf : step.instructionEn,
         timerMinutes: step.timerMinutes,
+        timer:
+          step.timerMinutes === undefined ? undefined : { minimumSeconds: step.timerMinutes * 60 },
+        sourceRecipeStepId: step.id,
       })),
   }
 }
