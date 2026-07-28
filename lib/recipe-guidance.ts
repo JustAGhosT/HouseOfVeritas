@@ -43,13 +43,22 @@ export type RecipeImageBriefStatus = (typeof RECIPE_IMAGE_BRIEF_STATUSES)[number
 
 const nonEmptyId = z.string().trim().min(1).max(200)
 const isoDateTime = z.string().datetime({ offset: true })
+const isInternalMediaPath = (value: string) => value.startsWith("/") && !value.startsWith("//")
+const isHttpMediaUrl = (value: string) => {
+  try {
+    const url = new URL(value)
+    return (url.protocol === "http:" || url.protocol === "https:") && Boolean(url.hostname)
+  } catch {
+    return false
+  }
+}
 const safeMediaUrl = z
   .string()
   .trim()
   .min(1)
   .max(2_000)
   .refine(
-    (value) => (value.startsWith("/") && !value.startsWith("//")) || /^https?:\/\//i.test(value),
+    (value) => isInternalMediaPath(value) || isHttpMediaUrl(value),
     "media URL must be an application path or an HTTP(S) URL"
   )
 const hovMediaPath = z
@@ -57,10 +66,7 @@ const hovMediaPath = z
   .trim()
   .min(1)
   .max(2_000)
-  .refine(
-    (value) => value.startsWith("/") && !value.startsWith("//"),
-    "HOV-managed media must use an internal application path"
-  )
+  .refine(isInternalMediaPath, "HOV-managed media must use an internal application path")
 const localizedTextSchema = z.object({
   en: z.string().trim().min(1).max(2_000),
   af: z.string().trim().min(1).max(2_000),

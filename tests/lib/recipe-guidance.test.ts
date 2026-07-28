@@ -115,6 +115,18 @@ describe("recipe guidance contracts", () => {
     expect(result.success).toBe(false)
   })
 
+  it("rejects an incomplete HTTP URL for external media storage", () => {
+    const result = recipeMediaAssetSchema.safeParse({
+      id: "asset-1",
+      sectionId: "section:hero",
+      role: "hero",
+      status: "review_required",
+      storage: { type: "external", url: "https://" },
+    })
+
+    expect(result.success).toBe(false)
+  })
+
   it("rejects a provider URL mislabeled as HOV-managed storage", () => {
     const result = recipeMediaAssetSchema.safeParse({
       id: "asset-1",
