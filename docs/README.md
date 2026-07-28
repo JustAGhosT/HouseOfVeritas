@@ -71,16 +71,17 @@ _Note: 06 reserved for future deployment documentation._
 
 ## 05-project/ -- Project Management
 
-| Document                                                                      | Description                                                      |
-| ----------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| [01-backlog.md](05-project/01-backlog.md)                                     | Implementation backlog with phases 1-7 and task tracking         |
-| [02-roadmap.md](05-project/02-roadmap.md)                                     | Future enhancements roadmap: mobile, analytics, AI, integrations |
-| [03-test-report.md](05-project/03-test-report.md)                             | Phase 7 testing and UAT report                                   |
-| [04-changelog.md](05-project/04-changelog.md)                                 | Version history and release notes                                |
-| [05-contributing.md](05-project/05-contributing.md)                           | Branch strategy, commit conventions, code style, PR process      |
-| [ai-integration-opportunities.md](05-project/ai-integration-opportunities.md) | AI suggestion APIs, implemented features, configuration          |
-| [onboarding-flow.md](05-project/onboarding-flow.md)                           | User onboarding steps, invite flow, guided tour                  |
-| [employees-vs-users.md](05-project/employees-vs-users.md)                     | Users (auth) vs Employees (Baserow), Team page consolidation     |
+| Document                                                                        | Description                                                               |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [01-backlog.md](05-project/01-backlog.md)                                       | Implementation backlog with phases 1-7 and task tracking                  |
+| [02-roadmap.md](05-project/02-roadmap.md)                                       | Future enhancements roadmap: mobile, analytics, AI, integrations          |
+| [03-test-report.md](05-project/03-test-report.md)                               | Phase 7 testing and UAT report                                            |
+| [04-changelog.md](05-project/04-changelog.md)                                   | Version history and release notes                                         |
+| [05-contributing.md](05-project/05-contributing.md)                             | Branch strategy, commit conventions, code style, PR process               |
+| [ai-integration-opportunities.md](05-project/ai-integration-opportunities.md)   | AI suggestion APIs, implemented features, configuration                   |
+| [recipe-guidance-document-plan.md](05-project/recipe-guidance-document-plan.md) | Section-by-section bilingual recipe guidance and Sluice-routed image plan |
+| [onboarding-flow.md](05-project/onboarding-flow.md)                             | User onboarding steps, invite flow, guided tour                           |
+| [employees-vs-users.md](05-project/employees-vs-users.md)                       | Users (auth) vs Employees (Baserow), Team page consolidation              |
 
 ## handoffs/ -- Session Handoffs
 
