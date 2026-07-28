@@ -433,6 +433,24 @@ describe("recipe guidance contracts", () => {
     expect(
       parseRecipeGuidanceDocument({
         ...publishedDocument,
+        imageBriefs: [
+          {
+            id: "brief:wrong-role",
+            sectionId: "section:cooking",
+            role: "hero",
+            status: "approved",
+            description: { en: "Wrong role.", af: "Verkeerde rol." },
+            reviewedFacts: [],
+            excludedContent: [],
+            approvedBy: "hans",
+            approvedAt: now,
+          },
+        ],
+      })
+    ).toBeNull()
+    expect(
+      parseRecipeGuidanceDocument({
+        ...publishedDocument,
         sections: publishedDocument.sections.map((section) => ({
           ...section,
           blocks: [

@@ -508,11 +508,18 @@ export const recipeGuidanceDocumentSchema = z
     })
 
     document.imageBriefs.forEach((brief, index) => {
-      if (!sectionIds.has(brief.sectionId)) {
+      const section = sectionsById.get(brief.sectionId)
+      if (!section) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["imageBriefs", index, "sectionId"],
           message: "image brief must reference a section in this document",
+        })
+      } else if (!(SECTION_MEDIA_ROLES[section.kind] as readonly string[]).includes(brief.role)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["imageBriefs", index, "role"],
+          message: `${brief.role} image briefs are not valid for the ${section.kind} section`,
         })
       }
     })
