@@ -181,6 +181,7 @@ export function parseGuidanceDraft(input: unknown): GuidanceDraft | null {
 }
 
 export function guidanceMatchesRecipeSnapshot(draft: GuidanceDraft, recipe: RecipeRecord): boolean {
+  if (draft.kind !== "recipe") return false
   const revisionId = createRecipeRevisionId(recipe.id, recipe.updatedAt)
   if (
     draft.sourceRecipeId !== recipe.id ||
@@ -193,12 +194,30 @@ export function guidanceMatchesRecipeSnapshot(draft: GuidanceDraft, recipe: Reci
   const ingredientIds = new Set(recipe.ingredients.map((ingredient) => ingredient.id))
   if (draft.sourceRecipeIngredientIds?.some((id) => !ingredientIds.has(id))) return false
 
-  const stepIds = new Set(recipe.steps.map((step) => step.id))
-  return draft.steps.every(
-    (step) =>
-      step.sourceRecipeStepId === undefined ||
-      (step.sourceRecipeRevisionId === revisionId && stepIds.has(step.sourceRecipeStepId))
-  )
+  const expected = recipeToGuidanceDraft(recipe, draft.locale)
+  if (
+    draft.title !== expected.title ||
+    draft.summary !== expected.summary ||
+    JSON.stringify(draft.materials) !== JSON.stringify(expected.materials) ||
+    JSON.stringify(draft.sourceRecipeIngredientIds) !==
+      JSON.stringify(expected.sourceRecipeIngredientIds) ||
+    draft.steps.length !== expected.steps.length
+  ) {
+    return false
+  }
+
+  return draft.steps.every((step, index) => {
+    const expectedStep = expected.steps[index]
+    return (
+      step.order === expectedStep.order &&
+      step.title === expectedStep.title &&
+      step.instruction === expectedStep.instruction &&
+      step.timerMinutes === expectedStep.timerMinutes &&
+      JSON.stringify(step.timer) === JSON.stringify(expectedStep.timer) &&
+      step.sourceRecipeStepId === expectedStep.sourceRecipeStepId &&
+      step.sourceRecipeRevisionId === revisionId
+    )
+  })
 }
 
 export function recipeToGuidanceDraft(recipe: RecipeRecord, locale: GuidanceLocale): GuidanceDraft {

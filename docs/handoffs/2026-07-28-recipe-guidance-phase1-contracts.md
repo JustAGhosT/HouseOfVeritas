@@ -38,6 +38,8 @@ typed and schema-validated contracts needed before persistence or UI work begins
 - server-side recipe existence, current-revision, ingredient/step, source tuple, publication, and
   audience validation before recipe-backed task guidance is persisted, including bidirectional
   rejection when either the source or draft omits its matching recipe provenance;
+- server-side comparison of all claimed recipe-derived title, summary, materials, ordered steps,
+  localized instructions, timers, and provenance against a rebuilt canonical recipe draft;
 - alt text forbidden before media approval, keeping unreviewed descriptions out of durable assets;
 - a truthful adapter for legacy hero images that preserves attribution while marking them
   `review_required` instead of fabricating alt text or approval, including normalization of accepted

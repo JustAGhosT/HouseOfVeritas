@@ -112,5 +112,14 @@ describe("task guidance", () => {
         updatedAt: "2026-07-25T00:00:00.000Z",
       })
     ).toBe(false)
+    expect(
+      guidanceMatchesRecipeSnapshot(
+        {
+          ...guidance,
+          steps: [{ ...guidance.steps[0], instruction: "Invented instruction." }],
+        },
+        recipe
+      )
+    ).toBe(false)
   })
 })
