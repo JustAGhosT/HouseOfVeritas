@@ -227,7 +227,8 @@ Never trade a hard safety or access constraint for a better score.
 
 - allergy and cross-contact rules for every diner;
 - dietary/religious exclusions and explicitly disliked ingredients when configured as blocking;
-- usable inventory and safe substitution validity;
+- unusable/restricted inventory and safe-substitution validity; ordinary purchasable shortfalls are
+  not blocking unless an explicit no-shopping mode is active;
 - available equipment, cook capability, maximum time, and serving count;
 - budget ceiling when the household marks it non-negotiable; and
 - visibility/consent rules for the selected actors.
@@ -250,6 +251,10 @@ Score each feasible recipe on normalized, explainable dimensions:
 Store the score vector and selected weights with the meal plan. A simple first implementation is a
 weighted score over feasible recipes; a later implementation can show a Pareto frontier rather than
 pretending there is one universally best answer.
+
+Missing but purchasable ingredients remain feasible. Their shortfalls contribute to price,
+availability, effort, and shopping-list scores. Only an unsafe/unusable item, invalid substitution,
+or explicit no-shopping constraint can eliminate the recipe for inventory reasons.
 
 ### Actor-specific views
 
@@ -375,6 +380,14 @@ resident's private taste profile without explicit consent and a documented ident
 Each document section should use a typed record rather than free-form HTML:
 
 ```ts
+interface RecipeTimer {
+  id: string;
+  labelEn: string;
+  labelAf: string;
+  minimumSeconds: number;
+  maximumSeconds?: number;
+}
+
 interface RecipeGuidanceSection {
   id: string;
   kind:
@@ -397,7 +410,7 @@ interface RecipeGuidanceSection {
   checkAf?: string;
   warningEn?: string;
   warningAf?: string;
-  timerMinutes?: number;
+  timers?: RecipeTimer[];
   ingredientIds?: string[];
   mediaAssetIds: string[];
 }
@@ -406,7 +419,7 @@ interface RecipeGuidanceSection {
 The implementation may extend `GuidanceStep` or introduce a recipe-specific section type, but it
 must not duplicate canonical ingredient quantities or silently merge English and Afrikaans into a
 single field. `recipeToGuidanceDraft()` should remain deterministic and should preserve section,
-visual-cue, check, warning, timer, and media-reference information once those fields exist.
+visual-cue, check, warning, timer ranges, and media-reference information once those fields exist.
 
 ## Media asset contract
 
@@ -431,8 +444,8 @@ interface RecipeMediaAsset {
   mimeType?: "image/jpeg" | "image/png" | "image/webp";
   width?: number;
   height?: number;
-  altTextEn: string;
-  altTextAf: string;
+  altTextEn?: string;
+  altTextAf?: string;
   sourceType: "licensed" | "uploaded" | "sluice-generated";
   sourceUrl?: string;
   author?: string;
@@ -450,6 +463,11 @@ interface RecipeMediaAsset {
   rejectionReason?: string;
 }
 ```
+
+Alt text remains absent while an asset is only planned, requested, generated, rejected, or
+unavailable. Schema validation must require reviewed, non-empty English and Afrikaans alt text for
+every approved or publishable asset; the implementation should express that invariant with a
+status-discriminated schema rather than fabricated placeholder text.
 
 `promptText` can contain household recipe details but must not contain credentials, private user
 data, or unrelated operational context. If prompt retention is undesirable, store a prompt hash and
@@ -580,7 +598,8 @@ those from reviewed structured fields.
   adapter; admin only, idempotency key required.
 - `POST /api/recipes/:id/media/:assetId/review` approves or rejects an asset.
 - `POST /api/recipes/:id/guidance-drafts/:version/publish` performs the final completeness gate.
-- `POST /api/recipes/:id/publications` creates an approved, sanitized public package and outbox event.
+- `POST /api/recipes/:id/publications` atomically creates an approved, sanitized public package in a
+  pending-publication state and its durable pending outbox event.
 
 Exact route naming can follow current Next.js conventions, but authorization must be checked before
 spending Sluice capacity or reading draft/media state.
@@ -665,7 +684,9 @@ spending Sluice capacity or reading draft/media state.
 - Create the sanitized, versioned `PublicRecipePackage` and separate public read model.
 - Publish stable localized public pages, print views, sitemap, canonical/alternate URLs, and Recipe
   JSON-LD validated with the Rich Results Test.
-- Emit idempotent publication outbox events after public-page success, never before it.
+- Persist the pending publication state and idempotent outbox event atomically before external work.
+- Have the publication worker render and verify the public URL/content hash, then mark the event
+  releasable for OmniPost; reconciliation repairs any stalled pending publication.
 - Add an OmniPost intake adapter that creates drafts from immutable packages and links to the
   canonical page.
 - Prove one channel at a time with real provider IDs/public URLs and keep unproven channels disabled.
@@ -694,7 +715,10 @@ spending Sluice capacity or reading draft/media state.
 - Sluice unavailable means explicit unavailability and no direct-provider request.
 - Approved output is copied to HOV storage with hash/provenance before it becomes publishable.
 - Shopping preview has no reservation, order, or external side effect.
-- Public package creation is idempotent and produces no OmniPost event until the public URL succeeds.
+- Public package creation atomically persists a pending outbox event; delivery cannot release it to
+  OmniPost until the public URL and content hash verify.
+- Reconciliation recovers a public page whose worker crashed between external publication and the
+  internal success transition.
 - OmniPost retries preserve recipe version/content hash and cannot duplicate a channel publication.
 
 ### UI and browser tests
