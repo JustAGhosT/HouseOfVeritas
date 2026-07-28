@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { signOut as nextAuthSignOut } from "next-auth/react"
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from "react"
 import { getDashboardPath, isPersonaId } from "@/lib/auth/dashboard-path"
+import { defaultUserThemeForColor, type UserThemeId } from "@/lib/user-themes"
 
 interface User {
   id: string
@@ -13,6 +14,7 @@ interface User {
   role: string
   description: string
   color: string
+  themeId?: UserThemeId
   icon: string
   specialty: string[]
   photoUrl?: string
@@ -62,6 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     checkSession()
   }, [checkSession])
+
+  useEffect(() => {
+    const themeId = user?.themeId ?? defaultUserThemeForColor(user?.color)
+    document.documentElement.dataset.userTheme = themeId
+  }, [user?.color, user?.themeId])
 
   useEffect(() => {
     if (isLoading) return

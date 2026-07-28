@@ -36,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" data-user-theme="sanctum">
       <body className="font-sans antialiased">
         <div className="noise-overlay" aria-hidden="true" />
         <div className="ritual-glow" aria-hidden="true" />

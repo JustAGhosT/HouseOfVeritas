@@ -26,55 +26,15 @@ const QUICK_LOCATIONS = [
 
 type InventoryTone = "blue" | "amber" | "green" | "purple"
 
-const toneClasses: Record<
-  InventoryTone,
-  {
-    border: string
-    panel: string
-    soft: string
-    text: string
-    muted: string
-    button: string
-    focus: string
-  }
-> = {
-  blue: {
-    border: "border-blue-500/25",
-    panel: "bg-blue-950/45",
-    soft: "bg-blue-500/20",
-    text: "text-blue-100",
-    muted: "text-blue-200/55",
-    button: "border-blue-400/40 bg-blue-500 text-white hover:bg-blue-400",
-    focus: "focus:border-blue-300",
-  },
-  amber: {
-    border: "border-amber-500/25",
-    panel: "bg-amber-950/45",
-    soft: "bg-amber-500/20",
-    text: "text-amber-100",
-    muted: "text-amber-200/55",
-    button: "border-amber-400/40 bg-amber-500 text-black hover:bg-amber-400",
-    focus: "focus:border-amber-300",
-  },
-  green: {
-    border: "border-green-500/25",
-    panel: "bg-green-950/45",
-    soft: "bg-green-500/20",
-    text: "text-green-100",
-    muted: "text-green-200/55",
-    button: "border-green-400/40 bg-green-500 text-black hover:bg-green-400",
-    focus: "focus:border-green-300",
-  },
-  purple: {
-    border: "border-purple-500/25",
-    panel: "bg-purple-950/45",
-    soft: "bg-purple-500/20",
-    text: "text-purple-100",
-    muted: "text-purple-200/55",
-    button: "border-purple-400/40 bg-purple-500 text-white hover:bg-purple-400",
-    focus: "focus:border-purple-300",
-  },
-}
+const themeClasses = {
+  border: "border-primary/25",
+  panel: "bg-primary/10",
+  soft: "bg-primary/20",
+  text: "text-foreground",
+  muted: "text-muted-foreground",
+  button: "border-primary/40 bg-primary text-primary-foreground hover:bg-primary/80",
+  focus: "focus:border-primary",
+} as const
 
 interface InventoryPhotoCaptureProps {
   persona: "hans" | "charl" | "lucky" | "irma"
@@ -85,13 +45,11 @@ interface InventoryPhotoCaptureProps {
 }
 
 export function InventoryPhotoCapture({
-  persona,
-  tone,
   defaultCategory = "workshop_consumables",
   defaultLocation = "Workshop Store",
   onSaved,
 }: InventoryPhotoCaptureProps) {
-  const styles = toneClasses[tone]
+  const styles = themeClasses
   const [label, setLabel] = useState("")
   const [category, setCategory] = useState(defaultCategory)
   const [location, setLocation] = useState(defaultLocation)

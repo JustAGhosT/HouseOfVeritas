@@ -1,5 +1,6 @@
 import { isPostgresConfigured, query, withClient } from "@/lib/db/postgres"
 import { User, UserRole, findUserByIdAsync, getAllUsersAsync } from "@/lib/users"
+import { defaultUserThemeForColor, isUserThemeId } from "@/lib/user-themes"
 
 export type UserStatus = "active" | "inactive" | "onboarding" | "offboarding" | "offboarded"
 
@@ -32,6 +33,7 @@ async function ensureUserManagementSchema(): Promise<void> {
           END IF;
         END $$;
       `)
+      await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_id TEXT;`)
       await client.query(`
         DO $$ BEGIN
           IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='responsibilities') THEN
@@ -93,6 +95,9 @@ function rowToUserWithManagement(row: Record<string, unknown>): UserWithManageme
     role: row.role as UserRole,
     description: (row.description as string) || "",
     color: (row.color as string) || "gray",
+    themeId: isUserThemeId(row.theme_id)
+      ? row.theme_id
+      : defaultUserThemeForColor(row.color as string | undefined),
     icon: (row.icon as string) || "👤",
     specialty: Array.isArray(row.specialty) ? (row.specialty as string[]) : [],
     photoUrl: row.photo_url as string | undefined,
@@ -124,7 +129,7 @@ export async function getAllUsersWithManagement(): Promise<UserWithManagement[]>
   }
   await ensureUserManagementSchema()
   const { rows } = await query<Record<string, unknown>>(
-    `SELECT id, name, email, phone, role, description, color, icon, specialty,
+    `SELECT id, name, email, phone, role, description, color, theme_id, icon, specialty,
             COALESCE(status, 'active') as status,
             COALESCE(responsibilities::jsonb, '[]')::jsonb as responsibilities,
             COALESCE(onboarding_status, 'pending') as onboarding_status,
@@ -152,7 +157,7 @@ export async function getUserWithManagement(id: string): Promise<UserWithManagem
   }
   await ensureUserManagementSchema()
   const { rows } = await query<Record<string, unknown>>(
-    `SELECT id, name, email, phone, role, description, color, icon, specialty, photo_url,
+    `SELECT id, name, email, phone, role, description, color, theme_id, icon, specialty, photo_url,
             COALESCE(status, 'active') as status,
             COALESCE(responsibilities::jsonb, '[]')::jsonb as responsibilities,
             COALESCE(onboarding_status, 'pending') as onboarding_status,
