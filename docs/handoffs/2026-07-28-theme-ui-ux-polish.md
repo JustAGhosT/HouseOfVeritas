@@ -5,6 +5,8 @@
 - **Worktree:** `C:\tmp\hov-theme-ux-polish`
 - **Branch:** `feat/theme-ux-polish`
 - **Base:** `origin/main` at `627eb1482097606b15f7c6625ace1953de7ef823`
+- **Pull request:** [#154](https://github.com/neuralliquid/house-of-veritas/pull/154)
+- **Implementation commit:** `fd748c2d7ca4385fb87df6ebc54b8bed6429270f`
 - **Baton task:** `acc431b8-89a6-4609-bac3-446ffeed54b4`
 - **Risk tier:** shared UI shell and authenticated Settings workflow
 
@@ -52,6 +54,8 @@ Results:
 - Focused theme suite passed: 3 files, 10 tests.
 - Production build passed and generated 125 routes/pages.
 - `git diff --check` passed.
+- Exact-head GitHub checks passed: Infrastructure Verification, Validate Configuration, Lint,
+  Unit Tests, Production Build, E2E Tests, and Pipeline Summary.
 
 ## Browser evidence
 
@@ -71,8 +75,9 @@ The local browser reported HTTP 500 for `/api/projects?type=scope` because the o
 integration was unavailable. The selector already fails to an empty state, and this did not affect
 the modified UI surfaces.
 
-## Next action
+## Review and merge boundary
 
-Review the before/after images, then commit and open a PR if the visual direction is accepted. A
-post-merge production browser pass should reconfirm Settings save/reload persistence; deployment
-and production acceptance remain separate gates.
+PR #154 was marked ready after all initial exact-head checks passed. Merge still requires a final
+review-thread check against the latest commit and a mergeability recheck. A post-merge production
+browser pass should reconfirm Settings save/reload persistence; deployment and production
+acceptance remain separate gates.
