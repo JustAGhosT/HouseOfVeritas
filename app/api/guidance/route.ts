@@ -128,7 +128,7 @@ async function authorizeRecipeGuidanceRead(
     guidance.sourceRecipeId !== undefined
   if (!declaresRecipe) return null
 
-  const recipeId = guidance.sourceRecipeId
+  const recipeId = guidance.sourceRecipeId ?? guidance.source.recipeId
   if (!recipeId || guidance.source.type !== "recipe" || guidance.source.recipeId !== recipeId) {
     return NextResponse.json({ error: "You do not have access to this recipe." }, { status: 403 })
   }
