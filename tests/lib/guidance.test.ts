@@ -33,6 +33,29 @@ describe("task guidance", () => {
     ).toBeNull()
   })
 
+  it("rejects contradictory immutable recipe provenance", () => {
+    expect(
+      parseGuidanceDraft({
+        kind: "recipe",
+        locale: "en",
+        title: "Fried rice",
+        summary: "A quick meal.",
+        sourceRecipeId: "recipe-a",
+        sourceRecipeUpdatedAt: "2026-07-24T00:00:00.000Z",
+        sourceRecipeRevisionId: "recipe-b@2026-07-24T00:00:00.000Z",
+        steps: [
+          {
+            order: 1,
+            title: "Cook",
+            instruction: "Cook the rice.",
+            sourceRecipeStepId: "cook",
+            sourceRecipeRevisionId: "recipe-c@2026-07-24T00:00:00.000Z",
+          },
+        ],
+      })
+    ).toBeNull()
+  })
+
   it("adapts recipes into the shared guidance shape", () => {
     const recipe = {
       id: "recipe-1",

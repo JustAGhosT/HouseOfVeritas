@@ -426,6 +426,49 @@ describe("recipe guidance contracts", () => {
         ...publishedDocument,
         sections: publishedDocument.sections.map((section) => ({
           ...section,
+          blocks: [
+            ...section.blocks,
+            ...(section.kind === "identity"
+              ? [{ id: "block:metrics", type: "metrics", servings: 4 }]
+              : []),
+            ...(section.kind === "cooking"
+              ? [
+                  {
+                    id: "block:cooking-media",
+                    type: "media_reference",
+                    mediaAssetId: "asset-2",
+                  },
+                ]
+              : []),
+          ],
+        })),
+        mediaAssets: [
+          ...publishedDocument.mediaAssets,
+          {
+            id: "asset-2",
+            sectionId: "section:cooking",
+            role: "step",
+            status: "approved",
+            source: {
+              type: "licensed",
+              source: "Example library",
+              license: "CC BY 4.0",
+              attributionText: "Example Author, CC BY 4.0",
+              retrievedAt: "2026-07-28",
+            },
+            storage: { type: "external", url: "https://images.example/step.jpg" },
+            altText: { en: "Cooking step.", af: "Kookstap." },
+            reviewedBy: "hans",
+            reviewedAt: now,
+          },
+        ],
+      })
+    ).not.toBeNull()
+    expect(
+      parseRecipeGuidanceDocument({
+        ...publishedDocument,
+        sections: publishedDocument.sections.map((section) => ({
+          ...section,
           blocks: [{ id: `block:${section.kind}`, type: "metrics", servings: 4 }],
         })),
       })

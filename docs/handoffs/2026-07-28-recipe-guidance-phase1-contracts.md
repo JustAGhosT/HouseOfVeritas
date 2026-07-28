@@ -33,6 +33,8 @@ typed and schema-validated contracts needed before persistence or UI work begins
 - non-bypassable identity, ingredients, and cooking content at publication even if applicability is
   changed;
 - rejection of every unreviewed or section-inappropriate populated block at publication;
+- published identity metrics and step-media references in preparation/cooking sections;
+- tuple-level immutable recipe provenance validation for shared guidance drafts and sourced steps;
 - alt text forbidden before media approval, keeping unreviewed descriptions out of durable assets;
 - a truthful adapter for legacy hero images that preserves attribution while marking them
   `review_required` instead of fabricating alt text or approval, including normalization of accepted
@@ -64,7 +66,7 @@ pnpm exec prettier --check lib/recipe-guidance.ts lib/guidance.ts tests/lib/reci
 git diff --check
 ```
 
-- Focused result at the latest review-fix head: 2 files, 24 tests passed.
+- Focused result at the latest review-fix head: 2 files, 25 tests passed.
 - Production build completed and generated 125 routes/pages.
 - No browser check was required because no route, component, or interaction changed.
 

@@ -343,12 +343,12 @@ const FOUNDATIONAL_SECTION_KINDS = new Set<RecipeGuidanceSectionKind>([
 ])
 
 const PUBLISHABLE_SECTION_BLOCK_TYPES = {
-  identity: ["text"],
+  identity: ["text", "metrics"],
   hero: ["media_reference"],
   before_start: ["text", "notice"],
   ingredients: ["ingredient_references"],
-  preparation: ["text", "step_reference"],
-  cooking: ["step_reference"],
+  preparation: ["text", "step_reference", "media_reference"],
+  cooking: ["step_reference", "media_reference"],
   finish_and_serve: ["text", "step_reference", "media_reference"],
   storage_and_reheating: ["text", "notice"],
   provenance_and_feedback: ["text"],

@@ -100,20 +100,72 @@ export const guidanceStepDraftSchema = z.object({
   sourceRecipeRevisionId: z.string().trim().min(1).max(500).optional(),
 })
 
-export const guidanceDraftSchema = z.object({
-  kind: z.enum(GUIDANCE_KINDS),
-  locale: z.enum(GUIDANCE_LOCALES),
-  title: z.string().trim().min(1).max(160),
-  summary: z.string().trim().min(1).max(1_000),
-  materials: z.array(z.string().trim().min(1).max(160)).max(40).default([]),
-  tools: z.array(z.string().trim().min(1).max(160)).max(40).default([]),
-  safety: z.array(z.string().trim().min(1).max(500)).max(20).default([]),
-  steps: z.array(guidanceStepDraftSchema).min(1).max(20),
-  sourceRecipeId: z.string().trim().min(1).max(200).optional(),
-  sourceRecipeUpdatedAt: z.string().datetime({ offset: true }).optional(),
-  sourceRecipeRevisionId: z.string().trim().min(1).max(500).optional(),
-  sourceRecipeIngredientIds: z.array(z.string().trim().min(1).max(200)).max(100).optional(),
-})
+export const guidanceDraftSchema = z
+  .object({
+    kind: z.enum(GUIDANCE_KINDS),
+    locale: z.enum(GUIDANCE_LOCALES),
+    title: z.string().trim().min(1).max(160),
+    summary: z.string().trim().min(1).max(1_000),
+    materials: z.array(z.string().trim().min(1).max(160)).max(40).default([]),
+    tools: z.array(z.string().trim().min(1).max(160)).max(40).default([]),
+    safety: z.array(z.string().trim().min(1).max(500)).max(20).default([]),
+    steps: z.array(guidanceStepDraftSchema).min(1).max(20),
+    sourceRecipeId: z.string().trim().min(1).max(200).optional(),
+    sourceRecipeUpdatedAt: z.string().datetime({ offset: true }).optional(),
+    sourceRecipeRevisionId: z.string().trim().min(1).max(500).optional(),
+    sourceRecipeIngredientIds: z.array(z.string().trim().min(1).max(200)).max(100).optional(),
+  })
+  .superRefine((draft, context) => {
+    const hasRecipeProvenance =
+      draft.sourceRecipeId !== undefined ||
+      draft.sourceRecipeUpdatedAt !== undefined ||
+      draft.sourceRecipeRevisionId !== undefined ||
+      draft.sourceRecipeIngredientIds !== undefined ||
+      draft.steps.some(
+        (step) => step.sourceRecipeStepId !== undefined || step.sourceRecipeRevisionId !== undefined
+      )
+    if (!hasRecipeProvenance) return
+
+    for (const field of [
+      "sourceRecipeId",
+      "sourceRecipeUpdatedAt",
+      "sourceRecipeRevisionId",
+    ] as const) {
+      if (!draft[field]) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [field],
+          message: `${field} is required for recipe provenance`,
+        })
+      }
+    }
+
+    const expectedRevisionId =
+      draft.sourceRecipeId && draft.sourceRecipeUpdatedAt
+        ? createRecipeRevisionId(draft.sourceRecipeId, draft.sourceRecipeUpdatedAt)
+        : undefined
+    if (expectedRevisionId && draft.sourceRecipeRevisionId !== expectedRevisionId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["sourceRecipeRevisionId"],
+        message: "sourceRecipeRevisionId must identify the declared recipe snapshot",
+      })
+    }
+
+    draft.steps.forEach((step, index) => {
+      const hasStepProvenance =
+        step.sourceRecipeStepId !== undefined || step.sourceRecipeRevisionId !== undefined
+      if (!hasStepProvenance) return
+
+      if (!step.sourceRecipeStepId || step.sourceRecipeRevisionId !== expectedRevisionId) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["steps", index, "sourceRecipeRevisionId"],
+          message: "sourced steps must target the draft's immutable recipe revision",
+        })
+      }
+    })
+  })
 
 export function parseGuidanceDraft(input: unknown): GuidanceDraft | null {
   const parsed = guidanceDraftSchema.safeParse(input)
