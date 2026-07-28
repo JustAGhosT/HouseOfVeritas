@@ -67,7 +67,8 @@ const normalizeLegacyMediaUrl = (value: string) => {
   if (trimmed.startsWith("//") || /^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return null
 
   const relativePath = trimmed.replace(/^\.\//, "")
-  return relativePath ? `/${relativePath}` : null
+  const normalizedPath = relativePath ? `/${relativePath}` : ""
+  return isInternalMediaPath(normalizedPath) ? normalizedPath : null
 }
 const safeMediaUrl = z
   .string()
@@ -270,43 +271,57 @@ export const recipeImageBriefSchema = z
 
 export type RecipeImageBrief = z.infer<typeof recipeImageBriefSchema>
 
-const recipeGuidanceBlockSchema = z.discriminatedUnion("type", [
-  z.object({
-    id: nonEmptyId,
-    type: z.literal("text"),
-    source: z.enum(["recipe", "reviewed"]),
-    text: localizedTextSchema,
-  }),
-  z.object({
-    id: nonEmptyId,
-    type: z.literal("metrics"),
-    servings: z.number().int().positive().optional(),
-    prepMinutes: z.number().int().nonnegative().optional(),
-    cookMinutes: z.number().int().nonnegative().optional(),
-  }),
-  z.object({
-    id: nonEmptyId,
-    type: z.literal("ingredient_references"),
-    ingredientIds: z.array(nonEmptyId).min(1),
-  }),
-  z.object({
-    id: nonEmptyId,
-    type: z.literal("step_reference"),
-    recipeStepId: nonEmptyId,
-    timer: guidanceTimerSchema.optional(),
-  }),
-  z.object({
-    id: nonEmptyId,
-    type: z.literal("media_reference"),
-    mediaAssetId: nonEmptyId,
-  }),
-  z.object({
-    id: nonEmptyId,
-    type: z.literal("notice"),
-    noticeType: z.enum(["allergen", "safety", "preparation", "storage"]),
-    text: localizedTextSchema,
-  }),
-])
+const recipeGuidanceBlockSchema = z
+  .discriminatedUnion("type", [
+    z.object({
+      id: nonEmptyId,
+      type: z.literal("text"),
+      source: z.enum(["recipe", "reviewed"]),
+      text: localizedTextSchema,
+    }),
+    z.object({
+      id: nonEmptyId,
+      type: z.literal("metrics"),
+      servings: z.number().int().positive().optional(),
+      prepMinutes: z.number().int().nonnegative().optional(),
+      cookMinutes: z.number().int().nonnegative().optional(),
+    }),
+    z.object({
+      id: nonEmptyId,
+      type: z.literal("ingredient_references"),
+      ingredientIds: z.array(nonEmptyId).min(1),
+    }),
+    z.object({
+      id: nonEmptyId,
+      type: z.literal("step_reference"),
+      recipeStepId: nonEmptyId,
+      timer: guidanceTimerSchema.optional(),
+    }),
+    z.object({
+      id: nonEmptyId,
+      type: z.literal("media_reference"),
+      mediaAssetId: nonEmptyId,
+    }),
+    z.object({
+      id: nonEmptyId,
+      type: z.literal("notice"),
+      noticeType: z.enum(["allergen", "safety", "preparation", "storage"]),
+      text: localizedTextSchema,
+    }),
+  ])
+  .superRefine((block, context) => {
+    if (
+      block.type === "metrics" &&
+      block.servings === undefined &&
+      block.prepMinutes === undefined &&
+      block.cookMinutes === undefined
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "metrics blocks require at least one metric",
+      })
+    }
+  })
 
 export type RecipeGuidanceBlock = z.infer<typeof recipeGuidanceBlockSchema>
 

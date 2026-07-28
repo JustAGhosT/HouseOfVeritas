@@ -27,7 +27,7 @@ typed and schema-validated contracts needed before persistence or UI work begins
 - structured exact, range, and seconds-based timers;
 - document-internal section, image-brief, media-asset, and media-block reference validation;
 - same-section ownership for media blocks and publication gates for review metadata, required-section
-  content, approved referenced media, and terminal asset states;
+  substantive content, approved referenced media, and terminal asset states;
 - a truthful adapter for legacy hero images that preserves attribution while marking them
   `review_required` instead of fabricating alt text or approval, including normalization of accepted
   relative image paths; and
@@ -58,7 +58,7 @@ pnpm exec prettier --check lib/recipe-guidance.ts lib/guidance.ts tests/lib/reci
 git diff --check
 ```
 
-- Focused result at the latest review-fix head: 2 files, 18 tests passed.
+- Focused result at the latest review-fix head: 2 files, 19 tests passed.
 - Production build completed and generated 125 routes/pages.
 - No browser check was required because no route, component, or interaction changed.
 

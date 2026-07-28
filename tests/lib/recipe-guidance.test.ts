@@ -324,6 +324,15 @@ describe("recipe guidance contracts", () => {
     }
 
     expect(parseRecipeGuidanceDocument(publishedDocument)).not.toBeNull()
+    expect(
+      parseRecipeGuidanceDocument({
+        ...publishedDocument,
+        sections: publishedDocument.sections.map((section) => ({
+          ...section,
+          blocks: [{ id: `block:${section.kind}`, type: "metrics" }],
+        })),
+      })
+    ).toBeNull()
   })
 
   it("preserves legacy hero provenance without fabricating approval or alt text", () => {
@@ -384,6 +393,34 @@ describe("recipe guidance contracts", () => {
     const asset = recipeHeroToReviewRequiredMedia(recipe)
 
     expect(asset.storage).toEqual({ type: "external", url: "/images/rice.jpg" })
+    expect(recipeMediaAssetSchema.safeParse(asset).success).toBe(true)
+  })
+
+  it("marks an unsafe Windows-style legacy hero path unavailable", () => {
+    const recipe = {
+      id: "recipe-1",
+      status: "published",
+      ownerUserId: "hans",
+      audienceUserIds: ["irma"],
+      titleEn: "Fried rice",
+      titleAf: "Gebraaide rys",
+      image: {
+        url: "images\\rice.jpg",
+        source: "Example library",
+        license: "CC BY 4.0",
+        attributionText: "Example Author, CC BY 4.0",
+        retrievedAt: "2026-07-28",
+      },
+      ingredients: [],
+      steps: [],
+      createdAt: now,
+      updatedAt: now,
+    } satisfies RecipeRecord
+
+    const asset = recipeHeroToReviewRequiredMedia(recipe)
+
+    expect(asset.status).toBe("unavailable")
+    expect(asset).not.toHaveProperty("storage")
     expect(recipeMediaAssetSchema.safeParse(asset).success).toBe(true)
   })
 })
