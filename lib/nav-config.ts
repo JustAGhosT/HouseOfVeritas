@@ -207,7 +207,6 @@ const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
     Work: "/dashboard/charl/projects",
     Tasks: "/dashboard/charl/tasks",
     "Time & Attendance": "/dashboard/charl/time",
-    Expenses: "/dashboard/charl/expenses",
     "Vehicles (Soon)": "/dashboard/charl/vehicles",
     Assets: "/dashboard/charl/assets",
     Inventory: "/dashboard/charl/inventory",
@@ -221,7 +220,6 @@ const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
     Tasks: "/dashboard/lucky/tasks",
     "Time & Attendance": "/dashboard/lucky/time",
     "Vehicles (Soon)": "/dashboard/lucky/vehicles",
-    Assets: "/dashboard/lucky/assets",
     Inventory: "/dashboard/lucky/inventory",
     Expenses: "/dashboard/lucky/expenses",
     Documents: "/dashboard/lucky/documents",
@@ -232,10 +230,6 @@ const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
     Overview: "/dashboard/irma",
     Work: "/dashboard/irma/projects",
     Tasks: "/dashboard/irma/tasks",
-    "Time & Attendance": "/dashboard/irma/time",
-    Expenses: "/dashboard/irma/expenses",
-    "Vehicles (Soon)": "/dashboard/irma/vehicles",
-    Assets: "/dashboard/irma/assets",
     Inventory: "/dashboard/irma/inventory",
     Documents: "/dashboard/irma/documents",
     Recipes: "/dashboard/irma/recipes",
@@ -291,7 +285,11 @@ export function buildNavEntries(
   const uncategorized: NavItem[] = []
 
   for (const p of filtered) {
-    const href = overrides[p.name] ?? p.href.replace("/dashboard", `/dashboard/${persona}`)
+    const href = overrides[p.name]
+    // The shared page inventory includes responsibility-gated capabilities that
+    // are not implemented for every persona. Do not surface a dead or fallback
+    // link until that persona has an explicit route.
+    if (!href) continue
     const name = labels[p.name] ?? p.name
     const item: NavItem = { name, href, icon: p.icon }
 

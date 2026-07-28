@@ -75,4 +75,17 @@ describe("nav-config inventory access", () => {
       expect(new Set(hrefs).size).toBe(hrefs.length)
     }
   })
+
+  it("omits responsibility links when the persona route is not implemented", () => {
+    const charlItems = flatten(buildNavEntries("charl", "operator", [...RESPONSIBILITIES]))
+    const luckyItems = flatten(buildNavEntries("lucky", "employee", [...RESPONSIBILITIES]))
+    const irmaItems = flatten(buildNavEntries("irma", "resident", [...RESPONSIBILITIES]))
+
+    expect(charlItems).not.toContainEqual(expect.objectContaining({ name: "Expenses" }))
+    expect(luckyItems).not.toContainEqual(expect.objectContaining({ name: "Assets" }))
+    expect(irmaItems).not.toContainEqual(expect.objectContaining({ name: "Time & Attendance" }))
+    expect(irmaItems).not.toContainEqual(expect.objectContaining({ name: "Expenses" }))
+    expect(irmaItems).not.toContainEqual(expect.objectContaining({ name: "Vehicles (Soon)" }))
+    expect(irmaItems).not.toContainEqual(expect.objectContaining({ name: "Assets" }))
+  })
 })
