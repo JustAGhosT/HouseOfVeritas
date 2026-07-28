@@ -366,6 +366,18 @@ const PUBLISHABLE_SECTION_BLOCK_TYPES = {
   provenance_and_feedback: ["text"],
 } as const satisfies Record<RecipeGuidanceSectionKind, readonly RecipeGuidanceBlock["type"][]>
 
+const SECTION_MEDIA_ROLES = {
+  identity: [],
+  hero: ["hero"],
+  before_start: [],
+  ingredients: ["ingredient_layout"],
+  preparation: ["ingredient_layout", "step"],
+  cooking: ["step"],
+  finish_and_serve: ["serving"],
+  storage_and_reheating: ["storage"],
+  provenance_and_feedback: [],
+} as const satisfies Record<RecipeGuidanceSectionKind, readonly RecipeMediaRole[]>
+
 function isPublishableSectionBlock(
   sectionKind: RecipeGuidanceSectionKind,
   block: RecipeGuidanceBlock
@@ -450,16 +462,24 @@ export const recipeGuidanceDocumentSchema = z
       })
     }
 
-    const sectionIds = new Set(document.sections.map((section) => section.id))
+    const sectionsById = new Map(document.sections.map((section) => [section.id, section]))
+    const sectionIds = new Set(sectionsById.keys())
     const mediaAssetsById = new Map(document.mediaAssets.map((asset) => [asset.id, asset]))
     const imageBriefsById = new Map(document.imageBriefs.map((brief) => [brief.id, brief]))
 
     document.mediaAssets.forEach((asset, index) => {
-      if (!sectionIds.has(asset.sectionId)) {
+      const section = sectionsById.get(asset.sectionId)
+      if (!section) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["mediaAssets", index, "sectionId"],
           message: "media asset must reference a section in this document",
+        })
+      } else if (!(SECTION_MEDIA_ROLES[section.kind] as readonly string[]).includes(asset.role)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["mediaAssets", index, "role"],
+          message: `${asset.role} media is not valid for the ${section.kind} section`,
         })
       }
       const imageBrief = asset.imageBriefId ? imageBriefsById.get(asset.imageBriefId) : undefined

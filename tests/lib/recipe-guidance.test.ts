@@ -424,6 +424,15 @@ describe("recipe guidance contracts", () => {
     expect(
       parseRecipeGuidanceDocument({
         ...publishedDocument,
+        mediaAssets: publishedDocument.mediaAssets.map((asset) => ({
+          ...asset,
+          role: "storage",
+        })),
+      })
+    ).toBeNull()
+    expect(
+      parseRecipeGuidanceDocument({
+        ...publishedDocument,
         sections: publishedDocument.sections.map((section) => ({
           ...section,
           blocks: [
