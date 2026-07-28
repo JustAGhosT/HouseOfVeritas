@@ -40,6 +40,27 @@ export function isCategory(e: NavEntry): e is NavCategory {
   return "category" in e && "items" in e
 }
 
+export function isNavHrefActive(href: string, pathname: string | null): boolean {
+  if (!pathname) return false
+  if (pathname === href) return true
+
+  // Overview routes are persona roots, not catch-alls for every unmapped
+  // dashboard page. Nested matching is still useful for real section roots.
+  const isDashboardRoot = /^\/dashboard(?:\/[^/]+)?$/.test(href)
+  return !isDashboardRoot && pathname.startsWith(`${href}/`)
+}
+
+export function getActiveNavName(entries: NavEntry[], pathname: string | null): string {
+  if (!pathname) return "Workspace"
+
+  const items = entries.flatMap((entry) => (isCategory(entry) ? entry.items : [entry]))
+  const active = items
+    .filter((item) => isNavHrefActive(item.href, pathname))
+    .sort((left, right) => right.href.length - left.href.length)[0]
+
+  return active?.name ?? "Workspace"
+}
+
 const PERSONA_TO_ROLE: Record<string, UserRole> = {
   hans: "admin",
   charl: "operator",
@@ -161,12 +182,14 @@ const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
   hans: {
     Overview: "/dashboard/hans",
     Team: "/dashboard/hans/team",
+    Approvals: "/dashboard/hans/approvals",
     Tasks: "/dashboard/hans/tasks",
     "Time & Attendance": "/dashboard/hans/time",
     Expenses: "/dashboard/hans/expenses",
     "Vehicles (Soon)": "/dashboard/hans/vehicles",
     Assets: "/dashboard/hans/assets",
     Inventory: "/dashboard/hans/inventory",
+    Maintenance: "/dashboard/hans/maintenance",
     Documents: "/dashboard/hans/documents",
     Calendar: "/dashboard/hans/calendar",
     Payroll: "/dashboard/hans/payroll",
@@ -180,33 +203,35 @@ const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
     Work: "/dashboard/hans/projects",
   },
   charl: {
-    "My Dashboard": "/dashboard/charl",
+    Overview: "/dashboard/charl",
     Work: "/dashboard/charl/projects",
-    "My Tasks": "/dashboard/charl/tasks",
-    "Time Clock": "/dashboard/charl/time",
+    Tasks: "/dashboard/charl/tasks",
+    "Time & Attendance": "/dashboard/charl/time",
     "Vehicles (Soon)": "/dashboard/charl/vehicles",
     Assets: "/dashboard/charl/assets",
     Inventory: "/dashboard/charl/inventory",
-    "My Documents": "/dashboard/charl/documents",
+    Documents: "/dashboard/charl/documents",
+    Recipes: "/dashboard/charl/recipes",
     Settings: "/dashboard/charl/settings",
   },
   lucky: {
-    "My Dashboard": "/dashboard/lucky",
+    Overview: "/dashboard/lucky",
     Work: "/dashboard/lucky/projects",
-    "My Tasks": "/dashboard/lucky/tasks",
-    "Time Clock": "/dashboard/lucky/time",
+    Tasks: "/dashboard/lucky/tasks",
+    "Time & Attendance": "/dashboard/lucky/time",
     "Vehicles (Soon)": "/dashboard/lucky/vehicles",
     Inventory: "/dashboard/lucky/inventory",
     Expenses: "/dashboard/lucky/expenses",
-    "My Documents": "/dashboard/lucky/documents",
+    Documents: "/dashboard/lucky/documents",
+    Recipes: "/dashboard/lucky/recipes",
     Settings: "/dashboard/lucky/settings",
   },
   irma: {
-    "My Dashboard": "/dashboard/irma",
+    Overview: "/dashboard/irma",
     Work: "/dashboard/irma/projects",
-    "Household Tasks": "/dashboard/irma/tasks",
+    Tasks: "/dashboard/irma/tasks",
     Inventory: "/dashboard/irma/inventory",
-    "My Documents": "/dashboard/irma/documents",
+    Documents: "/dashboard/irma/documents",
     Recipes: "/dashboard/irma/recipes",
     Settings: "/dashboard/irma/settings",
   },
@@ -260,7 +285,11 @@ export function buildNavEntries(
   const uncategorized: NavItem[] = []
 
   for (const p of filtered) {
-    const href = overrides[p.name] ?? p.href.replace("/dashboard", `/dashboard/${persona}`)
+    const href = overrides[p.name]
+    // The shared page inventory includes responsibility-gated capabilities that
+    // are not implemented for every persona. Do not surface a dead or fallback
+    // link until that persona has an explicit route.
+    if (!href) continue
     const name = labels[p.name] ?? p.name
     const item: NavItem = { name, href, icon: p.icon }
 

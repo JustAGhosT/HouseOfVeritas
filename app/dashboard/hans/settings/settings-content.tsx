@@ -36,19 +36,24 @@ function ToggleSetting({
   onChange: (val: boolean) => void
 }) {
   return (
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-white">{label}</p>
-        <p className="text-sm text-white/50">{description}</p>
+    <div className="flex items-center justify-between gap-4 rounded-xl px-1 py-1">
+      <div className="min-w-0">
+        <p className="text-foreground font-medium">{label}</p>
+        <p className="text-muted-foreground text-sm">{description}</p>
       </div>
       <button
         type="button"
         onClick={() => onChange(!checked)}
-        className={`relative h-6 w-12 rounded-full transition-colors ${checked ? "bg-blue-600" : "bg-white/20"}`}
+        className={`focus-visible:ring-ring focus-visible:ring-offset-background relative h-7 w-12 shrink-0 rounded-full border transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 ${
+          checked ? "border-primary bg-primary" : "border-border bg-muted"
+        }`}
         aria-label={`${label}: ${checked ? "on" : "off"}`}
+        aria-pressed={checked}
       >
         <span
-          className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-transform ${checked ? "left-7" : "left-1"}`}
+          className={`absolute top-1 h-5 w-5 rounded-full shadow-sm transition-transform ${
+            checked ? "bg-primary-foreground left-6" : "bg-muted-foreground left-1"
+          }`}
         />
       </button>
     </div>
@@ -149,278 +154,309 @@ export function SettingsPageContent({ persona }: { persona: "hans" | "charl" | "
 
   return (
     <DashboardLayout persona={persona}>
-      <div className="mx-auto max-w-4xl space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold text-white">{t("settings.profile")}</h1>
-          <p className="mt-1 text-white/60">Manage your account settings and preferences</p>
+      <div className="mx-auto max-w-6xl space-y-6 pb-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-primary-text text-xs font-semibold tracking-[0.18em] uppercase">
+              Workspace preferences
+            </p>
+            <h1 className="text-foreground mt-1 text-3xl font-bold tracking-tight">
+              {t("nav.settings")}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Personalise your workspace without changing your role or access.
+            </p>
+          </div>
+          <span className="border-border bg-card/70 text-muted-foreground inline-flex w-fit items-center rounded-full border px-3 py-1.5 text-xs">
+            Signed in as {user?.role || "member"}
+          </span>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-          <div className="flex items-center gap-3 border-b border-white/10 p-6">
-            <Palette className="text-primary-text h-5 w-5" />
+        <div className="border-primary/25 bg-card/80 overflow-hidden rounded-3xl border shadow-[0_24px_70px_color-mix(in_srgb,var(--primary)_8%,transparent)] backdrop-blur-sm">
+          <div className="border-border/70 from-primary/10 flex items-center gap-3 border-b bg-linear-to-r via-transparent to-transparent p-5 sm:p-6">
+            <div className="bg-primary/15 text-primary-text flex h-10 w-10 items-center justify-center rounded-xl">
+              <Palette className="h-5 w-5" />
+            </div>
             <div>
-              <h2 className="font-semibold text-white">Appearance</h2>
-              <p className="text-sm text-white/50">Choose your personal workspace colours.</p>
+              <h2 className="text-foreground font-semibold">Appearance</h2>
+              <p className="text-muted-foreground text-sm">
+                Preview a palette instantly. Save when it feels right.
+              </p>
             </div>
           </div>
-          <div className="p-6">
-            <UserThemePicker
-              value={selectedTheme}
-              onChange={setThemeOverride}
-            />
+          <div className="p-4 sm:p-6">
+            <UserThemePicker value={selectedTheme} onChange={setThemeOverride} />
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-          <div className="flex items-center gap-3 border-b border-white/10 p-6">
-            <User className="h-5 w-5 text-blue-400" />
-            <h2 className="font-semibold text-white">{t("settings.profile")}</h2>
-          </div>
-          <div className="space-y-4 p-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label htmlFor="settings-name" className="mb-2 block text-sm text-white/60">
-                  Name
-                </label>
-                <input
-                  id="settings-name"
-                  type="text"
-                  value={user?.name || ""}
-                  disabled
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white/60"
-                />
-              </div>
-              <div>
-                <label htmlFor="settings-email" className="mb-2 block text-sm text-white/60">
-                  Email
-                </label>
-                <input
-                  id="settings-email"
-                  type="email"
-                  value={user?.email || ""}
-                  disabled
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white/60"
-                />
-              </div>
-              <div>
-                <label htmlFor="settings-role" className="mb-2 block text-sm text-white/60">
-                  Role
-                </label>
-                <input
-                  id="settings-role"
-                  type="text"
-                  value={user?.role || ""}
-                  disabled
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white/60"
-                />
-              </div>
-              <div>
-                <label htmlFor="settings-phone" className="mb-2 block text-sm text-white/60">
-                  Phone
-                </label>
-                <input
-                  id="settings-phone"
-                  type="tel"
-                  value={user?.phone || ""}
-                  disabled
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white/60"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {isAdmin && (
-          <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-            <div className="flex items-center gap-3 border-b border-white/10 p-6">
-              <Package className="h-5 w-5 text-amber-400" />
-              <h2 className="font-semibold text-white">Asset Storage Options</h2>
+        <div className="grid items-start gap-6 xl:grid-cols-2">
+          <div className="border-border/80 bg-card/75 overflow-hidden rounded-2xl border backdrop-blur-sm">
+            <div className="border-border/70 flex items-center gap-3 border-b p-5">
+              <User className="text-primary-text h-5 w-5" />
+              <h2 className="text-foreground font-semibold">{t("settings.profile")}</h2>
             </div>
             <div className="space-y-4 p-6">
-              <p className="text-sm text-white/60">
-                Manage storage locations for assets (kitchen, storeroom, garage, etc.).
-              </p>
-              <div className="flex gap-2">
-                <label htmlFor="new-storage-option" className="sr-only">
-                  New storage option
-                </label>
-                <input
-                  id="new-storage-option"
-                  type="text"
-                  value={newStorageOption}
-                  onChange={(e) => setNewStorageOption(e.target.value)}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" && (e.preventDefault(), handleAddStorageOption())
-                  }
-                  placeholder="e.g. basement"
-                  className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-white placeholder:text-white/40"
-                />
-                <button
-                  onClick={handleAddStorageOption}
-                  className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {storageOptions.map((opt) => (
-                  <span
-                    key={opt}
-                    className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-sm text-white"
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="settings-name"
+                    className="text-muted-foreground mb-2 block text-sm"
                   >
-                    {opt}
-                    <button
-                      onClick={() => handleRemoveStorageOption(opt)}
-                      className="rounded p-0.5 hover:bg-white/20"
-                      aria-label={`Remove ${opt}`}
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
+                    Name
+                  </label>
+                  <input
+                    id="settings-name"
+                    type="text"
+                    value={user?.name || ""}
+                    disabled
+                    className="border-border bg-muted/55 text-muted-foreground w-full rounded-xl border px-4 py-3"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="settings-email"
+                    className="text-muted-foreground mb-2 block text-sm"
+                  >
+                    Email
+                  </label>
+                  <input
+                    id="settings-email"
+                    type="email"
+                    value={user?.email || ""}
+                    disabled
+                    className="border-border bg-muted/55 text-muted-foreground w-full rounded-xl border px-4 py-3"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="settings-role"
+                    className="text-muted-foreground mb-2 block text-sm"
+                  >
+                    Role
+                  </label>
+                  <input
+                    id="settings-role"
+                    type="text"
+                    value={user?.role || ""}
+                    disabled
+                    className="border-border bg-muted/55 text-muted-foreground w-full rounded-xl border px-4 py-3"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="settings-phone"
+                    className="text-muted-foreground mb-2 block text-sm"
+                  >
+                    Phone
+                  </label>
+                  <input
+                    id="settings-phone"
+                    type="tel"
+                    value={user?.phone || ""}
+                    disabled
+                    className="border-border bg-muted/55 text-muted-foreground w-full rounded-xl border px-4 py-3"
+                  />
+                </div>
               </div>
-              <button
-                onClick={handleSaveStorageOptions}
-                className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
-              >
-                {storageOptionsSaved ? (
-                  <>
-                    <CheckCircle className="h-4 w-4" />
-                    Saved
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    Save Storage Options
-                  </>
-                )}
-              </button>
             </div>
           </div>
-        )}
 
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-          <div className="flex items-center gap-3 border-b border-white/10 p-6">
-            <Globe className="h-5 w-5 text-green-400" />
-            <h2 className="font-semibold text-white">{t("settings.language")}</h2>
-          </div>
-          <div className="p-6">
-            <div className="flex justify-between">
-              <div>
-                <p className="text-white">Display Language</p>
-                <p className="text-sm text-white/50">Choose your preferred language</p>
+          {isAdmin && (
+            <div className="border-border/80 bg-card/75 overflow-hidden rounded-2xl border backdrop-blur-sm">
+              <div className="border-border/70 flex items-center gap-3 border-b p-5">
+                <Package className="text-primary-text h-5 w-5" />
+                <h2 className="text-foreground font-semibold">Asset Storage Options</h2>
               </div>
-              <LanguageSelector />
-            </div>
-          </div>
-        </div>
-
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-          <div className="flex items-center gap-3 border-b border-white/10 p-6">
-            <Bell className="h-5 w-5 text-amber-400" />
-            <h2 className="font-semibold text-white">{t("settings.notifications")}</h2>
-          </div>
-          <div className="space-y-4 p-6">
-            <ToggleSetting
-              label="Email Notifications"
-              description="Receive updates via email"
-              checked={settings.emailNotifications}
-              onChange={(val) => setSettings((prev) => ({ ...prev, emailNotifications: val }))}
-            />
-            <ToggleSetting
-              label="SMS Notifications"
-              description="Receive urgent alerts via SMS"
-              checked={settings.smsNotifications}
-              onChange={(val) => setSettings((prev) => ({ ...prev, smsNotifications: val }))}
-            />
-            <ToggleSetting
-              label="Push Notifications"
-              description="Receive browser/app notifications"
-              checked={settings.pushNotifications}
-              onChange={(val) =>
-                val
-                  ? handleEnablePush()
-                  : setSettings((prev) => ({ ...prev, pushNotifications: false }))
-              }
-            />
-            <ToggleSetting
-              label="Daily Digest"
-              description="Receive a daily summary"
-              checked={settings.dailyDigest}
-              onChange={(val) => setSettings((prev) => ({ ...prev, dailyDigest: val }))}
-            />
-            <ToggleSetting
-              label="Weekly Report"
-              description="Receive a weekly report"
-              checked={settings.weeklyReport}
-              onChange={(val) => setSettings((prev) => ({ ...prev, weeklyReport: val }))}
-            />
-          </div>
-        </div>
-
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-          <div className="flex items-center gap-3 border-b border-white/10 p-6">
-            <Smartphone className="h-5 w-5 text-purple-400" />
-            <h2 className="font-semibold text-white">App Settings</h2>
-          </div>
-          <div className="space-y-4 p-6">
-            <div className="flex justify-between">
-              <div>
-                <p className="text-white">Install App</p>
-                <p className="text-sm text-white/50">
-                  {isInstalled ? "App is installed" : "Install for offline access"}
+              <div className="space-y-4 p-6">
+                <p className="text-muted-foreground text-sm">
+                  Manage storage locations for assets (kitchen, storeroom, garage, etc.).
                 </p>
-              </div>
-              {isInstalled ? (
-                <span className="flex items-center gap-2 text-sm text-green-400">
-                  <CheckCircle className="h-4 w-4" />
-                  Installed
-                </span>
-              ) : canInstall ? (
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <label htmlFor="new-storage-option" className="sr-only">
+                    New storage option
+                  </label>
+                  <input
+                    id="new-storage-option"
+                    type="text"
+                    value={newStorageOption}
+                    onChange={(e) => setNewStorageOption(e.target.value)}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && (e.preventDefault(), handleAddStorageOption())
+                    }
+                    placeholder="e.g. basement"
+                    className="border-input bg-background/60 text-foreground placeholder:text-muted-foreground flex-1 rounded-xl border px-4 py-2"
+                  />
+                  <button
+                    onClick={handleAddStorageOption}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center gap-2 rounded-xl px-4 py-2 font-medium transition-colors"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {storageOptions.map((opt) => (
+                    <span
+                      key={opt}
+                      className="border-border bg-muted/70 text-foreground inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm"
+                    >
+                      {opt}
+                      <button
+                        onClick={() => handleRemoveStorageOption(opt)}
+                        className="hover:bg-background rounded p-0.5"
+                        aria-label={`Remove ${opt}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
                 <button
-                  onClick={installApp}
-                  className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+                  onClick={handleSaveStorageOptions}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-xl px-4 py-2 font-medium transition-colors"
                 >
-                  <Download className="h-4 w-4" />
-                  Install
+                  {storageOptionsSaved ? (
+                    <>
+                      <CheckCircle className="h-4 w-4" />
+                      Saved
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      Save Storage Options
+                    </>
+                  )}
                 </button>
-              ) : (
-                <span className="text-sm text-white/40">Not available</span>
-              )}
-            </div>
-            <ToggleSetting
-              label="Dark Mode"
-              description="Use dark theme"
-              checked={settings.darkMode}
-              onChange={(val) => setSettings((prev) => ({ ...prev, darkMode: val }))}
-            />
-          </div>
-        </div>
-
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-          <div className="flex items-center gap-3 border-b border-white/10 p-6">
-            <Shield className="h-5 w-5 text-red-400" />
-            <h2 className="font-semibold text-white">Security</h2>
-          </div>
-          <div className="space-y-4 p-6">
-            <p className="text-sm text-white/60">
-              Change password and clear data from the profile dropdown (top right).
-            </p>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white">Clear Local Data</p>
-                <p className="text-sm text-white/50">Remove cached data from this device</p>
               </div>
-              <button className="flex items-center gap-2 rounded-lg bg-red-500/20 px-4 py-2 text-red-400 transition-colors hover:bg-red-500/30">
-                <Trash2 className="h-4 w-4" />
-                Clear
-              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="grid items-start gap-6 xl:grid-cols-2">
+          <div className="border-border/80 bg-card/75 overflow-hidden rounded-2xl border backdrop-blur-sm">
+            <div className="border-border/70 flex items-center gap-3 border-b p-5">
+              <Globe className="text-primary-text h-5 w-5" />
+              <h2 className="text-foreground font-semibold">{t("settings.language")}</h2>
+            </div>
+            <div className="p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-foreground font-medium">Display Language</p>
+                  <p className="text-muted-foreground text-sm">Choose your preferred language</p>
+                </div>
+                <LanguageSelector />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-border/80 bg-card/75 row-span-2 overflow-hidden rounded-2xl border backdrop-blur-sm">
+            <div className="border-border/70 flex items-center gap-3 border-b p-5">
+              <Bell className="text-primary-text h-5 w-5" />
+              <h2 className="text-foreground font-semibold">{t("settings.notifications")}</h2>
+            </div>
+            <div className="space-y-4 p-6">
+              <ToggleSetting
+                label="Email Notifications"
+                description="Receive updates via email"
+                checked={settings.emailNotifications}
+                onChange={(val) => setSettings((prev) => ({ ...prev, emailNotifications: val }))}
+              />
+              <ToggleSetting
+                label="SMS Notifications"
+                description="Receive urgent alerts via SMS"
+                checked={settings.smsNotifications}
+                onChange={(val) => setSettings((prev) => ({ ...prev, smsNotifications: val }))}
+              />
+              <ToggleSetting
+                label="Push Notifications"
+                description="Receive browser/app notifications"
+                checked={settings.pushNotifications}
+                onChange={(val) =>
+                  val
+                    ? handleEnablePush()
+                    : setSettings((prev) => ({ ...prev, pushNotifications: false }))
+                }
+              />
+              <ToggleSetting
+                label="Daily Digest"
+                description="Receive a daily summary"
+                checked={settings.dailyDigest}
+                onChange={(val) => setSettings((prev) => ({ ...prev, dailyDigest: val }))}
+              />
+              <ToggleSetting
+                label="Weekly Report"
+                description="Receive a weekly report"
+                checked={settings.weeklyReport}
+                onChange={(val) => setSettings((prev) => ({ ...prev, weeklyReport: val }))}
+              />
+            </div>
+          </div>
+
+          <div className="border-border/80 bg-card/75 overflow-hidden rounded-2xl border backdrop-blur-sm">
+            <div className="border-border/70 flex items-center gap-3 border-b p-5">
+              <Smartphone className="text-primary-text h-5 w-5" />
+              <h2 className="text-foreground font-semibold">App Settings</h2>
+            </div>
+            <div className="space-y-4 p-6">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-foreground font-medium">Install App</p>
+                  <p className="text-muted-foreground text-sm">
+                    {isInstalled ? "App is installed" : "Install for offline access"}
+                  </p>
+                </div>
+                {isInstalled ? (
+                  <span className="flex items-center gap-2 text-sm text-green-400">
+                    <CheckCircle className="h-4 w-4" />
+                    Installed
+                  </span>
+                ) : canInstall ? (
+                  <button
+                    onClick={installApp}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2 rounded-xl px-4 py-2 font-medium transition-colors"
+                  >
+                    <Download className="h-4 w-4" />
+                    Install
+                  </button>
+                ) : (
+                  <span className="text-muted-foreground text-sm">Not available</span>
+                )}
+              </div>
+              <ToggleSetting
+                label="Dark Mode"
+                description="Use dark theme"
+                checked={settings.darkMode}
+                onChange={(val) => setSettings((prev) => ({ ...prev, darkMode: val }))}
+              />
+            </div>
+          </div>
+
+          <div className="border-border/80 bg-card/75 overflow-hidden rounded-2xl border backdrop-blur-sm">
+            <div className="border-border/70 flex items-center gap-3 border-b p-5">
+              <Shield className="h-5 w-5 text-red-400" />
+              <h2 className="text-foreground font-semibold">Security</h2>
+            </div>
+            <div className="space-y-4 p-6">
+              <p className="text-muted-foreground text-sm">
+                Change password and clear data from the profile dropdown (top right).
+              </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-foreground font-medium">Clear Local Data</p>
+                  <p className="text-muted-foreground text-sm">
+                    Remove cached data from this device
+                  </p>
+                </div>
+                <button className="flex items-center gap-2 rounded-lg bg-red-500/20 px-4 py-2 text-red-400 transition-colors hover:bg-red-500/30">
+                  <Trash2 className="h-4 w-4" />
+                  Clear
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-4">
+        <div className="border-border bg-background/90 sticky bottom-3 z-20 flex flex-col gap-3 rounded-2xl border p-3 shadow-2xl backdrop-blur-xl sm:flex-row sm:items-center sm:justify-end">
           {saved && (
             <span className="flex items-center gap-2 text-green-400">
               <CheckCircle className="h-4 w-4" />
@@ -434,7 +470,7 @@ export function SettingsPageContent({ persona }: { persona: "hans" | "charl" | "
           )}
           <button
             onClick={handleSave}
-            className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-700"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold transition-colors"
           >
             <Save className="h-4 w-4" />
             Save Changes

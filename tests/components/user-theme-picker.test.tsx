@@ -18,6 +18,7 @@ describe("UserThemePicker", () => {
     const radios = screen.getAllByRole("radio")
     expect(radios[0]).toHaveAttribute("tabindex", "0")
     expect(radios[1]).toHaveAttribute("tabindex", "-1")
+    expect(radios[0]).toHaveTextContent("Selected")
 
     radios[0].focus()
     await user.keyboard("{ArrowRight}")
@@ -26,6 +27,7 @@ describe("UserThemePicker", () => {
     expect(radios[1]).toHaveAttribute("aria-checked", "true")
     expect(radios[0]).toHaveAttribute("tabindex", "-1")
     expect(radios[1]).toHaveAttribute("tabindex", "0")
+    expect(radios[1]).toHaveAccessibleDescription("A calm blue and cyan workspace.")
 
     await user.keyboard("{End}")
     expect(radios[radios.length - 1]).toHaveFocus()
