@@ -393,6 +393,17 @@ export const recipeGuidanceDocumentSchema = z
     publishedAt: isoDateTime.optional(),
   })
   .superRefine((document, context) => {
+    if (
+      document.recipeRevisionId !==
+      createRecipeRevisionId(document.recipeId, document.recipeUpdatedAt)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["recipeRevisionId"],
+        message: "recipeRevisionId must identify this document's immutable recipe snapshot",
+      })
+    }
+
     document.sections.forEach((section, index) => {
       if (section.kind !== RECIPE_GUIDANCE_SECTION_KINDS[index]) {
         context.addIssue({
@@ -513,6 +524,16 @@ export const recipeGuidanceDocumentSchema = z
       }
 
       document.sections.forEach((section, index) => {
+        section.blocks.forEach((block, blockIndex) => {
+          if (!isPublishableSectionBlock(section.kind, block)) {
+            context.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ["sections", index, "blocks", blockIndex],
+              message: `${block.type} is not reviewed publishable content for ${section.kind}`,
+            })
+          }
+        })
+
         if (
           (section.applicability === "required" || FOUNDATIONAL_SECTION_KINDS.has(section.kind)) &&
           !section.blocks.some((block) => isPublishableSectionBlock(section.kind, block))

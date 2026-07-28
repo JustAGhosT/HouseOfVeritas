@@ -472,6 +472,41 @@ describe("recipe guidance contracts", () => {
     }
 
     expect(parseRecipeGuidanceDocument(invalidDocument)).toBeNull()
+    expect(
+      parseRecipeGuidanceDocument({
+        ...document,
+        recipeRevisionId: "recipe-2@2026-07-01T00:00:00.000Z",
+      })
+    ).toBeNull()
+  })
+
+  it("rejects every unreviewed or section-inappropriate block at publication", () => {
+    const document = buildDocument()
+    const invalidDocument = {
+      ...document,
+      status: "published",
+      reviewedBy: "hans",
+      reviewedAt: now,
+      publishedBy: "hans",
+      publishedAt: now,
+      sections: document.sections.map((section) => ({
+        ...section,
+        applicability: "optional",
+        blocks:
+          section.kind === "identity"
+            ? [
+                {
+                  id: "block:identity",
+                  type: "text",
+                  source: "recipe",
+                  text: { en: "Unreviewed.", af: "Onhersien." },
+                },
+              ]
+            : [],
+      })),
+    }
+
+    expect(parseRecipeGuidanceDocument(invalidDocument)).toBeNull()
   })
 
   it("preserves legacy hero provenance without fabricating approval or alt text", () => {
