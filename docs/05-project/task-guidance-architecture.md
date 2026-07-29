@@ -54,14 +54,24 @@ serving counts must be positive; other valid preparation/cooking metrics remain 
 - `POST /api/recipes/:id/guidance-drafts/preview` is admin-only and returns the next deterministic
   version with `persisted: false`; it does not call repository create/replace methods.
 - `GET /api/recipes/:id/guidance-drafts` is admin-only and lists stored versions for review.
+- `POST /api/recipes/:id/guidance-drafts` is admin-only and explicitly persists the next
+  deterministic version. The repository's unique `(recipeId, version)` key closes concurrent
+  creation races with a refreshable conflict; preview remains non-persisting.
+- `PATCH /api/recipes/:id/guidance-drafts/:version` is admin-only and replaces one named section of
+  a `draft` or `in_review` document. The request supplies `expectedUpdatedAt`; the server preserves
+  the stable section ID, advances `updatedAt`, schema-validates the complete aggregate, and uses the
+  repository compare-and-swap replacement. Updated text must be explicitly human-reviewed.
+- Section updates fail closed if the canonical recipe has changed since the immutable draft
+  snapshot. Clients must create a new version rather than editing old ingredient or step facts.
 - `GET /api/recipes/:id/guidance` returns only the latest published version after checking both the
   recipe and document audience for non-admin users. It returns the recipe alongside the document
   only when their immutable revision IDs match; until historical recipe snapshots are available, a
   stale published document fails closed instead of resolving references against newer facts.
 - Preview and published-read responses include the authorized canonical recipe snapshot so clients
   can resolve immutable ingredient and step references without reconstructing facts.
-- Every route fails closed when the dedicated guidance store is unavailable. No route in this slice
-  performs Sluice work, migration apply, publication, OmniPost actions, or deployment.
+- Every route fails closed when the dedicated guidance store is unavailable. Draft creation and
+  section replacement do not transition review/publication state and perform no Sluice work,
+  migration apply, publication, OmniPost action, or deployment.
 
 ## Request flow
 
