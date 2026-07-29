@@ -30,7 +30,9 @@ Added a fail-closed lifecycle around the versioned recipe-guidance documents.
   immutable and may only be archived without content changes; archived content stays immutable.
 - Recipe edits and publication share a fail-fast, per-recipe mutation lease. Live Mongo stores an
   expiring lease in `recipe_mutation_locks`; publication acquires it before re-reading both records,
-  closing the cross-collection recipe-revision race identified during PR review.
+  renews it while the mutation remains active, reasserts ownership immediately before the final
+  repository write, and releases it with an owner-token condition. This closes the cross-collection
+  recipe-revision race and slow-mutation expiry cases identified during PR review.
 - Existing audience-authorized reads continue to return only the latest published version.
 
 ## Changed files
@@ -62,7 +64,7 @@ pnpm exec prettier --check <changed TypeScript and Markdown files>
 git diff --check
 ```
 
-- Focused result: 5 files, 72 tests passed.
+- Focused result: 5 files, 74 tests passed.
 - TypeScript, full repository lint, and production build passed.
 - Build generated all 125 routes, including the readiness and transition routes.
 - Browser verification is not applicable because this slice adds no page or interactive UI.

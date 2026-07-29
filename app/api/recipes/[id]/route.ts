@@ -159,7 +159,7 @@ export const PATCH = withRole(
     const id = params?.id
     if (!id) return NextResponse.json({ error: "Recipe ID is required" }, { status: 400 })
 
-    return await withRecipeMutationLock(id, async () => {
+    return await withRecipeMutationLock(id, async (lease) => {
       const existingByRole = await ensureEditableRecipe(id, context, true)
       if (existingByRole instanceof Response) return existingByRole
       const recipePayload = existingByRole as RecipeRecord
@@ -173,6 +173,7 @@ export const PATCH = withRole(
       const validation = validateRecipe(merged)
       if (validation) return NextResponse.json({ error: validation }, { status: 400 })
 
+      await lease.assertOwned()
       const updated = await replaceRecipe(merged)
       if (!updated) return NextResponse.json({ error: "Recipe not found" }, { status: 404 })
       return NextResponse.json({ recipe: updated })

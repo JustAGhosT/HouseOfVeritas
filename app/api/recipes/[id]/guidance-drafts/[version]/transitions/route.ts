@@ -59,6 +59,7 @@ async function applyTransition(params: {
   version: number
   input: TransitionInput
   userId: string
+  assertMutationLock?: () => Promise<void>
 }): Promise<NextResponse> {
   const recipe = await getRecipeById(params.recipeId)
   if (!recipe) return NextResponse.json({ error: "Recipe not found" }, { status: 404 })
@@ -144,6 +145,7 @@ async function applyTransition(params: {
       { status: 422 }
     )
   }
+  await params.assertMutationLock?.()
   const updatedDocument = await repository.replace(replacement, expectedUpdatedAt)
   return NextResponse.json({
     data: { document: updatedDocument },
@@ -180,15 +182,16 @@ export const POST = withRole("admin")(async (request, context) => {
       return NextResponse.json({ error: "Invalid recipe guidance transition" }, { status: 400 })
     }
 
-    const transition = () =>
+    const transition = (assertMutationLock?: () => Promise<void>) =>
       applyTransition({
         recipeId,
         version,
         input: parsedInput.data,
         userId: context.userId,
+        assertMutationLock,
       })
     return parsedInput.data.action === "publish"
-      ? await withRecipeMutationLock(recipeId, transition)
+      ? await withRecipeMutationLock(recipeId, (lease) => transition(lease.assertOwned))
       : await transition()
   } catch (error) {
     if (
