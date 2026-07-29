@@ -1,5 +1,10 @@
 import { z } from "zod"
 import type { RecipeRecord } from "@/lib/recipes"
+import {
+  createRecipeRevisionId,
+  guidanceTimerSchema,
+  type GuidanceTimer,
+} from "@/lib/recipe-guidance"
 
 export const GUIDANCE_KINDS = [
   "procedure",
@@ -22,6 +27,9 @@ export interface GuidanceStepDraft {
   check?: string
   warning?: string
   timerMinutes?: number
+  timer?: GuidanceTimer
+  sourceRecipeStepId?: string
+  sourceRecipeRevisionId?: string
 }
 
 export interface GuidanceDraft {
@@ -33,6 +41,10 @@ export interface GuidanceDraft {
   tools: string[]
   safety: string[]
   steps: GuidanceStepDraft[]
+  sourceRecipeId?: string
+  sourceRecipeUpdatedAt?: string
+  sourceRecipeRevisionId?: string
+  sourceRecipeIngredientIds?: string[]
 }
 
 export function hasGuidanceSafetyBoundaries(draft: GuidanceDraft): boolean {
@@ -83,18 +95,77 @@ export const guidanceStepDraftSchema = z.object({
   check: optionalShortText,
   warning: optionalShortText,
   timerMinutes: z.number().int().positive().max(1_440).optional(),
+  timer: guidanceTimerSchema.optional(),
+  sourceRecipeStepId: z.string().trim().min(1).max(200).optional(),
+  sourceRecipeRevisionId: z.string().trim().min(1).max(500).optional(),
 })
 
-export const guidanceDraftSchema = z.object({
-  kind: z.enum(GUIDANCE_KINDS),
-  locale: z.enum(GUIDANCE_LOCALES),
-  title: z.string().trim().min(1).max(160),
-  summary: z.string().trim().min(1).max(1_000),
-  materials: z.array(z.string().trim().min(1).max(160)).max(40).default([]),
-  tools: z.array(z.string().trim().min(1).max(160)).max(40).default([]),
-  safety: z.array(z.string().trim().min(1).max(500)).max(20).default([]),
-  steps: z.array(guidanceStepDraftSchema).min(1).max(20),
-})
+export const guidanceDraftSchema = z
+  .object({
+    kind: z.enum(GUIDANCE_KINDS),
+    locale: z.enum(GUIDANCE_LOCALES),
+    title: z.string().trim().min(1).max(160),
+    summary: z.string().trim().min(1).max(1_000),
+    materials: z.array(z.string().trim().min(1).max(160)).max(40).default([]),
+    tools: z.array(z.string().trim().min(1).max(160)).max(40).default([]),
+    safety: z.array(z.string().trim().min(1).max(500)).max(20).default([]),
+    steps: z.array(guidanceStepDraftSchema).min(1).max(20),
+    sourceRecipeId: z.string().trim().min(1).max(200).optional(),
+    sourceRecipeUpdatedAt: z.string().datetime({ offset: true }).optional(),
+    sourceRecipeRevisionId: z.string().trim().min(1).max(500).optional(),
+    sourceRecipeIngredientIds: z.array(z.string().trim().min(1).max(200)).max(100).optional(),
+  })
+  .superRefine((draft, context) => {
+    const hasRecipeProvenance =
+      draft.sourceRecipeId !== undefined ||
+      draft.sourceRecipeUpdatedAt !== undefined ||
+      draft.sourceRecipeRevisionId !== undefined ||
+      draft.sourceRecipeIngredientIds !== undefined ||
+      draft.steps.some(
+        (step) => step.sourceRecipeStepId !== undefined || step.sourceRecipeRevisionId !== undefined
+      )
+    if (!hasRecipeProvenance) return
+
+    for (const field of [
+      "sourceRecipeId",
+      "sourceRecipeUpdatedAt",
+      "sourceRecipeRevisionId",
+    ] as const) {
+      if (!draft[field]) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [field],
+          message: `${field} is required for recipe provenance`,
+        })
+      }
+    }
+
+    const expectedRevisionId =
+      draft.sourceRecipeId && draft.sourceRecipeUpdatedAt
+        ? createRecipeRevisionId(draft.sourceRecipeId, draft.sourceRecipeUpdatedAt)
+        : undefined
+    if (expectedRevisionId && draft.sourceRecipeRevisionId !== expectedRevisionId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["sourceRecipeRevisionId"],
+        message: "sourceRecipeRevisionId must identify the declared recipe snapshot",
+      })
+    }
+
+    draft.steps.forEach((step, index) => {
+      const hasStepProvenance =
+        step.sourceRecipeStepId !== undefined || step.sourceRecipeRevisionId !== undefined
+      if (!hasStepProvenance) return
+
+      if (!step.sourceRecipeStepId || step.sourceRecipeRevisionId !== expectedRevisionId) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["steps", index, "sourceRecipeRevisionId"],
+          message: "sourced steps must target the draft's immutable recipe revision",
+        })
+      }
+    })
+  })
 
 export function parseGuidanceDraft(input: unknown): GuidanceDraft | null {
   const parsed = guidanceDraftSchema.safeParse(input)
@@ -109,18 +180,54 @@ export function parseGuidanceDraft(input: unknown): GuidanceDraft | null {
   }
 }
 
-export function recipeToGuidanceDraft(
-  recipe: RecipeRecord,
-  locale: GuidanceLocale
-): GuidanceDraft {
+export function guidanceMatchesRecipeSnapshot(draft: GuidanceDraft, recipe: RecipeRecord): boolean {
+  if (draft.kind !== "recipe") return false
+  const revisionId = createRecipeRevisionId(recipe.id, recipe.updatedAt)
+  if (
+    draft.sourceRecipeId !== recipe.id ||
+    draft.sourceRecipeUpdatedAt !== recipe.updatedAt ||
+    draft.sourceRecipeRevisionId !== revisionId
+  ) {
+    return false
+  }
+
+  const ingredientIds = new Set(recipe.ingredients.map((ingredient) => ingredient.id))
+  if (draft.sourceRecipeIngredientIds?.some((id) => !ingredientIds.has(id))) return false
+
+  const expected = recipeToGuidanceDraft(recipe, draft.locale)
+  if (
+    draft.title !== expected.title ||
+    draft.summary !== expected.summary ||
+    JSON.stringify(draft.materials) !== JSON.stringify(expected.materials) ||
+    JSON.stringify(draft.sourceRecipeIngredientIds) !==
+      JSON.stringify(expected.sourceRecipeIngredientIds) ||
+    draft.steps.length !== expected.steps.length
+  ) {
+    return false
+  }
+
+  return draft.steps.every((step, index) => {
+    const expectedStep = expected.steps[index]
+    return (
+      step.order === expectedStep.order &&
+      step.title === expectedStep.title &&
+      step.instruction === expectedStep.instruction &&
+      step.timerMinutes === expectedStep.timerMinutes &&
+      JSON.stringify(step.timer) === JSON.stringify(expectedStep.timer) &&
+      step.sourceRecipeStepId === expectedStep.sourceRecipeStepId &&
+      step.sourceRecipeRevisionId === revisionId
+    )
+  })
+}
+
+export function recipeToGuidanceDraft(recipe: RecipeRecord, locale: GuidanceLocale): GuidanceDraft {
   const isAfrikaans = locale === "af"
+  const sourceRecipeRevisionId = createRecipeRevisionId(recipe.id, recipe.updatedAt)
   return {
     kind: "recipe",
     locale,
     title: isAfrikaans ? recipe.titleAf : recipe.titleEn,
-    summary: isAfrikaans
-      ? recipe.summaryAf || recipe.titleAf
-      : recipe.summaryEn || recipe.titleEn,
+    summary: isAfrikaans ? recipe.summaryAf || recipe.titleAf : recipe.summaryEn || recipe.titleEn,
     materials: recipe.ingredients.map((ingredient) =>
       [ingredient.quantity, ingredient.unit, ingredient.name, ingredient.preparationNote]
         .filter(Boolean)
@@ -128,6 +235,10 @@ export function recipeToGuidanceDraft(
     ),
     tools: [],
     safety: [],
+    sourceRecipeId: recipe.id,
+    sourceRecipeUpdatedAt: recipe.updatedAt,
+    sourceRecipeRevisionId,
+    sourceRecipeIngredientIds: recipe.ingredients.map((ingredient) => ingredient.id),
     steps: recipe.steps
       .slice()
       .sort((left, right) => left.order - right.order)
@@ -136,6 +247,10 @@ export function recipeToGuidanceDraft(
         title: step.section || `${isAfrikaans ? "Stap" : "Step"} ${index + 1}`,
         instruction: isAfrikaans ? step.instructionAf : step.instructionEn,
         timerMinutes: step.timerMinutes,
+        timer:
+          step.timerMinutes === undefined ? undefined : { minimumSeconds: step.timerMinutes * 60 },
+        sourceRecipeStepId: step.id,
+        sourceRecipeRevisionId,
       })),
   }
 }

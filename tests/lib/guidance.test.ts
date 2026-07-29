@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { parseGuidanceDraft, recipeToGuidanceDraft } from "@/lib/guidance"
+import {
+  guidanceMatchesRecipeSnapshot,
+  parseGuidanceDraft,
+  recipeToGuidanceDraft,
+} from "@/lib/guidance"
 import type { RecipeRecord } from "@/lib/recipes"
 
 describe("task guidance", () => {
@@ -33,6 +37,29 @@ describe("task guidance", () => {
     ).toBeNull()
   })
 
+  it("rejects contradictory immutable recipe provenance", () => {
+    expect(
+      parseGuidanceDraft({
+        kind: "recipe",
+        locale: "en",
+        title: "Fried rice",
+        summary: "A quick meal.",
+        sourceRecipeId: "recipe-a",
+        sourceRecipeUpdatedAt: "2026-07-24T00:00:00.000Z",
+        sourceRecipeRevisionId: "recipe-b@2026-07-24T00:00:00.000Z",
+        steps: [
+          {
+            order: 1,
+            title: "Cook",
+            instruction: "Cook the rice.",
+            sourceRecipeStepId: "cook",
+            sourceRecipeRevisionId: "recipe-c@2026-07-24T00:00:00.000Z",
+          },
+        ],
+      })
+    ).toBeNull()
+  })
+
   it("adapts recipes into the shared guidance shape", () => {
     const recipe = {
       id: "recipe-1",
@@ -56,9 +83,7 @@ describe("task guidance", () => {
         attributionText: "House",
         retrievedAt: "2026-07-24",
       },
-      ingredients: [
-        { id: "rice", quantity: "2", unit: "cups", name: "rice" },
-      ],
+      ingredients: [{ id: "rice", quantity: "2", unit: "cups", name: "rice" }],
       steps: [
         {
           id: "cook",
@@ -75,5 +100,26 @@ describe("task guidance", () => {
     expect(guidance.kind).toBe("recipe")
     expect(guidance.title).toBe("Gebraaide rys")
     expect(guidance.steps[0].instruction).toBe("Kook die rys.")
+    expect(guidance.sourceRecipeId).toBe("recipe-1")
+    expect(guidance.sourceRecipeRevisionId).toBe("recipe-1@2026-07-24T00:00:00.000Z")
+    expect(guidance.sourceRecipeIngredientIds).toEqual(["rice"])
+    expect(guidance.steps[0].sourceRecipeStepId).toBe("cook")
+    expect(guidance.steps[0].sourceRecipeRevisionId).toBe("recipe-1@2026-07-24T00:00:00.000Z")
+    expect(guidanceMatchesRecipeSnapshot(guidance, recipe)).toBe(true)
+    expect(
+      guidanceMatchesRecipeSnapshot(guidance, {
+        ...recipe,
+        updatedAt: "2026-07-25T00:00:00.000Z",
+      })
+    ).toBe(false)
+    expect(
+      guidanceMatchesRecipeSnapshot(
+        {
+          ...guidance,
+          steps: [{ ...guidance.steps[0], instruction: "Invented instruction." }],
+        },
+        recipe
+      )
+    ).toBe(false)
   })
 })

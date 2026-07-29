@@ -87,9 +87,10 @@ _Note: 06 reserved for future deployment documentation._
 
 Dated session continuity notes (root cause, files changed, verification, next-owner steps).
 
-| Document                                                                                              | Description                                                                          |
-| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| [2026-07-11-mystira-oidc-prod-login-fix.md](handoffs/2026-07-11-mystira-oidc-prod-login-fix.md)       | Production login `/api/auth/error` fix — Mystira OIDC app settings + AUTH_TRUST_HOST |
-| [2026-07-20-prod-telemetry-project-store.md](handoffs/2026-07-20-prod-telemetry-project-store.md)     | Production telemetry and project datastore remediation handoff                       |
-| [2026-07-22-project-datastore-ai-hardening.md](handoffs/2026-07-22-project-datastore-ai-hardening.md) | Project datastore API and AI project suggestion hardening closeout                   |
-| [2026-07-28-user-selectable-themes.md](handoffs/2026-07-28-user-selectable-themes.md)                 | User-selectable workspace themes implementation, review, and merge handoff           |
+| Document                                                                                                  | Description                                                                          |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| [2026-07-11-mystira-oidc-prod-login-fix.md](handoffs/2026-07-11-mystira-oidc-prod-login-fix.md)           | Production login `/api/auth/error` fix — Mystira OIDC app settings + AUTH_TRUST_HOST |
+| [2026-07-20-prod-telemetry-project-store.md](handoffs/2026-07-20-prod-telemetry-project-store.md)         | Production telemetry and project datastore remediation handoff                       |
+| [2026-07-22-project-datastore-ai-hardening.md](handoffs/2026-07-22-project-datastore-ai-hardening.md)     | Project datastore API and AI project suggestion hardening closeout                   |
+| [2026-07-28-recipe-guidance-phase1-contracts.md](handoffs/2026-07-28-recipe-guidance-phase1-contracts.md) | Recipe guidance Phase 1 typed document and media contracts                           |
+| [2026-07-28-user-selectable-themes.md](handoffs/2026-07-28-user-selectable-themes.md)                     | User-selectable workspace themes implementation, review, and merge handoff           |

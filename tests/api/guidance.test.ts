@@ -2,11 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { POST as analyzePhoto } from "@/app/api/guidance/analyze/route"
 import { GET, POST as saveGuidance } from "@/app/api/guidance/route"
 import { generateTaskGuidanceWithSluice } from "@/lib/integrations/sluice"
+import { recipeToGuidanceDraft } from "@/lib/guidance"
 import {
   createAndBindGuidance,
   getActiveGuidanceForTask,
 } from "@/lib/repositories/guidance-repository"
 import { getProjectNamesForMember } from "@/lib/projects"
+import { getRecipeById } from "@/lib/repositories/recipe-repository"
 import { getTask } from "@/lib/services/baserow"
 import { getUploadMetadataById } from "@/lib/uploads"
 
@@ -21,6 +23,10 @@ vi.mock("@/lib/repositories/guidance-repository", () => ({
 
 vi.mock("@/lib/projects", () => ({
   getProjectNamesForMember: vi.fn(),
+}))
+
+vi.mock("@/lib/repositories/recipe-repository", () => ({
+  getRecipeById: vi.fn(),
 }))
 
 vi.mock("@/lib/services/baserow", () => ({
@@ -245,6 +251,146 @@ describe("task guidance API", () => {
 
     expect(response.status).toBe(200)
     expect((await response.json()).data.guidance).toBeNull()
+  })
+
+  it("rechecks recipe publication and audience before returning recipe guidance", async () => {
+    vi.mocked(getActiveGuidanceForTask).mockResolvedValue({
+      ...draft,
+      kind: "recipe",
+      id: "guidance-1",
+      version: 1,
+      status: "published",
+      sourceRecipeId: "recipe-private",
+      sourceRecipeUpdatedAt: "2026-07-24T00:00:00.000Z",
+      sourceRecipeRevisionId: "recipe-private@2026-07-24T00:00:00.000Z",
+      sourceRecipeIngredientIds: [],
+      steps: [{ ...draft.steps[0], id: "step-1" }],
+      source: { type: "recipe", recipeId: "recipe-private" },
+      createdBy: "hans",
+      createdAt: "2026-07-24T00:00:00.000Z",
+      updatedAt: "2026-07-24T00:00:00.000Z",
+    })
+    vi.mocked(getRecipeById).mockResolvedValue({
+      id: "recipe-private",
+      status: "draft",
+      ownerUserId: "hans",
+      audienceUserIds: ["charl"],
+      titleEn: "Private recipe",
+      titleAf: "Private resep",
+      image: {
+        url: "/private.jpg",
+        source: "House",
+        license: "Owned",
+        attributionText: "House",
+        retrievedAt: "2026-07-24",
+      },
+      ingredients: [],
+      steps: [],
+      createdAt: "2026-07-24T00:00:00.000Z",
+      updatedAt: "2026-07-24T00:00:00.000Z",
+    })
+
+    const response = await GET(
+      new Request("http://localhost/api/guidance?taskId=42", { headers: authHeaders })
+    )
+
+    expect(response.status).toBe(403)
+    expect((await response.json()).error).toBe("You do not have access to this recipe.")
+  })
+
+  it("rechecks access and returns authorized legacy recipe guidance", async () => {
+    const legacyGuidance = {
+      ...draft,
+      kind: "recipe" as const,
+      id: "guidance-legacy",
+      version: 1,
+      status: "published" as const,
+      steps: [{ ...draft.steps[0], id: "step-1" }],
+      source: { type: "recipe" as const, recipeId: "recipe-legacy" },
+      createdBy: "hans",
+      createdAt: "2026-07-24T00:00:00.000Z",
+      updatedAt: "2026-07-24T00:00:00.000Z",
+    }
+    vi.mocked(getActiveGuidanceForTask).mockResolvedValue(legacyGuidance)
+    vi.mocked(getRecipeById).mockResolvedValue({
+      id: "recipe-legacy",
+      status: "published",
+      ownerUserId: "hans",
+      audienceUserIds: ["irma"],
+      titleEn: "Legacy recipe",
+      titleAf: "Legacy resep",
+      image: {
+        url: "/legacy.jpg",
+        source: "House",
+        license: "Owned",
+        attributionText: "House",
+        retrievedAt: "2026-07-24",
+      },
+      ingredients: [],
+      steps: [],
+      createdAt: "2026-07-24T00:00:00.000Z",
+      updatedAt: "2026-07-24T00:00:00.000Z",
+    })
+
+    const response = await GET(
+      new Request("http://localhost/api/guidance?taskId=42", { headers: authHeaders })
+    )
+
+    expect(response.status).toBe(200)
+    expect((await response.json()).data.guidance).toEqual(legacyGuidance)
+  })
+
+  it("does not let an admin bind guidance from an unpublished recipe", async () => {
+    const recipe = {
+      id: "recipe-draft",
+      status: "draft" as const,
+      ownerUserId: "hans",
+      audienceUserIds: ["irma"],
+      titleEn: "Draft recipe",
+      titleAf: "Konsepresép",
+      image: {
+        url: "/draft.jpg",
+        source: "House",
+        license: "Owned",
+        attributionText: "House",
+        retrievedAt: "2026-07-24",
+      },
+      ingredients: [{ id: "ingredient-1", name: "Rice" }],
+      steps: [
+        {
+          id: "step-1",
+          order: 1,
+          instructionEn: "Cook the rice.",
+          instructionAf: "Kook die rys.",
+        },
+      ],
+      createdAt: "2026-07-24T00:00:00.000Z",
+      updatedAt: "2026-07-24T00:00:00.000Z",
+    }
+    const recipeDraft = recipeToGuidanceDraft(recipe, "en")
+    vi.mocked(getRecipeById).mockResolvedValue(recipe)
+
+    const response = await saveGuidance(
+      new Request("http://localhost/api/guidance", {
+        method: "POST",
+        headers: { ...authHeaders, "x-user-id": "hans", "x-user-role": "admin" },
+        body: JSON.stringify({
+          taskId: "42",
+          draft: {
+            ...recipeDraft,
+            safety: ["Use heat-safe equipment."],
+            steps: recipeDraft.steps.map((step) => ({
+              ...step,
+              warning: "Stop if the equipment is unsafe.",
+            })),
+          },
+          source: { type: "recipe", recipeId: recipe.id },
+        }),
+      })
+    )
+
+    expect(response.status).toBe(403)
+    expect(createAndBindGuidance).not.toHaveBeenCalled()
   })
 
   it("does not expose guidance for a task outside the resident's assignment and projects", async () => {
