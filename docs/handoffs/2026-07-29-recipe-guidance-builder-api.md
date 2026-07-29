@@ -51,7 +51,7 @@ pnpm exec prettier --check <changed TypeScript and Markdown files>
 git diff --check
 ```
 
-- Focused result after review remediation: 4 files, 51 tests passed.
+- Focused result after review remediation: 4 files, 52 tests passed.
 - Production build passed with all 125 routes generated, including the three new recipe-guidance
   routes.
 - Exact-head review remediation rejects a published read when only a newer recipe revision is
@@ -59,6 +59,7 @@ git diff --check
   facts.
 - Zero-minute recipe values are treated as no timer so valid recipes do not produce an invalid
   guidance timer.
+- Zero-serving recipe sentinels are omitted while valid preparation and cooking metrics remain.
 - Browser verification is not applicable because this slice adds no page or interactive UI.
 - Exact-head CI remains required before merge.
 

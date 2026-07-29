@@ -141,6 +141,18 @@ describe("buildRecipeGuidanceDraft", () => {
     expect(cooking?.blocks[0]).not.toHaveProperty("timer")
   })
 
+  it("omits a zero-serving sentinel while preserving other metrics", () => {
+    const document = buildRecipeGuidanceDraft(
+      { ...recipe, servings: 0 },
+      { version: 1, createdBy: "hans", now }
+    )
+    const identity = document.sections.find((section) => section.kind === "identity")
+    const metrics = identity?.blocks.find((block) => block.type === "metrics")
+
+    expect(metrics).toMatchObject({ prepMinutes: 10, cookMinutes: 20 })
+    expect(metrics).not.toHaveProperty("servings")
+  })
+
   it("rejects recipes that cannot supply canonical ingredient and step references", () => {
     expect(() =>
       buildRecipeGuidanceDraft(

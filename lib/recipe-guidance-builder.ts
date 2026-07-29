@@ -36,6 +36,7 @@ function buildSections(
     let blocks: RecipeGuidanceBlock[] = []
 
     if (kind === "identity") {
+      const servings = recipe.servings === 0 ? undefined : recipe.servings
       applicability = "required"
       blocks = [
         {
@@ -55,14 +56,14 @@ function buildSections(
         },
       ]
       if (
-        recipe.servings !== undefined ||
+        servings !== undefined ||
         recipe.prepMinutes !== undefined ||
         recipe.cookMinutes !== undefined
       ) {
         blocks.push({
           id: `${id}:metrics`,
           type: "metrics",
-          servings: recipe.servings,
+          ...(servings === undefined ? {} : { servings }),
           prepMinutes: recipe.prepMinutes,
           cookMinutes: recipe.cookMinutes,
         })
