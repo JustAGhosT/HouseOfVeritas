@@ -41,6 +41,24 @@ Keeping it separate prevents those invariants from weakening the smaller, task-o
   canonical recipe. It selects at most one rebuild for each recipe revision and never promotes
   legacy publication or review state automatically.
 
+### Deterministic recipe draft and read boundary
+
+`buildRecipeGuidanceDraft()` maps one immutable recipe snapshot into the fixed nine-section order.
+It copies canonical ingredient and ordered step IDs, converts recipe timers to seconds, carries the
+bilingual title and summary as recipe-sourced (not human-reviewed) text, and adapts licensed hero
+media into `review_required` or `unavailable` state. It never invents safety, allergen, storage, or
+image-brief content.
+
+- `POST /api/recipes/:id/guidance-drafts/preview` is admin-only and returns the next deterministic
+  version with `persisted: false`; it does not call repository create/replace methods.
+- `GET /api/recipes/:id/guidance-drafts` is admin-only and lists stored versions for review.
+- `GET /api/recipes/:id/guidance` returns only the latest published version after checking both the
+  recipe and document audience for non-admin users.
+- Preview and published-read responses include the authorized canonical recipe snapshot so clients
+  can resolve immutable ingredient and step references without reconstructing facts.
+- Every route fails closed when the dedicated guidance store is unavailable. No route in this slice
+  performs Sluice work, migration apply, publication, OmniPost actions, or deployment.
+
 ## Request flow
 
 1. A resident opens Guidance from a task and captures or chooses a photo.
