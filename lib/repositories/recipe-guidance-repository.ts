@@ -90,6 +90,8 @@ function assertReplacementAllowed(
     current.id !== next.id ||
     current.recipeId !== next.recipeId ||
     current.recipeRevisionId !== next.recipeRevisionId ||
+    JSON.stringify(current.recipeIngredientIds) !== JSON.stringify(next.recipeIngredientIds) ||
+    JSON.stringify(current.recipeStepIds) !== JSON.stringify(next.recipeStepIds) ||
     current.version !== next.version ||
     current.createdAt !== next.createdAt ||
     current.createdBy !== next.createdBy

@@ -30,7 +30,8 @@ without rewriting existing task bindings.
 - Requires `updatedAt` to advance on every replacement and serializes explicit-demo file mutations
   across their complete read/check/write sequence.
 - Requires new versions to begin as drafts. Rejects duplicate versions, immutable identity changes,
-  direct draft-to-published transitions, published-content changes, and archived-version changes.
+  recipe-manifest changes, direct draft-to-published transitions, published-content changes, and
+  archived-version changes.
 - Keeps tests/E2E empty by default and requires `ALLOW_DEMO_DATA=true` before local JSON persistence
   is available without Mongo. The flag enables storage, not seed content.
 
@@ -73,7 +74,7 @@ pnpm exec tsc --noEmit
 pnpm run lint
 ```
 
-- Focused result after review remediation: 3 files, 42 tests passed.
+- Focused result after the final manifest-immutability remediation: 3 files, 43 tests passed.
 - The first worktree dependency install timed out and left partial links. Those generated links were
   replaced with a local junction to the primary checkout's lockfile-matching `node_modules`; no
   package or lockfile changed.

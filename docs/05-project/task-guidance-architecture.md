@@ -24,6 +24,8 @@ Keeping it separate prevents those invariants from weakening the smaller, task-o
 `GuidancePack` contract.
 
 - Document IDs are unique, and `(recipeId, version)` is a unique version key.
+- Recipe revision IDs and their ordered ingredient/step manifests are immutable within a document
+  version; a canonical recipe change requires a new version.
 - Stored values are schema-validated on reads and writes; invalid persisted documents fail closed.
 - Draft and in-review replacements use `updatedAt` optimistic concurrency. Published content is
   immutable; a published version may only transition to archived without changing its content, and

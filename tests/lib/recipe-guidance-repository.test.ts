@@ -134,6 +134,33 @@ describe("recipe guidance repository", () => {
     ).rejects.toBeInstanceOf(RecipeGuidanceConflictError)
   })
 
+  it("keeps recipe ingredient and step manifests immutable within a version", async () => {
+    const { repository } = await getRecipeGuidanceRepository()
+    const document = buildDocument()
+    await repository.create(document)
+
+    await expect(
+      repository.replace(
+        {
+          ...document,
+          recipeIngredientIds: ["invented-ingredient"],
+          updatedAt: "2026-07-29T08:01:00.000Z",
+        },
+        document.updatedAt
+      )
+    ).rejects.toBeInstanceOf(RecipeGuidanceConflictError)
+    await expect(
+      repository.replace(
+        {
+          ...document,
+          recipeStepIds: ["invented-step"],
+          updatedAt: "2026-07-29T08:01:00.000Z",
+        },
+        document.updatedAt
+      )
+    ).rejects.toBeInstanceOf(RecipeGuidanceConflictError)
+  })
+
   it("requires every new version to begin as a draft", async () => {
     const { repository } = await getRecipeGuidanceRepository()
 
