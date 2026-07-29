@@ -76,6 +76,10 @@ serving counts must be positive; other valid preparation/cooking metrics remain 
 - Lifecycle order is `draft -> in_review -> published -> archived`. In-review versions cannot move
   back to draft, published versions can only be archived without content changes, and archived
   versions remain immutable.
+- Recipe `PATCH` and guidance `publish` share a per-recipe mutation lease. Test/demo execution uses
+  an in-process fail-fast lock; live Mongo uses an expiring `recipe_mutation_locks` lease keyed by
+  recipe ID. Publication acquires the lease before re-reading the recipe and guidance version, so a
+  concurrent recipe edit cannot land between revision validation and the publication write.
 - `GET /api/recipes/:id/guidance` returns only the latest published version after checking both the
   recipe and document audience for non-admin users. It returns the recipe alongside the document
   only when their immutable revision IDs match; until historical recipe snapshots are available, a

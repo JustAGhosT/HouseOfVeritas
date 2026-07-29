@@ -8,10 +8,11 @@ import { GET as inspectPublicationReadiness } from "@/app/api/recipes/[id]/guida
 import { POST as transitionDraft } from "@/app/api/recipes/[id]/guidance-drafts/[version]/transitions/route"
 import { POST as previewDraft } from "@/app/api/recipes/[id]/guidance-drafts/preview/route"
 import { GET as readPublished } from "@/app/api/recipes/[id]/guidance/route"
+import { PATCH as updateRecipe } from "@/app/api/recipes/[id]/route"
 import { buildRecipeGuidanceDraft } from "@/lib/recipe-guidance-builder"
 import { parseRecipeGuidanceDocument } from "@/lib/recipe-guidance"
 import { getRecipeGuidanceRepository } from "@/lib/repositories/recipe-guidance-repository"
-import { getRecipeById } from "@/lib/repositories/recipe-repository"
+import { getRecipeById, replaceRecipe } from "@/lib/repositories/recipe-repository"
 import type { RecipeRecord } from "@/lib/recipes"
 
 vi.mock("@/lib/repositories/recipe-guidance-repository", async (importOriginal) => ({
@@ -21,6 +22,7 @@ vi.mock("@/lib/repositories/recipe-guidance-repository", async (importOriginal) 
 
 vi.mock("@/lib/repositories/recipe-repository", () => ({
   getRecipeById: vi.fn(),
+  replaceRecipe: vi.fn(),
 }))
 
 const routeContext = { params: Promise.resolve({ id: "recipe-1" }) }
@@ -136,6 +138,7 @@ describe("recipe guidance APIs", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(getRecipeById).mockResolvedValue(recipe)
+    vi.mocked(replaceRecipe).mockResolvedValue(recipe)
     repository.listByRecipeId.mockResolvedValue([existingDocument])
     repository.findLatestPublished.mockResolvedValue(existingDocument)
     repository.create.mockImplementation(async (document) => document)
@@ -506,6 +509,48 @@ describe("recipe guidance APIs", () => {
       }),
       published.updatedAt
     )
+  })
+
+  it("serializes recipe edits and publication before rechecking the recipe revision", async () => {
+    let releaseRecipeUpdate: ((value: RecipeRecord) => void) | undefined
+    vi.mocked(replaceRecipe).mockImplementationOnce(
+      () =>
+        new Promise<RecipeRecord>((resolve) => {
+          releaseRecipeUpdate = resolve
+        })
+    )
+    const updatePromise = updateRecipe(
+      jsonRequestFor("/api/recipes/recipe-1", "hans", "admin", "PATCH", {
+        titleEn: "Updated household supper",
+      }),
+      routeContext
+    )
+    await vi.waitFor(() => expect(replaceRecipe).toHaveBeenCalledOnce())
+
+    repository.listByRecipeId.mockResolvedValueOnce([buildPublishableInReviewDocument()])
+    const publishResponse = await transitionDraft(
+      jsonRequestFor(
+        "/api/recipes/recipe-1/guidance-drafts/2/transitions",
+        "hans",
+        "admin",
+        "POST",
+        {
+          action: "publish",
+          expectedUpdatedAt: existingDocument.updatedAt,
+        }
+      ),
+      versionRouteContext
+    )
+
+    expect(publishResponse.status).toBe(409)
+    expect(repository.replace).not.toHaveBeenCalled()
+
+    releaseRecipeUpdate?.({
+      ...recipe,
+      titleEn: "Updated household supper",
+      updatedAt: "2026-07-29T10:30:00.000Z",
+    })
+    expect((await updatePromise).status).toBe(200)
   })
 
   it("keeps lifecycle and readiness routes admin-only", async () => {

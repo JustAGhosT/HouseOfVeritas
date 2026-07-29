@@ -28,6 +28,9 @@ Added a fail-closed lifecycle around the versioned recipe-guidance documents.
   must be reviewed again.
 - The repository rejects backward `in_review -> draft` movement. Published content remains
   immutable and may only be archived without content changes; archived content stays immutable.
+- Recipe edits and publication share a fail-fast, per-recipe mutation lease. Live Mongo stores an
+  expiring lease in `recipe_mutation_locks`; publication acquires it before re-reading both records,
+  closing the cross-collection recipe-revision race identified during PR review.
 - Existing audience-authorized reads continue to return only the latest published version.
 
 ## Changed files
@@ -37,9 +40,11 @@ Added a fail-closed lifecycle around the versioned recipe-guidance documents.
 - `app/api/recipes/[id]/guidance-drafts/[version]/transitions/route.ts`
 - `lib/recipe-guidance.ts`
 - `lib/repositories/recipe-guidance-repository.ts`
+- `lib/repositories/recipe-mutation-lock.ts`
 - `tests/api/recipe-guidance.test.ts`
 - `tests/lib/recipe-guidance.test.ts`
 - `tests/lib/recipe-guidance-repository.test.ts`
+- `tests/lib/recipe-mutation-lock.test.ts`
 - `docs/05-project/task-guidance-architecture.md`
 - `docs/handoffs/2026-07-29-recipe-guidance-lifecycle.md`
 - `docs/README.md`
@@ -49,7 +54,7 @@ Added a fail-closed lifecycle around the versioned recipe-guidance documents.
 Passed locally:
 
 ```text
-pnpm exec vitest run tests/api/recipe-guidance.test.ts tests/lib/recipe-guidance.test.ts tests/lib/recipe-guidance-repository.test.ts tests/lib/recipe-guidance-builder.test.ts
+pnpm exec vitest run tests/api/recipe-guidance.test.ts tests/lib/recipe-guidance.test.ts tests/lib/recipe-guidance-repository.test.ts tests/lib/recipe-guidance-builder.test.ts tests/lib/recipe-mutation-lock.test.ts
 pnpm exec tsc --noEmit
 pnpm run lint
 pnpm run build
@@ -57,7 +62,7 @@ pnpm exec prettier --check <changed TypeScript and Markdown files>
 git diff --check
 ```
 
-- Focused result: 4 files, 67 tests passed.
+- Focused result: 5 files, 72 tests passed.
 - TypeScript, full repository lint, and production build passed.
 - Build generated all 125 routes, including the readiness and transition routes.
 - Browser verification is not applicable because this slice adds no page or interactive UI.
