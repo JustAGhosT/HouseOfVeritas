@@ -2,14 +2,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const mongoMocks = vi.hoisted(() => ({
   configured: false,
+  endSession: vi.fn(),
   findOneAndUpdate: vi.fn(),
   getCollection: vi.fn(),
+  startMongoSession: vi.fn(),
   updateOne: vi.fn(),
+  withTransaction: vi.fn(),
 }))
 
 vi.mock("@/lib/db/mongodb", () => ({
   getCollection: mongoMocks.getCollection,
   isMongoConfigured: () => mongoMocks.configured,
+  startMongoSession: mongoMocks.startMongoSession,
 }))
 
 import {
@@ -34,6 +38,12 @@ describe("recipe mutation lock", () => {
       fence: 7,
     })
     mongoMocks.updateOne.mockReset().mockResolvedValue({ matchedCount: 1, upsertedCount: 0 })
+    mongoMocks.withTransaction.mockReset().mockImplementation(async (operation) => operation())
+    mongoMocks.endSession.mockReset().mockResolvedValue(undefined)
+    mongoMocks.startMongoSession.mockReset().mockResolvedValue({
+      withTransaction: mongoMocks.withTransaction,
+      endSession: mongoMocks.endSession,
+    })
     mongoMocks.getCollection.mockReset().mockResolvedValue({
       findOneAndUpdate: mongoMocks.findOneAndUpdate,
       updateOne: mongoMocks.updateOne,
@@ -159,5 +169,31 @@ describe("recipe mutation lock", () => {
     ).rejects.toBeInstanceOf(RecipeMutationConflictError)
 
     expect(write).not.toHaveBeenCalled()
+  })
+
+  it("verifies the shared fence and target write in one Mongo transaction", async () => {
+    vi.stubEnv("NODE_ENV", "production")
+    mongoMocks.configured = true
+    const write = vi.fn().mockResolvedValue("updated")
+
+    await expect(
+      withRecipeMutationLock("recipe-1", (lease) => lease.runFencedWrite(write))
+    ).resolves.toBe("updated")
+
+    const ownerToken = mongoMocks.findOneAndUpdate.mock.calls[0][1].$set.ownerToken
+    const session = await mongoMocks.startMongoSession.mock.results[0].value
+    expect(mongoMocks.updateOne).toHaveBeenNthCalledWith(
+      1,
+      {
+        _id: "recipe-1",
+        ownerToken,
+        fence: 7,
+        expiresAt: { $gt: expect.any(Date) },
+      },
+      { $set: { expiresAt: expect.any(Date) } },
+      { session }
+    )
+    expect(write).toHaveBeenCalledWith(session)
+    expect(mongoMocks.endSession).toHaveBeenCalledOnce()
   })
 })

@@ -14,6 +14,7 @@ import {
   getRecipeGuidanceRepository,
 } from "@/lib/repositories/recipe-guidance-repository"
 import {
+  type RecipeMutationLease,
   RecipeMutationConflictError,
   withRecipeMutationLock,
 } from "@/lib/repositories/recipe-mutation-lock"
@@ -59,8 +60,7 @@ async function applyTransition(params: {
   version: number
   input: TransitionInput
   userId: string
-  assertMutationLock?: () => Promise<void>
-  mutationFence?: number
+  runFencedWrite?: RecipeMutationLease["runFencedWrite"]
 }): Promise<NextResponse> {
   const recipe = await getRecipeById(params.recipeId)
   if (!recipe) return NextResponse.json({ error: "Recipe not found" }, { status: 404 })
@@ -146,13 +146,13 @@ async function applyTransition(params: {
       { status: 422 }
     )
   }
-  await params.assertMutationLock?.()
-  const updatedDocument =
-    params.mutationFence === undefined
-      ? await repository.replace(replacement, expectedUpdatedAt)
-      : await repository.replace(replacement, expectedUpdatedAt, {
-          mutationFence: params.mutationFence,
-        })
+  const replace = (session?: import("mongodb").ClientSession) =>
+    session
+      ? repository.replace(replacement, expectedUpdatedAt, { session })
+      : repository.replace(replacement, expectedUpdatedAt)
+  const updatedDocument = params.runFencedWrite
+    ? await params.runFencedWrite(replace)
+    : await repository.replace(replacement, expectedUpdatedAt)
   return NextResponse.json({
     data: { document: updatedDocument },
     summary: { mode, action, status: updatedDocument.status, version: updatedDocument.version },
@@ -188,14 +188,13 @@ export const POST = withRole("admin")(async (request, context) => {
       return NextResponse.json({ error: "Invalid recipe guidance transition" }, { status: 400 })
     }
 
-    const transition = (mutationLock?: { assertOwned: () => Promise<void>; fence?: number }) =>
+    const transition = (mutationLock?: RecipeMutationLease) =>
       applyTransition({
         recipeId,
         version,
         input: parsedInput.data,
         userId: context.userId,
-        assertMutationLock: mutationLock?.assertOwned,
-        mutationFence: mutationLock?.fence,
+        runFencedWrite: mutationLock?.runFencedWrite,
       })
     return parsedInput.data.action === "publish"
       ? await withRecipeMutationLock(recipeId, transition)

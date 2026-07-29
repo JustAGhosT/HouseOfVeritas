@@ -30,11 +30,11 @@ Added a fail-closed lifecycle around the versioned recipe-guidance documents.
   immutable and may only be archived without content changes; archived content stays immutable.
 - Recipe edits and publication share a fail-fast, per-recipe mutation lease. Live Mongo stores an
   expiring lease in `recipe_mutation_locks`; publication acquires it before re-reading both records,
-  renews it while the mutation remains active, reasserts ownership immediately before the final
-  repository write, and releases it with an owner-token condition. Each acquisition increments a
-  durable fencing token, and both target repositories reject a write carrying an older token. This
-  closes the cross-collection recipe-revision race, slow-mutation expiry, and stalled-final-write
-  cases identified during PR review.
+  renews it while the mutation remains active, and releases it with an owner-token condition. Each
+  acquisition increments a durable shared fencing token. The final recipe or guidance replacement
+  runs in the same Mongo transaction as an owner-and-fence check on the shared lease document, so
+  both target collections use one ordering point. This closes the cross-collection recipe-revision
+  race, slow-mutation expiry, and stalled-final-write cases identified during PR review.
 - Existing audience-authorized reads continue to return only the latest published version.
 
 ## Changed files
@@ -51,7 +51,7 @@ Added a fail-closed lifecycle around the versioned recipe-guidance documents.
 - `tests/lib/recipe-guidance.test.ts`
 - `tests/lib/recipe-guidance-repository.test.ts`
 - `tests/lib/recipe-mutation-lock.test.ts`
-- `tests/lib/recipe-repository-fence.test.ts`
+- `tests/lib/recipe-repository-session.test.ts`
 - `docs/05-project/task-guidance-architecture.md`
 - `docs/handoffs/2026-07-29-recipe-guidance-lifecycle.md`
 - `docs/README.md`
@@ -61,7 +61,7 @@ Added a fail-closed lifecycle around the versioned recipe-guidance documents.
 Passed locally:
 
 ```text
-pnpm exec vitest run tests/api/recipe-guidance.test.ts tests/lib/recipe-guidance.test.ts tests/lib/recipe-guidance-repository.test.ts tests/lib/recipe-guidance-builder.test.ts tests/lib/recipe-mutation-lock.test.ts tests/lib/recipe-repository-fence.test.ts
+pnpm exec vitest run tests/api/recipe-guidance.test.ts tests/lib/recipe-guidance.test.ts tests/lib/recipe-guidance-repository.test.ts tests/lib/recipe-guidance-builder.test.ts tests/lib/recipe-mutation-lock.test.ts tests/lib/recipe-repository-session.test.ts
 pnpm exec tsc --noEmit
 pnpm run lint
 pnpm run build

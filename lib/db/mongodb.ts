@@ -1,4 +1,4 @@
-import { MongoClient, Db, Collection, ObjectId } from "mongodb"
+import { MongoClient, Db, Collection, ObjectId, type ClientSession } from "mongodb"
 import { logger } from "@/lib/logger"
 
 let client: MongoClient | null = null
@@ -72,11 +72,15 @@ export async function getDatabase(): Promise<Db> {
   }
 }
 
-export async function getCollection<T extends object>(
-  name: string
-): Promise<Collection<T>> {
+export async function getCollection<T extends object>(name: string): Promise<Collection<T>> {
   const database = await getDatabase()
   return database.collection<T>(name)
+}
+
+export async function startMongoSession(): Promise<ClientSession> {
+  await getDatabase()
+  if (!client) throw new Error("MongoDB client is not connected")
+  return client.startSession()
 }
 
 // Close connection (for cleanup)
@@ -108,7 +112,8 @@ export function sanitizeDocument<T extends { _id?: ObjectId }>(
   const rest = withoutMongoId(doc)
   return {
     ...rest,
-    id: "id" in rest && typeof rest.id === "string" && rest.id ? rest.id : doc._id?.toString() || "",
+    id:
+      "id" in rest && typeof rest.id === "string" && rest.id ? rest.id : doc._id?.toString() || "",
   } as Omit<T, "_id"> & { id: string }
 }
 

@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { RecipeRecord } from "@/lib/recipes"
 
 const mongoMocks = vi.hoisted(() => ({
-  findOne: vi.fn(),
   getCollection: vi.fn(),
   replaceOne: vi.fn(),
 }))
@@ -16,7 +15,7 @@ vi.mock("@/lib/db/mongodb", () => ({
   },
 }))
 
-import { getRecipeById, replaceRecipe } from "@/lib/repositories/recipe-repository"
+import { replaceRecipe } from "@/lib/repositories/recipe-repository"
 
 const recipe: RecipeRecord = {
   id: "recipe-1",
@@ -38,36 +37,28 @@ const recipe: RecipeRecord = {
   updatedAt: "2026-07-29T08:00:00.000Z",
 }
 
-describe("recipe repository mutation fencing", () => {
+describe("recipe repository transaction session", () => {
   beforeEach(() => {
     vi.stubEnv("NODE_ENV", "production")
     vi.stubEnv("CI", "")
     vi.stubEnv("E2E_TEST", "")
     vi.stubEnv("MONGODB_URI", "mongodb://configured")
-    mongoMocks.findOne.mockReset()
     mongoMocks.replaceOne.mockReset().mockResolvedValue({ matchedCount: 1 })
     mongoMocks.getCollection.mockReset().mockResolvedValue({
-      findOne: mongoMocks.findOne,
       replaceOne: mongoMocks.replaceOne,
     })
   })
 
-  it("conditions a live replacement on a newer fencing token", async () => {
-    const updated = await replaceRecipe(recipe, { mutationFence: 11 })
+  it("uses the supplied Mongo session for the target replacement", async () => {
+    const session = { id: "session-1" }
 
-    expect(updated).not.toHaveProperty("mutationFence")
-    expect(mongoMocks.replaceOne).toHaveBeenCalledWith(
-      {
-        id: recipe.id,
-        $or: [{ mutationFence: { $exists: false } }, { mutationFence: { $lt: 11 } }],
-      },
-      expect.objectContaining({ id: recipe.id, mutationFence: 11 })
+    await expect(replaceRecipe(recipe, { session: session as never })).resolves.toEqual(
+      expect.objectContaining({ id: recipe.id })
     )
-  })
-
-  it("does not expose an internal fencing token on reads", async () => {
-    mongoMocks.findOne.mockResolvedValueOnce({ ...recipe, mutationFence: 11 })
-
-    await expect(getRecipeById(recipe.id)).resolves.toEqual(recipe)
+    expect(mongoMocks.replaceOne).toHaveBeenCalledWith(
+      { id: recipe.id },
+      expect.objectContaining({ id: recipe.id }),
+      { session }
+    )
   })
 })

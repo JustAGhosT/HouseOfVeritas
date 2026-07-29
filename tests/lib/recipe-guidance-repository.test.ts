@@ -284,19 +284,20 @@ describe("recipe guidance repository", () => {
 
     mongoMocks.findOne.mockResolvedValueOnce(document)
     mongoMocks.replaceOne.mockResolvedValueOnce({ matchedCount: 1 })
-    const fencedUpdate = {
+    const transactionalUpdate = {
       ...document,
       status: "in_review" as const,
       updatedAt: "2026-07-29T08:02:00.000Z",
     }
-    await repository.replace(fencedUpdate, document.updatedAt, { mutationFence: 9 })
+    const session = { id: "session-1" }
+    await repository.replace(transactionalUpdate, document.updatedAt, {
+      session: session as never,
+    })
+    expect(mongoMocks.findOne).toHaveBeenLastCalledWith({ id: document.id }, { session })
     expect(mongoMocks.replaceOne).toHaveBeenLastCalledWith(
-      {
-        id: document.id,
-        updatedAt: document.updatedAt,
-        $or: [{ mutationFence: { $exists: false } }, { mutationFence: { $lt: 9 } }],
-      },
-      { ...fencedUpdate, mutationFence: 9 }
+      { id: document.id, updatedAt: document.updatedAt },
+      transactionalUpdate,
+      { session }
     )
   })
 
