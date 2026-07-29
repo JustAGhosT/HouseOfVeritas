@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const mongoMocks = vi.hoisted(() => ({
   configured: false,
-  deleteOne: vi.fn(),
+  findOneAndUpdate: vi.fn(),
   getCollection: vi.fn(),
   updateOne: vi.fn(),
 }))
@@ -27,11 +27,16 @@ describe("recipe mutation lock", () => {
     vi.stubEnv("CI", "")
     vi.stubEnv("E2E_TEST", "")
     mongoMocks.configured = false
-    mongoMocks.deleteOne.mockReset().mockResolvedValue({ deletedCount: 1 })
-    mongoMocks.updateOne.mockReset().mockResolvedValue({ matchedCount: 0, upsertedCount: 1 })
+    mongoMocks.findOneAndUpdate.mockReset().mockResolvedValue({
+      _id: "recipe-1",
+      ownerToken: "owner",
+      expiresAt: new Date(),
+      fence: 7,
+    })
+    mongoMocks.updateOne.mockReset().mockResolvedValue({ matchedCount: 1, upsertedCount: 0 })
     mongoMocks.getCollection.mockReset().mockResolvedValue({
+      findOneAndUpdate: mongoMocks.findOneAndUpdate,
       updateOne: mongoMocks.updateOne,
-      deleteOne: mongoMocks.deleteOne,
     })
     resetRecipeMutationLocksForTests()
   })
@@ -69,43 +74,47 @@ describe("recipe mutation lock", () => {
     vi.stubEnv("NODE_ENV", "production")
     mongoMocks.configured = true
 
-    await expect(withRecipeMutationLock("recipe-1", async () => "published")).resolves.toBe(
-      "published"
-    )
+    await expect(
+      withRecipeMutationLock("recipe-1", async (lease) => ({
+        value: "published",
+        fence: lease.fence,
+      }))
+    ).resolves.toEqual({ value: "published", fence: 7 })
 
     expect(mongoMocks.getCollection).toHaveBeenCalledWith(RECIPE_MUTATION_LOCK_COLLECTION)
-    expect(mongoMocks.updateOne).toHaveBeenCalledWith(
+    expect(mongoMocks.findOneAndUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ _id: "recipe-1" }),
       expect.objectContaining({
+        $inc: { fence: 1 },
         $set: expect.objectContaining({
           ownerToken: expect.any(String),
           expiresAt: expect.any(Date),
         }),
       }),
-      { upsert: true }
+      { upsert: true, returnDocument: "after", includeResultMetadata: false }
     )
-    const ownerToken = mongoMocks.updateOne.mock.calls[0][1].$set.ownerToken
-    expect(mongoMocks.deleteOne).toHaveBeenCalledWith({ _id: "recipe-1", ownerToken })
+    const ownerToken = mongoMocks.findOneAndUpdate.mock.calls[0][1].$set.ownerToken
+    expect(mongoMocks.updateOne).toHaveBeenCalledWith(
+      { _id: "recipe-1", ownerToken },
+      { $set: { expiresAt: new Date(0) }, $unset: { ownerToken: "" } }
+    )
   })
 
   it("maps an occupied Mongo lease to a retryable mutation conflict", async () => {
     vi.stubEnv("NODE_ENV", "production")
     mongoMocks.configured = true
-    mongoMocks.updateOne.mockRejectedValueOnce({ code: 11000 })
+    mongoMocks.findOneAndUpdate.mockRejectedValueOnce({ code: 11000 })
 
     await expect(withRecipeMutationLock("recipe-1", async () => "not-run")).rejects.toBeInstanceOf(
       RecipeMutationConflictError
     )
-    expect(mongoMocks.deleteOne).not.toHaveBeenCalled()
+    expect(mongoMocks.updateOne).not.toHaveBeenCalled()
   })
 
   it("renews a live Mongo lease until a slow mutation finishes", async () => {
     vi.useFakeTimers()
     vi.stubEnv("NODE_ENV", "production")
     mongoMocks.configured = true
-    mongoMocks.updateOne
-      .mockResolvedValueOnce({ matchedCount: 0, upsertedCount: 1 })
-      .mockResolvedValue({ matchedCount: 1, upsertedCount: 0 })
     let finish: (() => void) | undefined
 
     const mutation = withRecipeMutationLock(
@@ -115,12 +124,12 @@ describe("recipe mutation lock", () => {
           finish = resolve
         })
     )
-    await vi.waitFor(() => expect(mongoMocks.updateOne).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(mongoMocks.findOneAndUpdate).toHaveBeenCalledTimes(1))
 
     await vi.advanceTimersByTimeAsync(RECIPE_MUTATION_LOCK_RENEWAL_MS)
-    expect(mongoMocks.updateOne).toHaveBeenCalledTimes(2)
-    const ownerToken = mongoMocks.updateOne.mock.calls[0][1].$set.ownerToken
-    expect(mongoMocks.updateOne.mock.calls[1][0]).toEqual(
+    expect(mongoMocks.updateOne).toHaveBeenCalledTimes(1)
+    const ownerToken = mongoMocks.findOneAndUpdate.mock.calls[0][1].$set.ownerToken
+    expect(mongoMocks.updateOne.mock.calls[0][0]).toEqual(
       expect.objectContaining({
         _id: "recipe-1",
         ownerToken,
@@ -130,15 +139,16 @@ describe("recipe mutation lock", () => {
 
     finish?.()
     await mutation
-    expect(mongoMocks.deleteOne).toHaveBeenCalledWith({ _id: "recipe-1", ownerToken })
+    expect(mongoMocks.updateOne).toHaveBeenLastCalledWith(
+      { _id: "recipe-1", ownerToken },
+      { $set: { expiresAt: new Date(0) }, $unset: { ownerToken: "" } }
+    )
   })
 
   it("fails closed before a guarded write when Mongo lease ownership is lost", async () => {
     vi.stubEnv("NODE_ENV", "production")
     mongoMocks.configured = true
-    mongoMocks.updateOne
-      .mockResolvedValueOnce({ matchedCount: 0, upsertedCount: 1 })
-      .mockResolvedValueOnce({ matchedCount: 0, upsertedCount: 0 })
+    mongoMocks.updateOne.mockResolvedValueOnce({ matchedCount: 0, upsertedCount: 0 })
     const write = vi.fn()
 
     await expect(

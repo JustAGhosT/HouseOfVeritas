@@ -9,7 +9,10 @@ export const RECIPE_GUIDANCE_COLLECTION = "recipe_guidance_documents"
 
 const RECIPE_GUIDANCE_FILE = join(process.cwd(), "data", "recipe-guidance-documents.json")
 
-type RecipeGuidanceMongoDocument = RecipeGuidanceDocument & { _id?: ObjectId }
+type RecipeGuidanceMongoDocument = RecipeGuidanceDocument & {
+  _id?: ObjectId
+  mutationFence?: number
+}
 export type RecipeGuidanceRepositoryMode = "memory" | "file" | "mongodb"
 
 export class RecipeGuidanceConflictError extends Error {}
@@ -23,7 +26,8 @@ export interface RecipeGuidanceRepository {
   create(document: RecipeGuidanceDocument): Promise<RecipeGuidanceDocument>
   replace(
     document: RecipeGuidanceDocument,
-    expectedUpdatedAt: string
+    expectedUpdatedAt: string,
+    options?: { mutationFence?: number }
   ): Promise<RecipeGuidanceDocument>
 }
 
@@ -280,7 +284,7 @@ async function createMongoRepository(): Promise<RecipeGuidanceRepository> {
       }
       return clone(document)
     },
-    async replace(input, expectedUpdatedAt) {
+    async replace(input, expectedUpdatedAt, options) {
       const document = validateWrite(input)
       const current = await collection.findOne({ id: document.id })
       if (!current) throw new RecipeGuidanceConflictError("Recipe guidance was not found")
@@ -289,9 +293,22 @@ async function createMongoRepository(): Promise<RecipeGuidanceRepository> {
         document,
         expectedUpdatedAt
       )
+      const replacement: RecipeGuidanceMongoDocument =
+        options?.mutationFence === undefined
+          ? document
+          : { ...document, mutationFence: options.mutationFence }
       const result = await collection.replaceOne(
-        { id: document.id, updatedAt: expectedUpdatedAt },
-        document
+        options?.mutationFence === undefined
+          ? { id: document.id, updatedAt: expectedUpdatedAt }
+          : {
+              id: document.id,
+              updatedAt: expectedUpdatedAt,
+              $or: [
+                { mutationFence: { $exists: false } },
+                { mutationFence: { $lt: options.mutationFence } },
+              ],
+            },
+        replacement
       )
       if (result.matchedCount === 0) {
         throw new RecipeGuidanceConflictError("Recipe guidance changed before this update")

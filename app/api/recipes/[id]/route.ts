@@ -174,8 +174,10 @@ export const PATCH = withRole(
       if (validation) return NextResponse.json({ error: validation }, { status: 400 })
 
       await lease.assertOwned()
-      const updated = await replaceRecipe(merged)
-      if (!updated) return NextResponse.json({ error: "Recipe not found" }, { status: 404 })
+      const updated = await replaceRecipe(merged, { mutationFence: lease.fence })
+      if (!updated) {
+        throw new RecipeMutationConflictError("Recipe changed before the fenced update")
+      }
       return NextResponse.json({ recipe: updated })
     })
   } catch (error) {

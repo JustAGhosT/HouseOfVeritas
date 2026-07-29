@@ -7,8 +7,9 @@ export const RECIPE_MUTATION_LOCK_COLLECTION = "recipe_mutation_locks"
 
 interface RecipeMutationLockDocument {
   _id: string
-  ownerToken: string
+  ownerToken?: string
   expiresAt: Date
+  fence: number
 }
 
 const LOCK_LEASE_MS = 60_000
@@ -19,6 +20,7 @@ export class RecipeMutationConflictError extends Error {}
 
 export interface RecipeMutationLease {
   assertOwned: () => Promise<void>
+  fence?: number
 }
 
 function isDuplicateKeyError(error: unknown): boolean {
@@ -51,12 +53,12 @@ async function acquireMongoLock(
   collection: Collection<RecipeMutationLockDocument>,
   recipeId: string,
   ownerToken: string
-): Promise<void> {
+): Promise<number> {
   const now = new Date()
   const expiresAt = new Date(now.getTime() + LOCK_LEASE_MS)
 
   try {
-    const result = await collection.updateOne(
+    const document = await collection.findOneAndUpdate(
       {
         _id: recipeId,
         $or: [{ expiresAt: { $lte: now } }, { ownerToken }],
@@ -64,12 +66,14 @@ async function acquireMongoLock(
       {
         $set: { ownerToken, expiresAt },
         $setOnInsert: { _id: recipeId },
+        $inc: { fence: 1 },
       },
-      { upsert: true }
+      { upsert: true, returnDocument: "after", includeResultMetadata: false }
     )
-    if (result.matchedCount === 0 && result.upsertedCount === 0) {
+    if (!document || !Number.isSafeInteger(document.fence) || document.fence < 1) {
       throw new RecipeMutationConflictError("Recipe is being changed by another request")
     }
+    return document.fence
   } catch (error) {
     if (isDuplicateKeyError(error)) {
       throw new RecipeMutationConflictError("Recipe is being changed by another request")
@@ -119,7 +123,7 @@ export async function withRecipeMutationLock<T>(
     RECIPE_MUTATION_LOCK_COLLECTION
   )
   const ownerToken = randomUUID()
-  await acquireMongoLock(collection, normalizedRecipeId, ownerToken)
+  const fence = await acquireMongoLock(collection, normalizedRecipeId, ownerToken)
 
   let renewalFailure: unknown
   let renewalInFlight: Promise<void> | undefined
@@ -148,19 +152,24 @@ export async function withRecipeMutationLock<T>(
   renewalTimer.unref?.()
 
   try {
-    const result = await operation({ assertOwned })
+    const result = await operation({ assertOwned, fence })
     if (renewalInFlight) await renewalInFlight
     if (renewalFailure) throw renewalFailure
     return result
   } finally {
     clearInterval(renewalTimer)
     if (renewalInFlight) await renewalInFlight
-    await collection.deleteOne({ _id: normalizedRecipeId, ownerToken }).catch((error) => {
-      logger.error("Failed to release recipe mutation lock", {
-        recipeId: normalizedRecipeId,
-        error: error instanceof Error ? error.message : String(error),
+    await collection
+      .updateOne(
+        { _id: normalizedRecipeId, ownerToken },
+        { $set: { expiresAt: new Date(0) }, $unset: { ownerToken: "" } }
+      )
+      .catch((error) => {
+        logger.error("Failed to release recipe mutation lock", {
+          recipeId: normalizedRecipeId,
+          error: error instanceof Error ? error.message : String(error),
+        })
       })
-    })
   }
 }
 

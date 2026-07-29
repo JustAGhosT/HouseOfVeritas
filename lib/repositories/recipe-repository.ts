@@ -23,7 +23,7 @@ const RECIPES_COLLECTION = "recipes"
 const RECIPE_MEAL_INSTANCES_COLLECTION = "recipe_meal_instances"
 const RECIPE_RATINGS_COLLECTION = "recipe_ratings"
 
-type RecipeDocument = RecipeRecord & { _id?: ObjectId }
+type RecipeDocument = RecipeRecord & { _id?: ObjectId; mutationFence?: number }
 type RecipeMealInstanceDocument = RecipeMealInstance & { _id?: ObjectId }
 type RecipeRatingDocument = RecipeRating & { _id?: ObjectId }
 
@@ -173,6 +173,11 @@ function sortByCreatedAtDescending<T extends { createdAt: string }>(items: T[]):
   })
 }
 
+function withoutRecipeMetadata(document: RecipeDocument): RecipeRecord {
+  const { mutationFence: _mutationFence, ...recipe } = withoutMongoId(document)
+  return recipe
+}
+
 function sortByServedAtDescending<T extends { servedAt: string }>(items: T[]): T[] {
   return [...items].sort((left, right) => {
     return new Date(right.servedAt).getTime() - new Date(left.servedAt).getTime()
@@ -246,7 +251,7 @@ export async function listRecipes(filters?: RecipeListFilter): Promise<RecipeRec
   }
 
   const recipes = await collection.find(mongoFilter).sort({ createdAt: -1 }).toArray()
-  return recipes.map((recipe) => withoutMongoId(recipe))
+  return recipes.map(withoutRecipeMetadata)
 }
 
 export async function countRecipes(): Promise<number> {
@@ -272,7 +277,7 @@ export async function getRecipeById(id: string): Promise<RecipeRecord | null> {
   const collection = await getCollection<RecipeDocument>(RECIPES_COLLECTION)
   const recipe = await collection.findOne({ id } as Filter<RecipeDocument>)
   if (!recipe) return null
-  return withoutMongoId(recipe)
+  return withoutRecipeMetadata(recipe)
 }
 
 export async function seedSampleRecipes(
@@ -337,7 +342,10 @@ export async function createRecipe(data: RecipeRecord): Promise<RecipeRecord> {
   return data
 }
 
-export async function replaceRecipe(updated: RecipeRecord): Promise<RecipeRecord | null> {
+export async function replaceRecipe(
+  updated: RecipeRecord,
+  options?: { mutationFence?: number }
+): Promise<RecipeRecord | null> {
   requireProductionStore()
   if (isUsingMemoryStore()) {
     const recipes = await readRecipes()
@@ -350,10 +358,21 @@ export async function replaceRecipe(updated: RecipeRecord): Promise<RecipeRecord
 
   const collection = await getCollection<RecipeDocument>(RECIPES_COLLECTION)
   const updatedRecord = { ...updated, updatedAt: new Date().toISOString() }
-  const result = await collection.replaceOne(
-    { id: updated.id } as Filter<RecipeDocument>,
-    updatedRecord as RecipeDocument
-  )
+  const replacement: RecipeDocument =
+    options?.mutationFence === undefined
+      ? updatedRecord
+      : { ...updatedRecord, mutationFence: options.mutationFence }
+  const filter: Filter<RecipeDocument> =
+    options?.mutationFence === undefined
+      ? ({ id: updated.id } as Filter<RecipeDocument>)
+      : ({
+          id: updated.id,
+          $or: [
+            { mutationFence: { $exists: false } },
+            { mutationFence: { $lt: options.mutationFence } },
+          ],
+        } as Filter<RecipeDocument>)
+  const result = await collection.replaceOne(filter, replacement)
   if (result.matchedCount === 0) return null
   return updatedRecord
 }

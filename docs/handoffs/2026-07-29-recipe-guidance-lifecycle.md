@@ -31,8 +31,10 @@ Added a fail-closed lifecycle around the versioned recipe-guidance documents.
 - Recipe edits and publication share a fail-fast, per-recipe mutation lease. Live Mongo stores an
   expiring lease in `recipe_mutation_locks`; publication acquires it before re-reading both records,
   renews it while the mutation remains active, reasserts ownership immediately before the final
-  repository write, and releases it with an owner-token condition. This closes the cross-collection
-  recipe-revision race and slow-mutation expiry cases identified during PR review.
+  repository write, and releases it with an owner-token condition. Each acquisition increments a
+  durable fencing token, and both target repositories reject a write carrying an older token. This
+  closes the cross-collection recipe-revision race, slow-mutation expiry, and stalled-final-write
+  cases identified during PR review.
 - Existing audience-authorized reads continue to return only the latest published version.
 
 ## Changed files
@@ -40,13 +42,16 @@ Added a fail-closed lifecycle around the versioned recipe-guidance documents.
 - `app/api/recipes/[id]/guidance-drafts/[version]/route.ts`
 - `app/api/recipes/[id]/guidance-drafts/[version]/publication-readiness/route.ts`
 - `app/api/recipes/[id]/guidance-drafts/[version]/transitions/route.ts`
+- `app/api/recipes/[id]/route.ts`
 - `lib/recipe-guidance.ts`
 - `lib/repositories/recipe-guidance-repository.ts`
 - `lib/repositories/recipe-mutation-lock.ts`
+- `lib/repositories/recipe-repository.ts`
 - `tests/api/recipe-guidance.test.ts`
 - `tests/lib/recipe-guidance.test.ts`
 - `tests/lib/recipe-guidance-repository.test.ts`
 - `tests/lib/recipe-mutation-lock.test.ts`
+- `tests/lib/recipe-repository-fence.test.ts`
 - `docs/05-project/task-guidance-architecture.md`
 - `docs/handoffs/2026-07-29-recipe-guidance-lifecycle.md`
 - `docs/README.md`
@@ -56,7 +61,7 @@ Added a fail-closed lifecycle around the versioned recipe-guidance documents.
 Passed locally:
 
 ```text
-pnpm exec vitest run tests/api/recipe-guidance.test.ts tests/lib/recipe-guidance.test.ts tests/lib/recipe-guidance-repository.test.ts tests/lib/recipe-guidance-builder.test.ts tests/lib/recipe-mutation-lock.test.ts
+pnpm exec vitest run tests/api/recipe-guidance.test.ts tests/lib/recipe-guidance.test.ts tests/lib/recipe-guidance-repository.test.ts tests/lib/recipe-guidance-builder.test.ts tests/lib/recipe-mutation-lock.test.ts tests/lib/recipe-repository-fence.test.ts
 pnpm exec tsc --noEmit
 pnpm run lint
 pnpm run build
@@ -64,7 +69,7 @@ pnpm exec prettier --check <changed TypeScript and Markdown files>
 git diff --check
 ```
 
-- Focused result: 5 files, 74 tests passed.
+- Focused result: 6 files, 76 tests passed.
 - TypeScript, full repository lint, and production build passed.
 - Build generated all 125 routes, including the readiness and transition routes.
 - Browser verification is not applicable because this slice adds no page or interactive UI.

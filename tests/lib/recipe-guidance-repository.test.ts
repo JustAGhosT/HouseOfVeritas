@@ -281,6 +281,23 @@ describe("recipe guidance repository", () => {
         document.updatedAt
       )
     ).rejects.toBeInstanceOf(RecipeGuidanceConflictError)
+
+    mongoMocks.findOne.mockResolvedValueOnce(document)
+    mongoMocks.replaceOne.mockResolvedValueOnce({ matchedCount: 1 })
+    const fencedUpdate = {
+      ...document,
+      status: "in_review" as const,
+      updatedAt: "2026-07-29T08:02:00.000Z",
+    }
+    await repository.replace(fencedUpdate, document.updatedAt, { mutationFence: 9 })
+    expect(mongoMocks.replaceOne).toHaveBeenLastCalledWith(
+      {
+        id: document.id,
+        updatedAt: document.updatedAt,
+        $or: [{ mutationFence: { $exists: false } }, { mutationFence: { $lt: 9 } }],
+      },
+      { ...fencedUpdate, mutationFence: 9 }
+    )
   })
 
   it("fails closed when Mongo returns an invalid stored document", async () => {

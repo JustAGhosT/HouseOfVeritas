@@ -60,6 +60,7 @@ async function applyTransition(params: {
   input: TransitionInput
   userId: string
   assertMutationLock?: () => Promise<void>
+  mutationFence?: number
 }): Promise<NextResponse> {
   const recipe = await getRecipeById(params.recipeId)
   if (!recipe) return NextResponse.json({ error: "Recipe not found" }, { status: 404 })
@@ -146,7 +147,12 @@ async function applyTransition(params: {
     )
   }
   await params.assertMutationLock?.()
-  const updatedDocument = await repository.replace(replacement, expectedUpdatedAt)
+  const updatedDocument =
+    params.mutationFence === undefined
+      ? await repository.replace(replacement, expectedUpdatedAt)
+      : await repository.replace(replacement, expectedUpdatedAt, {
+          mutationFence: params.mutationFence,
+        })
   return NextResponse.json({
     data: { document: updatedDocument },
     summary: { mode, action, status: updatedDocument.status, version: updatedDocument.version },
@@ -182,16 +188,17 @@ export const POST = withRole("admin")(async (request, context) => {
       return NextResponse.json({ error: "Invalid recipe guidance transition" }, { status: 400 })
     }
 
-    const transition = (assertMutationLock?: () => Promise<void>) =>
+    const transition = (mutationLock?: { assertOwned: () => Promise<void>; fence?: number }) =>
       applyTransition({
         recipeId,
         version,
         input: parsedInput.data,
         userId: context.userId,
-        assertMutationLock,
+        assertMutationLock: mutationLock?.assertOwned,
+        mutationFence: mutationLock?.fence,
       })
     return parsedInput.data.action === "publish"
-      ? await withRecipeMutationLock(recipeId, (lease) => transition(lease.assertOwned))
+      ? await withRecipeMutationLock(recipeId, transition)
       : await transition()
   } catch (error) {
     if (

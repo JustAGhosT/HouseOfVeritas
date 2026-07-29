@@ -80,9 +80,11 @@ serving counts must be positive; other valid preparation/cooking metrics remain 
   an in-process fail-fast lock; live Mongo uses an expiring `recipe_mutation_locks` lease keyed by
   recipe ID. The owner renews that lease while the mutation remains active and releases it with an
   owner-token condition. Both mutation paths reassert and renew ownership immediately before their
-  final repository write. Publication acquires the lease before re-reading the recipe and guidance
-  version, so a concurrent recipe edit cannot land between revision validation and the publication
-  write.
+  final repository write. Each acquisition also increments a durable fencing token; recipe and
+  guidance replacements accept only a newer token, so a stalled older write cannot overwrite a
+  newer mutation even after lease takeover. Publication acquires the lease before re-reading the
+  recipe and guidance version, so a concurrent recipe edit cannot land between revision validation
+  and the publication write.
 - `GET /api/recipes/:id/guidance` returns only the latest published version after checking both the
   recipe and document audience for non-admin users. It returns the recipe alongside the document
   only when their immutable revision IDs match; until historical recipe snapshots are available, a
