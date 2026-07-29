@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { withRole } from "@/lib/auth/rbac"
 import { logger } from "@/lib/logger"
+import { createRecipeRevisionId } from "@/lib/recipe-guidance"
 import { isRecipeAudienceMatch } from "@/lib/recipes"
 import { getRecipeGuidanceRepository } from "@/lib/repositories/recipe-guidance-repository"
 import { getRecipeById } from "@/lib/repositories/recipe-repository"
@@ -43,6 +44,12 @@ export const GET = withRole(
       return NextResponse.json(
         { error: "You do not have access to this guidance" },
         { status: 403 }
+      )
+    }
+    if (document.recipeRevisionId !== createRecipeRevisionId(recipe.id, recipe.updatedAt)) {
+      return NextResponse.json(
+        { error: "Published guidance recipe revision is unavailable" },
+        { status: 409 }
       )
     }
 

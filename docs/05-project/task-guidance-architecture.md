@@ -53,7 +53,9 @@ image-brief content.
   version with `persisted: false`; it does not call repository create/replace methods.
 - `GET /api/recipes/:id/guidance-drafts` is admin-only and lists stored versions for review.
 - `GET /api/recipes/:id/guidance` returns only the latest published version after checking both the
-  recipe and document audience for non-admin users.
+  recipe and document audience for non-admin users. It returns the recipe alongside the document
+  only when their immutable revision IDs match; until historical recipe snapshots are available, a
+  stale published document fails closed instead of resolving references against newer facts.
 - Preview and published-read responses include the authorized canonical recipe snapshot so clients
   can resolve immutable ingredient and step references without reconstructing facts.
 - Every route fails closed when the dedicated guidance store is unavailable. No route in this slice

@@ -24,7 +24,7 @@ Added the deterministic bridge from canonical `RecipeRecord` snapshots to versio
 - Produces an admin-only preview of the next version and explicitly reports `persisted: false`.
 - Returns only the latest published guidance to authorized recipe/document audience members.
 - Includes the authorized recipe snapshot beside reference-based documents for deterministic
-  rendering.
+  rendering, and fails closed if that snapshot no longer matches the published document revision.
 
 ## Changed files
 
@@ -51,9 +51,12 @@ pnpm exec prettier --check <changed TypeScript and Markdown files>
 git diff --check
 ```
 
-- Focused result before final closeout: 4 files, 49 tests passed.
+- Focused result after exact-revision review remediation: 4 files, 50 tests passed.
 - Production build passed with all 125 routes generated, including the three new recipe-guidance
   routes.
+- Exact-head review remediation rejects a published read when only a newer recipe revision is
+  available, preventing immutable ingredient and step references from resolving against changed
+  facts.
 - Browser verification is not applicable because this slice adds no page or interactive UI.
 - Exact-head CI remains required before merge.
 

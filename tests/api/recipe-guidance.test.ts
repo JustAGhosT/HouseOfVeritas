@@ -154,4 +154,22 @@ describe("recipe guidance APIs", () => {
     expect(response.status).toBe(403)
     expect(repository.findLatestPublished).not.toHaveBeenCalled()
   })
+
+  it("fails closed instead of pairing a document with a newer recipe revision", async () => {
+    vi.mocked(getRecipeById).mockResolvedValue({
+      ...recipe,
+      ingredients: [{ id: "ingredient-new", name: "Updated rice" }],
+      updatedAt: "2026-07-29T10:00:00.000Z",
+    })
+
+    const response = await readPublished(
+      requestFor("/api/recipes/recipe-1/guidance", "irma", "resident"),
+      routeContext
+    )
+
+    expect(response.status).toBe(409)
+    await expect(response.json()).resolves.toEqual({
+      error: "Published guidance recipe revision is unavailable",
+    })
+  })
 })
