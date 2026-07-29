@@ -26,7 +26,12 @@ When set, rate limiting uses Redis instead of in-memory storage. Redis is alread
 | `MONGODB_URI` | MongoDB connection string  | `mongodb://<account>.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb` |
 | `MONGO_URL`   | Alternative to MONGODB_URI | Same format                                                                      |
 
-When set, kiosk requests (stock orders, salary advances, issue reports) are stored in MongoDB. When PostgreSQL is not configured, the audit log reads from MongoDB. When MongoDB is unavailable, kiosk uses an in-memory fallback. For local development, MongoDB is included in Docker Compose (`config/docker-compose.yml`).
+When set, kiosk requests (stock orders, salary advances, issue reports), recipes, task guidance, and
+versioned recipe guidance documents are stored in MongoDB. Recipe guidance uses the dedicated
+`recipe_guidance_documents` collection. Unlike legacy fallback-oriented stores, this repository
+fails closed outside test/E2E when Mongo is absent unless `ALLOW_DEMO_DATA=true` explicitly enables
+an empty local JSON store. For local development, MongoDB is included in Docker Compose
+(`config/docker-compose.yml`).
 
 ### Cosmos DB Configuration
 
@@ -49,6 +54,7 @@ The application uses a tiered persistence approach:
 Data flows:
 
 - Kiosk requests → MongoDB (with in-memory fallback)
+- Recipe guidance documents → MongoDB (empty memory in tests; explicit-demo JSON only)
 - Audit logs → PostgreSQL → MongoDB fallback (if PostgreSQL unavailable)
 - File uploads → Azure Blob → Local disk fallback
 - Time-clock records → Baserow (when configured)
@@ -59,9 +65,9 @@ Time-clock records are persisted to Baserow when `BASEROW_API_URL`, `BASEROW_TOK
 
 ## File/Image Uploads
 
-| API            | Storage                                                               | Metadata                                                          |
-| -------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `/api/files`   | Azure Blob (asset-photos, invoice-scans, documents) or `/tmp/uploads` | Returned in response only                                         |
-| `/api/uploads` | `/home/hov-uploads` in production; `/tmp/hov-uploads` locally/tests     | PostgreSQL `file_uploads` when `DATABASE_URL` set; else sidecar + in-memory |
+| API            | Storage                                                               | Metadata                                                                    |
+| -------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `/api/files`   | Azure Blob (asset-photos, invoice-scans, documents) or `/tmp/uploads` | Returned in response only                                                   |
+| `/api/uploads` | `/home/hov-uploads` in production; `/tmp/hov-uploads` locally/tests   | PostgreSQL `file_uploads` when `DATABASE_URL` set; else sidecar + in-memory |
 
 **Serving:** Files uploaded via `/api/uploads` are served at `GET /api/uploads/{fileId}`. Files in `/tmp/uploads` (from `/api/files` when Azure not configured) are served at `GET /api/files/serve?category=...&filename=...`.
