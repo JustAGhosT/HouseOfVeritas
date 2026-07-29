@@ -47,7 +47,8 @@ Keeping it separate prevents those invariants from weakening the smaller, task-o
 It copies canonical ingredient and ordered step IDs, converts recipe timers to seconds, carries the
 bilingual title and summary as recipe-sourced (not human-reviewed) text, and adapts licensed hero
 media into `review_required` or `unavailable` state. It never invents safety, allergen, storage, or
-image-brief content.
+image-brief content. A zero-minute recipe value means no timer and is omitted because guidance timer
+durations must be positive.
 
 - `POST /api/recipes/:id/guidance-drafts/preview` is admin-only and returns the next deterministic
   version with `persisted: false`; it does not call repository create/replace methods.

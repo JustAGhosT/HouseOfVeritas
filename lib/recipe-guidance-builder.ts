@@ -86,7 +86,7 @@ function buildSections(
         type: "step_reference",
         recipeRevisionId,
         recipeStepId: step.id,
-        ...(step.timerMinutes === undefined
+        ...(step.timerMinutes === undefined || step.timerMinutes === 0
           ? {}
           : { timer: { minimumSeconds: step.timerMinutes * 60 } }),
       }))

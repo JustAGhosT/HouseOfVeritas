@@ -125,6 +125,22 @@ describe("buildRecipeGuidanceDraft", () => {
     expect(document.imageBriefs).toEqual([])
   })
 
+  it("treats a canonical zero-minute value as no timer", () => {
+    const document = buildRecipeGuidanceDraft(
+      {
+        ...recipe,
+        steps: [{ ...recipe.steps[0], timerMinutes: 0 }],
+      },
+      { version: 1, createdBy: "hans", now }
+    )
+    const cooking = document.sections.find((section) => section.kind === "cooking")
+
+    expect(cooking?.blocks).toEqual([
+      expect.objectContaining({ type: "step_reference", recipeStepId: "step-2" }),
+    ])
+    expect(cooking?.blocks[0]).not.toHaveProperty("timer")
+  })
+
   it("rejects recipes that cannot supply canonical ingredient and step references", () => {
     expect(() =>
       buildRecipeGuidanceDraft(
