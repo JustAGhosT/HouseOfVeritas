@@ -101,6 +101,7 @@ describe("recipe guidance migration planning", () => {
       {
         legacyGuidancePackId: "legacy-guidance-1",
         recipeId: "recipe-1",
+        recipeRevisionId: `recipe-1@${now}`,
         reason: "rebuild_from_recipe_required",
         migratable: true,
       },
@@ -117,6 +118,25 @@ describe("recipe guidance migration planning", () => {
     })
 
     expect(plan.candidates[0]).toMatchObject({ reason: "already_present", migratable: false })
+  })
+
+  it("selects only one rebuild for duplicate legacy packs of the same recipe revision", () => {
+    const recipe = buildRecipe()
+    const legacy = buildLegacyGuidance(recipe)
+    const plan = planRecipeGuidanceMigration({
+      legacyGuidance: [legacy, { ...legacy, id: "legacy-guidance-2" }],
+      recipes: [recipe],
+      existingDocuments: [],
+    })
+
+    expect(plan.candidates.map(({ reason, migratable }) => ({ reason, migratable }))).toEqual([
+      { reason: "rebuild_from_recipe_required", migratable: true },
+      { reason: "duplicate_legacy_revision", migratable: false },
+    ])
+    expect(reasonCounts(plan)).toEqual([
+      ["duplicate_legacy_revision", 1],
+      ["rebuild_from_recipe_required", 1],
+    ])
   })
 
   it("blocks missing recipes, incoherent provenance, and stale snapshots", () => {

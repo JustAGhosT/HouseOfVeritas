@@ -27,6 +27,8 @@ without rewriting existing task bindings.
   version lookup index.
 - Schema-validates every stored read and write and strips Mongo `_id` fields.
 - Uses `updatedAt` optimistic concurrency for mutable versions.
+- Requires `updatedAt` to advance on every replacement and serializes explicit-demo file mutations
+  across their complete read/check/write sequence.
 - Requires new versions to begin as drafts. Rejects duplicate versions, immutable identity changes,
   direct draft-to-published transitions, published-content changes, and archived-version changes.
 - Keeps tests/E2E empty by default and requires `ALLOW_DEMO_DATA=true` before local JSON persistence
@@ -39,9 +41,11 @@ Migration is inventory and rebuild first, not an in-place collection rewrite:
 1. Read legacy recipe-backed `GuidancePack` records without changing `task_guidance` or bindings.
 2. Reject incoherent source/draft recipe provenance, missing recipes, and stale recipe snapshots.
 3. Skip recipe revisions already present in `recipe_guidance_documents`.
-4. Mark coherent remaining records `rebuild_from_recipe_required` so a later authorized runner can
+4. Select only one rebuild candidate for each recipe revision; classify other matching legacy packs
+   as `duplicate_legacy_revision`.
+5. Mark the selected coherent record `rebuild_from_recipe_required` so a later authorized runner can
    build the canonical nine-section draft from the recipe and route it through human review.
-5. Never copy a legacy `published` status into the richer document or infer missing review/media
+6. Never copy a legacy `published` status into the richer document or infer missing review/media
    evidence.
 
 The planner always returns `writesAuthorized: false`. No production inventory, migration, or write
@@ -69,7 +73,7 @@ pnpm exec tsc --noEmit
 pnpm run lint
 ```
 
-- Focused result: 3 files, 37 tests passed.
+- Focused result after review remediation: 3 files, 42 tests passed.
 - The first worktree dependency install timed out and left partial links. Those generated links were
   replaced with a local junction to the primary checkout's lockfile-matching `node_modules`; no
   package or lockfile changed.
@@ -78,6 +82,9 @@ pnpm run lint
   types for unchanged `app/api/ai/refine-description/route.ts`; the route has no feature diff. Treat
   this as a local tooling/pre-existing route-contract warning and rely on exact-head CI for the
   canonical production-build gate.
+- Review remediation added regression coverage for reused/stale concurrency tokens, concurrent
+  demo-file mutations, Mongo duplicate and zero-match conflicts, invalid Mongo documents, and
+  duplicate legacy packs for one recipe revision.
 
 ## Next slice
 

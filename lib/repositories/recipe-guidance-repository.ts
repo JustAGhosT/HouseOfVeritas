@@ -81,6 +81,11 @@ function assertReplacementAllowed(
   if (current.updatedAt !== expectedUpdatedAt) {
     throw new RecipeGuidanceConflictError("Recipe guidance changed before this update")
   }
+  if (new Date(next.updatedAt).getTime() <= new Date(current.updatedAt).getTime()) {
+    throw new RecipeGuidanceConflictError(
+      "Recipe guidance updatedAt must advance on every replacement"
+    )
+  }
   if (
     current.id !== next.id ||
     current.recipeId !== next.recipeId ||
@@ -171,6 +176,17 @@ async function writeFileDocuments(documents: RecipeGuidanceDocument[]): Promise<
   await rename(temporaryFile, RECIPE_GUIDANCE_FILE)
 }
 
+let fileMutationQueue: Promise<void> = Promise.resolve()
+
+function serializeFileMutation<T>(mutation: () => Promise<T>): Promise<T> {
+  const operation = fileMutationQueue.then(mutation, mutation)
+  fileMutationQueue = operation.then(
+    () => undefined,
+    () => undefined
+  )
+  return operation
+}
+
 function createFileRepository(): RecipeGuidanceRepository {
   return {
     async listByRecipeId(recipeId) {
@@ -189,28 +205,34 @@ function createFileRepository(): RecipeGuidanceRepository {
       )
     },
     async create(input) {
-      const document = validateWrite(input)
-      assertNewDraft(document)
-      const documents = await readFileDocuments()
-      const duplicate = documents.some(
-        (item) =>
-          item.id === document.id ||
-          (item.recipeId === document.recipeId && item.version === document.version)
-      )
-      if (duplicate) throw new RecipeGuidanceConflictError("Recipe guidance version already exists")
-      documents.push(document)
-      await writeFileDocuments(documents)
-      return clone(document)
+      return serializeFileMutation(async () => {
+        const document = validateWrite(input)
+        assertNewDraft(document)
+        const documents = await readFileDocuments()
+        const duplicate = documents.some(
+          (item) =>
+            item.id === document.id ||
+            (item.recipeId === document.recipeId && item.version === document.version)
+        )
+        if (duplicate) {
+          throw new RecipeGuidanceConflictError("Recipe guidance version already exists")
+        }
+        documents.push(document)
+        await writeFileDocuments(documents)
+        return clone(document)
+      })
     },
     async replace(input, expectedUpdatedAt) {
-      const document = validateWrite(input)
-      const documents = await readFileDocuments()
-      const index = documents.findIndex((item) => item.id === document.id)
-      if (index === -1) throw new RecipeGuidanceConflictError("Recipe guidance was not found")
-      assertReplacementAllowed(documents[index], document, expectedUpdatedAt)
-      documents[index] = document
-      await writeFileDocuments(documents)
-      return clone(document)
+      return serializeFileMutation(async () => {
+        const document = validateWrite(input)
+        const documents = await readFileDocuments()
+        const index = documents.findIndex((item) => item.id === document.id)
+        if (index === -1) throw new RecipeGuidanceConflictError("Recipe guidance was not found")
+        assertReplacementAllowed(documents[index], document, expectedUpdatedAt)
+        documents[index] = document
+        await writeFileDocuments(documents)
+        return clone(document)
+      })
     },
   }
 }
@@ -311,6 +333,7 @@ export async function getRecipeGuidanceRepository(): Promise<{
 
 export function resetRecipeGuidanceRepositoryForTests(): void {
   memoryDocuments = []
+  fileMutationQueue = Promise.resolve()
   cachedRepository = null
   cachedMode = null
 }

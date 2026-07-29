@@ -4,6 +4,7 @@ import type { RecipeRecord } from "@/lib/recipes"
 
 export const RECIPE_GUIDANCE_MIGRATION_REASONS = [
   "already_present",
+  "duplicate_legacy_revision",
   "rebuild_from_recipe_required",
   "invalid_recipe_provenance",
   "recipe_not_found",
@@ -15,6 +16,7 @@ export type RecipeGuidanceMigrationReason = (typeof RECIPE_GUIDANCE_MIGRATION_RE
 export interface RecipeGuidanceMigrationCandidate {
   legacyGuidancePackId: string
   recipeId?: string
+  recipeRevisionId?: string
   reason: RecipeGuidanceMigrationReason
   migratable: boolean
 }
@@ -31,6 +33,10 @@ export function planRecipeGuidanceMigration(params: {
   existingDocuments: RecipeGuidanceDocument[]
 }): RecipeGuidanceMigrationPlan {
   const recipesById = new Map(params.recipes.map((recipe) => [recipe.id, recipe]))
+  const existingRevisions = new Set(
+    params.existingDocuments.map((document) => document.recipeRevisionId)
+  )
+  const selectedRevisions = new Set<string>()
   const candidates = params.legacyGuidance
     .filter(
       (guidance) =>
@@ -74,24 +80,33 @@ export function planRecipeGuidanceMigration(params: {
         }
       }
 
-      if (
-        params.existingDocuments.some(
-          (document) =>
-            document.recipeId === recipeId &&
-            document.recipeRevisionId === guidance.sourceRecipeRevisionId
-        )
-      ) {
+      const recipeRevisionId = guidance.sourceRecipeRevisionId as string
+
+      if (existingRevisions.has(recipeRevisionId)) {
         return {
           legacyGuidancePackId: guidance.id,
           recipeId,
+          recipeRevisionId,
           reason: "already_present",
           migratable: false,
         }
       }
 
+      if (selectedRevisions.has(recipeRevisionId)) {
+        return {
+          legacyGuidancePackId: guidance.id,
+          recipeId,
+          recipeRevisionId,
+          reason: "duplicate_legacy_revision",
+          migratable: false,
+        }
+      }
+      selectedRevisions.add(recipeRevisionId)
+
       return {
         legacyGuidancePackId: guidance.id,
         recipeId,
+        recipeRevisionId,
         reason: "rebuild_from_recipe_required",
         migratable: true,
       }

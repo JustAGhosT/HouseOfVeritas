@@ -28,12 +28,16 @@ Keeping it separate prevents those invariants from weakening the smaller, task-o
 - Draft and in-review replacements use `updatedAt` optimistic concurrency. Published content is
   immutable; a published version may only transition to archived without changing its content, and
   an archived version cannot change.
+- Every replacement must advance `updatedAt`. Explicit-demo file mutations serialize the complete
+  read/check/write operation within the process so concurrent writers receive the same conflict
+  guarantees as Mongo compare-and-swap updates.
 - Tests and E2E use an empty in-memory repository. With Mongo unconfigured, ordinary runtime fails
   closed. Local JSON persistence is available only when `ALLOW_DEMO_DATA=true`; enabling it does not
   seed any recipe guidance.
 - Existing `task_guidance` records and task bindings remain readable. Migration first inventories
   recipe-backed legacy packs, verifies their recipe snapshot, and requires a rebuild from the
-  canonical recipe. It never promotes legacy publication or review state automatically.
+  canonical recipe. It selects at most one rebuild for each recipe revision and never promotes
+  legacy publication or review state automatically.
 
 ## Request flow
 
