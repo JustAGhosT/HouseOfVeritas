@@ -94,4 +94,5 @@ Dated session continuity notes (root cause, files changed, verification, next-ow
 | [2026-07-22-project-datastore-ai-hardening.md](handoffs/2026-07-22-project-datastore-ai-hardening.md)     | Project datastore API and AI project suggestion hardening closeout                   |
 | [2026-07-28-recipe-guidance-phase1-contracts.md](handoffs/2026-07-28-recipe-guidance-phase1-contracts.md) | Recipe guidance Phase 1 typed document and media contracts                           |
 | [2026-07-29-recipe-guidance-persistence.md](handoffs/2026-07-29-recipe-guidance-persistence.md)           | Dedicated recipe guidance repository and safe migration boundary                     |
+| [2026-07-29-recipe-guidance-builder-api.md](handoffs/2026-07-29-recipe-guidance-builder-api.md)           | Deterministic recipe draft builder and bounded preview/read APIs                     |
 | [2026-07-28-user-selectable-themes.md](handoffs/2026-07-28-user-selectable-themes.md)                     | User-selectable workspace themes implementation, review, and merge handoff           |
