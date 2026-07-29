@@ -443,6 +443,17 @@ export const recipeGuidanceSectionSchema = z.object({
 
 export type RecipeGuidanceSection = z.infer<typeof recipeGuidanceSectionSchema>
 
+export const recipeGuidanceReviewEvidenceSchema = z
+  .object({
+    bilingualContentReviewed: z.literal(true),
+    allergensAndSafetyReviewed: z.literal(true),
+    provenanceAndRightsReviewed: z.literal(true),
+    optionalMediaWaiverAssetIds: z.array(nonEmptyId).max(100).default([]),
+  })
+  .strict()
+
+export type RecipeGuidanceReviewEvidence = z.infer<typeof recipeGuidanceReviewEvidenceSchema>
+
 export const recipeGuidanceDocumentSchema = z
   .object({
     id: nonEmptyId,
@@ -463,6 +474,7 @@ export const recipeGuidanceDocumentSchema = z
     updatedAt: isoDateTime,
     reviewedBy: nonEmptyId.optional(),
     reviewedAt: isoDateTime.optional(),
+    reviewEvidence: recipeGuidanceReviewEvidenceSchema.optional(),
     publishedBy: nonEmptyId.optional(),
     publishedAt: isoDateTime.optional(),
   })
@@ -519,6 +531,41 @@ export const recipeGuidanceDocumentSchema = z
     const sectionIds = new Set(sectionsById.keys())
     const mediaAssetsById = new Map(document.mediaAssets.map((asset) => [asset.id, asset]))
     const imageBriefsById = new Map(document.imageBriefs.map((brief) => [brief.id, brief]))
+
+    const reviewFields = [document.reviewedBy, document.reviewedAt, document.reviewEvidence]
+    if (reviewFields.some(Boolean) && !reviewFields.every(Boolean)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["reviewEvidence"],
+        message: "reviewedBy, reviewedAt, and reviewEvidence must be recorded together",
+      })
+    }
+    if (document.status === "draft" && reviewFields.some(Boolean)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["reviewEvidence"],
+        message: "draft guidance cannot retain completed review evidence",
+      })
+    }
+
+    const waiverIds = document.reviewEvidence?.optionalMediaWaiverAssetIds ?? []
+    if (new Set(waiverIds).size !== waiverIds.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["reviewEvidence", "optionalMediaWaiverAssetIds"],
+        message: "optional media waiver asset IDs must be unique",
+      })
+    }
+    waiverIds.forEach((assetId, index) => {
+      const asset = mediaAssetsById.get(assetId)
+      if (!asset || asset.status !== "unavailable") {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["reviewEvidence", "optionalMediaWaiverAssetIds", index],
+          message: "optional media waivers must reference unavailable media in this document",
+        })
+      }
+    })
 
     document.mediaAssets.forEach((asset, index) => {
       const section = sectionsById.get(asset.sectionId)
@@ -627,7 +674,10 @@ export const recipeGuidanceDocumentSchema = z
               path: ["sections", sectionIndex, "blocks", blockIndex, "mediaAssetId"],
               message: "media block must reference an asset owned by the same section",
             })
-          } else if (document.status === "published" && mediaAsset.status !== "approved") {
+          } else if (
+            (document.status === "published" || document.status === "archived") &&
+            mediaAsset.status !== "approved"
+          ) {
             context.addIssue({
               code: z.ZodIssueCode.custom,
               path: ["sections", sectionIndex, "blocks", blockIndex, "mediaAssetId"],
@@ -638,16 +688,32 @@ export const recipeGuidanceDocumentSchema = z
       })
     })
 
-    if (document.status === "published") {
-      for (const field of ["reviewedBy", "reviewedAt", "publishedBy", "publishedAt"] as const) {
+    if (document.status === "published" || document.status === "archived") {
+      for (const field of [
+        "reviewedBy",
+        "reviewedAt",
+        "reviewEvidence",
+        "publishedBy",
+        "publishedAt",
+      ] as const) {
         if (!document[field]) {
           context.addIssue({
             code: z.ZodIssueCode.custom,
             path: [field],
-            message: `${field} is required for a published guidance document`,
+            message: `${field} is required for published or archived guidance`,
           })
         }
       }
+
+      document.mediaAssets.forEach((asset, index) => {
+        if (asset.status === "unavailable" && !waiverIds.includes(asset.id)) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["mediaAssets", index, "status"],
+            message: "unavailable optional media requires explicit review waiver evidence",
+          })
+        }
+      })
 
       document.sections.forEach((section, index) => {
         if (FOUNDATIONAL_SECTION_KINDS.has(section.kind) && section.applicability !== "required") {
@@ -722,6 +788,37 @@ export const recipeGuidanceDocumentSchema = z
   })
 
 export type RecipeGuidanceDocument = z.infer<typeof recipeGuidanceDocumentSchema>
+
+export interface RecipeGuidancePublicationIssue {
+  code: string
+  message: string
+}
+
+export interface RecipeGuidancePublicationReadiness {
+  ready: boolean
+  issues: RecipeGuidancePublicationIssue[]
+}
+
+export function getRecipeGuidancePublicationReadiness(
+  document: RecipeGuidanceDocument
+): RecipeGuidancePublicationReadiness {
+  const candidate = {
+    ...document,
+    status: "published" as const,
+    publishedBy: document.publishedBy ?? document.ownerUserId,
+    publishedAt: document.publishedAt ?? document.updatedAt,
+  }
+  const parsed = recipeGuidanceDocumentSchema.safeParse(candidate)
+  if (parsed.success) return { ready: true, issues: [] }
+
+  return {
+    ready: false,
+    issues: parsed.error.issues.map((issue) => ({
+      code: issue.path.length > 0 ? issue.path.join(".") : "document",
+      message: issue.message,
+    })),
+  }
+}
 
 export function parseRecipeGuidanceDocument(input: unknown): RecipeGuidanceDocument | null {
   const parsed = recipeGuidanceDocumentSchema.safeParse(input)

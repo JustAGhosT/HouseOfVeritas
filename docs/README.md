@@ -96,4 +96,5 @@ Dated session continuity notes (root cause, files changed, verification, next-ow
 | [2026-07-29-recipe-guidance-persistence.md](handoffs/2026-07-29-recipe-guidance-persistence.md)           | Dedicated recipe guidance repository and safe migration boundary                     |
 | [2026-07-29-recipe-guidance-builder-api.md](handoffs/2026-07-29-recipe-guidance-builder-api.md)           | Deterministic recipe draft builder and bounded preview/read APIs                     |
 | [2026-07-29-recipe-guidance-authoring-api.md](handoffs/2026-07-29-recipe-guidance-authoring-api.md)       | Explicit recipe draft creation and optimistic reviewed-section updates               |
+| [2026-07-29-recipe-guidance-lifecycle.md](handoffs/2026-07-29-recipe-guidance-lifecycle.md)               | Review transitions, readiness evidence, publication, and immutable archival          |
 | [2026-07-28-user-selectable-themes.md](handoffs/2026-07-28-user-selectable-themes.md)                     | User-selectable workspace themes implementation, review, and merge handoff           |

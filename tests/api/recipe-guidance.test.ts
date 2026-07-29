@@ -4,9 +4,12 @@ import {
   POST as createDraft,
 } from "@/app/api/recipes/[id]/guidance-drafts/route"
 import { PATCH as updateDraftSection } from "@/app/api/recipes/[id]/guidance-drafts/[version]/route"
+import { GET as inspectPublicationReadiness } from "@/app/api/recipes/[id]/guidance-drafts/[version]/publication-readiness/route"
+import { POST as transitionDraft } from "@/app/api/recipes/[id]/guidance-drafts/[version]/transitions/route"
 import { POST as previewDraft } from "@/app/api/recipes/[id]/guidance-drafts/preview/route"
 import { GET as readPublished } from "@/app/api/recipes/[id]/guidance/route"
 import { buildRecipeGuidanceDraft } from "@/lib/recipe-guidance-builder"
+import { parseRecipeGuidanceDocument } from "@/lib/recipe-guidance"
 import { getRecipeGuidanceRepository } from "@/lib/repositories/recipe-guidance-repository"
 import { getRecipeById } from "@/lib/repositories/recipe-repository"
 import type { RecipeRecord } from "@/lib/recipes"
@@ -53,12 +56,56 @@ const existingDocument = buildRecipeGuidanceDraft(recipe, {
   createdBy: "hans",
   now: "2026-07-29T09:30:00.000Z",
 })
+const reviewEvidence = {
+  bilingualContentReviewed: true,
+  allergensAndSafetyReviewed: true,
+  provenanceAndRightsReviewed: true,
+  optionalMediaWaiverAssetIds: [],
+} as const
 const repository = {
   listByRecipeId: vi.fn(),
   findById: vi.fn(),
   findLatestPublished: vi.fn(),
   create: vi.fn(),
   replace: vi.fn(),
+}
+
+function buildPublishableInReviewDocument() {
+  const document = parseRecipeGuidanceDocument({
+    ...existingDocument,
+    status: "in_review",
+    reviewedBy: "hans",
+    reviewedAt: "2026-07-29T09:45:00.000Z",
+    reviewEvidence,
+    sections: existingDocument.sections.map((section) => ({
+      ...section,
+      blocks: section.blocks.map((block) =>
+        block.type === "text" ? { ...block, source: "reviewed" as const } : block
+      ),
+    })),
+    mediaAssets: existingDocument.mediaAssets.map((asset) => ({
+      ...asset,
+      status: "approved" as const,
+      altText: { en: "Finished household supper.", af: "Voltooide huishoudelike aandete." },
+      reviewedBy: "hans",
+      reviewedAt: "2026-07-29T09:45:00.000Z",
+    })),
+  })
+  if (!document) throw new Error("Expected publishable in-review fixture")
+  return document
+}
+
+function buildPublishedDocument() {
+  const inReview = buildPublishableInReviewDocument()
+  const document = parseRecipeGuidanceDocument({
+    ...inReview,
+    status: "published",
+    publishedBy: "hans",
+    publishedAt: "2026-07-29T10:00:00.000Z",
+    updatedAt: "2026-07-29T10:00:00.000Z",
+  })
+  if (!document) throw new Error("Expected published fixture")
+  return document
 }
 
 function requestFor(path: string, userId: string, role: string, method = "GET") {
@@ -303,6 +350,190 @@ describe("recipe guidance APIs", () => {
     await expect(response.json()).resolves.toEqual({
       error: "Recipe guidance changed; refresh and retry",
     })
+  })
+
+  it("invalidates completed review evidence when an in-review section changes", async () => {
+    const inReview = buildPublishableInReviewDocument()
+    repository.listByRecipeId.mockResolvedValueOnce([inReview])
+    const identity = inReview.sections.find((section) => section.kind === "identity")!
+
+    const response = await updateDraftSection(
+      jsonRequestFor("/api/recipes/recipe-1/guidance-drafts/2", "hans", "admin", "PATCH", {
+        expectedUpdatedAt: inReview.updatedAt,
+        section: {
+          kind: "identity",
+          applicability: "required",
+          blocks: identity.blocks,
+        },
+      }),
+      versionRouteContext
+    )
+
+    expect(response.status).toBe(200)
+    const replacement = repository.replace.mock.calls[0][0]
+    expect(replacement).not.toHaveProperty("reviewedBy")
+    expect(replacement).not.toHaveProperty("reviewedAt")
+    expect(replacement).not.toHaveProperty("reviewEvidence")
+  })
+
+  it("submits a draft for review and records explicit review approval", async () => {
+    const submitResponse = await transitionDraft(
+      jsonRequestFor(
+        "/api/recipes/recipe-1/guidance-drafts/2/transitions",
+        "hans",
+        "admin",
+        "POST",
+        {
+          action: "submit_for_review",
+          expectedUpdatedAt: existingDocument.updatedAt,
+        }
+      ),
+      versionRouteContext
+    )
+    expect(submitResponse.status).toBe(200)
+    expect(repository.replace).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: "in_review" }),
+      existingDocument.updatedAt
+    )
+
+    const inReview = { ...existingDocument, status: "in_review" as const }
+    repository.listByRecipeId.mockResolvedValueOnce([inReview])
+    const approveResponse = await transitionDraft(
+      jsonRequestFor(
+        "/api/recipes/recipe-1/guidance-drafts/2/transitions",
+        "hans",
+        "admin",
+        "POST",
+        {
+          action: "approve_review",
+          expectedUpdatedAt: inReview.updatedAt,
+          evidence: reviewEvidence,
+        }
+      ),
+      versionRouteContext
+    )
+
+    expect(approveResponse.status).toBe(200)
+    expect(repository.replace).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        status: "in_review",
+        reviewedBy: "hans",
+        reviewEvidence,
+      }),
+      inReview.updatedAt
+    )
+  })
+
+  it("reports deterministic publication blockers and refuses incomplete publication", async () => {
+    const readinessResponse = await inspectPublicationReadiness(
+      requestFor("/api/recipes/recipe-1/guidance-drafts/2/publication-readiness", "hans", "admin"),
+      versionRouteContext
+    )
+    const readinessBody = await readinessResponse.json()
+    expect(readinessResponse.status).toBe(200)
+    expect(readinessBody.data.ready).toBe(false)
+    expect(readinessBody.data.issues).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: "reviewEvidence" })])
+    )
+
+    repository.listByRecipeId.mockResolvedValueOnce([
+      { ...existingDocument, status: "in_review" as const },
+    ])
+    const publishResponse = await transitionDraft(
+      jsonRequestFor(
+        "/api/recipes/recipe-1/guidance-drafts/2/transitions",
+        "hans",
+        "admin",
+        "POST",
+        {
+          action: "publish",
+          expectedUpdatedAt: existingDocument.updatedAt,
+        }
+      ),
+      versionRouteContext
+    )
+    expect(publishResponse.status).toBe(422)
+    await expect(publishResponse.json()).resolves.toMatchObject({
+      error: "Recipe guidance is not ready to publish",
+    })
+    expect(repository.replace).not.toHaveBeenCalled()
+  })
+
+  it("publishes only a reviewed ready version and archives it without changing content", async () => {
+    const inReview = buildPublishableInReviewDocument()
+    repository.listByRecipeId.mockResolvedValueOnce([inReview])
+    const publishResponse = await transitionDraft(
+      jsonRequestFor(
+        "/api/recipes/recipe-1/guidance-drafts/2/transitions",
+        "hans",
+        "admin",
+        "POST",
+        {
+          action: "publish",
+          expectedUpdatedAt: inReview.updatedAt,
+        }
+      ),
+      versionRouteContext
+    )
+    expect(publishResponse.status).toBe(200)
+    expect(repository.replace).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: "published", publishedBy: "hans" }),
+      inReview.updatedAt
+    )
+
+    const published = buildPublishedDocument()
+    repository.listByRecipeId.mockResolvedValueOnce([published])
+    const archiveResponse = await transitionDraft(
+      jsonRequestFor(
+        "/api/recipes/recipe-1/guidance-drafts/2/transitions",
+        "hans",
+        "admin",
+        "POST",
+        {
+          action: "archive",
+          expectedUpdatedAt: published.updatedAt,
+        }
+      ),
+      versionRouteContext
+    )
+    expect(archiveResponse.status).toBe(200)
+    expect(repository.replace).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        id: published.id,
+        status: "archived",
+        sections: published.sections,
+        mediaAssets: published.mediaAssets,
+      }),
+      published.updatedAt
+    )
+  })
+
+  it("keeps lifecycle and readiness routes admin-only", async () => {
+    const transitionResponse = await transitionDraft(
+      jsonRequestFor(
+        "/api/recipes/recipe-1/guidance-drafts/2/transitions",
+        "irma",
+        "resident",
+        "POST",
+        {
+          action: "submit_for_review",
+          expectedUpdatedAt: existingDocument.updatedAt,
+        }
+      ),
+      versionRouteContext
+    )
+    const readinessResponse = await inspectPublicationReadiness(
+      requestFor(
+        "/api/recipes/recipe-1/guidance-drafts/2/publication-readiness",
+        "irma",
+        "resident"
+      ),
+      versionRouteContext
+    )
+
+    expect(transitionResponse.status).toBe(403)
+    expect(readinessResponse.status).toBe(403)
+    expect(getRecipeGuidanceRepository).not.toHaveBeenCalled()
   })
 
   it("does not expose draft listing or preview to residents", async () => {

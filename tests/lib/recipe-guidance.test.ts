@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   RECIPE_GUIDANCE_SECTION_KINDS,
+  getRecipeGuidancePublicationReadiness,
   guidanceTimerSchema,
   parseRecipeGuidanceDocument,
   recipeHeroToReviewRequiredMedia,
@@ -11,6 +12,12 @@ import {
 import type { RecipeRecord } from "@/lib/recipes"
 
 const now = "2026-07-28T18:00:00.000Z"
+const reviewEvidence = {
+  bilingualContentReviewed: true,
+  allergensAndSafetyReviewed: true,
+  provenanceAndRightsReviewed: true,
+  optionalMediaWaiverAssetIds: [],
+} as const
 
 function buildDocument() {
   return {
@@ -43,6 +50,31 @@ describe("recipe guidance contracts", () => {
     const document = parseRecipeGuidanceDocument(buildDocument())
 
     expect(document?.sections.map((section) => section.kind)).toEqual(RECIPE_GUIDANCE_SECTION_KINDS)
+  })
+
+  it("returns deterministic publication readiness issues for an incomplete draft", () => {
+    const document = parseRecipeGuidanceDocument(buildDocument())
+    if (!document) throw new Error("Expected valid draft fixture")
+
+    const readiness = getRecipeGuidancePublicationReadiness(document)
+
+    expect(readiness.ready).toBe(false)
+    expect(readiness.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "reviewEvidence" }),
+        expect.objectContaining({ code: "sections.0.blocks" }),
+      ])
+    )
+  })
+
+  it("requires review metadata and evidence to be recorded together", () => {
+    expect(
+      parseRecipeGuidanceDocument({
+        ...buildDocument(),
+        status: "in_review",
+        reviewedBy: "hans",
+      })
+    ).toBeNull()
   })
 
   it("rejects reordered canonical sections", () => {
@@ -462,6 +494,7 @@ describe("recipe guidance contracts", () => {
       status: "published",
       reviewedBy: "hans",
       reviewedAt: now,
+      reviewEvidence,
       publishedBy: "hans",
       publishedAt: now,
       sections: document.sections.map((section) => {
@@ -704,6 +737,7 @@ describe("recipe guidance contracts", () => {
       status: "published",
       reviewedBy: "hans",
       reviewedAt: now,
+      reviewEvidence,
       publishedBy: "hans",
       publishedAt: now,
       sections: document.sections.map((section) => ({
@@ -781,6 +815,7 @@ describe("recipe guidance contracts", () => {
       status: "published",
       reviewedBy: "hans",
       reviewedAt: now,
+      reviewEvidence,
       publishedBy: "hans",
       publishedAt: now,
       sections: document.sections.map((section) => ({

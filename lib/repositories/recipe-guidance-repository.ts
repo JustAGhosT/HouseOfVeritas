@@ -111,6 +111,9 @@ function assertReplacementAllowed(
     }
     return
   }
+  if (current.status === "in_review" && next.status === "draft") {
+    throw new RecipeGuidanceConflictError("In-review guidance cannot return to draft")
+  }
   if (current.status === "draft" && next.status === "published") {
     throw new RecipeGuidanceConflictError("Recipe guidance must enter review before publication")
   }

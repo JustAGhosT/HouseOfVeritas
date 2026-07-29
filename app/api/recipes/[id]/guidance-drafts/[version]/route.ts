@@ -107,8 +107,12 @@ export const PATCH = withRole("admin")(async (request, context) => {
       id: currentSection.id,
       ...parsed.data.section,
     }
+    const mutableDocument = { ...document }
+    delete mutableDocument.reviewedBy
+    delete mutableDocument.reviewedAt
+    delete mutableDocument.reviewEvidence
     const replacement = parseRecipeGuidanceDocument({
-      ...document,
+      ...mutableDocument,
       sections,
       updatedAt: advanceTimestamp(document.updatedAt),
     })

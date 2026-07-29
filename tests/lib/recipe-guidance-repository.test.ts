@@ -134,6 +134,25 @@ describe("recipe guidance repository", () => {
     ).rejects.toBeInstanceOf(RecipeGuidanceConflictError)
   })
 
+  it("does not allow an in-review version to return to draft", async () => {
+    const { repository } = await getRecipeGuidanceRepository()
+    const document = buildDocument()
+    await repository.create(document)
+    const inReview = {
+      ...document,
+      status: "in_review" as const,
+      updatedAt: "2026-07-29T08:01:00.000Z",
+    }
+    await repository.replace(inReview, document.updatedAt)
+
+    await expect(
+      repository.replace(
+        { ...inReview, status: "draft", updatedAt: "2026-07-29T08:02:00.000Z" },
+        inReview.updatedAt
+      )
+    ).rejects.toBeInstanceOf(RecipeGuidanceConflictError)
+  })
+
   it("keeps recipe ingredient and step manifests immutable within a version", async () => {
     const { repository } = await getRecipeGuidanceRepository()
     const document = buildDocument()
