@@ -124,7 +124,15 @@ export async function withRecipeMutationLock<T>(
   const fence = await acquireMongoLock(collection, normalizedRecipeId, ownerToken)
 
   let retainLock = false
-  const assertOwned = () => assertMongoLockOwned(collection, normalizedRecipeId, ownerToken, fence)
+  let ownershipLost = false
+  const assertOwned = async () => {
+    try {
+      await assertMongoLockOwned(collection, normalizedRecipeId, ownerToken, fence)
+    } catch (error) {
+      if (error instanceof RecipeMutationConflictError) ownershipLost = true
+      throw error
+    }
+  }
   const runFencedWrite = async <T>(write: () => Promise<T>): Promise<T> => {
     await assertOwned()
     try {
@@ -146,7 +154,7 @@ export async function withRecipeMutationLock<T>(
   try {
     return await operation({ assertOwned, fence, runFencedWrite })
   } finally {
-    if (!retainLock) {
+    if (!retainLock && !ownershipLost) {
       try {
         const release = await collection.updateOne(
           { _id: normalizedRecipeId, ownerToken, fence },

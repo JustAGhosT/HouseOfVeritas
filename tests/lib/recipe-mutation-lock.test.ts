@@ -118,8 +118,9 @@ describe("recipe mutation lock", () => {
 
     await expect(
       withRecipeMutationLock("recipe-1", (lock) => lock.runFencedWrite(write))
-    ).rejects.toBeInstanceOf(RecipeMutationConflictError)
+    ).rejects.toThrow("Recipe mutation lock ownership was lost")
     expect(write).not.toHaveBeenCalled()
+    expect(mongoMocks.updateOne).not.toHaveBeenCalled()
   })
 
   it("runs a guarded target write and releases after confirmed success", async () => {
