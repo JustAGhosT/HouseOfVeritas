@@ -146,10 +146,7 @@ async function applyTransition(params: {
       { status: 422 }
     )
   }
-  const replace = (session?: import("mongodb").ClientSession) =>
-    session
-      ? repository.replace(replacement, expectedUpdatedAt, { session })
-      : repository.replace(replacement, expectedUpdatedAt)
+  const replace = () => repository.replace(replacement, expectedUpdatedAt)
   const updatedDocument = params.runFencedWrite
     ? await params.runFencedWrite(replace)
     : await repository.replace(replacement, expectedUpdatedAt)

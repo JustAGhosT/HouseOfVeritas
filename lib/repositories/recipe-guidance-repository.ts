@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto"
 import { mkdir, readFile, rename, writeFile } from "fs/promises"
 import { dirname, join } from "path"
-import type { ClientSession, Collection, ObjectId } from "mongodb"
+import type { Collection, ObjectId } from "mongodb"
 import { getCollection, isMongoConfigured, withoutMongoId } from "@/lib/db/mongodb"
 import { parseRecipeGuidanceDocument, type RecipeGuidanceDocument } from "@/lib/recipe-guidance"
 
@@ -12,8 +12,12 @@ const RECIPE_GUIDANCE_FILE = join(process.cwd(), "data", "recipe-guidance-docume
 type RecipeGuidanceMongoDocument = RecipeGuidanceDocument & { _id?: ObjectId }
 export type RecipeGuidanceRepositoryMode = "memory" | "file" | "mongodb"
 
-export class RecipeGuidanceConflictError extends Error {}
-export class RecipeGuidanceIntegrityError extends Error {}
+export class RecipeGuidanceConflictError extends Error {
+  readonly safeToReleaseMutationLock = true
+}
+export class RecipeGuidanceIntegrityError extends Error {
+  readonly safeToReleaseMutationLock = true
+}
 export class RecipeGuidanceStoreUnavailableError extends Error {}
 
 export interface RecipeGuidanceRepository {
@@ -23,8 +27,7 @@ export interface RecipeGuidanceRepository {
   create(document: RecipeGuidanceDocument): Promise<RecipeGuidanceDocument>
   replace(
     document: RecipeGuidanceDocument,
-    expectedUpdatedAt: string,
-    options?: { session?: ClientSession }
+    expectedUpdatedAt: string
   ): Promise<RecipeGuidanceDocument>
 }
 
@@ -281,9 +284,9 @@ async function createMongoRepository(): Promise<RecipeGuidanceRepository> {
       }
       return clone(document)
     },
-    async replace(input, expectedUpdatedAt, options) {
+    async replace(input, expectedUpdatedAt) {
       const document = validateWrite(input)
-      const current = await collection.findOne({ id: document.id }, { session: options?.session })
+      const current = await collection.findOne({ id: document.id })
       if (!current) throw new RecipeGuidanceConflictError("Recipe guidance was not found")
       assertReplacementAllowed(
         parseStoredDocument(withoutMongoId(current)),
@@ -292,8 +295,7 @@ async function createMongoRepository(): Promise<RecipeGuidanceRepository> {
       )
       const result = await collection.replaceOne(
         { id: document.id, updatedAt: expectedUpdatedAt },
-        document,
-        { session: options?.session }
+        document
       )
       if (result.matchedCount === 0) {
         throw new RecipeGuidanceConflictError("Recipe guidance changed before this update")

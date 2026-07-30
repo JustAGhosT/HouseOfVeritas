@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto"
-import type { ClientSession, Collection } from "mongodb"
-import { getCollection, isMongoConfigured, startMongoSession } from "@/lib/db/mongodb"
+import type { Collection } from "mongodb"
+import { getCollection, isMongoConfigured } from "@/lib/db/mongodb"
 import { logger } from "@/lib/logger"
 
 export const RECIPE_MUTATION_LOCK_COLLECTION = "recipe_mutation_locks"
@@ -8,12 +8,10 @@ export const RECIPE_MUTATION_LOCK_COLLECTION = "recipe_mutation_locks"
 interface RecipeMutationLockDocument {
   _id: string
   ownerToken?: string
-  expiresAt: Date
+  acquiredAt?: Date
   fence: number
 }
 
-const LOCK_LEASE_MS = 60_000
-export const RECIPE_MUTATION_LOCK_RENEWAL_MS = 20_000
 const inProcessLocks = new Set<string>()
 
 export class RecipeMutationConflictError extends Error {}
@@ -21,11 +19,20 @@ export class RecipeMutationConflictError extends Error {}
 export interface RecipeMutationLease {
   assertOwned: () => Promise<void>
   fence?: number
-  runFencedWrite: <T>(write: (session?: ClientSession) => Promise<T>) => Promise<T>
+  runFencedWrite: <T>(write: () => Promise<T>) => Promise<T>
 }
 
 function isDuplicateKeyError(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === 11000
+}
+
+function isConfirmedNoWriteError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "safeToReleaseMutationLock" in error &&
+    error.safeToReleaseMutationLock === true
+  )
 }
 
 async function withInProcessLock<T>(
@@ -56,17 +63,14 @@ async function acquireMongoLock(
   recipeId: string,
   ownerToken: string
 ): Promise<number> {
-  const now = new Date()
-  const expiresAt = new Date(now.getTime() + LOCK_LEASE_MS)
-
   try {
     const document = await collection.findOneAndUpdate(
       {
         _id: recipeId,
-        $or: [{ expiresAt: { $lte: now } }, { ownerToken }],
+        ownerToken: { $exists: false },
       },
       {
-        $set: { ownerToken, expiresAt },
+        $set: { ownerToken, acquiredAt: new Date() },
         $setOnInsert: { _id: recipeId },
         $inc: { fence: 1 },
       },
@@ -84,23 +88,14 @@ async function acquireMongoLock(
   }
 }
 
-async function renewMongoLock(
+async function assertMongoLockOwned(
   collection: Collection<RecipeMutationLockDocument>,
   recipeId: string,
-  ownerToken: string
+  ownerToken: string,
+  fence: number
 ): Promise<void> {
-  const now = new Date()
-  const result = await collection.updateOne(
-    {
-      _id: recipeId,
-      ownerToken,
-      expiresAt: { $gt: now },
-    },
-    {
-      $set: { expiresAt: new Date(now.getTime() + LOCK_LEASE_MS) },
-    }
-  )
-  if (result.matchedCount !== 1) {
+  const document = await collection.findOne({ _id: recipeId, ownerToken, fence })
+  if (!document) {
     throw new RecipeMutationConflictError("Recipe mutation lock ownership was lost")
   }
 }
@@ -127,87 +122,42 @@ export async function withRecipeMutationLock<T>(
   const ownerToken = randomUUID()
   const fence = await acquireMongoLock(collection, normalizedRecipeId, ownerToken)
 
-  let renewalFailure: unknown
-  let renewalInFlight: Promise<void> | undefined
-  let fencedWriteActive = false
-  const renewLease = () => {
-    if (fencedWriteActive || renewalInFlight || renewalFailure) return
-    renewalInFlight = renewMongoLock(collection, normalizedRecipeId, ownerToken)
-      .catch((error) => {
-        renewalFailure = error
-        logger.error("Failed to renew recipe mutation lock", {
+  let retainLock = false
+  const assertOwned = () => assertMongoLockOwned(collection, normalizedRecipeId, ownerToken, fence)
+  const runFencedWrite = async <T>(write: () => Promise<T>): Promise<T> => {
+    await assertOwned()
+    try {
+      return await write()
+    } catch (error) {
+      if (!isConfirmedNoWriteError(error)) {
+        retainLock = true
+        logger.error("Recipe mutation lock retained after an ambiguous target-write failure", {
           recipeId: normalizedRecipeId,
+          ownerToken,
+          fence,
           error: error instanceof Error ? error.message : String(error),
         })
-      })
-      .finally(() => {
-        renewalInFlight = undefined
-      })
-  }
-  const assertOwned = async () => {
-    if (renewalInFlight) await renewalInFlight
-    if (renewalFailure) throw renewalFailure
-    renewLease()
-    if (renewalInFlight) await renewalInFlight
-    if (renewalFailure) throw renewalFailure
-  }
-  const runFencedWrite = async <T>(write: (session?: ClientSession) => Promise<T>): Promise<T> => {
-    if (fencedWriteActive) {
-      throw new RecipeMutationConflictError("A fenced recipe write is already active")
-    }
-    fencedWriteActive = true
-    if (renewalInFlight) await renewalInFlight
-    if (renewalFailure) throw renewalFailure
-
-    let session: ClientSession | undefined
-    let result: T | undefined
-    try {
-      session = await startMongoSession()
-      await session.withTransaction(async () => {
-        const now = new Date()
-        const leaseResult = await collection.updateOne(
-          {
-            _id: normalizedRecipeId,
-            ownerToken,
-            fence,
-            expiresAt: { $gt: now },
-          },
-          { $set: { expiresAt: new Date(now.getTime() + LOCK_LEASE_MS) } },
-          { session }
-        )
-        if (leaseResult.matchedCount !== 1) {
-          throw new RecipeMutationConflictError("Recipe mutation lock ownership was lost")
-        }
-        result = await write(session)
-      })
-      return result as T
-    } finally {
-      if (session) await session.endSession()
-      fencedWriteActive = false
+      }
+      throw error
     }
   }
-  const renewalTimer = setInterval(renewLease, RECIPE_MUTATION_LOCK_RENEWAL_MS)
-  renewalTimer.unref?.()
 
   try {
-    const result = await operation({ assertOwned, fence, runFencedWrite })
-    if (renewalInFlight) await renewalInFlight
-    if (renewalFailure) throw renewalFailure
-    return result
+    return await operation({ assertOwned, fence, runFencedWrite })
   } finally {
-    clearInterval(renewalTimer)
-    if (renewalInFlight) await renewalInFlight
-    await collection
-      .updateOne(
-        { _id: normalizedRecipeId, ownerToken },
-        { $set: { expiresAt: new Date(0) }, $unset: { ownerToken: "" } }
-      )
-      .catch((error) => {
-        logger.error("Failed to release recipe mutation lock", {
-          recipeId: normalizedRecipeId,
-          error: error instanceof Error ? error.message : String(error),
+    if (!retainLock) {
+      await collection
+        .updateOne(
+          { _id: normalizedRecipeId, ownerToken, fence },
+          { $unset: { ownerToken: "", acquiredAt: "" } }
+        )
+        .catch((error) => {
+          logger.error("Failed to release recipe mutation lock", {
+            recipeId: normalizedRecipeId,
+            error: error instanceof Error ? error.message : String(error),
+          })
         })
-      })
+    }
   }
 }
 

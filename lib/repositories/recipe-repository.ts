@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from "fs/promises"
 import { dirname, join } from "path"
-import type { ClientSession, Filter, ObjectId } from "mongodb"
+import type { Filter, ObjectId } from "mongodb"
 import { getCollection, isMongoConfigured, withoutMongoId } from "@/lib/db/mongodb"
 import { randomUUID } from "crypto"
 import {
@@ -337,10 +337,7 @@ export async function createRecipe(data: RecipeRecord): Promise<RecipeRecord> {
   return data
 }
 
-export async function replaceRecipe(
-  updated: RecipeRecord,
-  options?: { session?: ClientSession }
-): Promise<RecipeRecord | null> {
+export async function replaceRecipe(updated: RecipeRecord): Promise<RecipeRecord | null> {
   requireProductionStore()
   if (isUsingMemoryStore()) {
     const recipes = await readRecipes()
@@ -355,8 +352,7 @@ export async function replaceRecipe(
   const updatedRecord = { ...updated, updatedAt: new Date().toISOString() }
   const result = await collection.replaceOne(
     { id: updated.id } as Filter<RecipeDocument>,
-    updatedRecord as RecipeDocument,
-    { session: options?.session }
+    updatedRecord as RecipeDocument
   )
   if (result.matchedCount === 0) return null
   return updatedRecord

@@ -2,23 +2,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const mongoMocks = vi.hoisted(() => ({
   configured: false,
-  endSession: vi.fn(),
+  findOne: vi.fn(),
   findOneAndUpdate: vi.fn(),
   getCollection: vi.fn(),
-  startMongoSession: vi.fn(),
   updateOne: vi.fn(),
-  withTransaction: vi.fn(),
 }))
 
 vi.mock("@/lib/db/mongodb", () => ({
   getCollection: mongoMocks.getCollection,
   isMongoConfigured: () => mongoMocks.configured,
-  startMongoSession: mongoMocks.startMongoSession,
 }))
 
 import {
   RECIPE_MUTATION_LOCK_COLLECTION,
-  RECIPE_MUTATION_LOCK_RENEWAL_MS,
   RecipeMutationConflictError,
   resetRecipeMutationLocksForTests,
   withRecipeMutationLock,
@@ -26,7 +22,6 @@ import {
 
 describe("recipe mutation lock", () => {
   beforeEach(() => {
-    vi.useRealTimers()
     vi.stubEnv("NODE_ENV", "test")
     vi.stubEnv("CI", "")
     vi.stubEnv("E2E_TEST", "")
@@ -34,17 +29,18 @@ describe("recipe mutation lock", () => {
     mongoMocks.findOneAndUpdate.mockReset().mockResolvedValue({
       _id: "recipe-1",
       ownerToken: "owner",
-      expiresAt: new Date(),
+      acquiredAt: new Date(),
       fence: 7,
     })
-    mongoMocks.updateOne.mockReset().mockResolvedValue({ matchedCount: 1, upsertedCount: 0 })
-    mongoMocks.withTransaction.mockReset().mockImplementation(async (operation) => operation())
-    mongoMocks.endSession.mockReset().mockResolvedValue(undefined)
-    mongoMocks.startMongoSession.mockReset().mockResolvedValue({
-      withTransaction: mongoMocks.withTransaction,
-      endSession: mongoMocks.endSession,
+    mongoMocks.findOne.mockReset().mockResolvedValue({
+      _id: "recipe-1",
+      ownerToken: "owner",
+      acquiredAt: new Date(),
+      fence: 7,
     })
+    mongoMocks.updateOne.mockReset().mockResolvedValue({ matchedCount: 1 })
     mongoMocks.getCollection.mockReset().mockResolvedValue({
+      findOne: mongoMocks.findOne,
       findOneAndUpdate: mongoMocks.findOneAndUpdate,
       updateOne: mongoMocks.updateOne,
     })
@@ -80,37 +76,29 @@ describe("recipe mutation lock", () => {
     ).resolves.toEqual(["first", "second"])
   })
 
-  it("uses an expiring Mongo lease and owner-scoped release in live mode", async () => {
+  it("uses a persistent Mongo owner lock and owner-scoped release in live mode", async () => {
     vi.stubEnv("NODE_ENV", "production")
     mongoMocks.configured = true
 
-    await expect(
-      withRecipeMutationLock("recipe-1", async (lease) => ({
-        value: "published",
-        fence: lease.fence,
-      }))
-    ).resolves.toEqual({ value: "published", fence: 7 })
+    await expect(withRecipeMutationLock("recipe-1", async (lock) => lock.fence)).resolves.toBe(7)
 
     expect(mongoMocks.getCollection).toHaveBeenCalledWith(RECIPE_MUTATION_LOCK_COLLECTION)
     expect(mongoMocks.findOneAndUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ _id: "recipe-1" }),
+      { _id: "recipe-1", ownerToken: { $exists: false } },
       expect.objectContaining({
         $inc: { fence: 1 },
-        $set: expect.objectContaining({
-          ownerToken: expect.any(String),
-          expiresAt: expect.any(Date),
-        }),
+        $set: { ownerToken: expect.any(String), acquiredAt: expect.any(Date) },
       }),
       { upsert: true, returnDocument: "after", includeResultMetadata: false }
     )
     const ownerToken = mongoMocks.findOneAndUpdate.mock.calls[0][1].$set.ownerToken
     expect(mongoMocks.updateOne).toHaveBeenCalledWith(
-      { _id: "recipe-1", ownerToken },
-      { $set: { expiresAt: new Date(0) }, $unset: { ownerToken: "" } }
+      { _id: "recipe-1", ownerToken, fence: 7 },
+      { $unset: { ownerToken: "", acquiredAt: "" } }
     )
   })
 
-  it("maps an occupied Mongo lease to a retryable mutation conflict", async () => {
+  it("maps an occupied Mongo owner lock to a retryable conflict", async () => {
     vi.stubEnv("NODE_ENV", "production")
     mongoMocks.configured = true
     mongoMocks.findOneAndUpdate.mockRejectedValueOnce({ code: 11000 })
@@ -121,79 +109,58 @@ describe("recipe mutation lock", () => {
     expect(mongoMocks.updateOne).not.toHaveBeenCalled()
   })
 
-  it("renews a live Mongo lease until a slow mutation finishes", async () => {
-    vi.useFakeTimers()
+  it("fails closed before a guarded write when owner lock evidence is lost", async () => {
     vi.stubEnv("NODE_ENV", "production")
     mongoMocks.configured = true
-    let finish: (() => void) | undefined
-
-    const mutation = withRecipeMutationLock(
-      "recipe-1",
-      () =>
-        new Promise<void>((resolve) => {
-          finish = resolve
-        })
-    )
-    await vi.waitFor(() => expect(mongoMocks.findOneAndUpdate).toHaveBeenCalledTimes(1))
-
-    await vi.advanceTimersByTimeAsync(RECIPE_MUTATION_LOCK_RENEWAL_MS)
-    expect(mongoMocks.updateOne).toHaveBeenCalledTimes(1)
-    const ownerToken = mongoMocks.findOneAndUpdate.mock.calls[0][1].$set.ownerToken
-    expect(mongoMocks.updateOne.mock.calls[0][0]).toEqual(
-      expect.objectContaining({
-        _id: "recipe-1",
-        ownerToken,
-        expiresAt: { $gt: expect.any(Date) },
-      })
-    )
-
-    finish?.()
-    await mutation
-    expect(mongoMocks.updateOne).toHaveBeenLastCalledWith(
-      { _id: "recipe-1", ownerToken },
-      { $set: { expiresAt: new Date(0) }, $unset: { ownerToken: "" } }
-    )
-  })
-
-  it("fails closed before a guarded write when Mongo lease ownership is lost", async () => {
-    vi.stubEnv("NODE_ENV", "production")
-    mongoMocks.configured = true
-    mongoMocks.updateOne.mockResolvedValueOnce({ matchedCount: 0, upsertedCount: 0 })
+    mongoMocks.findOne.mockResolvedValueOnce(null)
     const write = vi.fn()
 
     await expect(
-      withRecipeMutationLock("recipe-1", async (lease) => {
-        await lease.assertOwned()
-        write()
-      })
+      withRecipeMutationLock("recipe-1", (lock) => lock.runFencedWrite(write))
     ).rejects.toBeInstanceOf(RecipeMutationConflictError)
-
     expect(write).not.toHaveBeenCalled()
   })
 
-  it("verifies the shared fence and target write in one Mongo transaction", async () => {
+  it("runs a guarded target write and releases after confirmed success", async () => {
     vi.stubEnv("NODE_ENV", "production")
     mongoMocks.configured = true
     const write = vi.fn().mockResolvedValue("updated")
 
     await expect(
-      withRecipeMutationLock("recipe-1", (lease) => lease.runFencedWrite(write))
+      withRecipeMutationLock("recipe-1", (lock) => lock.runFencedWrite(write))
     ).resolves.toBe("updated")
+    expect(write).toHaveBeenCalledOnce()
+    expect(mongoMocks.updateOne).toHaveBeenCalledOnce()
+  })
 
-    const ownerToken = mongoMocks.findOneAndUpdate.mock.calls[0][1].$set.ownerToken
-    const session = await mongoMocks.startMongoSession.mock.results[0].value
-    expect(mongoMocks.updateOne).toHaveBeenNthCalledWith(
-      1,
-      {
-        _id: "recipe-1",
-        ownerToken,
-        fence: 7,
-        expiresAt: { $gt: expect.any(Date) },
-      },
-      { $set: { expiresAt: expect.any(Date) } },
-      { session }
-    )
-    expect(write).toHaveBeenCalledWith(session)
-    expect(mongoMocks.endSession).toHaveBeenCalledOnce()
+  it("retains the owner lock after an ambiguous target-write failure", async () => {
+    vi.stubEnv("NODE_ENV", "production")
+    mongoMocks.configured = true
+
+    await expect(
+      withRecipeMutationLock("recipe-1", (lock) =>
+        lock.runFencedWrite(async () => {
+          throw new Error("Mongo timeout")
+        })
+      )
+    ).rejects.toThrow("Mongo timeout")
+    expect(mongoMocks.updateOne).not.toHaveBeenCalled()
+  })
+
+  it("releases after a target write reports a confirmed no-write conflict", async () => {
+    vi.stubEnv("NODE_ENV", "production")
+    mongoMocks.configured = true
+    const conflict = Object.assign(new Error("Compare-and-swap conflict"), {
+      safeToReleaseMutationLock: true,
+    })
+
+    await expect(
+      withRecipeMutationLock("recipe-1", (lock) =>
+        lock.runFencedWrite(async () => {
+          throw conflict
+        })
+      )
+    ).rejects.toBe(conflict)
+    expect(mongoMocks.updateOne).toHaveBeenCalledOnce()
   })
 })

@@ -281,24 +281,6 @@ describe("recipe guidance repository", () => {
         document.updatedAt
       )
     ).rejects.toBeInstanceOf(RecipeGuidanceConflictError)
-
-    mongoMocks.findOne.mockResolvedValueOnce(document)
-    mongoMocks.replaceOne.mockResolvedValueOnce({ matchedCount: 1 })
-    const transactionalUpdate = {
-      ...document,
-      status: "in_review" as const,
-      updatedAt: "2026-07-29T08:02:00.000Z",
-    }
-    const session = { id: "session-1" }
-    await repository.replace(transactionalUpdate, document.updatedAt, {
-      session: session as never,
-    })
-    expect(mongoMocks.findOne).toHaveBeenLastCalledWith({ id: document.id }, { session })
-    expect(mongoMocks.replaceOne).toHaveBeenLastCalledWith(
-      { id: document.id, updatedAt: document.updatedAt },
-      transactionalUpdate,
-      { session }
-    )
   })
 
   it("fails closed when Mongo returns an invalid stored document", async () => {

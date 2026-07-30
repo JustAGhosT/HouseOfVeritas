@@ -173,9 +173,7 @@ export const PATCH = withRole(
       const validation = validateRecipe(merged)
       if (validation) return NextResponse.json({ error: validation }, { status: 400 })
 
-      const updated = await lease.runFencedWrite((session) =>
-        session ? replaceRecipe(merged, { session }) : replaceRecipe(merged)
-      )
+      const updated = await lease.runFencedWrite(() => replaceRecipe(merged))
       if (!updated) {
         throw new RecipeMutationConflictError("Recipe changed before the fenced update")
       }

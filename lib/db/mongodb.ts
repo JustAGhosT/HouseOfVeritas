@@ -1,4 +1,4 @@
-import { MongoClient, Db, Collection, ObjectId, type ClientSession } from "mongodb"
+import { MongoClient, Db, Collection, ObjectId } from "mongodb"
 import { logger } from "@/lib/logger"
 
 let client: MongoClient | null = null
@@ -75,12 +75,6 @@ export async function getDatabase(): Promise<Db> {
 export async function getCollection<T extends object>(name: string): Promise<Collection<T>> {
   const database = await getDatabase()
   return database.collection<T>(name)
-}
-
-export async function startMongoSession(): Promise<ClientSession> {
-  await getDatabase()
-  if (!client) throw new Error("MongoDB client is not connected")
-  return client.startSession()
 }
 
 // Close connection (for cleanup)

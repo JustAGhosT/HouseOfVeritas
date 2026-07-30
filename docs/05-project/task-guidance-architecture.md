@@ -76,15 +76,13 @@ serving counts must be positive; other valid preparation/cooking metrics remain 
 - Lifecycle order is `draft -> in_review -> published -> archived`. In-review versions cannot move
   back to draft, published versions can only be archived without content changes, and archived
   versions remain immutable.
-- Recipe `PATCH` and guidance `publish` share a per-recipe mutation lease. Test/demo execution uses
-  an in-process fail-fast lock; live Mongo uses an expiring `recipe_mutation_locks` lease keyed by
-  recipe ID. The owner renews that lease while the mutation remains active and releases it with an
-  owner-token condition. Each acquisition increments a durable shared fencing token. The final
-  recipe or guidance replacement runs in the same Mongo transaction as an owner-and-fence check on
-  that shared lease document, so both collections have one ordering point and a stalled older write
-  cannot commit after lease takeover. Publication acquires the lease before re-reading the recipe
-  and guidance version, so a concurrent recipe edit cannot land between revision validation and the
-  publication write.
+- Recipe `PATCH` and guidance `publish` share a per-recipe mutation lock. Test/demo execution uses an
+  in-process fail-fast lock; live Mongo stores a persistent owner record in
+  `recipe_mutation_locks`. There is no automatic timeout takeover: a second owner cannot begin while
+  the first write may still be in flight. A confirmed target-write success releases the owner token;
+  an ambiguous target-write failure retains it for operator recovery after the original writer is
+  proven stopped. This Cosmos-compatible fail-closed policy avoids unsupported cross-collection
+  transactions while preventing recipe edits and publication writes from overlapping.
 - `GET /api/recipes/:id/guidance` returns only the latest published version after checking both the
   recipe and document audience for non-admin users. It returns the recipe alongside the document
   only when their immutable revision IDs match; until historical recipe snapshots are available, a

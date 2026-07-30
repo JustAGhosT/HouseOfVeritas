@@ -28,13 +28,12 @@ Added a fail-closed lifecycle around the versioned recipe-guidance documents.
   must be reviewed again.
 - The repository rejects backward `in_review -> draft` movement. Published content remains
   immutable and may only be archived without content changes; archived content stays immutable.
-- Recipe edits and publication share a fail-fast, per-recipe mutation lease. Live Mongo stores an
-  expiring lease in `recipe_mutation_locks`; publication acquires it before re-reading both records,
-  renews it while the mutation remains active, and releases it with an owner-token condition. Each
-  acquisition increments a durable shared fencing token. The final recipe or guidance replacement
-  runs in the same Mongo transaction as an owner-and-fence check on the shared lease document, so
-  both target collections use one ordering point. This closes the cross-collection recipe-revision
-  race, slow-mutation expiry, and stalled-final-write cases identified during PR review.
+- Recipe edits and publication share a fail-fast, per-recipe mutation lock. Live Mongo stores a
+  persistent owner record in `recipe_mutation_locks`; there is no automatic timeout takeover while
+  a target write may still be in flight. Confirmed success releases the owner token, while an
+  ambiguous target-write failure deliberately retains it for operator recovery after the original
+  writer is proven stopped. This Cosmos-compatible fail-closed policy closes the cross-collection
+  recipe-revision and stalled-write cases without unsupported cross-collection transactions.
 - Existing audience-authorized reads continue to return only the latest published version.
 
 ## Changed files
@@ -51,7 +50,6 @@ Added a fail-closed lifecycle around the versioned recipe-guidance documents.
 - `tests/lib/recipe-guidance.test.ts`
 - `tests/lib/recipe-guidance-repository.test.ts`
 - `tests/lib/recipe-mutation-lock.test.ts`
-- `tests/lib/recipe-repository-session.test.ts`
 - `docs/05-project/task-guidance-architecture.md`
 - `docs/handoffs/2026-07-29-recipe-guidance-lifecycle.md`
 - `docs/README.md`
@@ -61,7 +59,7 @@ Added a fail-closed lifecycle around the versioned recipe-guidance documents.
 Passed locally:
 
 ```text
-pnpm exec vitest run tests/api/recipe-guidance.test.ts tests/lib/recipe-guidance.test.ts tests/lib/recipe-guidance-repository.test.ts tests/lib/recipe-guidance-builder.test.ts tests/lib/recipe-mutation-lock.test.ts tests/lib/recipe-repository-session.test.ts
+pnpm exec vitest run tests/api/recipe-guidance.test.ts tests/lib/recipe-guidance.test.ts tests/lib/recipe-guidance-repository.test.ts tests/lib/recipe-guidance-builder.test.ts tests/lib/recipe-mutation-lock.test.ts
 pnpm exec tsc --noEmit
 pnpm run lint
 pnpm run build
@@ -69,7 +67,7 @@ pnpm exec prettier --check <changed TypeScript and Markdown files>
 git diff --check
 ```
 
-- Focused result: 6 files, 76 tests passed.
+- Focused result: 5 files, 76 tests passed.
 - TypeScript, full repository lint, and production build passed.
 - Build generated all 125 routes, including the readiness and transition routes.
 - Browser verification is not applicable because this slice adds no page or interactive UI.
