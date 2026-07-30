@@ -15,6 +15,7 @@ interface RecipeMutationLockDocument {
 const inProcessLocks = new Set<string>()
 
 export class RecipeMutationConflictError extends Error {}
+export class RecipeMutationLockAcquisitionError extends Error {}
 export class RecipeMutationLockReleaseError extends Error {}
 
 export interface RecipeMutationLease {
@@ -85,7 +86,32 @@ async function acquireMongoLock(
     if (isDuplicateKeyError(error)) {
       throw new RecipeMutationConflictError("Recipe is being changed by another request")
     }
-    throw error
+
+    let reconciliationError: unknown
+    try {
+      const document = await collection.findOne({ _id: recipeId, ownerToken })
+      if (document && Number.isSafeInteger(document.fence) && document.fence >= 1) {
+        return document.fence
+      }
+    } catch (readError) {
+      reconciliationError = readError
+    }
+
+    logger.error("Recipe mutation lock acquisition outcome is ambiguous", {
+      recipeId,
+      ownerToken,
+      acquisitionError: error instanceof Error ? error.message : String(error),
+      reconciliationError:
+        reconciliationError instanceof Error
+          ? reconciliationError.message
+          : reconciliationError === undefined
+            ? undefined
+            : String(reconciliationError),
+    })
+    throw new RecipeMutationLockAcquisitionError(
+      "Recipe mutation lock acquisition could not be reconciled; operator recovery may be required",
+      { cause: error }
+    )
   }
 }
 

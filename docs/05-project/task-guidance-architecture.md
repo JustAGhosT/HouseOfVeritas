@@ -84,7 +84,8 @@ serving counts must be positive; other valid preparation/cooking metrics remain 
   proven stopped. This Cosmos-compatible fail-closed policy avoids unsupported cross-collection
   transactions while preventing recipe edits and publication writes from overlapping. A failed
   owner-scoped release is surfaced to the caller and recovered only through
-  `docs/03-deployment/recipe-mutation-lock-recovery.md`.
+  `docs/03-deployment/recipe-mutation-lock-recovery.md`. Ambiguous acquisitions are reconciled by
+  exact owner token or fail closed with the same token logged for recovery evidence.
 - `GET /api/recipes/:id/guidance` returns only the latest published version after checking both the
   recipe and document audience for non-admin users. It returns the recipe alongside the document
   only when their immutable revision IDs match; until historical recipe snapshots are available, a

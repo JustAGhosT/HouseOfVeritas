@@ -16,6 +16,7 @@ vi.mock("@/lib/db/mongodb", () => ({
 import {
   RECIPE_MUTATION_LOCK_COLLECTION,
   RecipeMutationConflictError,
+  RecipeMutationLockAcquisitionError,
   RecipeMutationLockReleaseError,
   resetRecipeMutationLocksForTests,
   withRecipeMutationLock,
@@ -107,6 +108,33 @@ describe("recipe mutation lock", () => {
     await expect(withRecipeMutationLock("recipe-1", async () => "not-run")).rejects.toBeInstanceOf(
       RecipeMutationConflictError
     )
+    expect(mongoMocks.updateOne).not.toHaveBeenCalled()
+  })
+
+  it("reconciles an ambiguous acquisition from its exact owner token", async () => {
+    vi.stubEnv("NODE_ENV", "production")
+    mongoMocks.configured = true
+    mongoMocks.findOneAndUpdate.mockRejectedValueOnce(new Error("Cosmos timeout"))
+
+    await expect(withRecipeMutationLock("recipe-1", async (lock) => lock.fence)).resolves.toBe(7)
+    expect(mongoMocks.findOne).toHaveBeenCalledWith({
+      _id: "recipe-1",
+      ownerToken: expect.any(String),
+    })
+    expect(mongoMocks.updateOne).toHaveBeenCalledOnce()
+  })
+
+  it("fails closed when an ambiguous acquisition cannot be reconciled", async () => {
+    vi.stubEnv("NODE_ENV", "production")
+    mongoMocks.configured = true
+    mongoMocks.findOneAndUpdate.mockRejectedValueOnce(new Error("Cosmos timeout"))
+    mongoMocks.findOne.mockResolvedValueOnce(null)
+    const operation = vi.fn()
+
+    await expect(withRecipeMutationLock("recipe-1", operation)).rejects.toBeInstanceOf(
+      RecipeMutationLockAcquisitionError
+    )
+    expect(operation).not.toHaveBeenCalled()
     expect(mongoMocks.updateOne).not.toHaveBeenCalled()
   })
 

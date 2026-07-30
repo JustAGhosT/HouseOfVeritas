@@ -3,7 +3,9 @@
 Recipe edits and guidance publication use persistent owner locks in the
 `recipe_mutation_locks` Mongo collection. A lock is intentionally retained when a target write has
 an ambiguous outcome, and a successful request reports an error if its owner-scoped release fails.
-This prevents another writer from overlapping an operation that might still complete.
+An ambiguous acquisition is read back using its exact owner token; if that cannot prove ownership,
+the request fails closed and logs the recipe ID and owner token needed to locate a lock that may
+appear later. This prevents another writer from overlapping an operation that might still complete.
 
 ## Recovery authority
 

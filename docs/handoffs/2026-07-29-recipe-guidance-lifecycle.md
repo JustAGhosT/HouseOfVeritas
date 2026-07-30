@@ -35,7 +35,8 @@ Added a fail-closed lifecycle around the versioned recipe-guidance documents.
   writer is proven stopped. This Cosmos-compatible fail-closed policy closes the cross-collection
   recipe-revision and stalled-write cases without unsupported cross-collection transactions. A
   failed owner-scoped release is surfaced as an error; the evidence and recovery procedure is in
-  `docs/03-deployment/recipe-mutation-lock-recovery.md`.
+  `docs/03-deployment/recipe-mutation-lock-recovery.md`. Ambiguous acquisitions are reconciled by
+  exact owner token or fail closed with the token logged for recovery evidence.
 - Existing audience-authorized reads continue to return only the latest published version.
 
 ## Changed files
@@ -70,7 +71,7 @@ pnpm exec prettier --check <changed TypeScript and Markdown files>
 git diff --check
 ```
 
-- Focused result: 5 files, 77 tests passed.
+- Focused result: 5 files, 79 tests passed.
 - TypeScript, full repository lint, and production build passed.
 - Build generated all 125 routes, including the readiness and transition routes.
 - Browser verification is not applicable because this slice adds no page or interactive UI.
