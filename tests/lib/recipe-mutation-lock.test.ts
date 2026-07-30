@@ -16,6 +16,7 @@ vi.mock("@/lib/db/mongodb", () => ({
 import {
   RECIPE_MUTATION_LOCK_COLLECTION,
   RecipeMutationConflictError,
+  RecipeMutationLockReleaseError,
   resetRecipeMutationLocksForTests,
   withRecipeMutationLock,
 } from "@/lib/repositories/recipe-mutation-lock"
@@ -162,5 +163,15 @@ describe("recipe mutation lock", () => {
       )
     ).rejects.toBe(conflict)
     expect(mongoMocks.updateOne).toHaveBeenCalledOnce()
+  })
+
+  it("surfaces an owner-lock release failure after a successful target write", async () => {
+    vi.stubEnv("NODE_ENV", "production")
+    mongoMocks.configured = true
+    mongoMocks.updateOne.mockRejectedValueOnce(new Error("Cosmos unavailable"))
+
+    await expect(
+      withRecipeMutationLock("recipe-1", (lock) => lock.runFencedWrite(async () => "updated"))
+    ).rejects.toBeInstanceOf(RecipeMutationLockReleaseError)
   })
 })

@@ -15,6 +15,7 @@ interface RecipeMutationLockDocument {
 const inProcessLocks = new Set<string>()
 
 export class RecipeMutationConflictError extends Error {}
+export class RecipeMutationLockReleaseError extends Error {}
 
 export interface RecipeMutationLease {
   assertOwned: () => Promise<void>
@@ -146,17 +147,26 @@ export async function withRecipeMutationLock<T>(
     return await operation({ assertOwned, fence, runFencedWrite })
   } finally {
     if (!retainLock) {
-      await collection
-        .updateOne(
+      try {
+        const release = await collection.updateOne(
           { _id: normalizedRecipeId, ownerToken, fence },
           { $unset: { ownerToken: "", acquiredAt: "" } }
         )
-        .catch((error) => {
-          logger.error("Failed to release recipe mutation lock", {
-            recipeId: normalizedRecipeId,
-            error: error instanceof Error ? error.message : String(error),
-          })
+        if (release.matchedCount !== 1) {
+          throw new Error("Owner-scoped recipe mutation lock release matched no record")
+        }
+      } catch (error) {
+        logger.error("Failed to release recipe mutation lock", {
+          recipeId: normalizedRecipeId,
+          ownerToken,
+          fence,
+          error: error instanceof Error ? error.message : String(error),
         })
+        throw new RecipeMutationLockReleaseError(
+          "Recipe update completed but its mutation lock could not be released; operator recovery is required",
+          { cause: error }
+        )
+      }
     }
   }
 }
