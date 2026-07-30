@@ -10,7 +10,7 @@ import { POST as previewDraft } from "@/app/api/recipes/[id]/guidance-drafts/pre
 import { GET as readPublished } from "@/app/api/recipes/[id]/guidance/route"
 import { PATCH as updateRecipe } from "@/app/api/recipes/[id]/route"
 import { buildRecipeGuidanceDraft } from "@/lib/recipe-guidance-builder"
-import { parseRecipeGuidanceDocument } from "@/lib/recipe-guidance"
+import { parseRecipeGuidanceDocument, type RecipeGuidanceDocument } from "@/lib/recipe-guidance"
 import { getRecipeGuidanceRepository } from "@/lib/repositories/recipe-guidance-repository"
 import { getRecipeById, replaceRecipe } from "@/lib/repositories/recipe-repository"
 import type { RecipeRecord } from "@/lib/recipes"
@@ -256,6 +256,116 @@ describe("recipe guidance APIs", () => {
     const replacement = repository.replace.mock.calls[0][0]
     expect(new Date(replacement.updatedAt).getTime()).toBeGreaterThan(
       new Date(existingDocument.updatedAt).getTime()
+    )
+  })
+
+  it("records an admin media approval with optimistic concurrency and unlocks readiness", async () => {
+    const hero = existingDocument.mediaAssets[0]
+    if (!hero) throw new Error("Expected hero media fixture")
+    const reviewedPendingMedia = parseRecipeGuidanceDocument({
+      ...existingDocument,
+      status: "in_review",
+      reviewedBy: "hans",
+      reviewedAt: existingDocument.updatedAt,
+      reviewEvidence,
+    })
+    if (!reviewedPendingMedia) throw new Error("Expected reviewed pending-media fixture")
+    repository.listByRecipeId.mockResolvedValueOnce([reviewedPendingMedia])
+
+    const response = await updateDraftSection(
+      jsonRequestFor("/api/recipes/recipe-1/guidance-drafts/2", "hans", "admin", "PATCH", {
+        expectedUpdatedAt: existingDocument.updatedAt,
+        mediaReview: {
+          assetId: hero.id,
+          decision: "approve",
+          altText: {
+            en: "Finished household supper.",
+            af: "Voltooide huishoudelike aandete.",
+          },
+        },
+      }),
+      versionRouteContext
+    )
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body.summary).toEqual({
+      mode: "memory",
+      version: 2,
+      reviewedMediaAsset: hero.id,
+      decision: "approve",
+    })
+    const approved = repository.replace.mock.calls[0][0] as RecipeGuidanceDocument
+    expect(approved).not.toHaveProperty("reviewedBy")
+    expect(approved).not.toHaveProperty("reviewedAt")
+    expect(approved).not.toHaveProperty("reviewEvidence")
+    expect(repository.replace).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mediaAssets: [
+          expect.objectContaining({
+            id: hero.id,
+            status: "approved",
+            reviewedBy: "hans",
+            reviewedAt: expect.any(String),
+          }),
+        ],
+      }),
+      existingDocument.updatedAt
+    )
+
+    const readyDocument = parseRecipeGuidanceDocument({
+      ...approved,
+      status: "in_review",
+      reviewedBy: "hans",
+      reviewedAt: approved.updatedAt,
+      reviewEvidence,
+      sections: approved.sections.map((section) => ({
+        ...section,
+        blocks: section.blocks.map((block) =>
+          block.type === "text" ? { ...block, source: "reviewed" as const } : block
+        ),
+      })),
+    })
+    if (!readyDocument) throw new Error("Expected ready media-review fixture")
+    repository.listByRecipeId.mockResolvedValueOnce([readyDocument])
+
+    const readinessResponse = await inspectPublicationReadiness(
+      requestFor("/api/recipes/recipe-1/guidance-drafts/2/publication-readiness", "hans", "admin"),
+      versionRouteContext
+    )
+    await expect(readinessResponse.json()).resolves.toMatchObject({ data: { ready: true } })
+  })
+
+  it("records a reason when an admin rejects review-required media", async () => {
+    const hero = existingDocument.mediaAssets[0]
+    if (!hero) throw new Error("Expected hero media fixture")
+
+    const response = await updateDraftSection(
+      jsonRequestFor("/api/recipes/recipe-1/guidance-drafts/2", "hans", "admin", "PATCH", {
+        expectedUpdatedAt: existingDocument.updatedAt,
+        mediaReview: {
+          assetId: hero.id,
+          decision: "reject",
+          rejectionReason: "The image does not match the finished recipe.",
+        },
+      }),
+      versionRouteContext
+    )
+
+    expect(response.status).toBe(200)
+    expect(repository.replace).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mediaAssets: [
+          expect.objectContaining({
+            id: hero.id,
+            status: "rejected",
+            rejectionReason: "The image does not match the finished recipe.",
+            reviewedBy: "hans",
+            reviewedAt: expect.any(String),
+          }),
+        ],
+      }),
+      existingDocument.updatedAt
     )
   })
 

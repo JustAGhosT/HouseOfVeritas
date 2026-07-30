@@ -57,11 +57,13 @@ serving counts must be positive; other valid preparation/cooking metrics remain 
 - `POST /api/recipes/:id/guidance-drafts` is admin-only and explicitly persists the next
   deterministic version. The repository's unique `(recipeId, version)` key closes concurrent
   creation races with a refreshable conflict; preview remains non-persisting.
-- `PATCH /api/recipes/:id/guidance-drafts/:version` is admin-only and replaces one named section of
-  a `draft` or `in_review` document. The request supplies `expectedUpdatedAt`; the server preserves
-  the stable section ID, advances `updatedAt`, schema-validates the complete aggregate, and uses the
-  repository compare-and-swap replacement. Updated text must be explicitly human-reviewed, and any
-  completed document-level review evidence is cleared when a section changes.
+- `PATCH /api/recipes/:id/guidance-drafts/:version` is admin-only and replaces one named section or
+  records an approve/reject decision for one `review_required` media asset in a `draft` or
+  `in_review` document. The request supplies `expectedUpdatedAt`; the server preserves stable IDs,
+  derives media reviewer identity/time, advances `updatedAt`, schema-validates the complete
+  aggregate, and uses repository compare-and-swap replacement. Updated text must be explicitly
+  human-reviewed, media approval requires bilingual alt text, media rejection requires a reason,
+  and any completed document-level review evidence is cleared when content changes.
 - Section updates fail closed if the canonical recipe has changed since the immutable draft
   snapshot. Clients must create a new version rather than editing old ingredient or step facts.
 - `GET /api/recipes/:id/guidance-drafts/:version/publication-readiness` is admin-only and returns a

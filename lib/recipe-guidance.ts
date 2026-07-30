@@ -97,7 +97,7 @@ const hovMediaPath = z
   .min(1)
   .max(2_000)
   .refine(isInternalMediaPath, "HOV-managed media must use an internal application path")
-const localizedTextSchema = z.object({
+export const localizedTextSchema = z.object({
   en: z.string().trim().min(1).max(2_000),
   af: z.string().trim().min(1).max(2_000),
 })

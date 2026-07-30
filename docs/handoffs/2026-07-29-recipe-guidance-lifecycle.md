@@ -17,6 +17,9 @@ Added a fail-closed lifecycle around the versioned recipe-guidance documents.
   `submit_for_review`, `approve_review`, `publish`, and `archive` actions.
 - Every transition is admin-only, validates the current immutable recipe revision where applicable,
   and uses `expectedUpdatedAt` compare-and-swap persistence.
+- The admin draft update contract also records CAS-protected approve/reject decisions for
+  `review_required` media. Reviewer identity and time are server-derived; approval requires
+  bilingual alt text and rejection requires a reason.
 - Review approval records the authenticated reviewer and time plus explicit confirmation of
   bilingual content, allergens/food safety, provenance/rights, and named optional-media waivers.
 - `GET /api/recipes/:id/guidance-drafts/:version/publication-readiness` reports deterministic
@@ -24,8 +27,8 @@ Added a fail-closed lifecycle around the versioned recipe-guidance documents.
 - Publication requires reviewed publishable blocks, complete canonical ingredient/step coverage,
   terminal media states, approved referenced media, explicit waivers for unavailable optional
   media, and complete review evidence.
-- Editing a section after approval clears document-level review evidence so the changed version
-  must be reviewed again.
+- Editing a section or reviewing media after approval clears document-level review evidence so the
+  changed version must be reviewed again.
 - The repository rejects backward `in_review -> draft` movement. Published content remains
   immutable and may only be archived without content changes; archived content stays immutable.
 - Recipe edits and publication share a fail-fast, per-recipe mutation lock. Live Mongo stores a
@@ -71,7 +74,7 @@ pnpm exec prettier --check <changed TypeScript and Markdown files>
 git diff --check
 ```
 
-- Focused result: 5 files, 79 tests passed.
+- Focused result: 5 files, 81 tests passed.
 - TypeScript, full repository lint, and production build passed.
 - Build generated all 125 routes, including the readiness and transition routes.
 - Browser verification is not applicable because this slice adds no page or interactive UI.
@@ -82,8 +85,9 @@ No deployment, production-data write, migration apply, Sluice/provider call, ima
 public package, OmniPost action, or browser acceptance was performed.
 
 The next bounded slice is the text-first Hans authoring/review/preview UI and Irma mobile reader
-against these stable lifecycle contracts. Media planning and licensed/uploaded media review can
-follow without pretending the separate Sluice image-generation capability is available.
+against these stable lifecycle contracts, including the media review decision now available to an
+admin client. Media planning and uploaded-media intake can follow without pretending the separate
+Sluice image-generation capability is available.
 
 ## Trace envelope
 
