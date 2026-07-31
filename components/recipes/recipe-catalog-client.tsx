@@ -505,10 +505,18 @@ export default function RecipeCatalogClient({ persona }: { persona: Persona }) {
 
           <section className="space-y-6">
             {selectedRecipe && isAdmin && (
-              <RecipeGuidanceWorkspace recipe={selectedRecipe} language={language} />
+              <RecipeGuidanceWorkspace
+                key={selectedRecipe.id}
+                recipe={selectedRecipe}
+                language={language}
+              />
             )}
             {selectedRecipe && persona === "irma" && !isAdmin && (
-              <PublishedRecipeGuidance recipeId={selectedRecipe.id} language={language} />
+              <PublishedRecipeGuidance
+                key={selectedRecipe.id}
+                recipeId={selectedRecipe.id}
+                language={language}
+              />
             )}
             {selectedRecipe ? (
               <article className="border-border bg-card rounded-2xl border">

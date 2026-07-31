@@ -28,6 +28,9 @@ Added the text-first clients for the stable recipe-guidance lifecycle.
 - Missing published guidance leaves the canonical recipe visible. Datastore and revision failures
   remain explicit and retryable.
 - A schema-valid published browser fixture exercises the UI without seeding demo or production data.
+- PR review remediation keys guidance clients by recipe so stale responses cannot cross recipe
+  selections, uses collision-safe UUIDs for new reviewed blocks, and lets Hans remove a rejected
+  optional media reference before saving the section.
 
 ## Changed files
 
@@ -46,7 +49,7 @@ Added the text-first clients for the stable recipe-guidance lifecycle.
 Passed locally:
 
 ```text
-pnpm exec vitest run tests/components/recipe-guidance-ui.test.tsx tests/api/recipe-guidance.test.ts tests/lib/recipe-guidance.test.ts tests/lib/recipe-guidance-repository.test.ts tests/lib/recipe-guidance-builder.test.ts tests/lib/recipe-mutation-lock.test.ts
+pnpm test -- tests/components/recipe-guidance-ui.test.tsx tests/lib/recipe-guidance-builder.test.ts tests/lib/recipe-guidance.test.ts tests/lib/recipe-guidance-repository.test.ts tests/lib/recipe-guidance-migration.test.ts tests/api/recipe-guidance.test.ts
 pnpm exec tsc --noEmit
 pnpm run lint
 pnpm run build
@@ -54,7 +57,8 @@ pnpm exec prettier --check <changed TypeScript, JSON, and Markdown files>
 git diff --check
 ```
 
-- Focused result: 6 files, 85 tests passed.
+- Focused result after bot-review remediation: 6 files, 81 tests passed, including interaction
+  coverage for bilingual media approval, lifecycle conflict reload, and rejected-reference removal.
 - TypeScript, full repository lint, and production build passed.
 - Build generated all 125 routes.
 - Playwright CLI used local synthetic Auth.js sessions and intercepted fixture responses:

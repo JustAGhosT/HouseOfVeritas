@@ -117,11 +117,13 @@ function SectionEditor({
   section,
   disabled,
   busy,
+  removableMediaAssetIds,
   onSave,
 }: {
   section: RecipeGuidanceSection
   disabled: boolean
   busy: boolean
+  removableMediaAssetIds: ReadonlySet<string>
   onSave: (section: RecipeGuidanceSection) => Promise<void>
 }) {
   const [draft, setDraft] = useState(section)
@@ -145,7 +147,7 @@ function SectionEditor({
 
   const addReviewedParagraph = () => {
     const newBlock: RecipeGuidanceBlock = {
-      id: `${section.id}-reviewed-${Date.now()}`,
+      id: `${section.id}-reviewed-${globalThis.crypto.randomUUID()}`,
       type: "text",
       source: "reviewed",
       text: { en: "", af: "" },
@@ -238,9 +240,20 @@ function SectionEditor({
           ) : (
             <div
               key={block.id}
-              className="border-border text-muted-foreground rounded-lg border border-dashed p-3 text-xs"
+              className="border-border text-muted-foreground flex items-center justify-between gap-3 rounded-lg border border-dashed p-3 text-xs"
             >
-              {blockDescription(block)}
+              <span>{blockDescription(block)}</span>
+              {block.type === "media_reference" &&
+                removableMediaAssetIds.has(block.mediaAssetId) && (
+                  <button
+                    type="button"
+                    onClick={() => removeBlock(index)}
+                    disabled={disabled}
+                    className="text-destructive shrink-0 font-semibold disabled:opacity-50"
+                  >
+                    Remove rejected media reference
+                  </button>
+                )}
             </div>
           )
         )}
@@ -614,6 +627,15 @@ export function RecipeGuidanceWorkspace({
   const reviewConfirmed = reviewChecks.bilingual && reviewChecks.safety && reviewChecks.provenance
   const unavailableAssets =
     selectedDocument?.mediaAssets.filter((asset) => asset.status === "unavailable") ?? []
+  const rejectedMediaAssetIds = useMemo(
+    () =>
+      new Set(
+        selectedDocument?.mediaAssets
+          .filter((asset) => asset.status === "rejected")
+          .map((asset) => asset.id) ?? []
+      ),
+    [selectedDocument]
+  )
 
   return (
     <section
@@ -723,6 +745,7 @@ export function RecipeGuidanceWorkspace({
                       section={section}
                       disabled={!editable || Boolean(busy)}
                       busy={busy === `section-${section.id}`}
+                      removableMediaAssetIds={rejectedMediaAssetIds}
                       onSave={saveSection}
                     />
                   ))}
