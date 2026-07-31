@@ -132,6 +132,43 @@ describe("recipe guidance contracts", () => {
     expect(result.success).toBe(true)
   })
 
+  it("rejects approved image briefs without grounded facts and exclusions", () => {
+    const approvedBrief = {
+      id: "brief-1",
+      sectionId: "section:cooking",
+      role: "step",
+      status: "approved",
+      description: {
+        en: "Show the reviewed visual state after browning.",
+        af: "Wys die hersiene visuele toestand na verbruining.",
+      },
+      approvedBy: "hans",
+      approvedAt: now,
+    } as const
+
+    expect(
+      recipeImageBriefSchema.safeParse({
+        ...approvedBrief,
+        reviewedFacts: [],
+        excludedContent: ["No text overlays"],
+      }).success
+    ).toBe(false)
+    expect(
+      recipeImageBriefSchema.safeParse({
+        ...approvedBrief,
+        reviewedFacts: ["Canonical ingredient: rice"],
+        excludedContent: [],
+      }).success
+    ).toBe(false)
+    expect(
+      recipeImageBriefSchema.safeParse({
+        ...approvedBrief,
+        reviewedFacts: ["Canonical ingredient: rice"],
+        excludedContent: ["No text overlays"],
+      }).success
+    ).toBe(true)
+  })
+
   it("requires bilingual alt text and review metadata before approval", () => {
     const result = recipeMediaAssetSchema.safeParse({
       id: "asset-1",
@@ -375,6 +412,8 @@ describe("recipe guidance contracts", () => {
       role: "hero",
       status: "approved",
       description: { en: "Finished dish.", af: "Voltooide gereg." },
+      reviewedFacts: ["Canonical serving state"],
+      excludedContent: ["No text overlays"],
       approvedBy: "hans",
       approvedAt: now,
     }

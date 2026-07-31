@@ -99,4 +99,5 @@ Dated session continuity notes (root cause, files changed, verification, next-ow
 | [2026-07-29-recipe-guidance-lifecycle.md](handoffs/2026-07-29-recipe-guidance-lifecycle.md)               | Review transitions, readiness evidence, publication, and immutable archival          |
 | [2026-07-31-recipe-guidance-ui.md](handoffs/2026-07-31-recipe-guidance-ui.md)                             | Hans review workspace and Irma mobile published-guidance reader                      |
 | [2026-07-31-recipe-guidance-media-intake.md](handoffs/2026-07-31-recipe-guidance-media-intake.md)         | Authenticated recipe media intake and deterministic section planning                 |
+| [2026-07-31-recipe-guidance-brief-approval.md](handoffs/2026-07-31-recipe-guidance-brief-approval.md)     | Human image-brief review and disabled provider-neutral request contract              |
 | [2026-07-28-user-selectable-themes.md](handoffs/2026-07-28-user-selectable-themes.md)                     | User-selectable workspace themes implementation, review, and merge handoff           |

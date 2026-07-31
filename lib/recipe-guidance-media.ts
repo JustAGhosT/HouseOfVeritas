@@ -32,6 +32,23 @@ export interface AttachRecipeGuidanceUploadInput {
   now: string
 }
 
+export type RecipeImageBriefUpdate =
+  | {
+      action: "edit"
+      briefId: string
+      description: { en: string; af: string }
+      reviewedFacts: string[]
+      excludedContent: string[]
+    }
+  | { action: "approve"; briefId: string }
+  | { action: "reject"; briefId: string; rejectionReason: string }
+
+export interface ReviewRecipeImageBriefInput {
+  update: RecipeImageBriefUpdate
+  reviewerUserId: string
+  now: string
+}
+
 function withoutReview(document: RecipeGuidanceDocument): RecipeGuidanceDocument {
   const mutable = { ...document }
   delete mutable.reviewedBy
@@ -215,6 +232,60 @@ export function attachRecipeGuidanceUpload(
     ...withoutReview(document),
     mediaAssets,
     sections,
+    updatedAt: input.now,
+  })
+}
+
+export function reviewRecipeImageBrief(
+  document: RecipeGuidanceDocument,
+  input: ReviewRecipeImageBriefInput
+): RecipeGuidanceDocument | null {
+  const briefIndex = document.imageBriefs.findIndex((brief) => brief.id === input.update.briefId)
+  const current = document.imageBriefs[briefIndex]
+  if (briefIndex === -1 || !current) return null
+
+  let replacement: RecipeImageBrief
+  if (input.update.action === "edit") {
+    if (current.status !== "draft" && current.status !== "rejected") return null
+    replacement = {
+      id: current.id,
+      sectionId: current.sectionId,
+      role: current.role,
+      status: "draft",
+      description: input.update.description,
+      reviewedFacts: input.update.reviewedFacts,
+      excludedContent: input.update.excludedContent,
+    }
+  } else if (input.update.action === "approve") {
+    if (
+      current.status !== "draft" ||
+      current.reviewedFacts.length === 0 ||
+      current.excludedContent.length === 0
+    ) {
+      return null
+    }
+    replacement = {
+      ...current,
+      status: "approved",
+      approvedBy: input.reviewerUserId,
+      approvedAt: input.now,
+    }
+  } else {
+    if (current.status !== "draft") return null
+    replacement = {
+      ...current,
+      status: "rejected",
+      rejectedBy: input.reviewerUserId,
+      rejectedAt: input.now,
+      rejectionReason: input.update.rejectionReason,
+    }
+  }
+
+  const imageBriefs = [...document.imageBriefs]
+  imageBriefs[briefIndex] = replacement
+  return parseRecipeGuidanceDocument({
+    ...withoutReview(document),
+    imageBriefs,
     updatedAt: input.now,
   })
 }

@@ -4,13 +4,14 @@ import {
   POST as createDraft,
 } from "@/app/api/recipes/[id]/guidance-drafts/route"
 import { PATCH as updateDraftSection } from "@/app/api/recipes/[id]/guidance-drafts/[version]/route"
+import { POST as prepareGenerationRequest } from "@/app/api/recipes/[id]/guidance-drafts/[version]/generation-requests/route"
 import { GET as inspectPublicationReadiness } from "@/app/api/recipes/[id]/guidance-drafts/[version]/publication-readiness/route"
 import { POST as transitionDraft } from "@/app/api/recipes/[id]/guidance-drafts/[version]/transitions/route"
 import { POST as previewDraft } from "@/app/api/recipes/[id]/guidance-drafts/preview/route"
 import { GET as readPublished } from "@/app/api/recipes/[id]/guidance/route"
 import { PATCH as updateRecipe } from "@/app/api/recipes/[id]/route"
 import { buildRecipeGuidanceDraft } from "@/lib/recipe-guidance-builder"
-import { planRecipeGuidanceMedia } from "@/lib/recipe-guidance-media"
+import { planRecipeGuidanceMedia, reviewRecipeImageBrief } from "@/lib/recipe-guidance-media"
 import { parseRecipeGuidanceDocument, type RecipeGuidanceDocument } from "@/lib/recipe-guidance"
 import { getRecipeGuidanceRepository } from "@/lib/repositories/recipe-guidance-repository"
 import { getRecipeById, replaceRecipe } from "@/lib/repositories/recipe-repository"
@@ -422,6 +423,147 @@ describe("recipe guidance APIs", () => {
     await expect(response.json()).resolves.toEqual({
       error: "Recipe guidance changed; refresh and retry",
     })
+  })
+
+  it("records human image-brief edits and approval with optimistic concurrency", async () => {
+    const planned = planRecipeGuidanceMedia(
+      existingDocument,
+      recipe,
+      "2026-07-31T09:31:00.000Z"
+    )!.document
+    const brief = planned.imageBriefs[0]!
+    repository.listByRecipeId.mockResolvedValueOnce([planned])
+
+    const editResponse = await updateDraftSection(
+      jsonRequestFor("/api/recipes/recipe-1/guidance-drafts/2", "hans", "admin", "PATCH", {
+        expectedUpdatedAt: planned.updatedAt,
+        imageBriefReview: {
+          action: "edit",
+          briefId: brief.id,
+          description: { en: "Reviewed brief", af: "Nagegane opdrag" },
+          reviewedFacts: ["Canonical ingredient: Rice"],
+          excludedContent: ["No text overlays"],
+        },
+      }),
+      versionRouteContext
+    )
+    expect(editResponse.status).toBe(200)
+    const edited = repository.replace.mock.calls[0][0] as RecipeGuidanceDocument
+    expect(edited.imageBriefs.find((candidate) => candidate.id === brief.id)).toMatchObject({
+      status: "draft",
+      description: { en: "Reviewed brief", af: "Nagegane opdrag" },
+    })
+
+    repository.listByRecipeId.mockResolvedValueOnce([edited])
+    const approveResponse = await updateDraftSection(
+      jsonRequestFor("/api/recipes/recipe-1/guidance-drafts/2", "hans", "admin", "PATCH", {
+        expectedUpdatedAt: edited.updatedAt,
+        imageBriefReview: { action: "approve", briefId: brief.id },
+      }),
+      versionRouteContext
+    )
+    expect(approveResponse.status).toBe(200)
+    expect(repository.replace.mock.calls[1][0]).toMatchObject({
+      imageBriefs: expect.arrayContaining([
+        expect.objectContaining({
+          id: brief.id,
+          status: "approved",
+          approvedBy: "hans",
+          approvedAt: expect.any(String),
+        }),
+      ]),
+    })
+  })
+
+  it("prepares but never executes or persists an approved brief request contract", async () => {
+    const planned = planRecipeGuidanceMedia(
+      existingDocument,
+      recipe,
+      "2026-07-31T09:31:00.000Z"
+    )!.document
+    const brief = planned.imageBriefs[0]!
+    const approved = reviewRecipeImageBrief(planned, {
+      update: { action: "approve", briefId: brief.id },
+      reviewerUserId: "hans",
+      now: "2026-07-31T09:32:00.000Z",
+    })!
+    repository.listByRecipeId.mockResolvedValueOnce([approved])
+
+    const response = await prepareGenerationRequest(
+      jsonRequestFor(
+        "/api/recipes/recipe-1/guidance-drafts/2/generation-requests",
+        "hans",
+        "admin",
+        "POST",
+        { expectedUpdatedAt: approved.updatedAt, imageBriefId: brief.id }
+      ),
+      versionRouteContext
+    )
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body).toMatchObject({
+      data: {
+        request: {
+          requestedBy: "hans",
+          target: { imageBriefId: brief.id },
+          execution: { allowed: false, provider: null, modelAlias: null },
+        },
+      },
+      summary: { mode: "memory", executionAllowed: false, persisted: false },
+    })
+    expect(repository.replace).not.toHaveBeenCalled()
+  })
+
+  it("fails closed when preparing a request from stale or unapproved guidance", async () => {
+    const planned = planRecipeGuidanceMedia(
+      existingDocument,
+      recipe,
+      "2026-07-31T09:31:00.000Z"
+    )!.document
+    const brief = planned.imageBriefs[0]!
+    repository.listByRecipeId.mockResolvedValueOnce([planned])
+    const staleResponse = await prepareGenerationRequest(
+      jsonRequestFor(
+        "/api/recipes/recipe-1/guidance-drafts/2/generation-requests",
+        "hans",
+        "admin",
+        "POST",
+        { expectedUpdatedAt: existingDocument.updatedAt, imageBriefId: brief.id }
+      ),
+      versionRouteContext
+    )
+    expect(staleResponse.status).toBe(409)
+
+    repository.listByRecipeId.mockResolvedValueOnce([planned])
+    const draftResponse = await prepareGenerationRequest(
+      jsonRequestFor(
+        "/api/recipes/recipe-1/guidance-drafts/2/generation-requests",
+        "hans",
+        "admin",
+        "POST",
+        { expectedUpdatedAt: planned.updatedAt, imageBriefId: brief.id }
+      ),
+      versionRouteContext
+    )
+    expect(draftResponse.status).toBe(409)
+    expect(repository.replace).not.toHaveBeenCalled()
+  })
+
+  it("denies generation request contracts to non-admin users", async () => {
+    const response = await prepareGenerationRequest(
+      jsonRequestFor(
+        "/api/recipes/recipe-1/guidance-drafts/2/generation-requests",
+        "irma",
+        "resident",
+        "POST",
+        { expectedUpdatedAt: existingDocument.updatedAt, imageBriefId: "brief-1" }
+      ),
+      versionRouteContext
+    )
+
+    expect(response.status).toBe(403)
+    expect(repository.listByRecipeId).not.toHaveBeenCalled()
   })
 
   it("attaches only a private image upload scoped to this recipe", async () => {

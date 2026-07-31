@@ -9,6 +9,7 @@ import {
   type RecipeGuidanceSectionKind,
   type RecipeMediaAsset,
 } from "@/lib/recipe-guidance"
+import type { RecipeImageBriefUpdate } from "@/lib/recipe-guidance-media"
 import type { RecipeRecord } from "@/lib/recipes"
 import {
   AlertTriangle,
@@ -41,6 +42,11 @@ interface GuidanceMutationResponse {
 interface GuidancePreviewResponse {
   data: { recipe: RecipeRecord; document: RecipeGuidanceDocument }
   summary: { persisted: false; nextVersion: number }
+}
+
+interface GenerationRequestResponse {
+  data: { request: { requestId: string; execution: { allowed: false; reason: string } } }
+  summary: { executionAllowed: false; persisted: false }
 }
 
 interface ReadinessIssue {
@@ -646,6 +652,56 @@ export function RecipeGuidanceWorkspace({
     }
   }
 
+  const reviewImageBrief = async (input: RecipeImageBriefUpdate) => {
+    if (!selectedDocument) return
+    setBusy(`brief-${input.briefId}`)
+    setError("")
+    setMessage("")
+    try {
+      const response = await apiFetch<GuidanceMutationResponse>(
+        `/api/recipes/${recipe.id}/guidance-drafts/${selectedDocument.version}`,
+        {
+          method: "PATCH",
+          label: "RecipeGuidanceImageBriefReview",
+          body: {
+            expectedUpdatedAt: selectedDocument.updatedAt,
+            imageBriefReview: input,
+          },
+        }
+      )
+      replaceDocument(response.data.document)
+      setMessage(`Image brief ${input.action} recorded. Document review approval was cleared.`)
+    } catch (reviewError) {
+      await handleMutationError(reviewError, "Unable to update the image brief")
+    } finally {
+      setBusy("")
+    }
+  }
+
+  const prepareGenerationRequest = async (imageBriefId: string) => {
+    if (!selectedDocument) return
+    setBusy(`brief-request-${imageBriefId}`)
+    setError("")
+    setMessage("")
+    try {
+      const response = await apiFetch<GenerationRequestResponse>(
+        `/api/recipes/${recipe.id}/guidance-drafts/${selectedDocument.version}/generation-requests`,
+        {
+          method: "POST",
+          label: "RecipeGuidanceGenerationRequest",
+          body: { expectedUpdatedAt: selectedDocument.updatedAt, imageBriefId },
+        }
+      )
+      setMessage(
+        `Validated request ${response.data.request.requestId}. Execution remains disabled and nothing was persisted.`
+      )
+    } catch (requestError) {
+      await handleMutationError(requestError, "Unable to prepare the generation request")
+    } finally {
+      setBusy("")
+    }
+  }
+
   const transition = async (action: TransitionAction) => {
     if (!selectedDocument) return
     setBusy(action)
@@ -943,6 +999,8 @@ export function RecipeGuidanceWorkspace({
                 busy={Boolean(busy)}
                 onPlan={planMedia}
                 onAttach={attachUpload}
+                onReviewBrief={reviewImageBrief}
+                onPrepareRequest={prepareGenerationRequest}
               />
 
               {selectedDocument.mediaAssets.length > 0 && (

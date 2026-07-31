@@ -1,7 +1,8 @@
 "use client"
 
 import { ApiError, apiFetch } from "@/lib/api-client"
-import type { RecipeGuidanceDocument } from "@/lib/recipe-guidance"
+import type { RecipeGuidanceDocument, RecipeImageBrief } from "@/lib/recipe-guidance"
+import type { RecipeImageBriefUpdate } from "@/lib/recipe-guidance-media"
 import { ImagePlus, Loader2, RefreshCw, Upload } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 
@@ -37,6 +38,183 @@ function errorText(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
 }
 
+function lines(value: string) {
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+}
+
+function ImageBriefEditor({
+  brief,
+  disabled,
+  canPrepareRequest,
+  onReview,
+  onPrepareRequest,
+}: {
+  brief: RecipeImageBrief
+  disabled: boolean
+  canPrepareRequest: boolean
+  onReview: (input: RecipeImageBriefUpdate) => Promise<void>
+  onPrepareRequest: (briefId: string) => Promise<void>
+}) {
+  const [descriptionEn, setDescriptionEn] = useState(brief.description.en)
+  const [descriptionAf, setDescriptionAf] = useState(brief.description.af)
+  const [reviewedFacts, setReviewedFacts] = useState(brief.reviewedFacts.join("\n"))
+  const [excludedContent, setExcludedContent] = useState(brief.excludedContent.join("\n"))
+  const [rejectionReason, setRejectionReason] = useState(brief.rejectionReason ?? "")
+  const persistedReviewedFacts = brief.reviewedFacts.join("\n")
+  const persistedExcludedContent = brief.excludedContent.join("\n")
+  const persistedKey = JSON.stringify([
+    brief.description.en,
+    brief.description.af,
+    persistedReviewedFacts,
+    persistedExcludedContent,
+    brief.rejectionReason ?? "",
+  ])
+  const [lastPersistedKey, setLastPersistedKey] = useState(persistedKey)
+
+  if (lastPersistedKey !== persistedKey) {
+    setLastPersistedKey(persistedKey)
+    setDescriptionEn(brief.description.en)
+    setDescriptionAf(brief.description.af)
+    setReviewedFacts(persistedReviewedFacts)
+    setExcludedContent(persistedExcludedContent)
+    setRejectionReason(brief.rejectionReason ?? "")
+  }
+  const editable = (brief.status === "draft" || brief.status === "rejected") && !disabled
+  const complete = Boolean(descriptionEn.trim() && descriptionAf.trim())
+  const reviewReady =
+    complete && lines(reviewedFacts).length > 0 && lines(excludedContent).length > 0
+  const hasUnsavedChanges =
+    descriptionEn !== brief.description.en ||
+    descriptionAf !== brief.description.af ||
+    reviewedFacts !== persistedReviewedFacts ||
+    excludedContent !== persistedExcludedContent
+
+  return (
+    <article className="border-border space-y-3 rounded-lg border p-3 text-xs">
+      <div>
+        <p className="font-semibold">
+          {brief.role.replaceAll("_", " ")} · {brief.status}
+        </p>
+        {brief.rejectionReason && (
+          <p className="text-destructive mt-1">Rejected: {brief.rejectionReason}</p>
+        )}
+      </div>
+      <label className="text-muted-foreground block">
+        English brief
+        <textarea
+          value={descriptionEn}
+          onChange={(event) => setDescriptionEn(event.target.value)}
+          disabled={!editable}
+          rows={3}
+          className="border-border bg-background text-foreground mt-1 block w-full rounded-md border px-3 py-2"
+        />
+      </label>
+      <label className="text-muted-foreground block">
+        Afrikaans brief
+        <textarea
+          value={descriptionAf}
+          onChange={(event) => setDescriptionAf(event.target.value)}
+          disabled={!editable}
+          rows={3}
+          className="border-border bg-background text-foreground mt-1 block w-full rounded-md border px-3 py-2"
+        />
+      </label>
+      <div className="grid gap-3 lg:grid-cols-2">
+        <label className="text-muted-foreground block">
+          Reviewed facts (one per line)
+          <textarea
+            value={reviewedFacts}
+            onChange={(event) => setReviewedFacts(event.target.value)}
+            disabled={!editable}
+            rows={4}
+            className="border-border bg-background text-foreground mt-1 block w-full rounded-md border px-3 py-2"
+          />
+        </label>
+        <label className="text-muted-foreground block">
+          Excluded content (one per line)
+          <textarea
+            value={excludedContent}
+            onChange={(event) => setExcludedContent(event.target.value)}
+            disabled={!editable}
+            rows={4}
+            className="border-border bg-background text-foreground mt-1 block w-full rounded-md border px-3 py-2"
+          />
+        </label>
+      </div>
+      {brief.status === "draft" && (
+        <label className="text-muted-foreground block">
+          Rejection reason
+          <input
+            value={rejectionReason}
+            onChange={(event) => setRejectionReason(event.target.value)}
+            disabled={disabled}
+            className="border-border bg-background text-foreground mt-1 block w-full rounded-md border px-3 py-2"
+          />
+        </label>
+      )}
+      <div className="flex flex-wrap gap-2">
+        {editable && (
+          <button
+            type="button"
+            disabled={!complete}
+            onClick={() =>
+              void onReview({
+                action: "edit",
+                briefId: brief.id,
+                description: { en: descriptionEn.trim(), af: descriptionAf.trim() },
+                reviewedFacts: lines(reviewedFacts),
+                excludedContent: lines(excludedContent),
+              })
+            }
+            className="border-border bg-background rounded-md border px-3 py-2 font-semibold disabled:opacity-50"
+          >
+            Save brief draft
+          </button>
+        )}
+        {brief.status === "draft" && (
+          <>
+            <button
+              type="button"
+              disabled={disabled || !reviewReady || hasUnsavedChanges}
+              onClick={() => void onReview({ action: "approve", briefId: brief.id })}
+              className="bg-primary text-primary-foreground rounded-md px-3 py-2 font-semibold disabled:opacity-50"
+            >
+              Approve brief
+            </button>
+            <button
+              type="button"
+              disabled={disabled || !rejectionReason.trim() || hasUnsavedChanges}
+              onClick={() =>
+                void onReview({
+                  action: "reject",
+                  briefId: brief.id,
+                  rejectionReason: rejectionReason.trim(),
+                })
+              }
+              className="border-destructive/40 text-destructive rounded-md border px-3 py-2 font-semibold disabled:opacity-50"
+            >
+              Reject brief
+            </button>
+          </>
+        )}
+        {brief.status === "approved" && canPrepareRequest && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => void onPrepareRequest(brief.id)}
+            className="border-border bg-background rounded-md border px-3 py-2 font-semibold disabled:opacity-50"
+          >
+            Prepare disabled request contract
+          </button>
+        )}
+      </div>
+    </article>
+  )
+}
+
 export function RecipeGuidanceMediaIntake({
   recipeId,
   document,
@@ -44,6 +222,8 @@ export function RecipeGuidanceMediaIntake({
   busy,
   onPlan,
   onAttach,
+  onReviewBrief,
+  onPrepareRequest,
 }: {
   recipeId: string
   document: RecipeGuidanceDocument
@@ -56,6 +236,8 @@ export function RecipeGuidanceMediaIntake({
     rightsBasis: string
     attributionText: string
   }) => Promise<void>
+  onReviewBrief: (input: RecipeImageBriefUpdate) => Promise<void>
+  onPrepareRequest: (briefId: string) => Promise<void>
 }) {
   const [uploads, setUploads] = useState<UploadRecord[]>([])
   const [selectedUploadId, setSelectedUploadId] = useState("")
@@ -286,13 +468,16 @@ export function RecipeGuidanceMediaIntake({
         <div className="space-y-2">
           <h4 className="text-sm font-semibold">Deterministic image briefs</h4>
           {document.imageBriefs.map((brief) => (
-            <div key={brief.id} className="border-border rounded-lg border p-3 text-xs">
-              <p className="font-semibold">
-                {brief.role.replaceAll("_", " ")} · {brief.status}
-              </p>
-              <p className="text-muted-foreground mt-1">{brief.description.en}</p>
-              <p className="text-muted-foreground mt-1">{brief.description.af}</p>
-            </div>
+            <ImageBriefEditor
+              key={brief.id}
+              brief={brief}
+              disabled={disabled || busy}
+              canPrepareRequest={document.mediaAssets.some(
+                (asset) => asset.imageBriefId === brief.id && asset.status === "planned"
+              )}
+              onReview={onReviewBrief}
+              onPrepareRequest={onPrepareRequest}
+            />
           ))}
         </div>
       )}

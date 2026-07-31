@@ -3,11 +3,16 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { ApiError, apiFetch } from "@/lib/api-client"
 import { buildRecipeGuidanceDraft } from "@/lib/recipe-guidance-builder"
-import { planRecipeGuidanceMedia } from "@/lib/recipe-guidance-media"
+import {
+  attachRecipeGuidanceUpload,
+  planRecipeGuidanceMedia,
+  reviewRecipeImageBrief,
+} from "@/lib/recipe-guidance-media"
 import { parseRecipeGuidanceDocument, type RecipeGuidanceDocument } from "@/lib/recipe-guidance"
 import type { RecipeRecord } from "@/lib/recipes"
 import { PublishedRecipeGuidance } from "@/components/recipes/published-recipe-guidance"
 import { RecipeGuidanceDocumentView } from "@/components/recipes/recipe-guidance-document-view"
+import { RecipeGuidanceMediaIntake } from "@/components/recipes/recipe-guidance-media-intake"
 import { RecipeGuidanceWorkspace } from "@/components/recipes/recipe-guidance-workspace"
 import uiFlowFixture from "@/tests/fixtures/recipe-guidance/ui-flow.json"
 
@@ -430,5 +435,156 @@ describe("recipe guidance UI", () => {
         })
       )
     )
+  })
+
+  it("approves a human-reviewed image brief and previews a disabled request contract", async () => {
+    const planned = planRecipeGuidanceMedia(draft, recipe, "2026-07-31T08:06:00.000Z")!.document
+    const brief = planned.imageBriefs[0]!
+    const approved = reviewRecipeImageBrief(planned, {
+      update: { action: "approve", briefId: brief.id },
+      reviewerUserId: "hans",
+      now: "2026-07-31T08:07:00.000Z",
+    })!
+    vi.mocked(apiFetch).mockImplementation(async (url, options) => {
+      if (url.startsWith("/api/uploads?")) return { files: [], total: 0 }
+      if (url.endsWith("/publication-readiness")) {
+        return {
+          data: {
+            documentId: planned.id,
+            version: 1,
+            status: "draft",
+            ready: false,
+            issues: [{ code: "media", message: "Media is not reviewed" }],
+          },
+        }
+      }
+      if (options?.label === "RecipeGuidanceImageBriefReview") {
+        return { data: { document: approved } }
+      }
+      if (options?.label === "RecipeGuidanceGenerationRequest") {
+        return {
+          data: {
+            request: {
+              requestId: "request-disabled-1",
+              execution: { allowed: false, reason: "Provider execution is disabled" },
+            },
+          },
+          summary: { executionAllowed: false, persisted: false },
+        }
+      }
+      return { data: { documents: [planned] } }
+    })
+
+    const user = userEvent.setup()
+    render(<RecipeGuidanceWorkspace recipe={recipe} language="both" />)
+    await user.click((await screen.findAllByRole("button", { name: "Approve brief" }))[0]!)
+    await user.click(
+      await screen.findByRole("button", { name: "Prepare disabled request contract" })
+    )
+
+    expect(
+      await screen.findByText(
+        "Validated request request-disabled-1. Execution remains disabled and nothing was persisted."
+      )
+    ).toBeInTheDocument()
+    expect(apiFetch).toHaveBeenCalledWith(
+      `/api/recipes/${recipe.id}/guidance-drafts/1/generation-requests`,
+      expect.objectContaining({
+        method: "POST",
+        body: { expectedUpdatedAt: approved.updatedAt, imageBriefId: brief.id },
+      })
+    )
+  })
+
+  it("preserves unsaved edits in other briefs when one brief changes", async () => {
+    const planned = planRecipeGuidanceMedia(draft, recipe, "2026-07-31T08:06:00.000Z")!.document
+    vi.mocked(apiFetch).mockResolvedValue({ files: [], total: 0 })
+    const props = {
+      recipeId: recipe.id,
+      disabled: false,
+      busy: false,
+      onPlan: vi.fn(async () => {}),
+      onAttach: vi.fn(async () => {}),
+      onReviewBrief: vi.fn(async () => {}),
+      onPrepareRequest: vi.fn(async () => {}),
+    }
+    const user = userEvent.setup()
+    const { rerender } = render(<RecipeGuidanceMediaIntake {...props} document={planned} />)
+    const englishBriefs = await screen.findAllByRole("textbox", { name: "English brief" })
+
+    await user.clear(englishBriefs[1]!)
+    await user.type(englishBriefs[1]!, "Unsaved preparation composition")
+
+    rerender(
+      <RecipeGuidanceMediaIntake
+        {...props}
+        document={{
+          ...planned,
+          updatedAt: "2026-07-31T08:07:00.000Z",
+          imageBriefs: planned.imageBriefs.map((brief, index) =>
+            index === 0
+              ? {
+                  ...brief,
+                  description: { ...brief.description, en: "Saved ingredient composition" },
+                }
+              : brief
+          ),
+        }}
+      />
+    )
+
+    await waitFor(() =>
+      expect(screen.getAllByRole("textbox", { name: "English brief" })[0]).toHaveValue(
+        "Saved ingredient composition"
+      )
+    )
+    expect(screen.getAllByRole("textbox", { name: "English brief" })[1]).toHaveValue(
+      "Unsaved preparation composition"
+    )
+  })
+
+  it("hides generation requests after an approved brief's media slot receives an upload", async () => {
+    const planned = planRecipeGuidanceMedia(draft, recipe, "2026-07-31T08:06:00.000Z")!.document
+    const brief = planned.imageBriefs[0]!
+    const approved = reviewRecipeImageBrief(planned, {
+      update: { action: "approve", briefId: brief.id },
+      reviewerUserId: "hans",
+      now: "2026-07-31T08:07:00.000Z",
+    })!
+    const asset = approved.mediaAssets.find((candidate) => candidate.imageBriefId === brief.id)!
+    const attached = attachRecipeGuidanceUpload(approved, {
+      mediaAssetId: asset.id,
+      upload: {
+        id: "file-approved-brief",
+        uploadedBy: "hans",
+        uploadedAt: new Date("2026-07-31T08:08:00.000Z"),
+      },
+      contentHash: `sha256:${"a".repeat(64)}`,
+      rightsBasis: "Estate-owned photograph",
+      attributionText: "Photograph by Hans",
+      now: "2026-07-31T08:08:00.000Z",
+    })!
+    vi.mocked(apiFetch).mockResolvedValue({ files: [], total: 0 })
+
+    render(
+      <RecipeGuidanceMediaIntake
+        recipeId={recipe.id}
+        document={attached}
+        disabled={false}
+        busy={false}
+        onPlan={vi.fn(async () => {})}
+        onAttach={vi.fn(async () => {})}
+        onReviewBrief={vi.fn(async () => {})}
+        onPrepareRequest={vi.fn(async () => {})}
+      />
+    )
+
+    expect(asset.status).toBe("planned")
+    expect(attached.mediaAssets.find((candidate) => candidate.id === asset.id)?.status).toBe(
+      "review_required"
+    )
+    expect(
+      screen.queryByRole("button", { name: "Prepare disabled request contract" })
+    ).not.toBeInTheDocument()
   })
 })
