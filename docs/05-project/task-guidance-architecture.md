@@ -170,6 +170,14 @@ falls back to a provider, or exposes an execution endpoint. Provider execution r
 until those capabilities are evidenced and a separately authorized slice introduces the execution
 boundary.
 
+The 2026-07-31 capability audit confirmed that this gate must remain closed. Production Sluice
+exposes LiteLLM's generic authenticated `/v1/images/generations` route, but the deployed OpenAPI
+contract has no response schema, Sluice has no image model alias or HOV image allowlist entry, and
+its media-routing ADR and implementation plan remain proposed with all execution phases not started.
+Image-specific request correlation, media cost/telemetry, rights enforcement, artifact delivery,
+HOV storage-copy semantics, and bounded retry/idempotency behavior are therefore not proven. See
+`docs/handoffs/2026-07-31-sluice-image-generation-capability.md` for the evidence matrix and owners.
+
 ## Request flow
 
 1. A resident opens Guidance from a task and captures or chooses a photo.
