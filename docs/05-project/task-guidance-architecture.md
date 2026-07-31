@@ -98,6 +98,30 @@ serving counts must be positive; other valid preparation/cooking metrics remain 
   lifecycle mutations perform no Sluice work, public-package export, migration apply, OmniPost
   action, deployment, or production-data operation.
 
+### Recipe guidance author and reader clients
+
+The shared Recipes surface consumes the lifecycle contracts without recreating their rules in the
+browser.
+
+- Hans receives an admin-only guidance workspace alongside the canonical recipe. It lists immutable
+  versions, labels deterministic previews as non-persisted, creates drafts explicitly, and sends the
+  current `updatedAt` token with every section, media-review, and lifecycle mutation.
+- A `409` response reloads the current version and requires Hans to review it before retrying. The
+  client does not merge stale edits or silently repeat a mutation.
+- Section authoring preserves canonical ingredient, step, metric, and media-reference blocks.
+  Editable bilingual text is marked `source: "reviewed"` only through an explicit save action.
+- Media approval requires English and Afrikaans alternative text. Rejection requires a reason.
+  Reviewer identity and timestamps remain server-owned.
+- Publication controls render the server's deterministic readiness issues. The client collects the
+  three required review confirmations and explicit unavailable-media waivers, but the transition
+  route remains the authority for approval and publication.
+- Irma's Recipes route requests only `GET /api/recipes/:id/guidance`. A published document renders
+  bilingual reviewed sections, canonical ingredient references as a checklist, ordered canonical
+  steps and timers, approved media, and attribution. A `404` leaves the canonical authorized recipe
+  visible; other failures are explicit and retryable.
+- The UI neither seeds guidance nor enables demo data. Browser fixtures intercept requests in local
+  verification only and do not write to a repository or external service.
+
 ## Request flow
 
 1. A resident opens Guidance from a task and captures or chooses a photo.

@@ -1,0 +1,223 @@
+{
+  "recipe": {
+    "id": "recipe-ui-flow",
+    "status": "published",
+    "ownerUserId": "hans",
+    "audienceUserIds": ["hans", "irma"],
+    "titleEn": "Garden stew",
+    "titleAf": "Tuinbredie",
+    "summaryEn": "A simple seasonal stew for a quiet evening.",
+    "summaryAf": "'n Eenvoudige seisoenbredie vir 'n rustige aand.",
+    "servings": 4,
+    "prepMinutes": 10,
+    "cookMinutes": 30,
+    "category": "Dinner",
+    "cuisine": "South African",
+    "image": {
+      "url": "https://images.unsplash.com/photo-1547592180-85f173990554",
+      "source": "Unsplash",
+      "author": "Ella Olsson",
+      "license": "Unsplash License",
+      "attributionText": "Photo by Ella Olsson on Unsplash",
+      "retrievedAt": "2026-07-31"
+    },
+    "ingredients": [
+      {
+        "id": "ingredient-carrot",
+        "name": "Carrots",
+        "quantity": "2",
+        "unit": "whole",
+        "preparationNote": "sliced"
+      },
+      {
+        "id": "ingredient-beans",
+        "name": "White beans",
+        "quantity": "1",
+        "unit": "tin",
+        "preparationNote": "drained"
+      }
+    ],
+    "steps": [
+      {
+        "id": "step-simmer",
+        "order": 1,
+        "instructionEn": "Add the vegetables and beans, then simmer until tender.",
+        "instructionAf": "Voeg die groente en bone by en prut dan tot sag.",
+        "timerMinutes": 30
+      }
+    ],
+    "createdAt": "2026-07-31T08:00:00.000Z",
+    "updatedAt": "2026-07-31T08:00:00.000Z"
+  },
+  "document": {
+    "id": "recipe-guidance-recipe-ui-flow-v1",
+    "recipeId": "recipe-ui-flow",
+    "recipeRevisionId": "recipe-ui-flow@2026-07-31T08:00:00.000Z",
+    "recipeUpdatedAt": "2026-07-31T08:00:00.000Z",
+    "recipeIngredientIds": ["ingredient-carrot", "ingredient-beans"],
+    "recipeStepIds": ["step-simmer"],
+    "version": 1,
+    "status": "published",
+    "ownerUserId": "hans",
+    "audienceUserIds": ["hans", "irma"],
+    "sections": [
+      {
+        "id": "section-identity",
+        "kind": "identity",
+        "applicability": "required",
+        "blocks": [
+          {
+            "id": "identity-title",
+            "type": "text",
+            "source": "reviewed",
+            "text": { "en": "Garden stew", "af": "Tuinbredie" }
+          },
+          {
+            "id": "identity-summary",
+            "type": "text",
+            "source": "reviewed",
+            "text": {
+              "en": "A simple seasonal stew for a quiet evening.",
+              "af": "'n Eenvoudige seisoenbredie vir 'n rustige aand."
+            }
+          },
+          {
+            "id": "identity-metrics",
+            "type": "metrics",
+            "servings": 4,
+            "prepMinutes": 10,
+            "cookMinutes": 30
+          }
+        ]
+      },
+      {
+        "id": "section-hero",
+        "kind": "hero",
+        "applicability": "not_applicable",
+        "blocks": []
+      },
+      {
+        "id": "section-before-start",
+        "kind": "before_start",
+        "applicability": "optional",
+        "blocks": [
+          {
+            "id": "before-start-text",
+            "type": "text",
+            "source": "reviewed",
+            "text": {
+              "en": "Wash the vegetables and clear a safe workspace.",
+              "af": "Was die groente en maak 'n veilige werkplek oop."
+            }
+          }
+        ]
+      },
+      {
+        "id": "section-ingredients",
+        "kind": "ingredients",
+        "applicability": "required",
+        "blocks": [
+          {
+            "id": "ingredient-references",
+            "type": "ingredient_references",
+            "recipeRevisionId": "recipe-ui-flow@2026-07-31T08:00:00.000Z",
+            "ingredientIds": ["ingredient-carrot", "ingredient-beans"]
+          }
+        ]
+      },
+      {
+        "id": "section-preparation",
+        "kind": "preparation",
+        "applicability": "optional",
+        "blocks": [
+          {
+            "id": "preparation-text",
+            "type": "text",
+            "source": "reviewed",
+            "text": {
+              "en": "Slice the carrots evenly so they cook at the same rate.",
+              "af": "Sny die wortels ewe dik sodat hulle teen dieselfde tempo gaar word."
+            }
+          }
+        ]
+      },
+      {
+        "id": "section-cooking",
+        "kind": "cooking",
+        "applicability": "required",
+        "blocks": [
+          {
+            "id": "step-reference-simmer",
+            "type": "step_reference",
+            "recipeRevisionId": "recipe-ui-flow@2026-07-31T08:00:00.000Z",
+            "recipeStepId": "step-simmer",
+            "timer": { "minimumSeconds": 1800 }
+          }
+        ]
+      },
+      {
+        "id": "section-finish",
+        "kind": "finish_and_serve",
+        "applicability": "optional",
+        "blocks": [
+          {
+            "id": "finish-text",
+            "type": "text",
+            "source": "reviewed",
+            "text": {
+              "en": "Taste, adjust seasoning, and serve warm.",
+              "af": "Proe, pas die geurmiddels aan en bedien warm."
+            }
+          }
+        ]
+      },
+      {
+        "id": "section-storage",
+        "kind": "storage_and_reheating",
+        "applicability": "optional",
+        "blocks": [
+          {
+            "id": "storage-text",
+            "type": "text",
+            "source": "reviewed",
+            "text": {
+              "en": "Cool promptly and refrigerate in a sealed container.",
+              "af": "Laat vinnig afkoel en verkoel in 'n verseëlde houer."
+            }
+          }
+        ]
+      },
+      {
+        "id": "section-provenance",
+        "kind": "provenance_and_feedback",
+        "applicability": "required",
+        "blocks": [
+          {
+            "id": "provenance-text",
+            "type": "text",
+            "source": "reviewed",
+            "text": {
+              "en": "House recipe reviewed by Hans.",
+              "af": "Huisresep deur Hans nagegaan."
+            }
+          }
+        ]
+      }
+    ],
+    "mediaAssets": [],
+    "imageBriefs": [],
+    "createdBy": "hans",
+    "createdAt": "2026-07-31T08:05:00.000Z",
+    "updatedAt": "2026-07-31T08:10:00.000Z",
+    "reviewedBy": "hans",
+    "reviewedAt": "2026-07-31T08:09:00.000Z",
+    "reviewEvidence": {
+      "bilingualContentReviewed": true,
+      "allergensAndSafetyReviewed": true,
+      "provenanceAndRightsReviewed": true,
+      "optionalMediaWaiverAssetIds": []
+    },
+    "publishedBy": "hans",
+    "publishedAt": "2026-07-31T08:10:00.000Z"
+  }
+}
