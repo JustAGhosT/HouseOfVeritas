@@ -57,21 +57,46 @@ serving counts must be positive; other valid preparation/cooking metrics remain 
 - `POST /api/recipes/:id/guidance-drafts` is admin-only and explicitly persists the next
   deterministic version. The repository's unique `(recipeId, version)` key closes concurrent
   creation races with a refreshable conflict; preview remains non-persisting.
-- `PATCH /api/recipes/:id/guidance-drafts/:version` is admin-only and replaces one named section of
-  a `draft` or `in_review` document. The request supplies `expectedUpdatedAt`; the server preserves
-  the stable section ID, advances `updatedAt`, schema-validates the complete aggregate, and uses the
-  repository compare-and-swap replacement. Updated text must be explicitly human-reviewed.
+- `PATCH /api/recipes/:id/guidance-drafts/:version` is admin-only and replaces one named section or
+  records an approve/reject decision for one `review_required` media asset in a `draft` or
+  `in_review` document. The request supplies `expectedUpdatedAt`; the server preserves stable IDs,
+  derives media reviewer identity/time, advances `updatedAt`, schema-validates the complete
+  aggregate, and uses repository compare-and-swap replacement. Updated text must be explicitly
+  human-reviewed, media approval requires bilingual alt text, media rejection requires a reason,
+  and any completed document-level review evidence is cleared when content changes.
 - Section updates fail closed if the canonical recipe has changed since the immutable draft
   snapshot. Clients must create a new version rather than editing old ingredient or step facts.
+- `GET /api/recipes/:id/guidance-drafts/:version/publication-readiness` is admin-only and returns a
+  deterministic list of publication blockers without changing state. A stale recipe revision is a
+  blocker alongside incomplete sections, unreviewed text, unfinished media, missing approval
+  evidence, or unwaived unavailable optional media.
+- `POST /api/recipes/:id/guidance-drafts/:version/transitions` is admin-only and accepts one explicit
+  `submit_for_review`, `approve_review`, `publish`, or `archive` action with
+  `expectedUpdatedAt`. Review approval records server-owned reviewer identity/time plus explicit
+  bilingual, allergen/safety, provenance/rights, and optional-media-waiver evidence. Publication
+  reuses the readiness contract and fails closed with actionable issues.
+- Lifecycle order is `draft -> in_review -> published -> archived`. In-review versions cannot move
+  back to draft, published versions can only be archived without content changes, and archived
+  versions remain immutable.
+- Recipe `PATCH` and guidance `publish` share a per-recipe mutation lock. Test/demo execution uses an
+  in-process fail-fast lock; live Mongo stores a persistent owner record in
+  `recipe_mutation_locks`. There is no automatic timeout takeover: a second owner cannot begin while
+  the first write may still be in flight. A confirmed target-write success releases the owner token;
+  an ambiguous target-write failure retains it for operator recovery after the original writer is
+  proven stopped. This Cosmos-compatible fail-closed policy avoids unsupported cross-collection
+  transactions while preventing recipe edits and publication writes from overlapping. A failed
+  owner-scoped release is surfaced to the caller and recovered only through
+  `docs/03-deployment/recipe-mutation-lock-recovery.md`. Ambiguous acquisitions are reconciled by
+  exact owner token or fail closed with the same token logged for recovery evidence.
 - `GET /api/recipes/:id/guidance` returns only the latest published version after checking both the
   recipe and document audience for non-admin users. It returns the recipe alongside the document
   only when their immutable revision IDs match; until historical recipe snapshots are available, a
   stale published document fails closed instead of resolving references against newer facts.
 - Preview and published-read responses include the authorized canonical recipe snapshot so clients
   can resolve immutable ingredient and step references without reconstructing facts.
-- Every route fails closed when the dedicated guidance store is unavailable. Draft creation and
-  section replacement do not transition review/publication state and perform no Sluice work,
-  migration apply, publication, OmniPost action, or deployment.
+- Every route fails closed when the dedicated guidance store is unavailable. These internal
+  lifecycle mutations perform no Sluice work, public-package export, migration apply, OmniPost
+  action, deployment, or production-data operation.
 
 ## Request flow
 

@@ -12,8 +12,12 @@ const RECIPE_GUIDANCE_FILE = join(process.cwd(), "data", "recipe-guidance-docume
 type RecipeGuidanceMongoDocument = RecipeGuidanceDocument & { _id?: ObjectId }
 export type RecipeGuidanceRepositoryMode = "memory" | "file" | "mongodb"
 
-export class RecipeGuidanceConflictError extends Error {}
-export class RecipeGuidanceIntegrityError extends Error {}
+export class RecipeGuidanceConflictError extends Error {
+  readonly safeToReleaseMutationLock = true
+}
+export class RecipeGuidanceIntegrityError extends Error {
+  readonly safeToReleaseMutationLock = true
+}
 export class RecipeGuidanceStoreUnavailableError extends Error {}
 
 export interface RecipeGuidanceRepository {
@@ -110,6 +114,9 @@ function assertReplacementAllowed(
       )
     }
     return
+  }
+  if (current.status === "in_review" && next.status === "draft") {
+    throw new RecipeGuidanceConflictError("In-review guidance cannot return to draft")
   }
   if (current.status === "draft" && next.status === "published") {
     throw new RecipeGuidanceConflictError("Recipe guidance must enter review before publication")

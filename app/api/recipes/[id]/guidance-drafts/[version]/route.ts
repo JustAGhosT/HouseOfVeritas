@@ -4,8 +4,10 @@ import { withRole } from "@/lib/auth/rbac"
 import { logger } from "@/lib/logger"
 import {
   createRecipeRevisionId,
+  localizedTextSchema,
   parseRecipeGuidanceDocument,
   recipeGuidanceSectionSchema,
+  type RecipeGuidanceDocument,
 } from "@/lib/recipe-guidance"
 import {
   RecipeGuidanceConflictError,
@@ -22,6 +24,33 @@ const sectionUpdateSchema = z
   })
   .strict()
 
+const mediaReviewSchema = z.discriminatedUnion("decision", [
+  z
+    .object({
+      decision: z.literal("approve"),
+      assetId: z.string().trim().min(1).max(200),
+      altText: localizedTextSchema,
+    })
+    .strict(),
+  z
+    .object({
+      decision: z.literal("reject"),
+      assetId: z.string().trim().min(1).max(200),
+      rejectionReason: z.string().trim().min(1).max(1_000),
+    })
+    .strict(),
+])
+
+const draftUpdateSchema = z.union([
+  sectionUpdateSchema,
+  z
+    .object({
+      expectedUpdatedAt: z.string().datetime({ offset: true }),
+      mediaReview: mediaReviewSchema,
+    })
+    .strict(),
+])
+
 function parseVersion(value: string | undefined): number | null {
   if (!value || !/^[1-9]\d*$/.test(value)) return null
   const version = Number(value)
@@ -30,6 +59,14 @@ function parseVersion(value: string | undefined): number | null {
 
 function advanceTimestamp(current: string): string {
   return new Date(Math.max(Date.now(), new Date(current).getTime() + 1)).toISOString()
+}
+
+function withoutReview(document: RecipeGuidanceDocument): RecipeGuidanceDocument {
+  const mutable = { ...document }
+  delete mutable.reviewedBy
+  delete mutable.reviewedAt
+  delete mutable.reviewEvidence
+  return mutable
 }
 
 export const PATCH = withRole("admin")(async (request, context) => {
@@ -56,11 +93,12 @@ export const PATCH = withRole("admin")(async (request, context) => {
       }
       throw error
     }
-    const parsed = sectionUpdateSchema.safeParse(input)
+    const parsed = draftUpdateSchema.safeParse(input)
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid recipe guidance section update" }, { status: 400 })
+      return NextResponse.json({ error: "Invalid recipe guidance draft update" }, { status: 400 })
     }
     if (
+      "section" in parsed.data &&
       parsed.data.section.blocks.some(
         (block) => block.type === "text" && block.source !== "reviewed"
       )
@@ -94,35 +132,82 @@ export const PATCH = withRole("admin")(async (request, context) => {
       )
     }
 
-    const sectionIndex = document.sections.findIndex(
-      (section) => section.kind === parsed.data.section.kind
-    )
-    const currentSection = document.sections[sectionIndex]
-    if (sectionIndex === -1 || !currentSection) {
-      return NextResponse.json({ error: "Recipe guidance section not found" }, { status: 404 })
+    const now = advanceTimestamp(document.updatedAt)
+    let candidate: unknown
+    let summary: Record<string, unknown>
+    let invalidUpdateError = "Section update conflicts with the guidance document"
+    if ("section" in parsed.data) {
+      const sectionUpdate = parsed.data.section
+      const sectionIndex = document.sections.findIndex(
+        (section) => section.kind === sectionUpdate.kind
+      )
+      const currentSection = document.sections[sectionIndex]
+      if (sectionIndex === -1 || !currentSection) {
+        return NextResponse.json({ error: "Recipe guidance section not found" }, { status: 404 })
+      }
+
+      const sections = [...document.sections]
+      sections[sectionIndex] = {
+        id: currentSection.id,
+        ...sectionUpdate,
+      }
+      candidate = { ...withoutReview(document), sections, updatedAt: now }
+      summary = { mode, version: document.version, updatedSection: currentSection.kind }
+    } else {
+      invalidUpdateError = "Media review conflicts with the guidance document"
+      const mediaReview = parsed.data.mediaReview
+      const mediaAssetIndex = document.mediaAssets.findIndex(
+        (asset) => asset.id === mediaReview.assetId
+      )
+      const currentAsset = document.mediaAssets[mediaAssetIndex]
+      if (mediaAssetIndex === -1 || !currentAsset) {
+        return NextResponse.json(
+          { error: "Recipe guidance media asset not found" },
+          { status: 404 }
+        )
+      }
+      if (currentAsset.status !== "review_required") {
+        return NextResponse.json(
+          { error: "Only review-required media can record a review decision" },
+          { status: 409 }
+        )
+      }
+
+      const mediaAssets = [...document.mediaAssets]
+      mediaAssets[mediaAssetIndex] =
+        mediaReview.decision === "approve"
+          ? {
+              ...currentAsset,
+              status: "approved",
+              altText: mediaReview.altText,
+              reviewedBy: context.userId,
+              reviewedAt: now,
+            }
+          : {
+              ...currentAsset,
+              status: "rejected",
+              rejectionReason: mediaReview.rejectionReason,
+              reviewedBy: context.userId,
+              reviewedAt: now,
+            }
+      candidate = { ...withoutReview(document), mediaAssets, updatedAt: now }
+      summary = {
+        mode,
+        version: document.version,
+        reviewedMediaAsset: currentAsset.id,
+        decision: mediaReview.decision,
+      }
     }
 
-    const sections = [...document.sections]
-    sections[sectionIndex] = {
-      id: currentSection.id,
-      ...parsed.data.section,
-    }
-    const replacement = parseRecipeGuidanceDocument({
-      ...document,
-      sections,
-      updatedAt: advanceTimestamp(document.updatedAt),
-    })
+    const replacement = parseRecipeGuidanceDocument(candidate)
     if (!replacement) {
-      return NextResponse.json(
-        { error: "Section update conflicts with the guidance document" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: invalidUpdateError }, { status: 400 })
     }
 
     const updatedDocument = await repository.replace(replacement, parsed.data.expectedUpdatedAt)
     return NextResponse.json({
       data: { document: updatedDocument },
-      summary: { mode, version: updatedDocument.version, updatedSection: currentSection.kind },
+      summary,
     })
   } catch (error) {
     if (error instanceof RecipeGuidanceConflictError) {
@@ -131,7 +216,7 @@ export const PATCH = withRole("admin")(async (request, context) => {
         { status: 409 }
       )
     }
-    logger.error("Failed to update recipe guidance section", {
+    logger.error("Failed to update recipe guidance draft", {
       error: error instanceof Error ? error.message : String(error),
     })
     return NextResponse.json({ error: "Recipe guidance datastore is unavailable" }, { status: 503 })

@@ -6,10 +6,11 @@ import {
   type RecipeCreatePayload,
   type RecipeRecord,
 } from "@/lib/recipes"
+import { getRecipeById, replaceRecipe } from "@/lib/repositories/recipe-repository"
 import {
-  getRecipeById,
-  replaceRecipe,
-} from "@/lib/repositories/recipe-repository"
+  RecipeMutationConflictError,
+  withRecipeMutationLock,
+} from "@/lib/repositories/recipe-mutation-lock"
 import { logger } from "@/lib/logger"
 import { withRole } from "@/lib/auth/rbac"
 
@@ -25,11 +26,14 @@ function asNonNegativeInt(value: unknown): number | undefined {
   return value
 }
 
-function ensureValidRecipeStatus(value: unknown): value is typeof KNOWN_RECIPE_STATUSES[number] {
+function ensureValidRecipeStatus(value: unknown): value is (typeof KNOWN_RECIPE_STATUSES)[number] {
   return typeof value === "string" && (KNOWN_RECIPE_STATUSES as string[]).includes(value)
 }
 
-function buildRecipePayload(base: RecipeRecord, updates: Partial<RecipeCreatePayload>): RecipeRecord {
+function buildRecipePayload(
+  base: RecipeRecord,
+  updates: Partial<RecipeCreatePayload>
+): RecipeRecord {
   const audienceUserIds = normalizeRecipeAudienceUserIds(
     updates.audienceUserIds ?? base.audienceUserIds
   )
@@ -105,52 +109,57 @@ async function ensureEditableRecipe(
   if (context.role === "admin" && allowAdmin) return existing
 
   if (!isRecipeAudienceMatch(existing.audienceUserIds, context.userId)) {
-    return NextResponse.json(
-      { error: "You do not have access to this recipe" },
-      { status: 403 }
-    )
+    return NextResponse.json({ error: "You do not have access to this recipe" }, { status: 403 })
   }
   return existing
 }
 
-export const GET = withRole("admin", "operator", "employee", "resident")(
-  async (_request, context) => {
-    try {
-      const params = await context.params
-      const id = params?.id
-      if (!id) return NextResponse.json({ error: "Recipe ID is required" }, { status: 400 })
+export const GET = withRole(
+  "admin",
+  "operator",
+  "employee",
+  "resident"
+)(async (_request, context) => {
+  try {
+    const params = await context.params
+    const id = params?.id
+    if (!id) return NextResponse.json({ error: "Recipe ID is required" }, { status: 400 })
 
-      const recipe = await getRecipeById(id)
-      if (!recipe) return NextResponse.json({ error: "Recipe not found" }, { status: 404 })
+    const recipe = await getRecipeById(id)
+    if (!recipe) return NextResponse.json({ error: "Recipe not found" }, { status: 404 })
 
-      if (context.role !== "admin" && recipe.status !== "published") {
-        return NextResponse.json({ error: "Recipe is not published" }, { status: 403 })
-      }
-
-      if (context.role !== "admin" && !isRecipeAudienceMatch(recipe.audienceUserIds, context.userId)) {
-        return NextResponse.json(
-          { error: "You do not have access to this recipe" },
-          { status: 403 }
-        )
-      }
-
-      return NextResponse.json({ recipe })
-    } catch (error) {
-      logger.error("Failed to get recipe", {
-        error: error instanceof Error ? error.message : String(error),
-      })
-      return NextResponse.json({ error: "Failed to get recipe" }, { status: 500 })
+    if (context.role !== "admin" && recipe.status !== "published") {
+      return NextResponse.json({ error: "Recipe is not published" }, { status: 403 })
     }
+
+    if (
+      context.role !== "admin" &&
+      !isRecipeAudienceMatch(recipe.audienceUserIds, context.userId)
+    ) {
+      return NextResponse.json({ error: "You do not have access to this recipe" }, { status: 403 })
+    }
+
+    return NextResponse.json({ recipe })
+  } catch (error) {
+    logger.error("Failed to get recipe", {
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return NextResponse.json({ error: "Failed to get recipe" }, { status: 500 })
   }
-)
+})
 
-export const PATCH = withRole("admin", "operator", "employee", "resident")(
-  async (request, context) => {
-    try {
-      const params = await context.params
-      const id = params?.id
-      if (!id) return NextResponse.json({ error: "Recipe ID is required" }, { status: 400 })
+export const PATCH = withRole(
+  "admin",
+  "operator",
+  "employee",
+  "resident"
+)(async (request, context) => {
+  try {
+    const params = await context.params
+    const id = params?.id
+    if (!id) return NextResponse.json({ error: "Recipe ID is required" }, { status: 400 })
 
+    return await withRecipeMutationLock(id, async (lease) => {
       const existingByRole = await ensureEditableRecipe(id, context, true)
       if (existingByRole instanceof Response) return existingByRole
       const recipePayload = existingByRole as RecipeRecord
@@ -164,14 +173,22 @@ export const PATCH = withRole("admin", "operator", "employee", "resident")(
       const validation = validateRecipe(merged)
       if (validation) return NextResponse.json({ error: validation }, { status: 400 })
 
-      const updated = await replaceRecipe(merged)
-      if (!updated) return NextResponse.json({ error: "Recipe not found" }, { status: 404 })
+      const updated = await lease.runFencedWrite(() => replaceRecipe(merged))
+      if (!updated) {
+        throw new RecipeMutationConflictError("Recipe changed before the fenced update")
+      }
       return NextResponse.json({ recipe: updated })
-    } catch (error) {
-      logger.error("Failed to update recipe", {
-        error: error instanceof Error ? error.message : String(error),
-      })
-      return NextResponse.json({ error: "Failed to update recipe" }, { status: 500 })
+    })
+  } catch (error) {
+    if (error instanceof RecipeMutationConflictError) {
+      return NextResponse.json(
+        { error: "Recipe is being changed; refresh and retry" },
+        { status: 409 }
+      )
     }
+    logger.error("Failed to update recipe", {
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return NextResponse.json({ error: "Failed to update recipe" }, { status: 500 })
   }
-)
+})
