@@ -48,11 +48,13 @@ function lines(value: string) {
 function ImageBriefEditor({
   brief,
   disabled,
+  canPrepareRequest,
   onReview,
   onPrepareRequest,
 }: {
   brief: RecipeImageBrief
   disabled: boolean
+  canPrepareRequest: boolean
   onReview: (input: RecipeImageBriefUpdate) => Promise<void>
   onPrepareRequest: (briefId: string) => Promise<void>
 }) {
@@ -61,6 +63,25 @@ function ImageBriefEditor({
   const [reviewedFacts, setReviewedFacts] = useState(brief.reviewedFacts.join("\n"))
   const [excludedContent, setExcludedContent] = useState(brief.excludedContent.join("\n"))
   const [rejectionReason, setRejectionReason] = useState(brief.rejectionReason ?? "")
+  const persistedReviewedFacts = brief.reviewedFacts.join("\n")
+  const persistedExcludedContent = brief.excludedContent.join("\n")
+  const persistedKey = JSON.stringify([
+    brief.description.en,
+    brief.description.af,
+    persistedReviewedFacts,
+    persistedExcludedContent,
+    brief.rejectionReason ?? "",
+  ])
+  const [lastPersistedKey, setLastPersistedKey] = useState(persistedKey)
+
+  if (lastPersistedKey !== persistedKey) {
+    setLastPersistedKey(persistedKey)
+    setDescriptionEn(brief.description.en)
+    setDescriptionAf(brief.description.af)
+    setReviewedFacts(persistedReviewedFacts)
+    setExcludedContent(persistedExcludedContent)
+    setRejectionReason(brief.rejectionReason ?? "")
+  }
   const editable = (brief.status === "draft" || brief.status === "rejected") && !disabled
   const complete = Boolean(descriptionEn.trim() && descriptionAf.trim())
   const reviewReady =
@@ -68,8 +89,8 @@ function ImageBriefEditor({
   const hasUnsavedChanges =
     descriptionEn !== brief.description.en ||
     descriptionAf !== brief.description.af ||
-    reviewedFacts !== brief.reviewedFacts.join("\n") ||
-    excludedContent !== brief.excludedContent.join("\n")
+    reviewedFacts !== persistedReviewedFacts ||
+    excludedContent !== persistedExcludedContent
 
   return (
     <article className="border-border space-y-3 rounded-lg border p-3 text-xs">
@@ -179,7 +200,7 @@ function ImageBriefEditor({
             </button>
           </>
         )}
-        {brief.status === "approved" && (
+        {brief.status === "approved" && canPrepareRequest && (
           <button
             type="button"
             disabled={disabled}
@@ -448,9 +469,12 @@ export function RecipeGuidanceMediaIntake({
           <h4 className="text-sm font-semibold">Deterministic image briefs</h4>
           {document.imageBriefs.map((brief) => (
             <ImageBriefEditor
-              key={`${document.updatedAt}:${brief.id}`}
+              key={brief.id}
               brief={brief}
               disabled={disabled || busy}
+              canPrepareRequest={document.mediaAssets.some(
+                (asset) => asset.imageBriefId === brief.id && asset.status === "planned"
+              )}
               onReview={onReviewBrief}
               onPrepareRequest={onPrepareRequest}
             />

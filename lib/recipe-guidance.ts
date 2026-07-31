@@ -329,6 +329,20 @@ export const recipeImageBriefSchema = z
           })
         }
       }
+      if (brief.reviewedFacts.length === 0) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["reviewedFacts"],
+          message: "approved image briefs require reviewed facts",
+        })
+      }
+      if (brief.excludedContent.length === 0) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["excludedContent"],
+          message: "approved image briefs require explicit exclusions",
+        })
+      }
     }
     if (brief.status === "rejected") {
       for (const field of ["rejectedBy", "rejectedAt", "rejectionReason"] as const) {

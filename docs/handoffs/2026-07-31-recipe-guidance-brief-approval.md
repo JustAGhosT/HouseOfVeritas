@@ -65,6 +65,20 @@ git diff --check
   clean replay ran this worktree's build on isolated port 3100; the pre-existing process was not
   stopped or changed.
 
+## Review remediation
+
+- PR #163 review feedback was addressed by keeping brief-editor identity stable, synchronizing
+  only fields whose persisted brief values changed, and preserving unsaved edits in other briefs.
+- The generation-request action is now shown only when the approved brief still has a matching
+  `planned` media asset, so an uploaded `review_required` slot cannot offer an action guaranteed to
+  return 409.
+- Approved image briefs now fail schema parsing unless both grounded reviewed facts and explicit
+  exclusions are present, matching the mutation and generation-request gates.
+- Review-remediation verification: 4 focused files with 51 tests passed, TypeScript passed, lint
+  passed, and the production build generated 125 static pages. The first sandboxed build retry hit
+  a Windows access denial on the generated `.next/trace-build`; removing that exact generated file
+  and rerunning outside the sandbox passed.
+
 ## Boundaries and next slice
 
 No Sluice/provider call, image generation, request persistence, media-status transition, direct
