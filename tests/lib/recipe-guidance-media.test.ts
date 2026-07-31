@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest"
 import { buildRecipeGuidanceDraft } from "@/lib/recipe-guidance-builder"
-import { attachRecipeGuidanceUpload, planRecipeGuidanceMedia } from "@/lib/recipe-guidance-media"
+import {
+  attachRecipeGuidanceUpload,
+  planRecipeGuidanceMedia,
+  reviewRecipeImageBrief,
+} from "@/lib/recipe-guidance-media"
 import type { RecipeRecord } from "@/lib/recipes"
 
 const recipe: RecipeRecord = {
@@ -179,5 +183,73 @@ describe("recipe guidance media planning", () => {
         now: "2026-07-31T08:07:00.000Z",
       })
     ).toBeNull()
+  })
+
+  it("edits, approves, and rejects image briefs with server-owned review evidence", () => {
+    const planned = planRecipeGuidanceMedia(draft, recipe, "2026-07-31T08:06:00.000Z")!.document
+    const brief = planned.imageBriefs[0]!
+    const edited = reviewRecipeImageBrief(planned, {
+      update: {
+        action: "edit",
+        briefId: brief.id,
+        description: { en: "Reviewed English brief", af: "Nagegane Afrikaanse opdrag" },
+        reviewedFacts: ["Canonical ingredient: carrots"],
+        excludedContent: ["No text overlays"],
+      },
+      reviewerUserId: "ignored-for-edit",
+      now: "2026-07-31T08:07:00.000Z",
+    })!
+    expect(edited.imageBriefs[0]).toMatchObject({
+      status: "draft",
+      description: { en: "Reviewed English brief", af: "Nagegane Afrikaanse opdrag" },
+    })
+
+    const approved = reviewRecipeImageBrief(edited, {
+      update: { action: "approve", briefId: brief.id },
+      reviewerUserId: "hans",
+      now: "2026-07-31T08:08:00.000Z",
+    })!
+    expect(approved.imageBriefs[0]).toMatchObject({
+      status: "approved",
+      approvedBy: "hans",
+      approvedAt: "2026-07-31T08:08:00.000Z",
+    })
+    expect(
+      reviewRecipeImageBrief(approved, {
+        update: { action: "approve", briefId: brief.id },
+        reviewerUserId: "hans",
+        now: "2026-07-31T08:09:00.000Z",
+      })
+    ).toBeNull()
+
+    const ungrounded = reviewRecipeImageBrief(planned, {
+      update: {
+        action: "edit",
+        briefId: brief.id,
+        description: brief.description,
+        reviewedFacts: [],
+        excludedContent: [],
+      },
+      reviewerUserId: "hans",
+      now: "2026-07-31T08:07:00.000Z",
+    })!
+    expect(
+      reviewRecipeImageBrief(ungrounded, {
+        update: { action: "approve", briefId: brief.id },
+        reviewerUserId: "hans",
+        now: "2026-07-31T08:08:00.000Z",
+      })
+    ).toBeNull()
+
+    const rejected = reviewRecipeImageBrief(edited, {
+      update: { action: "reject", briefId: brief.id, rejectionReason: "Unsafe composition" },
+      reviewerUserId: "hans",
+      now: "2026-07-31T08:08:00.000Z",
+    })!
+    expect(rejected.imageBriefs[0]).toMatchObject({
+      status: "rejected",
+      rejectedBy: "hans",
+      rejectionReason: "Unsafe composition",
+    })
   })
 })

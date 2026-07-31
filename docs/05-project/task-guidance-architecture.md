@@ -148,6 +148,28 @@ and upload time; clients cannot claim either value.
   invoke Sluice, use a direct provider, publish packages, enqueue OmniPost, seed demo data, or write
   production data outside the authenticated upload and explicitly selected draft mutations.
 
+### Recipe image-brief review and disabled generation requests
+
+Hans may edit deterministic bilingual image briefs and their reviewed-fact and excluded-content
+lists while a guidance document is `draft` or `in_review`. Every mutation carries `expectedUpdatedAt`.
+The server preserves the brief's section/role identity, derives the reviewer ID and timestamp, clears
+document-level review evidence, and rejects edits to immutable or already-approved briefs. Approval
+is explicit; rejection requires a reason and returns the brief to a human-editable state without
+silently approving later edits.
+
+`POST /api/recipes/:id/guidance-drafts/:version/generation-requests` creates a validated,
+non-persisted snapshot only for an approved brief attached to a still-planned media slot. The
+contract binds the immutable recipe revision, guidance version, media slot, approved bilingual
+brief, reviewed facts, exclusions, requesting admin, HOV-copy output requirement, and a stable
+request ID. It always returns `execution.allowed=false`, with no provider or model alias, and lists
+the Sluice capabilities that remain unproven: model alias, request/response shape, request-ID
+propagation, cost reporting, telemetry, rights enforcement, and HOV storage copy.
+
+Request construction never changes the media status to `requested`, stores a job, calls Sluice,
+falls back to a provider, or exposes an execution endpoint. Provider execution remains fail-closed
+until those capabilities are evidenced and a separately authorized slice introduces the execution
+boundary.
+
 ## Request flow
 
 1. A resident opens Guidance from a task and captures or chooses a photo.

@@ -33,7 +33,7 @@ export const RECIPE_MEDIA_STATUSES = [
   "unavailable",
 ] as const
 
-export const RECIPE_IMAGE_BRIEF_STATUSES = ["draft", "approved", "retired"] as const
+export const RECIPE_IMAGE_BRIEF_STATUSES = ["draft", "approved", "rejected", "retired"] as const
 
 export type RecipeGuidanceSectionKind = (typeof RECIPE_GUIDANCE_SECTION_KINDS)[number]
 export type RecipeGuidanceStatus = (typeof RECIPE_GUIDANCE_STATUSES)[number]
@@ -314,6 +314,9 @@ export const recipeImageBriefSchema = z
     excludedContent: z.array(z.string().trim().min(1).max(500)).max(30).default([]),
     approvedBy: nonEmptyId.optional(),
     approvedAt: isoDateTime.optional(),
+    rejectedBy: nonEmptyId.optional(),
+    rejectedAt: isoDateTime.optional(),
+    rejectionReason: z.string().trim().min(1).max(1_000).optional(),
   })
   .superRefine((brief, context) => {
     if (brief.status === "approved") {
@@ -326,6 +329,34 @@ export const recipeImageBriefSchema = z
           })
         }
       }
+    }
+    if (brief.status === "rejected") {
+      for (const field of ["rejectedBy", "rejectedAt", "rejectionReason"] as const) {
+        if (!brief[field]) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [field],
+            message: `${field} is required for a rejected image brief`,
+          })
+        }
+      }
+    }
+    if (brief.status !== "approved" && (brief.approvedBy || brief.approvedAt)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["approvedBy"],
+        message: "approval evidence is only valid for an approved image brief",
+      })
+    }
+    if (
+      brief.status !== "rejected" &&
+      (brief.rejectedBy || brief.rejectedAt || brief.rejectionReason)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["rejectedBy"],
+        message: "rejection evidence is only valid for a rejected image brief",
+      })
     }
   })
 

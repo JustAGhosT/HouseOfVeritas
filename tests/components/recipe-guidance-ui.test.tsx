@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { ApiError, apiFetch } from "@/lib/api-client"
 import { buildRecipeGuidanceDraft } from "@/lib/recipe-guidance-builder"
-import { planRecipeGuidanceMedia } from "@/lib/recipe-guidance-media"
+import { planRecipeGuidanceMedia, reviewRecipeImageBrief } from "@/lib/recipe-guidance-media"
 import { parseRecipeGuidanceDocument, type RecipeGuidanceDocument } from "@/lib/recipe-guidance"
 import type { RecipeRecord } from "@/lib/recipes"
 import { PublishedRecipeGuidance } from "@/components/recipes/published-recipe-guidance"
@@ -429,6 +429,65 @@ describe("recipe guidance UI", () => {
           },
         })
       )
+    )
+  })
+
+  it("approves a human-reviewed image brief and previews a disabled request contract", async () => {
+    const planned = planRecipeGuidanceMedia(draft, recipe, "2026-07-31T08:06:00.000Z")!.document
+    const brief = planned.imageBriefs[0]!
+    const approved = reviewRecipeImageBrief(planned, {
+      update: { action: "approve", briefId: brief.id },
+      reviewerUserId: "hans",
+      now: "2026-07-31T08:07:00.000Z",
+    })!
+    vi.mocked(apiFetch).mockImplementation(async (url, options) => {
+      if (url.startsWith("/api/uploads?")) return { files: [], total: 0 }
+      if (url.endsWith("/publication-readiness")) {
+        return {
+          data: {
+            documentId: planned.id,
+            version: 1,
+            status: "draft",
+            ready: false,
+            issues: [{ code: "media", message: "Media is not reviewed" }],
+          },
+        }
+      }
+      if (options?.label === "RecipeGuidanceImageBriefReview") {
+        return { data: { document: approved } }
+      }
+      if (options?.label === "RecipeGuidanceGenerationRequest") {
+        return {
+          data: {
+            request: {
+              requestId: "request-disabled-1",
+              execution: { allowed: false, reason: "Provider execution is disabled" },
+            },
+          },
+          summary: { executionAllowed: false, persisted: false },
+        }
+      }
+      return { data: { documents: [planned] } }
+    })
+
+    const user = userEvent.setup()
+    render(<RecipeGuidanceWorkspace recipe={recipe} language="both" />)
+    await user.click((await screen.findAllByRole("button", { name: "Approve brief" }))[0]!)
+    await user.click(
+      await screen.findByRole("button", { name: "Prepare disabled request contract" })
+    )
+
+    expect(
+      await screen.findByText(
+        "Validated request request-disabled-1. Execution remains disabled and nothing was persisted."
+      )
+    ).toBeInTheDocument()
+    expect(apiFetch).toHaveBeenCalledWith(
+      `/api/recipes/${recipe.id}/guidance-drafts/1/generation-requests`,
+      expect.objectContaining({
+        method: "POST",
+        body: { expectedUpdatedAt: approved.updatedAt, imageBriefId: brief.id },
+      })
     )
   })
 })

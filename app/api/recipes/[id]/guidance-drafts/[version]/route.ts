@@ -9,7 +9,11 @@ import {
   recipeGuidanceSectionSchema,
   type RecipeGuidanceDocument,
 } from "@/lib/recipe-guidance"
-import { attachRecipeGuidanceUpload, planRecipeGuidanceMedia } from "@/lib/recipe-guidance-media"
+import {
+  attachRecipeGuidanceUpload,
+  planRecipeGuidanceMedia,
+  reviewRecipeImageBrief,
+} from "@/lib/recipe-guidance-media"
 import {
   RecipeGuidanceConflictError,
   getRecipeGuidanceRepository,
@@ -54,6 +58,31 @@ const mediaAttachmentSchema = z
   })
   .strict()
 
+const imageBriefReviewSchema = z.discriminatedUnion("action", [
+  z
+    .object({
+      action: z.literal("edit"),
+      briefId: z.string().trim().min(1).max(200),
+      description: localizedTextSchema,
+      reviewedFacts: z.array(z.string().trim().min(1).max(500)).max(30),
+      excludedContent: z.array(z.string().trim().min(1).max(500)).max(30),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal("approve"),
+      briefId: z.string().trim().min(1).max(200),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal("reject"),
+      briefId: z.string().trim().min(1).max(200),
+      rejectionReason: z.string().trim().min(1).max(1_000),
+    })
+    .strict(),
+])
+
 const draftUpdateSchema = z.union([
   sectionUpdateSchema,
   z
@@ -72,6 +101,12 @@ const draftUpdateSchema = z.union([
     .object({
       expectedUpdatedAt: z.string().datetime({ offset: true }),
       mediaAttachment: mediaAttachmentSchema,
+    })
+    .strict(),
+  z
+    .object({
+      expectedUpdatedAt: z.string().datetime({ offset: true }),
+      imageBriefReview: imageBriefReviewSchema,
     })
     .strict(),
 ])
@@ -245,6 +280,23 @@ export const PATCH = withRole("admin")(async (request, context) => {
         mode,
         version: document.version,
         plannedMediaAssets: plan.addedAssetIds,
+      }
+    } else if ("imageBriefReview" in parsed.data) {
+      invalidUpdateError = "Image brief review conflicts with the guidance document"
+      const reviewed = reviewRecipeImageBrief(document, {
+        update: parsed.data.imageBriefReview,
+        reviewerUserId: context.userId,
+        now,
+      })
+      if (!reviewed) {
+        return NextResponse.json({ error: invalidUpdateError }, { status: 409 })
+      }
+      candidate = reviewed
+      summary = {
+        mode,
+        version: document.version,
+        reviewedImageBrief: parsed.data.imageBriefReview.briefId,
+        action: parsed.data.imageBriefReview.action,
       }
     } else {
       invalidUpdateError = "Uploaded media conflicts with the guidance document"
