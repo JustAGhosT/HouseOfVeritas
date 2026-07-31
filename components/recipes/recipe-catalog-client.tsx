@@ -2,6 +2,8 @@
 
 import { useAuth } from "@/lib/auth-context"
 import { apiFetch } from "@/lib/api-client"
+import { PublishedRecipeGuidance } from "@/components/recipes/published-recipe-guidance"
+import { RecipeGuidanceWorkspace } from "@/components/recipes/recipe-guidance-workspace"
 import {
   type RecipeIngredient,
   type RecipeRecord,
@@ -502,6 +504,20 @@ export default function RecipeCatalogClient({ persona }: { persona: Persona }) {
           </aside>
 
           <section className="space-y-6">
+            {selectedRecipe && isAdmin && (
+              <RecipeGuidanceWorkspace
+                key={selectedRecipe.id}
+                recipe={selectedRecipe}
+                language={language}
+              />
+            )}
+            {selectedRecipe && persona === "irma" && !isAdmin && (
+              <PublishedRecipeGuidance
+                key={selectedRecipe.id}
+                recipeId={selectedRecipe.id}
+                language={language}
+              />
+            )}
             {selectedRecipe ? (
               <article className="border-border bg-card rounded-2xl border">
                 <div className="border-border border-b p-5">
