@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { ApiError, apiFetch } from "@/lib/api-client"
 import { buildRecipeGuidanceDraft } from "@/lib/recipe-guidance-builder"
+import { planRecipeGuidanceMedia } from "@/lib/recipe-guidance-media"
 import { parseRecipeGuidanceDocument, type RecipeGuidanceDocument } from "@/lib/recipe-guidance"
 import type { RecipeRecord } from "@/lib/recipes"
 import { PublishedRecipeGuidance } from "@/components/recipes/published-recipe-guidance"
@@ -216,6 +217,7 @@ describe("recipe guidance UI", () => {
   it("reloads the latest document when a lifecycle transition conflicts", async () => {
     let listCalls = 0
     vi.mocked(apiFetch).mockImplementation(async (url, options) => {
+      if (url.startsWith("/api/uploads?")) return { files: [], total: 0 }
       if (url.endsWith("/publication-readiness")) {
         return {
           data: {
@@ -312,6 +314,118 @@ describe("recipe guidance UI", () => {
           body: {
             expectedUpdatedAt: rejected.updatedAt,
             section: { kind: "hero", applicability: hero.applicability, blocks: [] },
+          },
+        })
+      )
+    )
+  })
+
+  it("plans missing media slots from the admin workspace", async () => {
+    const planned = planRecipeGuidanceMedia(draft, recipe, "2026-07-31T08:06:00.000Z")!.document
+    vi.mocked(apiFetch).mockImplementation(async (url, options) => {
+      if (url.startsWith("/api/uploads?")) return { files: [], total: 0 }
+      if (url.endsWith("/publication-readiness")) {
+        return {
+          data: {
+            documentId: draft.id,
+            version: 1,
+            status: "draft",
+            ready: false,
+            issues: [{ code: "media", message: "Media is not reviewed" }],
+          },
+        }
+      }
+      if (options?.label === "RecipeGuidanceMediaPlan") {
+        return { data: { document: planned } }
+      }
+      return { data: { documents: [draft] } }
+    })
+
+    const user = userEvent.setup()
+    render(<RecipeGuidanceWorkspace recipe={recipe} language="both" />)
+
+    await user.click(await screen.findByRole("button", { name: "Plan missing media" }))
+
+    expect(
+      await screen.findByText("Missing recipe media slots were planned deterministically.")
+    ).toBeInTheDocument()
+    expect(apiFetch).toHaveBeenCalledWith(
+      `/api/recipes/${recipe.id}/guidance-drafts/1`,
+      expect.objectContaining({
+        body: {
+          expectedUpdatedAt: draft.updatedAt,
+          mediaPlan: { action: "create_missing" },
+        },
+      })
+    )
+  })
+
+  it("attaches a selected private upload only after rights and attribution are supplied", async () => {
+    const planned = planRecipeGuidanceMedia(draft, recipe, "2026-07-31T08:06:00.000Z")!.document
+    const target = planned.mediaAssets.find((asset) => asset.status === "planned")!
+    vi.mocked(apiFetch).mockImplementation(async (url, options) => {
+      if (url.startsWith("/api/uploads?")) {
+        return {
+          files: [
+            {
+              id: "file_recipe_photo",
+              originalName: "ingredients.jpg",
+              mimeType: "image/jpeg",
+              size: 512,
+              uploadedBy: "hans",
+              uploadedAt: "2026-07-31T08:06:30.000Z",
+              url: "/api/uploads/file_recipe_photo",
+            },
+          ],
+          total: 1,
+        }
+      }
+      if (url.endsWith("/publication-readiness")) {
+        return {
+          data: {
+            documentId: planned.id,
+            version: 1,
+            status: "draft",
+            ready: false,
+            issues: [{ code: "media", message: "Media is not reviewed" }],
+          },
+        }
+      }
+      if (options?.label === "RecipeGuidanceMediaAttachment") {
+        return { data: { document: planned } }
+      }
+      return { data: { documents: [planned] } }
+    })
+
+    const user = userEvent.setup()
+    render(<RecipeGuidanceWorkspace recipe={recipe} language="both" />)
+
+    const attach = await screen.findByRole("button", { name: "Attach for review" })
+    expect(attach).toBeDisabled()
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Planned or replaceable media slot" }),
+      target.id
+    )
+    await user.type(
+      screen.getByRole("textbox", { name: "Rights basis" }),
+      "Estate-owned photograph"
+    )
+    await user.type(screen.getByRole("textbox", { name: "Attribution" }), "Photograph by Hans")
+    expect(attach).toBeEnabled()
+    await user.click(attach)
+
+    await waitFor(() =>
+      expect(apiFetch).toHaveBeenCalledWith(
+        `/api/recipes/${recipe.id}/guidance-drafts/1`,
+        expect.objectContaining({
+          body: {
+            expectedUpdatedAt: planned.updatedAt,
+            mediaAttachment: {
+              mediaAssetId: target.id,
+              uploadId: "file_recipe_photo",
+              rightsBasis: "Estate-owned photograph",
+              attributionText: "Photograph by Hans",
+            },
           },
         })
       )

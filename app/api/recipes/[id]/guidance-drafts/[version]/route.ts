@@ -9,11 +9,13 @@ import {
   recipeGuidanceSectionSchema,
   type RecipeGuidanceDocument,
 } from "@/lib/recipe-guidance"
+import { attachRecipeGuidanceUpload, planRecipeGuidanceMedia } from "@/lib/recipe-guidance-media"
 import {
   RecipeGuidanceConflictError,
   getRecipeGuidanceRepository,
 } from "@/lib/repositories/recipe-guidance-repository"
 import { getRecipeById } from "@/lib/repositories/recipe-repository"
+import { getUploadContentHash, getUploadMetadataById } from "@/lib/uploads"
 
 const sectionUpdateSchema = z
   .object({
@@ -41,12 +43,35 @@ const mediaReviewSchema = z.discriminatedUnion("decision", [
     .strict(),
 ])
 
+const mediaPlanSchema = z.object({ action: z.literal("create_missing") }).strict()
+
+const mediaAttachmentSchema = z
+  .object({
+    mediaAssetId: z.string().trim().min(1).max(200),
+    uploadId: z.string().trim().min(1).max(200),
+    rightsBasis: z.string().trim().min(1).max(500),
+    attributionText: z.string().trim().min(1).max(1_000),
+  })
+  .strict()
+
 const draftUpdateSchema = z.union([
   sectionUpdateSchema,
   z
     .object({
       expectedUpdatedAt: z.string().datetime({ offset: true }),
       mediaReview: mediaReviewSchema,
+    })
+    .strict(),
+  z
+    .object({
+      expectedUpdatedAt: z.string().datetime({ offset: true }),
+      mediaPlan: mediaPlanSchema,
+    })
+    .strict(),
+  z
+    .object({
+      expectedUpdatedAt: z.string().datetime({ offset: true }),
+      mediaAttachment: mediaAttachmentSchema,
     })
     .strict(),
 ])
@@ -153,7 +178,7 @@ export const PATCH = withRole("admin")(async (request, context) => {
       }
       candidate = { ...withoutReview(document), sections, updatedAt: now }
       summary = { mode, version: document.version, updatedSection: currentSection.kind }
-    } else {
+    } else if ("mediaReview" in parsed.data) {
       invalidUpdateError = "Media review conflicts with the guidance document"
       const mediaReview = parsed.data.mediaReview
       const mediaAssetIndex = document.mediaAssets.findIndex(
@@ -196,6 +221,73 @@ export const PATCH = withRole("admin")(async (request, context) => {
         version: document.version,
         reviewedMediaAsset: currentAsset.id,
         decision: mediaReview.decision,
+      }
+    } else if ("mediaPlan" in parsed.data) {
+      invalidUpdateError = "Media planning conflicts with the guidance document"
+      const plan = planRecipeGuidanceMedia(document, recipe, now)
+      if (!plan) {
+        return NextResponse.json({ error: invalidUpdateError }, { status: 400 })
+      }
+      if (plan.addedAssetIds.length === 0) {
+        if (parsed.data.expectedUpdatedAt !== document.updatedAt) {
+          return NextResponse.json(
+            { error: "Recipe guidance changed; refresh and retry" },
+            { status: 409 }
+          )
+        }
+        return NextResponse.json({
+          data: { document },
+          summary: { mode, version: document.version, plannedMediaAssets: [] },
+        })
+      }
+      candidate = plan.document
+      summary = {
+        mode,
+        version: document.version,
+        plannedMediaAssets: plan.addedAssetIds,
+      }
+    } else {
+      invalidUpdateError = "Uploaded media conflicts with the guidance document"
+      const attachment = parsed.data.mediaAttachment
+      const upload = await getUploadMetadataById(attachment.uploadId)
+      if (!upload) {
+        return NextResponse.json({ error: "Recipe guidance upload not found" }, { status: 404 })
+      }
+      if (
+        upload.resourceType !== "recipe-guidance" ||
+        upload.resourceId !== recipeId ||
+        upload.category !== "image" ||
+        !upload.mimeType.startsWith("image/")
+      ) {
+        return NextResponse.json(
+          { error: "Upload is not an image scoped to this recipe guidance" },
+          { status: 403 }
+        )
+      }
+      const contentHash = await getUploadContentHash(upload)
+      if (!contentHash) {
+        return NextResponse.json(
+          { error: "Recipe guidance upload content is unavailable" },
+          { status: 409 }
+        )
+      }
+      const attached = attachRecipeGuidanceUpload(document, {
+        mediaAssetId: attachment.mediaAssetId,
+        upload,
+        contentHash,
+        rightsBasis: attachment.rightsBasis,
+        attributionText: attachment.attributionText,
+        now,
+      })
+      if (!attached) {
+        return NextResponse.json({ error: invalidUpdateError }, { status: 400 })
+      }
+      candidate = attached
+      summary = {
+        mode,
+        version: document.version,
+        attachedUploadId: upload.id,
+        mediaAssetId: attachment.mediaAssetId,
       }
     }
 
