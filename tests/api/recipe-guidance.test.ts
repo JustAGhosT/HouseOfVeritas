@@ -10,10 +10,12 @@ import { POST as previewDraft } from "@/app/api/recipes/[id]/guidance-drafts/pre
 import { GET as readPublished } from "@/app/api/recipes/[id]/guidance/route"
 import { PATCH as updateRecipe } from "@/app/api/recipes/[id]/route"
 import { buildRecipeGuidanceDraft } from "@/lib/recipe-guidance-builder"
+import { planRecipeGuidanceMedia } from "@/lib/recipe-guidance-media"
 import { parseRecipeGuidanceDocument, type RecipeGuidanceDocument } from "@/lib/recipe-guidance"
 import { getRecipeGuidanceRepository } from "@/lib/repositories/recipe-guidance-repository"
 import { getRecipeById, replaceRecipe } from "@/lib/repositories/recipe-repository"
 import type { RecipeRecord } from "@/lib/recipes"
+import { getUploadContentHash, getUploadMetadataById } from "@/lib/uploads"
 
 vi.mock("@/lib/repositories/recipe-guidance-repository", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/repositories/recipe-guidance-repository")>()),
@@ -23,6 +25,11 @@ vi.mock("@/lib/repositories/recipe-guidance-repository", async (importOriginal) 
 vi.mock("@/lib/repositories/recipe-repository", () => ({
   getRecipeById: vi.fn(),
   replaceRecipe: vi.fn(),
+}))
+
+vi.mock("@/lib/uploads", () => ({
+  getUploadContentHash: vi.fn(),
+  getUploadMetadataById: vi.fn(),
 }))
 
 const routeContext = { params: Promise.resolve({ id: "recipe-1" }) }
@@ -139,6 +146,8 @@ describe("recipe guidance APIs", () => {
     vi.clearAllMocks()
     vi.mocked(getRecipeById).mockResolvedValue(recipe)
     vi.mocked(replaceRecipe).mockResolvedValue(recipe)
+    vi.mocked(getUploadMetadataById).mockResolvedValue(null)
+    vi.mocked(getUploadContentHash).mockResolvedValue(null)
     repository.listByRecipeId.mockResolvedValue([existingDocument])
     repository.findLatestPublished.mockResolvedValue(existingDocument)
     repository.create.mockImplementation(async (document) => document)
@@ -367,6 +376,179 @@ describe("recipe guidance APIs", () => {
       }),
       existingDocument.updatedAt
     )
+  })
+
+  it("plans missing recipe media deterministically with optimistic concurrency", async () => {
+    const response = await updateDraftSection(
+      jsonRequestFor("/api/recipes/recipe-1/guidance-drafts/2", "hans", "admin", "PATCH", {
+        expectedUpdatedAt: existingDocument.updatedAt,
+        mediaPlan: { action: "create_missing" },
+      }),
+      versionRouteContext
+    )
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body.summary.plannedMediaAssets).toHaveLength(5)
+    expect(repository.replace).toHaveBeenCalledWith(
+      expect.objectContaining({
+        imageBriefs: expect.arrayContaining([
+          expect.objectContaining({ role: "ingredient_layout", status: "draft" }),
+          expect.objectContaining({ role: "serving", status: "draft" }),
+          expect.objectContaining({ role: "storage", status: "draft" }),
+        ]),
+        mediaAssets: expect.arrayContaining([
+          expect.objectContaining({ role: "step", status: "planned" }),
+        ]),
+      }),
+      existingDocument.updatedAt
+    )
+  })
+
+  it("returns a refreshable conflict when a media plan loses optimistic concurrency", async () => {
+    const { RecipeGuidanceConflictError } =
+      await import("@/lib/repositories/recipe-guidance-repository")
+    repository.replace.mockRejectedValueOnce(new RecipeGuidanceConflictError("stale"))
+
+    const response = await updateDraftSection(
+      jsonRequestFor("/api/recipes/recipe-1/guidance-drafts/2", "hans", "admin", "PATCH", {
+        expectedUpdatedAt: existingDocument.updatedAt,
+        mediaPlan: { action: "create_missing" },
+      }),
+      versionRouteContext
+    )
+
+    expect(response.status).toBe(409)
+    await expect(response.json()).resolves.toEqual({
+      error: "Recipe guidance changed; refresh and retry",
+    })
+  })
+
+  it("attaches only a private image upload scoped to this recipe", async () => {
+    const planned = planRecipeGuidanceMedia(
+      existingDocument,
+      recipe,
+      "2026-07-29T09:31:00.000Z"
+    )!.document
+    const target = planned.mediaAssets.find((asset) => asset.status === "planned")!
+    repository.listByRecipeId.mockResolvedValueOnce([planned])
+    vi.mocked(getUploadMetadataById).mockResolvedValue({
+      id: "file_recipe_photo",
+      originalName: "ingredients.jpg",
+      storedName: "file_recipe_photo.jpg",
+      mimeType: "image/jpeg",
+      size: 128,
+      uploadedBy: "hans",
+      uploadedAt: new Date("2026-07-29T09:31:30.000Z"),
+      category: "image",
+      resourceType: "recipe-guidance",
+      resourceId: recipe.id,
+    })
+    vi.mocked(getUploadContentHash).mockResolvedValue(`sha256:${"a".repeat(64)}`)
+
+    const response = await updateDraftSection(
+      jsonRequestFor("/api/recipes/recipe-1/guidance-drafts/2", "hans", "admin", "PATCH", {
+        expectedUpdatedAt: planned.updatedAt,
+        mediaAttachment: {
+          mediaAssetId: target.id,
+          uploadId: "file_recipe_photo",
+          rightsBasis: "Estate-owned photograph",
+          attributionText: "Photograph by Hans",
+        },
+      }),
+      versionRouteContext
+    )
+
+    expect(response.status).toBe(200)
+    expect(repository.replace).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mediaAssets: expect.arrayContaining([
+          expect.objectContaining({
+            id: target.id,
+            status: "review_required",
+            source: expect.objectContaining({
+              type: "uploaded",
+              uploadId: "file_recipe_photo",
+              uploadedBy: "hans",
+              attributionText: "Photograph by Hans",
+            }),
+            storage: {
+              type: "hov",
+              storageId: "file_recipe_photo",
+              url: "/api/uploads/file_recipe_photo",
+              contentHash: `sha256:${"a".repeat(64)}`,
+            },
+          }),
+        ]),
+      }),
+      planned.updatedAt
+    )
+  })
+
+  it("rejects an upload that is not scoped to this recipe", async () => {
+    const planned = planRecipeGuidanceMedia(
+      existingDocument,
+      recipe,
+      "2026-07-29T09:31:00.000Z"
+    )!.document
+    const target = planned.mediaAssets.find((asset) => asset.status === "planned")!
+    repository.listByRecipeId.mockResolvedValueOnce([planned])
+    vi.mocked(getUploadMetadataById).mockResolvedValue({
+      id: "file_other_recipe",
+      originalName: "other.jpg",
+      storedName: "file_other_recipe.jpg",
+      mimeType: "image/jpeg",
+      size: 128,
+      uploadedBy: "hans",
+      uploadedAt: new Date("2026-07-29T09:31:30.000Z"),
+      category: "image",
+      resourceType: "recipe-guidance",
+      resourceId: "recipe-2",
+    })
+
+    const response = await updateDraftSection(
+      jsonRequestFor("/api/recipes/recipe-1/guidance-drafts/2", "hans", "admin", "PATCH", {
+        expectedUpdatedAt: planned.updatedAt,
+        mediaAttachment: {
+          mediaAssetId: target.id,
+          uploadId: "file_other_recipe",
+          rightsBasis: "Estate-owned photograph",
+          attributionText: "Photograph by Hans",
+        },
+      }),
+      versionRouteContext
+    )
+
+    expect(response.status).toBe(403)
+    expect(repository.replace).not.toHaveBeenCalled()
+  })
+
+  it("rejects missing rights or attribution before reading upload content", async () => {
+    const planned = planRecipeGuidanceMedia(
+      existingDocument,
+      recipe,
+      "2026-07-29T09:31:00.000Z"
+    )!.document
+    const target = planned.mediaAssets.find((asset) => asset.status === "planned")!
+    repository.listByRecipeId.mockResolvedValueOnce([planned])
+
+    const response = await updateDraftSection(
+      jsonRequestFor("/api/recipes/recipe-1/guidance-drafts/2", "hans", "admin", "PATCH", {
+        expectedUpdatedAt: planned.updatedAt,
+        mediaAttachment: {
+          mediaAssetId: target.id,
+          uploadId: "file_recipe_photo",
+          rightsBasis: "",
+          attributionText: "",
+        },
+      }),
+      versionRouteContext
+    )
+
+    expect(response.status).toBe(400)
+    expect(getUploadMetadataById).not.toHaveBeenCalled()
+    expect(getUploadContentHash).not.toHaveBeenCalled()
+    expect(repository.replace).not.toHaveBeenCalled()
   })
 
   it("rejects recipe-sourced text through the reviewed section endpoint", async () => {

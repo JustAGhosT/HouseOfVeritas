@@ -28,6 +28,7 @@ import {
   RecipeGuidanceDocumentView,
   type RecipeGuidanceLanguageMode,
 } from "./recipe-guidance-document-view"
+import { RecipeGuidanceMediaIntake } from "./recipe-guidance-media-intake"
 
 interface GuidanceListResponse {
   data: { documents: RecipeGuidanceDocument[] }
@@ -588,6 +589,63 @@ export function RecipeGuidanceWorkspace({
     }
   }
 
+  const planMedia = async () => {
+    if (!selectedDocument) return
+    setBusy("media-plan")
+    setError("")
+    setMessage("")
+    try {
+      const response = await apiFetch<GuidanceMutationResponse>(
+        `/api/recipes/${recipe.id}/guidance-drafts/${selectedDocument.version}`,
+        {
+          method: "PATCH",
+          label: "RecipeGuidanceMediaPlan",
+          body: {
+            expectedUpdatedAt: selectedDocument.updatedAt,
+            mediaPlan: { action: "create_missing" },
+          },
+        }
+      )
+      replaceDocument(response.data.document)
+      setMessage("Missing recipe media slots were planned deterministically.")
+    } catch (planError) {
+      await handleMutationError(planError, "Unable to plan recipe guidance media")
+    } finally {
+      setBusy("")
+    }
+  }
+
+  const attachUpload = async (input: {
+    mediaAssetId: string
+    uploadId: string
+    rightsBasis: string
+    attributionText: string
+  }) => {
+    if (!selectedDocument) return
+    setBusy("media-attach")
+    setError("")
+    setMessage("")
+    try {
+      const response = await apiFetch<GuidanceMutationResponse>(
+        `/api/recipes/${recipe.id}/guidance-drafts/${selectedDocument.version}`,
+        {
+          method: "PATCH",
+          label: "RecipeGuidanceMediaAttachment",
+          body: {
+            expectedUpdatedAt: selectedDocument.updatedAt,
+            mediaAttachment: input,
+          },
+        }
+      )
+      replaceDocument(response.data.document)
+      setMessage("Private upload attached for bilingual media review.")
+    } catch (attachmentError) {
+      await handleMutationError(attachmentError, "Unable to attach recipe guidance media")
+    } finally {
+      setBusy("")
+    }
+  }
+
   const transition = async (action: TransitionAction) => {
     if (!selectedDocument) return
     setBusy(action)
@@ -877,6 +935,15 @@ export function RecipeGuidanceWorkspace({
                   </section>
                 </aside>
               </div>
+
+              <RecipeGuidanceMediaIntake
+                recipeId={recipe.id}
+                document={selectedDocument}
+                disabled={!editable || Boolean(busy)}
+                busy={Boolean(busy)}
+                onPlan={planMedia}
+                onAttach={attachUpload}
+              />
 
               {selectedDocument.mediaAssets.length > 0 && (
                 <section className="space-y-3">

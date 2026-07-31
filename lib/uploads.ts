@@ -1,3 +1,4 @@
+import { createHash } from "crypto"
 import { readFile, unlink, writeFile } from "fs/promises"
 import path from "path"
 import { ensureSchema, isPostgresConfigured, query } from "@/lib/db/postgres"
@@ -96,6 +97,15 @@ export async function getUploadMetadataById(id: string): Promise<UploadMetadata 
   }
 
   return inMemoryUploadStore.get(id) ?? (await readLocalUploadMetadata(id))
+}
+
+export async function getUploadContentHash(metadata: UploadMetadata): Promise<string | null> {
+  try {
+    const content = await readFile(getUploadFilePath(metadata.storedName))
+    return `sha256:${createHash("sha256").update(content).digest("hex")}`
+  } catch {
+    return null
+  }
 }
 
 export async function deleteLocalUploadMetadata(id: string): Promise<void> {

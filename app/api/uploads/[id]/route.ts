@@ -10,6 +10,9 @@ import {
   isUploadId,
   readLocalUploadMetadata,
 } from "@/lib/uploads"
+import { getRecipeById } from "@/lib/repositories/recipe-repository"
+import { createRecipeRevisionId } from "@/lib/recipe-guidance"
+import { getRecipeGuidanceRepository } from "@/lib/repositories/recipe-guidance-repository"
 
 let schemaEnsured = false
 
@@ -74,10 +77,57 @@ export const GET = withAuth(async (_request, context) => {
         return NextResponse.json({ error: "Task not found." }, { status: 404 })
       }
       if (taskAccess.status === 403) {
-        return NextResponse.json(
-          { error: "You do not have access to this task." },
-          { status: 403 }
+        return NextResponse.json({ error: "You do not have access to this task." }, { status: 403 })
+      }
+    }
+
+    if (resourceType === "recipe-guidance") {
+      if (!resourceId) {
+        return NextResponse.json({ error: "Upload recipe binding is missing." }, { status: 403 })
+      }
+      const recipe = await getRecipeById(resourceId)
+      if (!recipe) {
+        return NextResponse.json({ error: "Recipe not found." }, { status: 404 })
+      }
+      if (context.role !== "admin") {
+        const recipeAudience = new Set([recipe.ownerUserId, ...recipe.audienceUserIds])
+        if (!recipeAudience.has(context.userId)) {
+          return NextResponse.json(
+            { error: "You do not have access to this recipe upload." },
+            { status: 403 }
+          )
+        }
+
+        const { repository } = await getRecipeGuidanceRepository()
+        const document = await repository.findLatestPublished(resourceId)
+        const documentAudience = new Set(
+          document ? [document.ownerUserId, ...document.audienceUserIds] : []
         )
+        const approvedAsset = document?.mediaAssets.find(
+          (asset) =>
+            asset.status === "approved" &&
+            asset.storage?.type === "hov" &&
+            asset.storage.storageId === id
+        )
+        const isReferenced = Boolean(
+          approvedAsset &&
+          document?.sections.some((section) =>
+            section.blocks.some(
+              (block) => block.type === "media_reference" && block.mediaAssetId === approvedAsset.id
+            )
+          )
+        )
+        if (
+          !document ||
+          document.recipeRevisionId !== createRecipeRevisionId(recipe.id, recipe.updatedAt) ||
+          !documentAudience.has(context.userId) ||
+          !isReferenced
+        ) {
+          return NextResponse.json(
+            { error: "You do not have access to this recipe upload." },
+            { status: 403 }
+          )
+        }
       }
     }
 

@@ -122,6 +122,32 @@ browser.
 - The UI neither seeds guidance nor enables demo data. Browser fixtures intercept requests in local
   verification only and do not write to a repository or external service.
 
+### Recipe guidance media intake and planning
+
+Recipe media intake reuses the authenticated upload store with `resourceType=recipe-guidance` and
+the canonical recipe ID as `resourceId`. Only admins may create, list, or delete these scoped
+uploads. Admins may read drafts; non-admin reads require the exact upload to be an approved,
+referenced HOV asset in the latest revision-matching published document and require both recipe and
+document audience membership. Generic upload listings omit both task-guidance and recipe-guidance
+files so private media cannot leak through an unscoped query. The server derives uploader identity
+and upload time; clients cannot claim either value.
+
+- `PATCH /api/recipes/:id/guidance-drafts/:version` accepts `mediaPlan: { action:
+"create_missing" }` with `expectedUpdatedAt`. It deterministically adds draft bilingual image
+  briefs, planned media assets, and section references only for missing supported slots. Repeating
+  the plan is idempotent and performs no provider call.
+- The same route accepts `mediaAttachment` with a planned or replaceable asset ID, a recipe-scoped
+  upload ID, and explicit rights-basis and attribution text. The server verifies recipe scope and
+  image MIME/category, hashes the stored bytes, and records uploaded provenance plus an internal
+  HOV storage ID/path. Missing bytes, invalid rights, cross-recipe uploads, and stale concurrency
+  tokens fail closed.
+- Attached files enter `review_required`; they do not gain alt text or publication status. Hans
+  must still use the existing bilingual approve/reject workflow. Approved media cannot be replaced
+  through intake.
+- Deterministic planning is descriptive only. It does not approve briefs, request generation,
+  invoke Sluice, use a direct provider, publish packages, enqueue OmniPost, seed demo data, or write
+  production data outside the authenticated upload and explicitly selected draft mutations.
+
 ## Request flow
 
 1. A resident opens Guidance from a task and captures or chooses a photo.

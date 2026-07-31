@@ -138,6 +138,7 @@ const uploadedMediaSourceSchema = z.object({
   uploadedBy: nonEmptyId,
   uploadedAt: isoDateTime,
   rightsBasis: z.string().trim().min(1).max(500),
+  attributionText: z.string().trim().min(1).max(1_000),
 })
 
 const generatedMediaSourceSchema = z.object({

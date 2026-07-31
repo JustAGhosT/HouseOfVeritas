@@ -14,6 +14,7 @@ import {
   UPLOAD_DIR,
 } from "@/lib/uploads"
 import { resolveTaskAccess } from "@/lib/task-access"
+import { getRecipeById } from "@/lib/repositories/recipe-repository"
 
 const ALLOWED_TYPES: Record<string, string[]> = {
   image: ["image/jpeg", "image/png", "image/gif", "image/webp"],
@@ -46,6 +47,30 @@ async function ensureUploadDir() {
   if (!existsSync(UPLOAD_DIR)) {
     await mkdir(UPLOAD_DIR, { recursive: true })
   }
+}
+
+async function authorizeRecipeGuidanceResource(
+  resourceType: string | null,
+  resourceId: string | null,
+  role: string
+): Promise<NextResponse | null> {
+  if (resourceType !== "recipe-guidance") return null
+  if (!resourceId) {
+    return NextResponse.json(
+      { error: "resourceId is required for recipe guidance uploads." },
+      { status: 400 }
+    )
+  }
+  if (role !== "admin") {
+    return NextResponse.json(
+      { error: "Admin access is required for recipe guidance uploads." },
+      { status: 403 }
+    )
+  }
+  if (!(await getRecipeById(resourceId))) {
+    return NextResponse.json({ error: "Recipe not found." }, { status: 404 })
+  }
+  return null
 }
 
 async function persistToPostgres(metadata: {
@@ -141,6 +166,14 @@ export const GET = withAuth(async (request, context) => {
   }
 
   const isAuthorizedTaskGuidanceList = resourceType === "task-guidance" && Boolean(resourceId)
+  const recipeGuidanceError = await authorizeRecipeGuidanceResource(
+    resourceType,
+    resourceId,
+    context.role
+  )
+  if (recipeGuidanceError) return recipeGuidanceError
+  const isAuthorizedRecipeGuidanceList =
+    resourceType === "recipe-guidance" && Boolean(resourceId) && context.role === "admin"
   if (resourceType === "task-guidance") {
     if (!resourceId) {
       return NextResponse.json(
@@ -154,18 +187,17 @@ export const GET = withAuth(async (request, context) => {
       return NextResponse.json({ error: "Task not found." }, { status: 404 })
     }
     if (taskAccess.status === 403) {
-      return NextResponse.json(
-        { error: "You do not have access to this task." },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: "You do not have access to this task." }, { status: 403 })
     }
   }
 
   if (isPostgresConfigured()) {
     await ensureSchemaOnce()
     let files = await getFilesFromPostgres(filters)
-    if (!isAuthorizedTaskGuidanceList) {
-      files = files.filter((file) => file.resourceType !== "task-guidance")
+    if (!isAuthorizedTaskGuidanceList && !isAuthorizedRecipeGuidanceList) {
+      files = files.filter(
+        (file) => file.resourceType !== "task-guidance" && file.resourceType !== "recipe-guidance"
+      )
     }
     return NextResponse.json({ files, total: files.length })
   }
@@ -175,8 +207,10 @@ export const GET = withAuth(async (request, context) => {
   if (category) files = files.filter((f) => f.category === category)
   if (resourceType) files = files.filter((f) => f.resourceType === resourceType)
   if (resourceId) files = files.filter((f) => f.resourceId === resourceId)
-  if (!isAuthorizedTaskGuidanceList) {
-    files = files.filter((file) => file.resourceType !== "task-guidance")
+  if (!isAuthorizedTaskGuidanceList && !isAuthorizedRecipeGuidanceList) {
+    files = files.filter(
+      (file) => file.resourceType !== "task-guidance" && file.resourceType !== "recipe-guidance"
+    )
   }
 
   return NextResponse.json({
@@ -193,6 +227,20 @@ export const POST = withAuth(async (request, context) => {
     const resourceType = (formData.get("resourceType") as string | null)?.trim() || null
     const resourceId = (formData.get("resourceId") as string | null)?.trim() || null
     const uploader = context.userId
+
+    const recipeGuidanceError = await authorizeRecipeGuidanceResource(
+      resourceType,
+      resourceId,
+      context.role
+    )
+    if (recipeGuidanceError) return recipeGuidanceError
+
+    if (resourceType === "recipe-guidance" && category !== "image") {
+      return NextResponse.json(
+        { error: "Recipe guidance uploads must use the image category." },
+        { status: 400 }
+      )
+    }
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
@@ -228,10 +276,7 @@ export const POST = withAuth(async (request, context) => {
         return NextResponse.json({ error: "Task not found." }, { status: 404 })
       }
       if (taskAccess.status === 403) {
-        return NextResponse.json(
-          { error: "You do not have access to this task." },
-          { status: 403 }
-        )
+        return NextResponse.json({ error: "You do not have access to this task." }, { status: 403 })
       }
     }
 
@@ -282,6 +327,14 @@ export const DELETE = withAuth(async (request, context) => {
   }
 
   const file = await getUploadMetadataById(fileId)
+  if (file?.resourceType === "recipe-guidance") {
+    const recipeGuidanceError = await authorizeRecipeGuidanceResource(
+      file.resourceType,
+      file.resourceId ?? null,
+      context.role
+    )
+    if (recipeGuidanceError) return recipeGuidanceError
+  }
   if (file?.resourceType === "task-guidance") {
     if (!file.resourceId) {
       return NextResponse.json({ error: "Upload task binding is missing." }, { status: 403 })
@@ -292,10 +345,7 @@ export const DELETE = withAuth(async (request, context) => {
       return NextResponse.json({ error: "Task not found." }, { status: 404 })
     }
     if (taskAccess.status === 403) {
-      return NextResponse.json(
-        { error: "You do not have access to this task." },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: "You do not have access to this task." }, { status: 403 })
     }
   }
 
