@@ -5,7 +5,8 @@ describe("canonical user identity mappings", () => {
   it("maps the verified OmniPost email to Lucky without changing access", () => {
     expect(findUserByEmail("OMNIPOSTHQ@GMAIL.COM")).toMatchObject({
       id: "lucky",
-      email: "omniposthq@gmail.com",
+      email: "lucky@houseofv.com",
+      oidcEmail: "omniposthq@gmail.com",
       role: "employee",
     })
   })
@@ -15,7 +16,9 @@ describe("canonical user identity mappings", () => {
   })
 
   it("keeps canonical email identity mappings unique", () => {
-    const normalizedEmails = Object.values(USERS).map((user) => user.email.toLowerCase())
+    const normalizedEmails = Object.values(USERS).map((user) =>
+      (user.oidcEmail ?? user.email).toLowerCase()
+    )
 
     expect(new Set(normalizedEmails).size).toBe(normalizedEmails.length)
   })

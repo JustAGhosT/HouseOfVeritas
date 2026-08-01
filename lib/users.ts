@@ -4,7 +4,10 @@ import { defaultUserThemeForColor, isUserThemeId, type UserThemeId } from "@/lib
 export interface User {
   id: string
   name: string
+  /** Contact address used by notifications and profile management. */
   email: string
+  /** Verified email claim accepted from the OIDC provider; defaults to `email`. */
+  oidcEmail?: string
   phone: string
   role: UserRole
   description: string
@@ -112,7 +115,8 @@ export const USERS: Record<string, User> = {
   lucky: {
     id: "lucky",
     name: "Lucky",
-    email: "omniposthq@gmail.com",
+    email: "lucky@houseofv.com",
+    oidcEmail: "omniposthq@gmail.com",
     phone: "+27794142410",
     role: "employee",
     description: "Tasks, expenses, time tracking, vehicles coming soon",
@@ -129,6 +133,16 @@ let usersSchemaEnsured = false
 async function ensureUsersSchemaOnce(): Promise<void> {
   if (!usersSchemaEnsured && isPostgresConfigured()) {
     await ensureSchema()
+    for (const user of Object.values(USERS)) {
+      if (!user.oidcEmail) continue
+      await query(
+        `UPDATE users
+         SET oidc_email = $1, updated_at = NOW()
+         WHERE LOWER(id) = LOWER($2)
+           AND (oidc_email IS NULL OR LOWER(oidc_email) = LOWER(email))`,
+        [user.oidcEmail, user.id]
+      )
+    }
     usersSchemaEnsured = true
   }
 }
@@ -137,6 +151,7 @@ type UserRow = {
   id: string
   name: string
   email: string
+  oidc_email?: string | null
   phone: string
   role: string
   description: string
@@ -152,6 +167,7 @@ function rowToUser(row: UserRow): User {
     id: row.id,
     name: row.name,
     email: row.email,
+    oidcEmail: row.oidc_email || undefined,
     phone: row.phone,
     role: row.role as UserRole,
     description: row.description || "",
@@ -170,8 +186,8 @@ export async function findUserByEmailAsync(email: string): Promise<User | undefi
   await ensureUsersSchemaOnce()
   await seedUsersIfEmpty()
   const { rows } = await query<UserRow>(
-    `SELECT id, name, email, phone, role, description, color, theme_id, icon, specialty
-     FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1`,
+    `SELECT id, name, email, oidc_email, phone, role, description, color, theme_id, icon, specialty
+     FROM users WHERE LOWER(COALESCE(oidc_email, email)) = LOWER($1) LIMIT 1`,
     [email]
   )
   return rows[0] ? rowToUser(rows[0]) : undefined
@@ -202,6 +218,7 @@ export async function findOrCreateOidcUserAsync(
     id: `oidc-${globalThis.crypto.randomUUID()}`,
     name: name?.trim() || normalizedEmail.split("@")[0],
     email: normalizedEmail,
+    oidcEmail: normalizedEmail,
     phone: "",
     role: "resident",
     description: "Self-provisioned via Mystira sign-in",
@@ -214,13 +231,14 @@ export async function findOrCreateOidcUserAsync(
   if (isPostgresConfigured()) {
     await ensureUsersSchemaOnce()
     await query(
-      `INSERT INTO users (id, name, email, phone, role, description, color, theme_id, icon, specialty)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO users (id, name, email, oidc_email, phone, role, description, color, theme_id, icon, specialty)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        ON CONFLICT (email) DO NOTHING`,
       [
         user.id,
         user.name,
         user.email,
+        user.oidcEmail,
         user.phone,
         user.role,
         user.description,
@@ -246,7 +264,7 @@ export async function getAllUsersAsync(): Promise<User[]> {
   await ensureUsersSchemaOnce()
   await seedUsersIfEmpty()
   const { rows } = await query<UserRow>(
-    `SELECT id, name, email, phone, role, description, color, theme_id, icon, specialty FROM users`
+    `SELECT id, name, email, oidc_email, phone, role, description, color, theme_id, icon, specialty FROM users`
   )
   return rows.map(rowToUser)
 }
@@ -258,7 +276,7 @@ export async function findUserByIdAsync(id: string): Promise<User | undefined> {
   await ensureUsersSchemaOnce()
   await seedUsersIfEmpty()
   const { rows } = await query<UserRow>(
-    `SELECT id, name, email, phone, role, description, color, theme_id, icon, specialty, photo_url
+    `SELECT id, name, email, oidc_email, phone, role, description, color, theme_id, icon, specialty, photo_url
      FROM users WHERE LOWER(id) = LOWER($1) LIMIT 1`,
     [id]
   )
@@ -274,13 +292,14 @@ export async function seedUsersIfEmpty(): Promise<void> {
   await withClient(async (client) => {
     for (const user of Object.values(USERS)) {
       await client.query(
-        `INSERT INTO users (id, name, email, phone, role, description, color, theme_id, icon, specialty)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        `INSERT INTO users (id, name, email, oidc_email, phone, role, description, color, theme_id, icon, specialty)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          ON CONFLICT (id) DO NOTHING`,
         [
           user.id,
           user.name,
           user.email,
+          user.oidcEmail ?? user.email,
           user.phone,
           user.role,
           user.description,
@@ -295,7 +314,9 @@ export async function seedUsersIfEmpty(): Promise<void> {
 }
 
 export function findUserByEmail(email: string): User | undefined {
-  return Object.values(USERS).find((user) => user.email.toLowerCase() === email.toLowerCase())
+  return Object.values(USERS).find(
+    (user) => (user.oidcEmail ?? user.email).toLowerCase() === email.toLowerCase()
+  )
 }
 
 export function findUserById(id: string): User | undefined {
