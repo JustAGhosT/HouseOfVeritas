@@ -25,10 +25,11 @@ export default defineConfig({
   reporter: process.env.CI ? "github" : "html",
   use: {
     baseURL: process.env.BASE_URL || "http://localhost:3000",
-    // Production traces retain raw Cookie request headers. Never write a trace
-    // when legitimate short-lived production sessions are injected.
+    // Production traces retain raw Cookie request headers, and screenshots can
+    // retain production UI data. Never write either artifact when legitimate
+    // short-lived production sessions are injected.
     trace: probePolicy.trace,
-    screenshot: "only-on-failure",
+    screenshot: probePolicy.screenshot,
   },
   projects: [
     {

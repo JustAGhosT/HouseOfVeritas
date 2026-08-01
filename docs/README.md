@@ -71,34 +71,37 @@ _Note: 06 reserved for future deployment documentation._
 
 ## 05-project/ -- Project Management
 
-| Document                                                                        | Description                                                               |
-| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| [01-backlog.md](05-project/01-backlog.md)                                       | Implementation backlog with phases 1-7 and task tracking                  |
-| [02-roadmap.md](05-project/02-roadmap.md)                                       | Future enhancements roadmap: mobile, analytics, AI, integrations          |
-| [03-test-report.md](05-project/03-test-report.md)                               | Phase 7 testing and UAT report                                            |
-| [04-changelog.md](05-project/04-changelog.md)                                   | Version history and release notes                                         |
-| [05-contributing.md](05-project/05-contributing.md)                             | Branch strategy, commit conventions, code style, PR process               |
-| [ai-integration-opportunities.md](05-project/ai-integration-opportunities.md)   | AI suggestion APIs, implemented features, configuration                   |
-| [recipe-guidance-document-plan.md](05-project/recipe-guidance-document-plan.md) | Section-by-section bilingual recipe guidance and Sluice-routed image plan |
-| [onboarding-flow.md](05-project/onboarding-flow.md)                             | User onboarding steps, invite flow, guided tour                           |
-| [employees-vs-users.md](05-project/employees-vs-users.md)                       | Users (auth) vs Employees (Baserow), Team page consolidation              |
+| Document                                                                          | Description                                                                 |
+| --------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| [01-backlog.md](05-project/01-backlog.md)                                         | Implementation backlog with phases 1-7 and task tracking                    |
+| [02-roadmap.md](05-project/02-roadmap.md)                                         | Future enhancements roadmap: mobile, analytics, AI, integrations            |
+| [03-test-report.md](05-project/03-test-report.md)                                 | Phase 7 testing and UAT report                                              |
+| [04-changelog.md](05-project/04-changelog.md)                                     | Version history and release notes                                           |
+| [05-contributing.md](05-project/05-contributing.md)                               | Branch strategy, commit conventions, code style, PR process                 |
+| [ai-integration-opportunities.md](05-project/ai-integration-opportunities.md)     | AI suggestion APIs, implemented features, configuration                     |
+| [2026-08-01-investor-pitch-deck.md](05-project/2026-08-01-investor-pitch-deck.md) | Evidence-disciplined investor deck source and forward-looking pilot targets |
+| [2026-08-01-investor-video-plan.md](05-project/2026-08-01-investor-video-plan.md) | Scene-by-scene investor film production, rights, and claims-safety plan     |
+| [recipe-guidance-document-plan.md](05-project/recipe-guidance-document-plan.md)   | Section-by-section bilingual recipe guidance and Sluice-routed image plan   |
+| [onboarding-flow.md](05-project/onboarding-flow.md)                               | User onboarding steps, invite flow, guided tour                             |
+| [employees-vs-users.md](05-project/employees-vs-users.md)                         | Users (auth) vs Employees (Baserow), Team page consolidation                |
 
 ## handoffs/ -- Session Handoffs
 
 Dated session continuity notes (root cause, files changed, verification, next-owner steps).
 
-| Document                                                                                                      | Description                                                                          |
-| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| [2026-07-11-mystira-oidc-prod-login-fix.md](handoffs/2026-07-11-mystira-oidc-prod-login-fix.md)               | Production login `/api/auth/error` fix — Mystira OIDC app settings + AUTH_TRUST_HOST |
-| [2026-07-20-prod-telemetry-project-store.md](handoffs/2026-07-20-prod-telemetry-project-store.md)             | Production telemetry and project datastore remediation handoff                       |
-| [2026-07-22-project-datastore-ai-hardening.md](handoffs/2026-07-22-project-datastore-ai-hardening.md)         | Project datastore API and AI project suggestion hardening closeout                   |
-| [2026-07-28-recipe-guidance-phase1-contracts.md](handoffs/2026-07-28-recipe-guidance-phase1-contracts.md)     | Recipe guidance Phase 1 typed document and media contracts                           |
-| [2026-07-29-recipe-guidance-persistence.md](handoffs/2026-07-29-recipe-guidance-persistence.md)               | Dedicated recipe guidance repository and safe migration boundary                     |
-| [2026-07-29-recipe-guidance-builder-api.md](handoffs/2026-07-29-recipe-guidance-builder-api.md)               | Deterministic recipe draft builder and bounded preview/read APIs                     |
-| [2026-07-29-recipe-guidance-authoring-api.md](handoffs/2026-07-29-recipe-guidance-authoring-api.md)           | Explicit recipe draft creation and optimistic reviewed-section updates               |
-| [2026-07-29-recipe-guidance-lifecycle.md](handoffs/2026-07-29-recipe-guidance-lifecycle.md)                   | Review transitions, readiness evidence, publication, and immutable archival          |
-| [2026-07-31-recipe-guidance-ui.md](handoffs/2026-07-31-recipe-guidance-ui.md)                                 | Hans review workspace and Irma mobile published-guidance reader                      |
-| [2026-07-31-recipe-guidance-media-intake.md](handoffs/2026-07-31-recipe-guidance-media-intake.md)             | Authenticated recipe media intake and deterministic section planning                 |
-| [2026-07-31-recipe-guidance-brief-approval.md](handoffs/2026-07-31-recipe-guidance-brief-approval.md)         | Human image-brief review and disabled provider-neutral request contract              |
-| [2026-07-31-sluice-image-generation-capability.md](handoffs/2026-07-31-sluice-image-generation-capability.md) | Sluice image-generation capability audit and fail-closed go/no-go decision           |
-| [2026-07-28-user-selectable-themes.md](handoffs/2026-07-28-user-selectable-themes.md)                         | User-selectable workspace themes implementation, review, and merge handoff           |
+| Document                                                                                                            | Description                                                                          |
+| ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| [2026-07-11-mystira-oidc-prod-login-fix.md](handoffs/2026-07-11-mystira-oidc-prod-login-fix.md)                     | Production login `/api/auth/error` fix — Mystira OIDC app settings + AUTH_TRUST_HOST |
+| [2026-07-20-prod-telemetry-project-store.md](handoffs/2026-07-20-prod-telemetry-project-store.md)                   | Production telemetry and project datastore remediation handoff                       |
+| [2026-07-22-project-datastore-ai-hardening.md](handoffs/2026-07-22-project-datastore-ai-hardening.md)               | Project datastore API and AI project suggestion hardening closeout                   |
+| [2026-07-27-gate0-production-auth-probes-prepared.md](handoffs/2026-07-27-gate0-production-auth-probes-prepared.md) | Secure operator boundary for legitimate production Gate 0 acceptance probes          |
+| [2026-07-28-recipe-guidance-phase1-contracts.md](handoffs/2026-07-28-recipe-guidance-phase1-contracts.md)           | Recipe guidance Phase 1 typed document and media contracts                           |
+| [2026-07-29-recipe-guidance-persistence.md](handoffs/2026-07-29-recipe-guidance-persistence.md)                     | Dedicated recipe guidance repository and safe migration boundary                     |
+| [2026-07-29-recipe-guidance-builder-api.md](handoffs/2026-07-29-recipe-guidance-builder-api.md)                     | Deterministic recipe draft builder and bounded preview/read APIs                     |
+| [2026-07-29-recipe-guidance-authoring-api.md](handoffs/2026-07-29-recipe-guidance-authoring-api.md)                 | Explicit recipe draft creation and optimistic reviewed-section updates               |
+| [2026-07-29-recipe-guidance-lifecycle.md](handoffs/2026-07-29-recipe-guidance-lifecycle.md)                         | Review transitions, readiness evidence, publication, and immutable archival          |
+| [2026-07-31-recipe-guidance-ui.md](handoffs/2026-07-31-recipe-guidance-ui.md)                                       | Hans review workspace and Irma mobile published-guidance reader                      |
+| [2026-07-31-recipe-guidance-media-intake.md](handoffs/2026-07-31-recipe-guidance-media-intake.md)                   | Authenticated recipe media intake and deterministic section planning                 |
+| [2026-07-31-recipe-guidance-brief-approval.md](handoffs/2026-07-31-recipe-guidance-brief-approval.md)               | Human image-brief review and disabled provider-neutral request contract              |
+| [2026-07-31-sluice-image-generation-capability.md](handoffs/2026-07-31-sluice-image-generation-capability.md)       | Sluice image-generation capability audit and fail-closed go/no-go decision           |
+| [2026-07-28-user-selectable-themes.md](handoffs/2026-07-28-user-selectable-themes.md)                               | User-selectable workspace themes implementation, review, and merge handoff           |
