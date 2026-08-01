@@ -18,6 +18,8 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
   Configuration: "Sign-in is temporarily unavailable. Please try again in a moment.",
   Verification: "That sign-in link has expired. Please try signing in again.",
   OAuthAccountNotLinked: "This email is already linked to a different sign-in method.",
+  OAuthCallbackError:
+    "Mystira couldn't complete sign-in. Continue again to resume or finish your account setup.",
 }
 const DEFAULT_AUTH_ERROR = "Sign-in failed. Please try again."
 
@@ -49,15 +51,15 @@ function LoginPageContent() {
 
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+      <div className="bg-background flex min-h-screen items-center justify-center">
+        <div className="border-primary/30 border-t-primary h-8 w-8 animate-spin rounded-full border-2" />
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <div className="fixed inset-0 -z-10 bg-linear-to-br from-background via-background/90 to-card/50" />
+    <div className="bg-background flex min-h-screen flex-col">
+      <div className="from-background via-background/90 to-card/50 fixed inset-0 -z-10 bg-linear-to-br" />
       <div
         className="fixed inset-0 -z-10 bg-[size:50px_50px]"
         style={{
@@ -66,15 +68,15 @@ function LoginPageContent() {
         }}
       />
 
-      <header className="border-b border-border bg-background/40 backdrop-blur-xl">
+      <header className="border-border bg-background/40 border-b backdrop-blur-xl">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-primary to-primary/80">
-              <span className="font-serif text-lg font-bold text-primary-foreground">HV</span>
+            <div className="from-primary to-primary/80 flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br">
+              <span className="text-primary-foreground font-serif text-lg font-bold">HV</span>
             </div>
             <div>
-              <h1 className="font-serif font-semibold text-foreground">House of Veritas</h1>
-              <p className="text-xs text-muted-foreground">Digital Governance Platform</p>
+              <h1 className="text-foreground font-serif font-semibold">House of Veritas</h1>
+              <p className="text-muted-foreground text-xs">Digital Governance Platform</p>
             </div>
           </div>
         </div>
@@ -83,20 +85,20 @@ function LoginPageContent() {
       <main className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
           <div
-            className="rounded-2xl border border-border bg-card/80 p-8 backdrop-blur-xl shadow-lg"
+            className="border-border bg-card/80 rounded-2xl border p-8 shadow-lg backdrop-blur-xl"
             data-testid="login-card"
           >
             <div className="mb-8 text-center">
-              <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10">
-                <Shield className="h-8 w-8 text-primary" />
+              <div className="border-primary/30 bg-primary/10 mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl border">
+                <Shield className="text-primary h-8 w-8" />
               </div>
-              <h2 className="mb-2 font-serif text-2xl font-bold text-foreground">Welcome Back</h2>
+              <h2 className="text-foreground mb-2 font-serif text-2xl font-bold">Welcome Back</h2>
               <p className="text-muted-foreground">Sign in via Mystira to access your dashboard</p>
             </div>
 
             {error && (
               <div
-                className="mb-5 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive"
+                className="border-destructive/20 bg-destructive/10 text-destructive mb-5 rounded-xl border p-4 text-sm"
                 data-testid="login-error"
               >
                 {error}
@@ -109,13 +111,13 @@ function LoginPageContent() {
               disabled={isSigningIn}
               className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 font-medium transition-all ${
                 isSigningIn
-                  ? "cursor-not-allowed bg-muted text-muted-foreground"
+                  ? "bg-muted text-muted-foreground cursor-not-allowed"
                   : "bg-primary text-primary-foreground hover:bg-primary/90"
               }`}
               data-testid="login-submit"
             >
               {isSigningIn ? (
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
+                <div className="border-primary-foreground/30 border-t-primary-foreground h-5 w-5 animate-spin rounded-full border-2" />
               ) : (
                 <>
                   <span>Continue with Mystira</span>
@@ -124,7 +126,7 @@ function LoginPageContent() {
               )}
             </button>
 
-            <p className="mt-6 text-center text-xs text-muted-foreground">
+            <p className="text-muted-foreground mt-6 text-center text-xs">
               Authentication is handled by Mystira Identity. Your House of Veritas access is granted
               once your email is recognized by the estate registry.
             </p>
@@ -132,9 +134,11 @@ function LoginPageContent() {
         </div>
       </main>
 
-      <footer className="border-t border-border py-6">
+      <footer className="border-border border-t py-6">
         <div className="container mx-auto px-6 text-center">
-          <p className="text-sm text-muted-foreground">© 2026 House of Veritas. All rights reserved.</p>
+          <p className="text-muted-foreground text-sm">
+            © 2026 House of Veritas. All rights reserved.
+          </p>
         </div>
       </footer>
     </div>
@@ -146,8 +150,8 @@ export default function LoginPage() {
     <ErrorBoundary>
       <Suspense
         fallback={
-          <div className="flex min-h-screen items-center justify-center bg-background">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+          <div className="bg-background flex min-h-screen items-center justify-center">
+            <div className="border-primary/30 border-t-primary h-8 w-8 animate-spin rounded-full border-2" />
           </div>
         }
       >
