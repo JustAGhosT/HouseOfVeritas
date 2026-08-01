@@ -20,14 +20,21 @@ function Read-SecretToProcessEnvironment {
 
   $secureValue = Read-Host -Prompt "$Name value (input hidden)" -AsSecureString
   $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureValue)
+  $plainValue = $null
 
   try {
+    $plainValue = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+    if ([string]::IsNullOrWhiteSpace($plainValue)) {
+      throw "$Name must not be blank."
+    }
+
     [Environment]::SetEnvironmentVariable(
       $Name,
-      [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr),
+      $plainValue,
       "Process"
     )
   } finally {
+    $plainValue = $null
     [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
   }
 }
@@ -46,9 +53,13 @@ try {
   [Environment]::SetEnvironmentVariable("POST_DEPLOY_PROBE", "true", "Process")
 
   if ($UseChunkedCookies) {
+    [Environment]::SetEnvironmentVariable("POST_DEPLOY_ADMIN_SESSION", $null, "Process")
+    [Environment]::SetEnvironmentVariable("POST_DEPLOY_OPERATOR_SESSION", $null, "Process")
     Read-SecretToProcessEnvironment "POST_DEPLOY_ADMIN_SESSION_COOKIES"
     Read-SecretToProcessEnvironment "POST_DEPLOY_OPERATOR_SESSION_COOKIES"
   } else {
+    [Environment]::SetEnvironmentVariable("POST_DEPLOY_ADMIN_SESSION_COOKIES", $null, "Process")
+    [Environment]::SetEnvironmentVariable("POST_DEPLOY_OPERATOR_SESSION_COOKIES", $null, "Process")
     Read-SecretToProcessEnvironment "POST_DEPLOY_ADMIN_SESSION"
     Read-SecretToProcessEnvironment "POST_DEPLOY_OPERATOR_SESSION"
   }
