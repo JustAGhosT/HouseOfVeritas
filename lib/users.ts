@@ -318,7 +318,7 @@ export async function seedUsersIfEmpty(): Promise<void> {
           user.id,
           user.name,
           user.email,
-          user.oidcEmail ?? user.email,
+          user.oidcEmail ?? null,
           user.phone,
           user.role,
           user.description,

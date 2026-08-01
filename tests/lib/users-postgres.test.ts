@@ -15,6 +15,7 @@ describe("PostgreSQL OIDC identity mappings", () => {
     postgres.ensureSchema.mockReset()
     postgres.isPostgresConfigured.mockReturnValue(true)
     postgres.query.mockReset()
+    postgres.withClient.mockReset()
   })
 
   it("backfills and resolves Lucky's separate OIDC email", async () => {
@@ -107,5 +108,24 @@ describe("PostgreSQL OIDC identity mappings", () => {
     await expect(findOrCreateOidcUserAsync("lucky@houseofv.com", "Lucky")).rejects.toThrow(
       "OIDC user could not be persisted without an identity conflict"
     )
+  })
+
+  it("seeds only explicit OIDC mappings so implicit identities follow contact-email edits", async () => {
+    const clientQuery = vi.fn().mockResolvedValue({ rows: [], rowCount: 1 })
+    postgres.withClient.mockImplementation(async (callback) => callback({ query: clientQuery }))
+    postgres.query.mockImplementation(async (text: string) => {
+      if (text.includes("LOWER(id) <> LOWER($2)")) return { rows: [], rowCount: 0 }
+      if (text.includes("UPDATE users")) return { rows: [], rowCount: 1 }
+      if (text.includes("CREATE UNIQUE INDEX")) return { rows: [], rowCount: 0 }
+      if (text.includes("SELECT 1 FROM users LIMIT 1")) return { rows: [], rowCount: 0 }
+      throw new Error(`Unexpected query: ${text}`)
+    })
+
+    const { seedUsersIfEmpty } = await import("@/lib/users")
+    await seedUsersIfEmpty()
+
+    const seededRows = clientQuery.mock.calls.map(([, values]) => values)
+    expect(seededRows.find((values) => values[0] === "hans")?.[3]).toBeNull()
+    expect(seededRows.find((values) => values[0] === "lucky")?.[3]).toBe("omniposthq@gmail.com")
   })
 })
