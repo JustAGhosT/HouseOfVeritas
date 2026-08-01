@@ -90,6 +90,48 @@ describe("PostgreSQL OIDC identity mappings", () => {
     )
   })
 
+  it("allows an occupied canonical address when an existing explicit mapping is preserved", async () => {
+    postgres.query.mockImplementation(async (text: string) => {
+      if (text.includes("LOWER(id) <> LOWER($2)")) {
+        expect(text).toContain("SELECT 1 FROM users target")
+        expect(text).toContain("target.oidc_email IS NULL")
+        return { rows: [], rowCount: 0 }
+      }
+      if (text.includes("UPDATE users")) return { rows: [], rowCount: 0 }
+      if (text.includes("CREATE UNIQUE INDEX")) return { rows: [], rowCount: 0 }
+      if (text.includes("SELECT 1 FROM users LIMIT 1")) return { rows: [{}], rowCount: 1 }
+      if (text.includes("LOWER(COALESCE(oidc_email, email))")) {
+        return {
+          rows: [
+            {
+              id: "lucky",
+              name: "Lucky",
+              email: "lucky@houseofv.com",
+              oidc_email: "existing-lucky-login@example.com",
+              phone: "+27794142410",
+              role: "employee",
+              description: "Tasks, expenses, time tracking, vehicles coming soon",
+              color: "green",
+              theme_id: "garden",
+              icon: "🌿",
+              specialty: ["Gardening", "Painting", "Manual Labour"],
+            },
+          ],
+          rowCount: 1,
+        }
+      }
+      throw new Error(`Unexpected query: ${text}`)
+    })
+
+    const { findUserByEmailAsync } = await import("@/lib/users")
+    const user = await findUserByEmailAsync("existing-lucky-login@example.com")
+
+    expect(user).toMatchObject({
+      id: "lucky",
+      oidcEmail: "existing-lucky-login@example.com",
+    })
+  })
+
   it("rejects auto-provisioning when a reserved contact address prevents persistence", async () => {
     postgres.query.mockImplementation(async (text: string) => {
       if (text.includes("LOWER(id) <> LOWER($2)")) return { rows: [], rowCount: 0 }

@@ -139,6 +139,14 @@ async function ensureUsersSchemaOnce(): Promise<void> {
         `SELECT id FROM users
          WHERE LOWER(id) <> LOWER($2)
            AND (LOWER(email) = LOWER($1) OR LOWER(oidc_email) = LOWER($1))
+           AND EXISTS (
+             SELECT 1 FROM users target
+             WHERE LOWER(target.id) = LOWER($2)
+               AND (
+                 target.oidc_email IS NULL
+                 OR LOWER(target.oidc_email) = LOWER(target.email)
+               )
+           )
          LIMIT 1`,
         [user.oidcEmail, user.id]
       )
