@@ -78,6 +78,7 @@ export async function ensureSchema(): Promise<void> {
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
           email TEXT NOT NULL UNIQUE,
+          oidc_email TEXT,
           phone TEXT NOT NULL,
           role TEXT NOT NULL,
           description TEXT DEFAULT '',
@@ -93,6 +94,7 @@ export async function ensureSchema(): Promise<void> {
       `)
 
       await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_id TEXT;`)
+      await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS oidc_email TEXT;`)
 
       // Legacy column drop: pre-OIDC databases created `users` with a NOT NULL
       // `password_hash` column. The bcrypt+JWT auth it backed was fully removed
