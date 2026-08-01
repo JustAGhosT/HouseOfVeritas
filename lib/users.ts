@@ -112,7 +112,7 @@ export const USERS: Record<string, User> = {
   lucky: {
     id: "lucky",
     name: "Lucky",
-    email: "lucky@houseofv.com",
+    email: "omniposthq@gmail.com",
     phone: "+27794142410",
     role: "employee",
     description: "Tasks, expenses, time tracking, vehicles coming soon",
