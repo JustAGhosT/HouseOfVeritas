@@ -76,6 +76,20 @@ pnpm run test:e2e:post-deploy-gate0
 
 Remove the process environment values immediately after the run.
 
+For an interactive operator run, prefer the repository helper:
+
+```powershell
+.\scripts\run-post-deploy-gate0.ps1
+```
+
+Use `-UseChunkedCookies` when Auth.js emitted numbered cookie chunks. The helper
+prompts without echo, limits sessions to the current PowerShell process, restores
+the caller's prior process environment in `finally`, disables retained production
+traces and screenshots through the probe policy, and selects a console-only
+reporter so no HTML report is written. It does not create sessions or bypass
+authentication; legitimate short-lived admin and operator sessions remain a
+prerequisite.
+
 ## Explicitly still outstanding
 
 This coverage performs no governance mutation. It therefore does not prove the

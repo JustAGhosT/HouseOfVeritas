@@ -9,6 +9,7 @@ describe("productionProbePolicy", () => {
     expect(productionProbePolicy(true, true)).toEqual({
       retries: 0,
       trace: "off",
+      screenshot: "off",
     })
   })
 
@@ -16,6 +17,7 @@ describe("productionProbePolicy", () => {
     expect(productionProbePolicy(false, true)).toEqual({
       retries: 2,
       trace: "on-first-retry",
+      screenshot: "only-on-failure",
     })
   })
 
@@ -23,6 +25,7 @@ describe("productionProbePolicy", () => {
     expect(productionProbePolicy(false, false)).toEqual({
       retries: 0,
       trace: "on-first-retry",
+      screenshot: "only-on-failure",
     })
   })
 
@@ -37,6 +40,7 @@ describe("productionProbePolicy", () => {
       isPostDeployProbe: true,
       retries: 0,
       trace: "off",
+      screenshot: "off",
     })
   })
 })
