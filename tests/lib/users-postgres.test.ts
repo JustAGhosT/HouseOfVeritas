@@ -19,7 +19,9 @@ describe("PostgreSQL OIDC identity mappings", () => {
 
   it("backfills and resolves Lucky's separate OIDC email", async () => {
     postgres.query.mockImplementation(async (text: string) => {
+      if (text.includes("LOWER(id) <> LOWER($2)")) return { rows: [], rowCount: 0 }
       if (text.includes("UPDATE users")) return { rows: [], rowCount: 1 }
+      if (text.includes("CREATE UNIQUE INDEX")) return { rows: [], rowCount: 0 }
       if (text.includes("SELECT 1 FROM users LIMIT 1")) return { rows: [{}], rowCount: 1 }
       if (text.includes("LOWER(COALESCE(oidc_email, email))")) {
         return {
@@ -48,6 +50,10 @@ describe("PostgreSQL OIDC identity mappings", () => {
     const user = await findUserByEmailAsync("OMNIPOSTHQ@GMAIL.COM")
 
     expect(postgres.ensureSchema).toHaveBeenCalledOnce()
+    expect(postgres.query).toHaveBeenCalledWith(expect.stringContaining("LOWER(id) <> LOWER($2)"), [
+      "omniposthq@gmail.com",
+      "lucky",
+    ])
     expect(postgres.query).toHaveBeenCalledWith(expect.stringContaining("SET oidc_email = $1"), [
       "omniposthq@gmail.com",
       "lucky",
@@ -62,5 +68,44 @@ describe("PostgreSQL OIDC identity mappings", () => {
       oidcEmail: "omniposthq@gmail.com",
       role: "employee",
     })
+  })
+
+  it("rejects a canonical mapping that conflicts across identity columns", async () => {
+    postgres.query.mockImplementation(async (text: string) => {
+      if (text.includes("LOWER(id) <> LOWER($2)")) {
+        return { rows: [{ id: "oidc-existing" }], rowCount: 1 }
+      }
+      throw new Error(`Unexpected query: ${text}`)
+    })
+
+    const { findUserByEmailAsync } = await import("@/lib/users")
+
+    await expect(findUserByEmailAsync("omniposthq@gmail.com")).rejects.toThrow(
+      "OIDC identity mapping conflicts with an existing user"
+    )
+    expect(postgres.query).not.toHaveBeenCalledWith(
+      expect.stringContaining("SET oidc_email = $1"),
+      expect.anything()
+    )
+  })
+
+  it("rejects auto-provisioning when a reserved contact address prevents persistence", async () => {
+    postgres.query.mockImplementation(async (text: string) => {
+      if (text.includes("LOWER(id) <> LOWER($2)")) return { rows: [], rowCount: 0 }
+      if (text.includes("UPDATE users")) return { rows: [], rowCount: 1 }
+      if (text.includes("CREATE UNIQUE INDEX")) return { rows: [], rowCount: 0 }
+      if (text.includes("SELECT 1 FROM users LIMIT 1")) return { rows: [{}], rowCount: 1 }
+      if (text.includes("LOWER(COALESCE(oidc_email, email))")) {
+        return { rows: [], rowCount: 0 }
+      }
+      if (text.includes("INSERT INTO users")) return { rows: [], rowCount: 0 }
+      throw new Error(`Unexpected query: ${text}`)
+    })
+
+    const { findOrCreateOidcUserAsync } = await import("@/lib/users")
+
+    await expect(findOrCreateOidcUserAsync("lucky@houseofv.com", "Lucky")).rejects.toThrow(
+      "OIDC user could not be persisted without an identity conflict"
+    )
   })
 })

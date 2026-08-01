@@ -135,6 +135,16 @@ async function ensureUsersSchemaOnce(): Promise<void> {
     await ensureSchema()
     for (const user of Object.values(USERS)) {
       if (!user.oidcEmail) continue
+      const conflict = await query<{ id: string }>(
+        `SELECT id FROM users
+         WHERE LOWER(id) <> LOWER($2)
+           AND (LOWER(email) = LOWER($1) OR LOWER(oidc_email) = LOWER($1))
+         LIMIT 1`,
+        [user.oidcEmail, user.id]
+      )
+      if (conflict.rowCount > 0) {
+        throw new Error("OIDC identity mapping conflicts with an existing user")
+      }
       await query(
         `UPDATE users
          SET oidc_email = $1, updated_at = NOW()
@@ -143,6 +153,10 @@ async function ensureUsersSchemaOnce(): Promise<void> {
         [user.oidcEmail, user.id]
       )
     }
+    await query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_users_effective_oidc_email
+       ON users(LOWER(COALESCE(oidc_email, email)))`
+    )
     usersSchemaEnsured = true
   }
 }
@@ -248,9 +262,14 @@ export async function findOrCreateOidcUserAsync(
         user.specialty,
       ]
     )
-    // Return the canonical persisted row so a concurrent create that won the
-    // race (same email) yields the same account rather than a divergent object.
-    return (await findUserByEmailAsync(normalizedEmail)) ?? user
+    // Return only a canonical persisted row. A contact-address or effective-
+    // identity collision can make the insert a no-op; never admit the random
+    // in-memory user in that case because later requests could not resolve it.
+    const persisted = await findUserByEmailAsync(normalizedEmail)
+    if (!persisted) {
+      throw new Error("OIDC user could not be persisted without an identity conflict")
+    }
+    return persisted
   }
 
   USERS[user.id] = user
