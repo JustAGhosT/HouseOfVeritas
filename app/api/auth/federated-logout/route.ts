@@ -38,7 +38,10 @@ export async function GET(request: NextRequest) {
     const postLogoutRedirectUri =
       process.env.MYSTIRA_OIDC_POST_LOGOUT_REDIRECT_URI ?? new URL(base).origin
 
-    const endSessionEndpoint = await resolveEndSessionEndpoint(issuer)
+    const endSessionEndpoint = await resolveEndSessionEndpoint(
+      issuer,
+      process.env.MYSTIRA_OIDC_END_SESSION_ENDPOINT?.trim()
+    )
     const url = buildEndSessionUrl({ endSessionEndpoint, idToken, postLogoutRedirectUri })
     return NextResponse.json({ url })
   } catch (err) {

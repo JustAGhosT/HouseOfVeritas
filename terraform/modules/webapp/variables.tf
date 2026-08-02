@@ -181,8 +181,19 @@ variable "mystira_oidc_authorization_endpoint" {
   default     = ""
 
   validation {
-    condition     = var.mystira_oidc_authorization_endpoint == "" || can(regex("^https://[^/]+/connect/authorize$", var.mystira_oidc_authorization_endpoint))
+    condition     = var.mystira_oidc_authorization_endpoint == "" || can(regex("^https://[a-z0-9.-]+(:[0-9]+)?/connect/authorize$", var.mystira_oidc_authorization_endpoint))
     error_message = "mystira_oidc_authorization_endpoint must be empty or an HTTPS /connect/authorize URL."
+  }
+}
+
+variable "mystira_oidc_end_session_endpoint" {
+  description = "Browser-facing Mystira end-session endpoint. Use the authorization hostname so the host-only Identity session cookie is cleared."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.mystira_oidc_end_session_endpoint == "" || can(regex("^https://[a-z0-9.-]+(:[0-9]+)?/connect/endsession$", var.mystira_oidc_end_session_endpoint))
+    error_message = "mystira_oidc_end_session_endpoint must be empty or an HTTPS /connect/endsession URL."
   }
 }
 

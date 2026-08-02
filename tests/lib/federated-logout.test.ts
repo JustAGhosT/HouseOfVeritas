@@ -45,6 +45,33 @@ describe("resolveEndSessionEndpoint", () => {
     vi.unstubAllGlobals()
   })
 
+  it("uses a valid configured endpoint without discovery", async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal("fetch", fetchMock)
+
+    const endpoint = await resolveEndSessionEndpoint(
+      "https://identity.example.com",
+      "https://login.hov.neuralliquid.ai/connect/endsession"
+    )
+
+    expect(endpoint).toBe("https://login.hov.neuralliquid.ai/connect/endsession")
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it("ignores an unsafe configured endpoint", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, json: async () => ({}) }))
+    )
+
+    const endpoint = await resolveEndSessionEndpoint(
+      "https://safe-issuer.example.com",
+      "https://safe-issuer.example.com@evil.example/connect/endsession"
+    )
+
+    expect(endpoint).toBe("https://safe-issuer.example.com/connect/endsession")
+  })
+
   it("uses the discovered end_session_endpoint when discovery succeeds", async () => {
     vi.stubGlobal(
       "fetch",

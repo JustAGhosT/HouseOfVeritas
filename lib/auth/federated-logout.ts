@@ -16,7 +16,29 @@ function trimTrailingSlash(url: string): string {
  * omits it (Mystira runs OpenIddict). Never throws — sign-out must degrade
  * gracefully rather than fail on a discovery hiccup.
  */
-export async function resolveEndSessionEndpoint(issuer: string): Promise<string> {
+export async function resolveEndSessionEndpoint(
+  issuer: string,
+  configuredEndpoint?: string
+): Promise<string> {
+  if (configuredEndpoint) {
+    try {
+      const endpoint = new URL(configuredEndpoint)
+      if (
+        endpoint.protocol === "https:" &&
+        endpoint.username === "" &&
+        endpoint.password === "" &&
+        endpoint.pathname === "/connect/endsession" &&
+        endpoint.search === "" &&
+        endpoint.hash === ""
+      ) {
+        return endpoint.toString()
+      }
+    } catch {
+      // Ignore unsafe overrides and fall back to canonical discovery.
+    }
+    logger.warn("Ignoring invalid configured OIDC end-session endpoint")
+  }
+
   const cached = endSessionEndpointCache.get(issuer)
   if (cached) return cached
 

@@ -15,6 +15,7 @@ locals {
     { AUTH_TRUST_HOST = "true" },
     var.mystira_oidc_issuer != "" ? { MYSTIRA_OIDC_ISSUER = var.mystira_oidc_issuer } : {},
     var.mystira_oidc_authorization_endpoint != "" ? { MYSTIRA_OIDC_AUTHORIZATION_ENDPOINT = var.mystira_oidc_authorization_endpoint } : {},
+    var.mystira_oidc_end_session_endpoint != "" ? { MYSTIRA_OIDC_END_SESSION_ENDPOINT = var.mystira_oidc_end_session_endpoint } : {},
     var.mystira_oidc_client_id != "" ? { MYSTIRA_OIDC_CLIENT_ID = var.mystira_oidc_client_id } : {},
     local.mystira_oidc_client_secret_setting != "" ? { MYSTIRA_OIDC_CLIENT_SECRET = local.mystira_oidc_client_secret_setting } : {},
     var.auth_url != "" ? { AUTH_URL = var.auth_url } : {},

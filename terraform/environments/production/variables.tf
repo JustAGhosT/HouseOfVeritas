@@ -561,8 +561,19 @@ variable "mystira_oidc_authorization_endpoint" {
   default     = "https://login.hov.neuralliquid.ai/connect/authorize"
 
   validation {
-    condition     = can(regex("^https://[^/]+/connect/authorize$", var.mystira_oidc_authorization_endpoint))
+    condition     = can(regex("^https://[a-z0-9.-]+(:[0-9]+)?/connect/authorize$", var.mystira_oidc_authorization_endpoint))
     error_message = "mystira_oidc_authorization_endpoint must be an HTTPS /connect/authorize URL."
+  }
+}
+
+variable "mystira_oidc_end_session_endpoint" {
+  description = "Browser-facing Mystira end-session endpoint on the isolated HOV login hostname"
+  type        = string
+  default     = "https://login.hov.neuralliquid.ai/connect/endsession"
+
+  validation {
+    condition     = can(regex("^https://[a-z0-9.-]+(:[0-9]+)?/connect/endsession$", var.mystira_oidc_end_session_endpoint))
+    error_message = "mystira_oidc_end_session_endpoint must be an HTTPS /connect/endsession URL."
   }
 }
 

@@ -15,10 +15,12 @@ Deployment order:
 
 1. Apply the `neuralliquid-org` DNS change for the `login.hov` CNAME and
    `asuid.login.hov` TXT record.
-2. Apply the `mystira-workspace` Identity hostname, managed certificate, and SNI
-   bindings; verify HTTPS and the authorization route on the new hostname.
-3. Deploy this HOV change.
-4. Complete a legitimate HOV magic-link sign-in and verify the callback returns
+2. Run and apply Mystira's separate `terraform-entra-external-id` dev workflow
+   so Microsoft can return to the new Identity hostname.
+3. Apply the `mystira-workspace` Identity hostname, managed certificate, and SNI
+   bindings; verify HTTPS, authorization, and end-session routes on the hostname.
+4. Deploy this HOV change.
+5. Complete a legitimate HOV magic-link sign-in and verify the callback returns
    to HOV with an authenticated session.
 
 CI, health probes, and Terraform plans do not constitute authenticated user
