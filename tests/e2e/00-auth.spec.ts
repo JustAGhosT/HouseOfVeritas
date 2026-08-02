@@ -75,4 +75,14 @@ test.describe("Authentication", () => {
     await expect(errorBox).toBeVisible({ timeout: LOGIN_RENDER_TIMEOUT })
     await expect(errorBox).toContainText("estate registry")
   })
+
+  test("offers a resumable action after an interrupted Mystira callback", async ({ page }) => {
+    await page.goto("/login?error=OAuthCallbackError")
+    await waitForLoginButton(page)
+
+    await expect(page.getByTestId("login-error")).toContainText(
+      "Continue again to resume or finish your account setup"
+    )
+    await expect(page.getByTestId("login-submit")).toContainText("Continue with Mystira")
+  })
 })
