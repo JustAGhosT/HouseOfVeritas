@@ -3,7 +3,7 @@ import { getToken } from "next-auth/jwt"
 import { logger } from "@/lib/logger"
 import { buildEndSessionUrl, resolveEndSessionEndpoint } from "@/lib/auth/federated-logout"
 
-const issuer = process.env.MYSTIRA_OIDC_ISSUER ?? "http://localhost:5262"
+const issuer = process.env.MYSTIRA_OIDC_ISSUER?.trim() || "http://localhost:5262"
 
 /**
  * Returns the Mystira RP-initiated-logout URL for the current session so the
