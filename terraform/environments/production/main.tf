@@ -274,6 +274,7 @@ module "webapp" {
   key_vault_uri                                    = module.security.key_vault_uri
   jwt_secret                                       = random_password.jwt_secret.result
   mystira_oidc_issuer                              = var.mystira_oidc_issuer
+  mystira_oidc_authorization_endpoint              = var.mystira_oidc_authorization_endpoint
   mystira_oidc_client_id                           = var.mystira_oidc_client_id
   mystira_oidc_client_secret                       = var.mystira_oidc_client_secret
   mystira_oidc_client_secret_key_vault_secret_name = var.mystira_oidc_client_secret_key_vault_secret_name
