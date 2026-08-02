@@ -3,7 +3,7 @@ import { getToken } from "next-auth/jwt"
 import { logger } from "@/lib/logger"
 import { buildEndSessionUrl, resolveEndSessionEndpoint } from "@/lib/auth/federated-logout"
 
-const issuer = process.env.MYSTIRA_OIDC_ISSUER ?? "http://localhost:5262"
+const issuer = process.env.MYSTIRA_OIDC_ISSUER?.trim() || "http://localhost:5262"
 
 /**
  * Returns the Mystira RP-initiated-logout URL for the current session so the
@@ -38,7 +38,10 @@ export async function GET(request: NextRequest) {
     const postLogoutRedirectUri =
       process.env.MYSTIRA_OIDC_POST_LOGOUT_REDIRECT_URI ?? new URL(base).origin
 
-    const endSessionEndpoint = await resolveEndSessionEndpoint(issuer)
+    const endSessionEndpoint = await resolveEndSessionEndpoint(
+      issuer,
+      process.env.MYSTIRA_OIDC_END_SESSION_ENDPOINT?.trim()
+    )
     const url = buildEndSessionUrl({ endSessionEndpoint, idToken, postLogoutRedirectUri })
     return NextResponse.json({ url })
   } catch (err) {

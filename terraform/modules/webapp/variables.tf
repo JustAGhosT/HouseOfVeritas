@@ -175,6 +175,28 @@ variable "mystira_oidc_issuer" {
   default     = ""
 }
 
+variable "mystira_oidc_authorization_endpoint" {
+  description = "Browser-facing Mystira authorization endpoint. May use an HOV-owned custom hostname while issuer/token endpoints remain canonical Mystira Identity."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.mystira_oidc_authorization_endpoint == "" || can(regex("^https://[a-z0-9.-]+(:[0-9]+)?/connect/authorize$", var.mystira_oidc_authorization_endpoint))
+    error_message = "mystira_oidc_authorization_endpoint must be empty or an HTTPS /connect/authorize URL."
+  }
+}
+
+variable "mystira_oidc_end_session_endpoint" {
+  description = "Browser-facing Mystira end-session endpoint. Use the authorization hostname so the host-only Identity session cookie is cleared."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.mystira_oidc_end_session_endpoint == "" || can(regex("^https://[a-z0-9.-]+(:[0-9]+)?/connect/endsession$", var.mystira_oidc_end_session_endpoint))
+    error_message = "mystira_oidc_end_session_endpoint must be empty or an HTTPS /connect/endsession URL."
+  }
+}
+
 variable "mystira_oidc_client_id" {
   description = "Mystira OIDC client ID for the House of Veritas relying party"
   type        = string

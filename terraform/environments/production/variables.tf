@@ -555,6 +555,28 @@ variable "mystira_oidc_issuer" {
   default     = "https://identity.mystira.app"
 }
 
+variable "mystira_oidc_authorization_endpoint" {
+  description = "Browser-facing Mystira authorization endpoint on the isolated HOV login hostname"
+  type        = string
+  default     = "https://login.hov.neuralliquid.ai/connect/authorize"
+
+  validation {
+    condition     = can(regex("^https://[a-z0-9.-]+(:[0-9]+)?/connect/authorize$", var.mystira_oidc_authorization_endpoint))
+    error_message = "mystira_oidc_authorization_endpoint must be an HTTPS /connect/authorize URL."
+  }
+}
+
+variable "mystira_oidc_end_session_endpoint" {
+  description = "Browser-facing Mystira end-session endpoint on the isolated HOV login hostname"
+  type        = string
+  default     = "https://login.hov.neuralliquid.ai/connect/endsession"
+
+  validation {
+    condition     = can(regex("^https://[a-z0-9.-]+(:[0-9]+)?/connect/endsession$", var.mystira_oidc_end_session_endpoint))
+    error_message = "mystira_oidc_end_session_endpoint must be an HTTPS /connect/endsession URL."
+  }
+}
+
 variable "mystira_oidc_client_id" {
   description = "Mystira OIDC client ID for the House of Veritas relying party"
   type        = string
