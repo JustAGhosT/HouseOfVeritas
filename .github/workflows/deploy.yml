@@ -325,6 +325,39 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Reconcile Mystira OIDC Client Secret
+        if: ${{ (inputs.environment || 'production') == 'production' }}
+        env:
+          KEY_VAULT_NAME: ${{ vars.HOV_KEY_VAULT_NAME || 'nl-prod-hov-kv' }}
+          KEY_VAULT_SECRET_NAME: ${{ vars.MYSTIRA_OIDC_CLIENT_SECRET_KEY_VAULT_SECRET_NAME || 'mystira-oidc-client-secret' }}
+          MYSTIRA_OIDC_CLIENT_SECRET: ${{ secrets.MYSTIRA_OIDC_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${MYSTIRA_OIDC_CLIENT_SECRET:-}" ]; then
+            echo "::error::MYSTIRA_OIDC_CLIENT_SECRET is required in the production environment"
+            exit 1
+          fi
+
+          if CURRENT_SECRET=$(az keyvault secret show \
+            --vault-name "$KEY_VAULT_NAME" \
+            --name "$KEY_VAULT_SECRET_NAME" \
+            --query value \
+            --output tsv \
+            --only-show-errors 2>/dev/null) && [ "$CURRENT_SECRET" = "$MYSTIRA_OIDC_CLIENT_SECRET" ]; then
+            echo "Mystira OIDC client secret is already synchronized"
+          else
+            az keyvault secret set \
+              --vault-name "$KEY_VAULT_NAME" \
+              --name "$KEY_VAULT_SECRET_NAME" \
+              --value "$MYSTIRA_OIDC_CLIENT_SECRET" \
+              --output none \
+              --only-show-errors
+            echo "Mystira OIDC client secret synchronized"
+          fi
+
+          unset CURRENT_SECRET MYSTIRA_OIDC_CLIENT_SECRET
+
       - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v3
         with:
