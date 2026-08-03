@@ -328,9 +328,12 @@ jobs:
       - name: Reconcile Mystira OIDC Client Secret
         if: ${{ (inputs.environment || 'production') == 'production' }}
         env:
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP || 'nl-prod-hov-rg' }}
+          AZURE_SUBSCRIPTION_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}
           KEY_VAULT_NAME: ${{ vars.HOV_KEY_VAULT_NAME || 'nl-prod-hov-kv' }}
           KEY_VAULT_SECRET_NAME: ${{ vars.MYSTIRA_OIDC_CLIENT_SECRET_KEY_VAULT_SECRET_NAME || 'mystira-oidc-client-secret' }}
           MYSTIRA_OIDC_CLIENT_SECRET: ${{ secrets.MYSTIRA_OIDC_CLIENT_SECRET }}
+          WEBAPP_NAME: ${{ vars.WEBAPP_NAME || 'nl-prod-hov-app' }}
         run: |
           set -euo pipefail
 
@@ -353,7 +356,12 @@ jobs:
               --value "$MYSTIRA_OIDC_CLIENT_SECRET" \
               --output none \
               --only-show-errors
-            echo "Mystira OIDC client secret synchronized"
+            az rest \
+              --method post \
+              --url "https://management.azure.com/subscriptions/$AZURE_SUBSCRIPTION_ID/resourceGroups/$AZURE_RESOURCE_GROUP/providers/Microsoft.Web/sites/$WEBAPP_NAME/config/configreferences/appsettings/refresh?api-version=2022-03-01" \
+              --output none \
+              --only-show-errors
+            echo "Mystira OIDC client secret synchronized and App Service reference refreshed"
           fi
 
           unset CURRENT_SECRET MYSTIRA_OIDC_CLIENT_SECRET

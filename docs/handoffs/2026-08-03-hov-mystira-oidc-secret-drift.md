@@ -45,9 +45,10 @@ manual Terraform apply:
 
 The step fails closed if the GitHub environment secret is absent. It first reads
 and compares the current Key Vault value, creates a new version only when the
-values differ, emits no secret material, and unsets local shell variables after
-the comparison. Staging skips the production-only reconciliation in the full
-deployment workflow.
+values differ, immediately refreshes the App Service's versionless Key Vault
+references after a change, emits no secret material, and unsets local shell
+variables after the comparison. Staging skips the production-only
+reconciliation in the full deployment workflow.
 
 ## Verification
 
