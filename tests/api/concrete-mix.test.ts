@@ -309,6 +309,7 @@ describe("POST /api/concrete-mix/guidance", () => {
 
     const payload = await res.json()
     expect(payload.data.draft.locale).toBe("af")
+    /* cspell:disable-next-line */
     expect(payload.data.draft.title).toContain("tuinklippe")
   })
 

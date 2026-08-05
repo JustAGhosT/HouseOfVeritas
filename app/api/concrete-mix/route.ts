@@ -14,7 +14,9 @@ import {
   type InventoryResolution,
   type ShoppingList,
 } from "@/lib/concrete-mix-inventory"
+import { applyRecordToBatchBody } from "@/lib/concrete-mix-records"
 import { getInventoryRepository } from "@/lib/repositories/inventory-repository"
+import { findConcreteMixRecordById } from "@/lib/repositories/concrete-mix-repository"
 
 // GET - Slab presets, mix designs, cast methods and color intensities for the picker UI
 export const GET = withRole(
@@ -67,15 +69,26 @@ export const POST = withRole(
     return NextResponse.json({ error: "Request body must be valid JSON" }, { status: 400 })
   }
 
-  const validation = validateConcreteMixInput(body)
+  const source = (typeof body === "object" && body !== null ? body : {}) as Record<string, unknown>
+  const savedMixId = typeof source.savedMixId === "string" ? source.savedMixId : null
+
+  // A saved mix supplies the settings; anything explicit in the request still
+  // wins, so one batch can be nudged without editing the record.
+  let batchBody: unknown = body
+  if (savedMixId) {
+    const record = await findConcreteMixRecordById(savedMixId).catch(() => null)
+    if (!record) {
+      return NextResponse.json({ error: "Saved mix not found" }, { status: 404 })
+    }
+    batchBody = applyRecordToBatchBody(record, source)
+  }
+
+  const validation = validateConcreteMixInput(batchBody)
   if (!validation.ok) {
     return NextResponse.json({ error: validation.error }, { status: 400 })
   }
 
-  const useInventory =
-    typeof body === "object" &&
-    body !== null &&
-    (body as Record<string, unknown>).useInventory === true
+  const useInventory = source.useInventory === true
 
   try {
     let result = calculateConcreteMix(validation.value)
