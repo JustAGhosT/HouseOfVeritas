@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { MixLibrary } from "@/components/mix-library"
 import { apiFetch } from "@/lib/api-client"
 import { logger } from "@/lib/logger"
 
@@ -634,6 +635,8 @@ export function CastingPlanner({ persona }: { persona: "hans" | "lucky" | "charl
           </Card>
         </div>
       ) : null}
+
+      <MixLibrary canDelete={persona !== "lucky"} />
     </div>
   )
 }
