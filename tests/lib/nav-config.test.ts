@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs"
+import { resolve } from "node:path"
 import { describe, expect, it } from "vitest"
 import { buildNavEntries, isCategory, type NavEntry } from "@/lib/nav-config"
 import { RESPONSIBILITIES } from "@/lib/access-config"
@@ -87,5 +89,43 @@ describe("nav-config inventory access", () => {
     expect(irmaItems).not.toContainEqual(expect.objectContaining({ name: "Expenses" }))
     expect(irmaItems).not.toContainEqual(expect.objectContaining({ name: "Vehicles (Soon)" }))
     expect(irmaItems).not.toContainEqual(expect.objectContaining({ name: "Assets" }))
+  })
+})
+
+describe("nav-config casting access", () => {
+  it("shows the casting planner to admin and operators, but not to residents", () => {
+    const withAccess = [
+      ["hans", "admin", "/dashboard/hans/casting"],
+      ["charl", "operator", "/dashboard/charl/casting"],
+      ["lucky", "employee", "/dashboard/lucky/casting"],
+    ] as const
+
+    for (const [persona, role, href] of withAccess) {
+      const items = flatten(buildNavEntries(persona, role, RESPONSIBILITIES.slice()))
+      expect(items).toContainEqual(expect.objectContaining({ name: "Casting", href }))
+    }
+
+    // Casting is operator work and the API refuses residents outright.
+    const irma = flatten(buildNavEntries("irma", "resident", RESPONSIBILITIES.slice()))
+    expect(irma.map((item) => item.name)).not.toContain("Casting")
+  })
+})
+
+describe("nav-config admin coverage contract", () => {
+  it("gives the admin persona a route for every page in the shared inventory", () => {
+    // A page with no href override is silently dropped from the nav, so a new
+    // page that forgets hans disappears for the one role meant to see it all.
+    const source = readFileSync(resolve(process.cwd(), "lib/nav-config.ts"), "utf8")
+
+    const pageNames = [...source.matchAll(/\{\s*name:\s*"([^"]+)",\s*\n?\s*href:/g)].map(
+      (match) => match[1]
+    )
+    const hansBlock = source.slice(source.indexOf("hans: {"), source.indexOf("charl: {"))
+    const hansRoutes = [...hansBlock.matchAll(/^\s*"?([A-Za-z &()]+?)"?:\s*"\//gm)].map((match) =>
+      match[1].trim()
+    )
+
+    expect(pageNames.length).toBeGreaterThan(15)
+    expect(pageNames.filter((name) => !hansRoutes.includes(name))).toEqual([])
   })
 })

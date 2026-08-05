@@ -24,6 +24,7 @@ import {
   ChefHat,
   ShieldCheck,
   FlaskConical,
+  Layers,
   type LucideIcon,
 } from "lucide-react"
 import {
@@ -130,6 +131,12 @@ const PAGE_DEFINITIONS: PageDef[] = [
     category: "Operations",
   },
   {
+    name: "Casting",
+    href: "/dashboard",
+    icon: Layers,
+    category: "Operations",
+  },
+  {
     name: "Maintenance",
     href: "/dashboard",
     icon: Wrench,
@@ -201,6 +208,7 @@ const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
     Settings: "/dashboard/hans/settings",
     Recipes: "/dashboard/hans/recipes",
     Work: "/dashboard/hans/projects",
+    Casting: "/dashboard/hans/casting",
   },
   charl: {
     Overview: "/dashboard/charl",
@@ -210,6 +218,7 @@ const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
     "Vehicles (Soon)": "/dashboard/charl/vehicles",
     Assets: "/dashboard/charl/assets",
     Inventory: "/dashboard/charl/inventory",
+    Casting: "/dashboard/charl/casting",
     Documents: "/dashboard/charl/documents",
     Recipes: "/dashboard/charl/recipes",
     Settings: "/dashboard/charl/settings",
@@ -221,6 +230,7 @@ const PERSONA_HREF_OVERRIDES: Record<string, Record<string, string>> = {
     "Time & Attendance": "/dashboard/lucky/time",
     "Vehicles (Soon)": "/dashboard/lucky/vehicles",
     Inventory: "/dashboard/lucky/inventory",
+    Casting: "/dashboard/lucky/casting",
     Expenses: "/dashboard/lucky/expenses",
     Documents: "/dashboard/lucky/documents",
     Recipes: "/dashboard/lucky/recipes",
