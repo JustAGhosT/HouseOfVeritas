@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { withRole } from "@/lib/auth/rbac"
 import { generateTaskGuidanceWithSluice } from "@/lib/integrations/sluice"
+import { buildKnowledgeGrounding } from "@/lib/knowledge/grounding"
+import { findKnowledge } from "@/lib/knowledge/retrieval"
 import { logger } from "@/lib/logger"
 import { resolveTaskAccess } from "@/lib/task-access"
 
@@ -40,7 +42,20 @@ export const POST = withRole("admin", "operator", "employee", "resident")(
         )
       }
 
-      const draft = await generateTaskGuidanceWithSluice(parsed.data)
+      // Ground generation in curated house knowledge matching the reported
+      // symptom, so recurring issues get consistent, reviewed answers instead of
+      // being re-derived freeform. No match => ungrounded generation, as before.
+      const grounding = buildKnowledgeGrounding(
+        findKnowledge({
+          text: `${parsed.data.title} ${parsed.data.description}`,
+          locale: parsed.data.locale,
+        })
+      )
+
+      const draft = await generateTaskGuidanceWithSluice({
+        ...parsed.data,
+        knowledge: grounding ?? undefined,
+      })
       if (!draft) {
         return NextResponse.json(
           {
@@ -53,7 +68,12 @@ export const POST = withRole("admin", "operator", "employee", "resident")(
 
       return NextResponse.json({
         data: { draft },
-        summary: { aiPowered: true, requiresHumanReview: true },
+        summary: {
+          aiPowered: true,
+          requiresHumanReview: true,
+          groundedInKnowledge: grounding !== null,
+          knowledgeRefs: grounding?.refs ?? [],
+        },
       })
     } catch (error) {
       logger.error("Failed to analyze task photo for guidance", {

@@ -110,6 +110,85 @@ describe("task guidance API", () => {
     expect((await response.json()).data.draft.title).toBe("Herstel die vensterbank")
   })
 
+  it("grounds generation in curated knowledge when the symptom matches", async () => {
+    vi.mocked(generateTaskGuidanceWithSluice).mockResolvedValue(draft)
+
+    const response = await analyzePhoto(
+      new Request("http://localhost/api/guidance/analyze", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
+          taskId: "42",
+          title: "Damp patch by the copper pipe",
+          description:
+            "There is condensation on the copper pipe and blistering paint on the wall.",
+          imageBase64: "data:image/jpeg;base64,cGhvdG8tcGxhY2Vob2xkZXI=",
+          imageMimeType: "image/jpeg",
+          locale: "en",
+        }),
+      })
+    )
+
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.summary.groundedInKnowledge).toBe(true)
+    expect(body.summary.knowledgeRefs[0].slug).toBe("copper-pipe-condensation-wall-damp")
+
+    // The curated entry must actually reach the model, not just the response.
+    const sent = vi.mocked(generateTaskGuidanceWithSluice).mock.calls.at(-1)![0]
+    expect(sent.knowledge?.text).toContain("Confirm condensation vs leak")
+    expect(sent.knowledge?.refs[0].slug).toBe("copper-pipe-condensation-wall-damp")
+  })
+
+  it("generates ungrounded guidance when no curated entry matches", async () => {
+    vi.mocked(generateTaskGuidanceWithSluice).mockResolvedValue(draft)
+
+    const response = await analyzePhoto(
+      new Request("http://localhost/api/guidance/analyze", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
+          taskId: "42",
+          title: "Repair window sill",
+          description: "Repair damaged plaster without blocking drainage.",
+          imageBase64: "data:image/jpeg;base64,cGhvdG8tcGxhY2Vob2xkZXI=",
+          imageMimeType: "image/jpeg",
+          locale: "en",
+        }),
+      })
+    )
+
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.summary.groundedInKnowledge).toBe(false)
+    expect(body.summary.knowledgeRefs).toEqual([])
+    expect(vi.mocked(generateTaskGuidanceWithSluice).mock.calls.at(-1)![0].knowledge).toBeUndefined()
+  })
+
+  it("matches Afrikaans symptoms against the Afrikaans curated entry", async () => {
+    vi.mocked(generateTaskGuidanceWithSluice).mockResolvedValue(draft)
+
+    const response = await analyzePhoto(
+      new Request("http://localhost/api/guidance/analyze", {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({
+          taskId: "42",
+          title: "Klam kol by die koperpyp",
+          description: "Daar is kondensasie op die koperpyp en blase in die verf.",
+          imageBase64: "data:image/jpeg;base64,cGhvdG8tcGxhY2Vob2xkZXI=",
+          imageMimeType: "image/jpeg",
+          locale: "af",
+        }),
+      })
+    )
+
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.summary.groundedInKnowledge).toBe(true)
+    expect(body.summary.knowledgeRefs[0].slug).toBe("copper-pipe-condensation-wall-damp-af")
+  })
+
   it("binds reviewed guidance using the authenticated resident", async () => {
     vi.mocked(createAndBindGuidance).mockResolvedValue({
       guidance: {
