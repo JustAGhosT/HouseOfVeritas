@@ -83,12 +83,63 @@ describe("POST /api/concrete-mix", () => {
         presetId: "square-400",
         slabCount: 50,
         wastePercent: 0,
-        costs: { cementPerBagCents: 12000, pigmentPerKgCents: 8995 },
+        costs: { cement: 12000, pigment: 8995 },
       })
     )
 
     const payload = await res.json()
     expect(payload.summary.estimatedCostCents).toBe(107960)
+  })
+
+  it("accepts an area instead of a slab count and reports the coverage", async () => {
+    const res = await POST(postRequest({ presetId: "square-400", coverage: { areaM2: 12 } }))
+
+    expect(res.status).toBe(200)
+    const payload = await res.json()
+    expect(payload.summary.slabCount).toBe(75)
+    expect(payload.summary.coveredAreaM2).toBeGreaterThan(12)
+    expect(payload.data.coverage.requestedAreaM2).toBe(12)
+  })
+
+  it("returns a mixer plan when a drum capacity is given", async () => {
+    const res = await POST(
+      postRequest({
+        presetId: "square-400",
+        slabCount: 50,
+        wastePercent: 0,
+        mixerCapacityM3: 0.15,
+      })
+    )
+
+    const payload = await res.json()
+    expect(payload.summary.mixerLoadCount).toBe(3)
+    expect(payload.data.mixerPlan.fullLoad.pigmentGrams).toBe(3375)
+  })
+
+  it("includes reinforcement and admixture lines when they are requested", async () => {
+    const res = await POST(
+      postRequest({
+        presetId: "large-500",
+        slabCount: 40,
+        reinforcement: "mesh",
+        admixtures: ["waterproofer"],
+      })
+    )
+
+    const payload = await res.json()
+    const materials = payload.data.materials.map((line: { material: string }) => line.material)
+    expect(materials).toContain("mesh")
+    expect(materials).toContain("waterproofer")
+  })
+
+  it("returns 400 when both slabCount and coverage are given", async () => {
+    const res = await POST(
+      postRequest({ presetId: "square-400", slabCount: 10, coverage: { areaM2: 12 } })
+    )
+
+    expect(res.status).toBe(400)
+    const payload = await res.json()
+    expect(payload.error).toContain("not both")
   })
 
   it("surfaces warnings in the summary count", async () => {

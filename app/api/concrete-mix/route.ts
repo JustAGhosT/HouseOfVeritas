@@ -46,7 +46,10 @@ export const POST = withRole(
         pigmentTotalKg: result.pigment.totalKg,
         pigmentPurchaseKg: result.pigment.purchaseKg,
         cementBags:
-          result.materials.find((material) => material.material === "cement")?.quantity ?? 0,
+          result.materials.find((material) => material.material === "cement")?.purchaseQuantity ??
+          0,
+        mixerLoadCount: result.mixerPlan?.loadCount ?? null,
+        coveredAreaM2: result.coverage?.coveredAreaM2 ?? null,
         estimatedCostCents: result.estimatedCostCents,
         warningCount: result.warnings.length,
       },
