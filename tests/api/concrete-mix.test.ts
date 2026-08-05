@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest"
 import type { InventoryItem } from "@/lib/inventory-store"
 import { GET, POST } from "@/app/api/concrete-mix/route"
+import { POST as GUIDANCE } from "@/app/api/concrete-mix/guidance/route"
 
 const STOCK: InventoryItem[] = [
   {
@@ -285,5 +286,47 @@ describe("POST /api/concrete-mix with useInventory", () => {
     expect(payload.inventory).toBeNull()
     expect(payload.summary.fullyStocked).toBeNull()
     expect(payload.summary.shortfallCount).toBeNull()
+  })
+})
+
+describe("POST /api/concrete-mix/guidance", () => {
+  it("returns a schema-valid English procedure by default", async () => {
+    const res = await GUIDANCE(
+      postRequest({ presetId: "square-400", slabCount: 50, mixerCapacityM3: 0.15 })
+    )
+
+    expect(res.status).toBe(200)
+    const payload = await res.json()
+    expect(payload.summary.locale).toBe("en")
+    expect(payload.data.draft.kind).toBe("procedure")
+    expect(payload.summary.stepCount).toBeGreaterThan(5)
+    // Strip and cure both carry a timer.
+    expect(payload.summary.timedStepCount).toBe(2)
+  })
+
+  it("returns the Afrikaans procedure when asked for it", async () => {
+    const res = await GUIDANCE(postRequest({ presetId: "square-400", slabCount: 50, locale: "af" }))
+
+    const payload = await res.json()
+    expect(payload.data.draft.locale).toBe("af")
+    expect(payload.data.draft.title).toContain("tuinklippe")
+  })
+
+  it("rejects a locale the guidance system does not support", async () => {
+    const res = await GUIDANCE(postRequest({ presetId: "square-400", slabCount: 50, locale: "zu" }))
+
+    expect(res.status).toBe(400)
+    const payload = await res.json()
+    expect(payload.error).toContain("locale")
+  })
+
+  it("returns 400 for an invalid batch and 403 for a resident", async () => {
+    const badBatch = await GUIDANCE(postRequest({ presetId: "square-400", slabCount: 0 }))
+    expect(badBatch.status).toBe(400)
+
+    const resident = await GUIDANCE(
+      postRequest({ presetId: "square-400", slabCount: 50 }, residentHeaders)
+    )
+    expect(resident.status).toBe(403)
   })
 })
