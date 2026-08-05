@@ -126,6 +126,121 @@ const rawSeed: KnowledgeEntry[] = [
       ],
     },
   },
+  {
+    slug: "copper-pipe-condensation-wall-damp-af",
+    domain: "maintenance",
+    status: "published",
+    symptoms: [
+      "muur klam",
+      "klam kol",
+      "blase in die verf",
+      "blase in die pleister",
+      "sweetpyp",
+      "nat koperpyp",
+      "kondensasie op pyp",
+      "groen korrosie op pyp",
+      "kopergroen",
+      "muf naby pyp",
+      "klam erger in winter",
+    ],
+    keywords: [
+      "koper",
+      "pyp",
+      "kondensasie",
+      "klam",
+      "muur",
+      "blase",
+      "kopergroen",
+      "korrosie",
+      "doupunt",
+      "isolasie",
+      "vries",
+      "koud",
+      "warm",
+      "afvoer",
+    ],
+    assetTypes: ["plumbing", "wall", "pipework"],
+    personaHints: ["charl", "hans"],
+    suppliers: [
+      {
+        name: "Builders Warehouse",
+        note: "Thermaflex / poliëtileen-pypisolasie in die loodgieter- en geiser-afdeling",
+      },
+      {
+        name: "Cashbuild",
+        note: "Rits-op pypisolasie 15mm/22mm x 2m",
+      },
+      {
+        name: "Insulpro / Aerothane / LVB",
+        note: "Armaflex geslote-sel (dampversperring) skuim — beste vir kondensasie; op kwotasie",
+      },
+    ],
+    guidance: {
+      kind: "troubleshooting",
+      locale: "af",
+      title: "Koperpyp-kondensasie wat muurklam veroorsaak",
+      summary:
+        "'n Koue koperpyp waarvan die oppervlak onder die lug se doupunt daal, sal water kondenseer ('sweet'), wat in pleister en baksteen intrek en as klam kolle, blase in die verf en muf wys — dikwels onder of langs die pyplopie. 'n Nabygeleë warm- of afvoerpyp maak dit erger deur warm, klam lug by te voeg. Dit is seisoenaal en is op sy ergste in die koudste weke. Aanhoudende groen korrosie (kopergroen) beteken die koper is lank reeds nat en kan ook op 'n stadige lek dui, wat uitgeskakel moet word voordat jy isoleer.",
+      materials: [
+        "Geslote-sel elastomeriese pypisolasie (Armaflex / Klas O) volgens pypboring (15mm of 22mm)",
+        "Alternatief: poliëtileen rits-op pypisolasie (Thermaflex-tipe)",
+        "Skuim-kontakgom of isolasieband om die snit en laste lugdig te seël",
+        "Muf-behandeling / swamdodende was",
+      ],
+      tools: ["Maatband", "Skerp mes", "Lap (om die pyp droog te maak)", "Klammeter (opsioneel)"],
+      safety: [
+        "Bevestig dat die pyp kondenseer en nie lek nie voordat jy isoleer — isolasie oor 'n lek of speldgat vang water teen die koper vas, versteek die lek en versnel korrosie.",
+        "Swaar kopergroen dui op langtermyn-natheid; as jy onseker is, laat 'n loodgieter vir 'n speldgat of lekkende las inspekteer.",
+        "As die koue pyp vriespunt in 'n blootgestelde holte bereik, oorweeg ook vriesrisiko.",
+      ],
+      steps: [
+        {
+          order: 1,
+          title: "Bevestig kondensasie teenoor lek (droogmaak-en-kyk-toets)",
+          instruction:
+            "Maak die pyp heeltemal droog en kyk dan daarna. As druppels binne minute tot ure terugkeer sonder dat 'n kraan of toestel loop, is dit kondensasie. As dit by 'n las nat word of aanhoudend nat bly ongeag die weer, hanteer dit as 'n lek en herstel die pyp voordat jy enigiets anders doen.",
+          check: "Het jy besluit: kondensasie (wisselvallig, weer-gedrewe) of lek (aanhoudend)?",
+          warning:
+            "Moenie die pyp isoleer of toeskuim voordat dit beantwoord is nie — om 'n lek toe te seël maak dit erger en onsigbaar.",
+        },
+        {
+          order: 2,
+          title: "Isoleer eers die koue pyp",
+          instruction:
+            "Sit geslote-sel skuimisolasie oor die koue koper. Klik die gesnyde buis oor die pyp en gom of plak dan die snit oor sy hele lengte toe sodat klam lug nie by die koper kan kom nie. Stoot lengtes styf teen mekaar en seël elke las. Neem die isolasie reg tot by draaie en waar die pyp die muur ingaan — gapings is waar sweet weer begin.",
+          visualCue: "Geen kaal koper sigbaar nie; snit geseël; geen gapings by punte of draaie nie.",
+          check: "Is die koue pyp ten volle en lugdig toegemaak?",
+        },
+        {
+          order: 3,
+          title: "Isoleer die warm pyp ook",
+          instruction:
+            "Isoleer die warm pyp ook. Dit kondenseer nie self nie, maar kaal verhit dit die holte se lug en verhoog sy vogkapasiteit, wat dan op die koue pyp neersak. Om dit te isoleer verwyder daardie vogbron en spaar hitte.",
+          check: "Is die warm pyp geïsoleer?",
+        },
+        {
+          order: 4,
+          title: "Kontroleer die afvoerpyp se laste",
+          instruction:
+            "Die afvoerpyp dra warm, klam water en kan by laste syfer, wat holte-vog voed. Bevestig dat sy laste heel en droog is. Herstel enige lekkende las eerder as om daaroor te isoleer.",
+          check: "Is die afvoerlaste droog en heel?",
+        },
+        {
+          order: 5,
+          title: "Verminder vog en ventileer",
+          instruction:
+            "Verbeter uitlaat/ventilasie in die vertrek sodat daar minder waterdamp beskikbaar is om in die eerste plek in die muurholte te kondenseer.",
+        },
+        {
+          order: 6,
+          title: "Droog, behandel en herstel",
+          instruction:
+            "Sodra die bron reggemaak is, laat die muur heeltemal droog word, behandel enige muf met 'n swamdodende was, en pleister en verf dan die geblaasde area oor. As jy dit doen voordat die pyp geseël is, sal dit net volgende winter weer blaas.",
+          warning: "Moenie oorpleister voordat die muur droog is en die vogbron opgelos is nie.",
+        },
+      ],
+    },
+  },
 ]
 
 /** Validated at module load so a malformed seed fails fast in CI, not at runtime. */

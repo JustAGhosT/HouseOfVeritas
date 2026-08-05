@@ -50,8 +50,15 @@ describe("knowledge retrieval", () => {
   })
 
   it("honours the locale filter", () => {
-    const query = { text: "copper condensation damp", locale: "af" as const }
-    expect(findKnowledge(query)).toHaveLength(0)
+    const query = { text: "copper condensation damp", locale: "en" as const }
+    expect(findKnowledge(query).map((m) => m.entry.guidance.locale)).toEqual(["en"])
+  })
+
+  it("matches an Afrikaans query to the Afrikaans entry only", () => {
+    const matches = findKnowledge({ text: "koper pyp kondensasie muur klam", locale: "af" })
+    expect(matches.length).toBeGreaterThan(0)
+    expect(matches.every((m) => m.entry.guidance.locale === "af")).toBe(true)
+    expect(matches[0].entry.slug).toBe("copper-pipe-condensation-wall-damp-af")
   })
 
   it("excludes non-published entries", () => {
