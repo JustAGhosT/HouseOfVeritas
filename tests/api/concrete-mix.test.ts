@@ -1,5 +1,49 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect, vi } from "vitest"
+import type { InventoryItem } from "@/lib/inventory-store"
 import { GET, POST } from "@/app/api/concrete-mix/route"
+
+const STOCK: InventoryItem[] = [
+  {
+    id: "inv_cement",
+    name: "Cement 50kg bags",
+    category: "building_materials",
+    unit: "bags",
+    currentStock: 8,
+    minStock: 5,
+    maxStock: 20,
+    reorderPoint: 5,
+    lastRestocked: "2026-01-01",
+    averageConsumption: 6,
+    location: "Workshop Store",
+    supplier: "Cashbuild",
+    unitCost: 89.95,
+    totalValue: 719.6,
+    consumptionHistory: [],
+  },
+  {
+    id: "inv_sand",
+    name: "Plaster sand",
+    category: "building_materials",
+    unit: "m3",
+    currentStock: 3,
+    minStock: 1,
+    maxStock: 6,
+    reorderPoint: 1,
+    lastRestocked: "2026-01-01",
+    averageConsumption: 1,
+    location: "Yard",
+    supplier: "Cashbuild",
+    unitCost: 450,
+    totalValue: 1350,
+    consumptionHistory: [],
+  },
+]
+
+vi.mock("@/lib/repositories/inventory-repository", () => ({
+  getInventoryRepository: vi.fn(async () => ({
+    repository: { list: async () => STOCK },
+  })),
+}))
 
 const adminHeaders = {
   "x-user-id": "hans",
@@ -192,5 +236,54 @@ describe("POST /api/concrete-mix", () => {
     )
 
     expect(res.status).toBe(401)
+  })
+})
+
+describe("POST /api/concrete-mix with useInventory", () => {
+  it("prices the batch off real stock and reports what is short", async () => {
+    const res = await POST(
+      postRequest({
+        presetId: "square-400",
+        slabCount: 50,
+        wastePercent: 0,
+        useInventory: true,
+      })
+    )
+
+    expect(res.status).toBe(200)
+    const payload = await res.json()
+
+    // 3 bags at R89.95 and 0.3 m3 of sand at R450.00, from the estate's own prices.
+    expect(payload.summary.estimatedCostCents).toBe(40485)
+    expect(payload.data.materials[0].estimatedCostCents).toBe(26985)
+    // Nothing in stock matches oxide pigment, so it cannot be counted as covered.
+    expect(payload.inventory.unmatched).toEqual(["pigment"])
+    expect(payload.summary.fullyStocked).toBe(false)
+  })
+
+  it("lets a caller-supplied price override the inventory price", async () => {
+    const res = await POST(
+      postRequest({
+        presetId: "square-400",
+        slabCount: 50,
+        wastePercent: 0,
+        useInventory: true,
+        costs: { cement: 10000 },
+      })
+    )
+
+    const payload = await res.json()
+    // Caller's R100.00 a bag wins over the R89.95 on the stock record.
+    expect(payload.data.materials[0].estimatedCostCents).toBe(30000)
+    expect(payload.inventory.materials[0].unitCostCents).toBe(8995)
+  })
+
+  it("leaves the inventory block null when it was not asked for", async () => {
+    const res = await POST(postRequest({ presetId: "square-400", slabCount: 50 }))
+
+    const payload = await res.json()
+    expect(payload.inventory).toBeNull()
+    expect(payload.summary.fullyStocked).toBeNull()
+    expect(payload.summary.shortfallCount).toBeNull()
   })
 })
