@@ -1,7 +1,11 @@
 import { describe, it, expect } from "vitest"
 import { calculateConcreteMix, validateConcreteMixInput } from "@/lib/concrete-mix"
 import type { ConcreteMixResult } from "@/lib/concrete-mix"
-import { resolveConcreteMixInventory } from "@/lib/concrete-mix-inventory"
+import {
+  buildConcreteMixShoppingList,
+  planConcreteMixConsumption,
+  resolveConcreteMixInventory,
+} from "@/lib/concrete-mix-inventory"
 import type { PurchasableMaterialId } from "@/lib/concrete-mix-inventory"
 import type { InventoryItem } from "@/lib/inventory-store"
 
@@ -292,5 +296,148 @@ describe("resolveConcreteMixInventory shortfall", () => {
     const items = [CEMENT, PIGMENT, SAND]
 
     expect(resolve(items)).toEqual(resolve(items))
+  })
+})
+
+describe("buildConcreteMixShoppingList", () => {
+  it("lists what is short and what the store has no record of at all", () => {
+    const list = buildConcreteMixShoppingList(resolve([CEMENT, PIGMENT, SAND]))
+
+    // 6 kg of pigment short, and nothing on the list is missing entirely.
+    expect(list.lines.map((line) => [line.material, line.reason, line.quantity])).toEqual([
+      ["pigment", "shortfall", 6],
+    ])
+  })
+
+  it("puts the full requirement on the list for a material with no stock item", () => {
+    const list = buildConcreteMixShoppingList(resolve([CEMENT]))
+    const sand = list.lines.find((line) => line.material === "sand")
+
+    expect(sand?.reason).toBe("not-stocked")
+    expect(sand?.quantity).toBe(0.3)
+    expect(sand?.estimatedCostCents).toBeNull()
+    expect(list.unpriced).toContain("sand")
+  })
+
+  it("prices the shortfall at the estate's own unit cost", () => {
+    const list = buildConcreteMixShoppingList(resolve([CEMENT, PIGMENT, SAND]))
+
+    // 6 kg of pigment at R89.95.
+    expect(list.lines[0].estimatedCostCents).toBe(53970)
+    expect(list.totalEstimatedCostCents).toBe(53970)
+  })
+
+  it("adds store search links only for a store it knows", () => {
+    const known = buildConcreteMixShoppingList(resolve([CEMENT, PIGMENT, SAND]), {
+      store: "cashbuild",
+    })
+    const unknown = buildConcreteMixShoppingList(resolve([CEMENT, PIGMENT, SAND]), {
+      store: "corner shop",
+    })
+
+    expect(known.store).toBe("cashbuild")
+    expect(known.lines[0].searchUrl).toContain("cashbuild.co.za")
+    expect(known.lines[0].searchUrl).toContain(encodeURIComponent("Powafix"))
+    expect(unknown.store).toBeNull()
+    expect(unknown.lines[0].searchUrl).toBeNull()
+  })
+
+  it("carries the supplier already recorded on the stock item", () => {
+    const shortSand = item({
+      id: "inv_sand",
+      name: "Plaster sand",
+      unit: "m3",
+      currentStock: 0,
+      supplier: "Cashbuild",
+    })
+    const list = buildConcreteMixShoppingList(resolve([CEMENT, PIGMENT, shortSand]))
+
+    expect(list.lines.find((line) => line.material === "sand")?.supplier).toBe("Cashbuild")
+  })
+
+  it("is empty when everything is covered", () => {
+    const stocked = [
+      item({ id: "inv_cement", name: "Cement 50kg bags", unit: "bags", currentStock: 20 }),
+      item({ id: "inv_sand", name: "Plaster sand", unit: "m3", currentStock: 5 }),
+      item({ id: "inv_pigment", name: "Oxide pigment terracotta", unit: "kg", currentStock: 25 }),
+    ]
+    const list = buildConcreteMixShoppingList(resolve(stocked))
+
+    expect(list.lines).toEqual([])
+    expect(list.totalEstimatedCostCents).toBeNull()
+  })
+})
+
+describe("planConcreteMixConsumption", () => {
+  const stocked = [
+    item({
+      id: "inv_cement",
+      name: "Cement 50kg bags",
+      unit: "bags",
+      currentStock: 20,
+      unitCost: 89.95,
+    }),
+    item({ id: "inv_sand", name: "Plaster sand", unit: "m3", currentStock: 5, unitCost: 450 }),
+    item({
+      id: "inv_pigment",
+      name: "Oxide pigment terracotta",
+      unit: "kg",
+      currentStock: 25,
+      unitCost: 89.95,
+    }),
+  ]
+
+  it("draws whole purchase units out of the store", () => {
+    const plan = planConcreteMixConsumption(resolve(stocked))
+
+    // Three bags leave the shelf even though the mix only uses 2.88 of them.
+    expect(plan.canProceed).toBe(true)
+    expect(plan.lines.find((line) => line.material === "cement")).toMatchObject({
+      quantity: 3,
+      unit: "bags",
+      currentStock: 20,
+      remainingStock: 17,
+    })
+  })
+
+  it("converts into the inventory's own unit when it differs from the pack", () => {
+    const loose = [
+      item({ id: "inv_cement", name: "Cement", unit: "kg", currentStock: 500 }),
+      item({ id: "inv_sand", name: "Plaster sand", unit: "m3", currentStock: 5 }),
+      item({ id: "inv_pigment", name: "Oxide pigment", unit: "kg", currentStock: 25 }),
+    ]
+    const plan = planConcreteMixConsumption(resolve(loose))
+
+    // Three 50 kg bags is 150 kg off a stock kept in kilograms.
+    expect(plan.lines.find((line) => line.material === "cement")?.quantity).toBe(150)
+  })
+
+  it("blocks the whole batch when one material is short", () => {
+    const short = stocked.map((entry) =>
+      entry.id === "inv_pigment" ? { ...entry, currentStock: 2 } : entry
+    )
+    const plan = planConcreteMixConsumption(resolve(short))
+
+    expect(plan.canProceed).toBe(false)
+    expect(plan.lines).toEqual([])
+    expect(plan.blockers[0]).toContain("need 8 kg, 2 in stock")
+  })
+
+  it("blocks when a material has no stock item at all", () => {
+    const plan = planConcreteMixConsumption(resolve([CEMENT, SAND]))
+
+    expect(plan.canProceed).toBe(false)
+    expect(plan.blockers.some((blocker) => blocker.includes("oxide pigment"))).toBe(true)
+  })
+
+  it("blocks when the inventory unit cannot be reconciled", () => {
+    const odd = [
+      ...stocked.filter((entry) => entry.id !== "inv_sand"),
+      item({ id: "inv_sand", name: "Plaster sand", unit: "wheelbarrows", currentStock: 40 }),
+    ]
+    const plan = planConcreteMixConsumption(resolve(odd))
+
+    expect(plan.canProceed).toBe(false)
+    expect(plan.blockers.some((blocker) => blocker.includes("wheelbarrows"))).toBe(true)
   })
 })

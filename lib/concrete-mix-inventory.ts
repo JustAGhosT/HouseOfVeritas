@@ -20,6 +20,7 @@
 
 import { CEMENT_BAG_KG, FIBER_BAG_KG, MESH_SHEET_M2 } from "@/lib/concrete-mix"
 import type { CementType, ConcreteMixCosts, MaterialId, MaterialLine } from "@/lib/concrete-mix"
+import { buildStoreSearchUrl, isStoreId, type StoreId } from "@/lib/constants/suppliers"
 import type { InventoryItem } from "@/lib/inventory-store"
 
 export type MatchConfidence = "exact" | "likely"
@@ -340,4 +341,144 @@ export function resolveConcreteMixInventory(
       : null,
     fullyStocked: shortfalls.length === 0 && unmatched.length === 0,
   }
+}
+
+// ── Shopping list ────────────────────────────────────────────────────────────
+
+export interface ShoppingListLine {
+  material: PurchasableMaterialId
+  label: string
+  quantity: number
+  unit: string
+  /** Why this is on the list: short of stock, or nothing in the store matches it. */
+  reason: "shortfall" | "not-stocked"
+  supplier?: string
+  estimatedCostCents: number | null
+  searchUrl: string | null
+}
+
+export interface ShoppingList {
+  lines: ShoppingListLine[]
+  store: StoreId | null
+  totalEstimatedCostCents: number | null
+  /** Lines we could not put a price against, so the total understates the bill. */
+  unpriced: PurchasableMaterialId[]
+}
+
+/**
+ * What still has to be bought: everything short of stock, plus everything the
+ * store has no record of at all. A material with no matching inventory item is
+ * the most important line on the list, not one to quietly drop.
+ */
+export function buildConcreteMixShoppingList(
+  resolution: InventoryResolution,
+  options: { store?: unknown } = {}
+): ShoppingList {
+  const store = isStoreId(options.store) ? (options.store.toLowerCase() as StoreId) : null
+  const lines: ShoppingListLine[] = []
+
+  for (const entry of resolution.materials) {
+    const isShortfall = entry.shortfallQuantity !== null && entry.shortfallQuantity > 0
+    const hasNoStockItem = entry.item === null
+    if (!isShortfall && !hasNoStockItem) continue
+
+    // Nothing on the shelf means the whole requirement has to be bought.
+    const quantity = hasNoStockItem ? entry.purchaseQuantity : (entry.shortfallQuantity ?? 0)
+    const searchTerm = entry.item?.name ?? entry.label
+
+    lines.push({
+      material: entry.material,
+      label: entry.label,
+      quantity,
+      unit: entry.purchaseUnit,
+      reason: hasNoStockItem ? "not-stocked" : "shortfall",
+      supplier: entry.item?.supplier,
+      estimatedCostCents:
+        entry.unitCostCents === null ? null : Math.round(quantity * entry.unitCostCents),
+      searchUrl: buildStoreSearchUrl(store, searchTerm),
+    })
+  }
+
+  const priced = lines.filter((line) => line.estimatedCostCents !== null)
+
+  return {
+    lines,
+    store,
+    totalEstimatedCostCents: priced.length
+      ? priced.reduce((sum, line) => sum + (line.estimatedCostCents ?? 0), 0)
+      : null,
+    unpriced: lines.filter((line) => line.estimatedCostCents === null).map((line) => line.material),
+  }
+}
+
+// ── Consumption ──────────────────────────────────────────────────────────────
+
+export interface ConsumptionLine {
+  material: PurchasableMaterialId
+  itemId: string
+  itemName: string
+  /** Amount to draw down, in the inventory item's own unit. */
+  quantity: number
+  unit: string
+  currentStock: number
+  remainingStock: number
+}
+
+export interface ConsumptionPlan {
+  lines: ConsumptionLine[]
+  /** Human-readable reasons the batch cannot be booked out. Empty means go. */
+  blockers: string[]
+  canProceed: boolean
+}
+
+/**
+ * Works out what to draw from the store when a batch is cast.
+ *
+ * Stock moves by whole purchase units, matching what actually leaves the store:
+ * three bags of cement come off the shelf even though the mix only uses 2.88 of
+ * them. The remainder stays in the yard and is not tracked.
+ *
+ * The plan refuses as a whole rather than partially: a batch that cannot be
+ * fully covered should not silently draw down half its materials.
+ */
+export function planConcreteMixConsumption(resolution: InventoryResolution): ConsumptionPlan {
+  const lines: ConsumptionLine[] = []
+  const blockers: string[] = []
+
+  for (const entry of resolution.materials) {
+    if (!entry.item) {
+      blockers.push(`No inventory item matches ${entry.label.toLowerCase()}`)
+      continue
+    }
+    if (entry.inventoryUnitsPerPurchaseUnit === null) {
+      blockers.push(
+        `Cannot reconcile "${entry.item.name}" stocked in ${entry.item.unit} with ${entry.purchaseUnit}`
+      )
+      continue
+    }
+
+    const quantity = roundTo(entry.purchaseQuantity * entry.inventoryUnitsPerPurchaseUnit, 3)
+    if (quantity > entry.item.currentStock) {
+      blockers.push(
+        `${entry.item.name}: need ${quantity} ${entry.item.unit}, ${entry.item.currentStock} in stock`
+      )
+      continue
+    }
+
+    lines.push({
+      material: entry.material,
+      itemId: entry.item.id,
+      itemName: entry.item.name,
+      quantity,
+      unit: entry.item.unit,
+      currentStock: entry.item.currentStock,
+      remainingStock: roundTo(entry.item.currentStock - quantity, 3),
+    })
+  }
+
+  // A blocked plan yields no lines at all, so no caller can apply half of it.
+  // The blockers name exactly what is wrong.
+  if (blockers.length > 0) return { lines: [], blockers, canProceed: false }
+
+  return { lines, blockers, canProceed: true }
 }

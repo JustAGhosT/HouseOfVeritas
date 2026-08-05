@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { routeToInngest } from "@/lib/workflows"
 import type { InventoryItem } from "@/lib/inventory-store"
 import { getInventoryRepository } from "@/lib/repositories/inventory-repository"
+import { buildStoreSearchUrl, isStoreId } from "@/lib/constants/suppliers"
 import { withRole } from "@/lib/auth/rbac"
 
 function guessCategory(name: string): InventoryItem["category"] {
@@ -324,9 +325,7 @@ export const POST = withRole(
       photoUploadedAt: sanitizedPhotoUrl ? new Date().toISOString() : undefined,
       capturedBy: sanitizedPhotoUrl ? context.userId : undefined,
       ownerId: isResidentCapture ? context.userId : optionalText(ownerId, 80),
-      responsibleUserId: isResidentCapture
-        ? context.userId
-        : optionalText(responsibleUserId, 80),
+      responsibleUserId: isResidentCapture ? context.userId : optionalText(responsibleUserId, 80),
       linkedUserIds: isResidentCapture ? [context.userId] : optionalTextList(linkedUserIds, 80),
       imageBounds: optionalImageBounds(imageBounds),
       consumptionHistory: [],
@@ -428,20 +427,12 @@ export const PUT = withRole(
 
       const totalEstimatedCost = shoppingList.reduce((sum, i) => sum + i.estimatedCost, 0)
 
-      const storeUrls: Record<string, string> = {
-        cashbuild: "https://www.cashbuild.co.za/search?q=",
-        builders: "https://www.builders.co.za/search/?text=",
-        makro: "https://www.makro.co.za/search/?text=",
-        stodels: "https://www.stodels.co.za/catalogsearch/result/?q=",
-      }
-
-      const storeSearchLinks =
-        store && storeUrls[store.toLowerCase()]
-          ? shoppingList.map((item) => ({
-              item: item.name,
-              searchUrl: `${storeUrls[store.toLowerCase()]}${encodeURIComponent(item.name)}`,
-            }))
-          : null
+      const storeSearchLinks = isStoreId(store)
+        ? shoppingList.map((item) => ({
+            item: item.name,
+            searchUrl: buildStoreSearchUrl(store, item.name),
+          }))
+        : null
 
       return NextResponse.json({
         success: true,

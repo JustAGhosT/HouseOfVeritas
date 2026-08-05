@@ -8,7 +8,12 @@ import {
   type ConcreteMixInput,
   type ConcreteMixResult,
 } from "@/lib/concrete-mix"
-import { resolveConcreteMixInventory, type InventoryResolution } from "@/lib/concrete-mix-inventory"
+import {
+  buildConcreteMixShoppingList,
+  resolveConcreteMixInventory,
+  type InventoryResolution,
+  type ShoppingList,
+} from "@/lib/concrete-mix-inventory"
 import { getInventoryRepository } from "@/lib/repositories/inventory-repository"
 
 // GET - Slab presets, mix designs, cast methods and color intensities for the picker UI
@@ -27,8 +32,13 @@ export const GET = withRole(
  */
 async function applyInventory(
   input: ConcreteMixInput,
+  result: ConcreteMixResult,
+  store: unknown
+): Promise<{
   result: ConcreteMixResult
-): Promise<{ result: ConcreteMixResult; inventory: InventoryResolution }> {
+  inventory: InventoryResolution
+  shoppingList: ShoppingList
+}> {
   const { repository } = await getInventoryRepository()
   const items = await repository.list()
 
@@ -39,6 +49,7 @@ async function applyInventory(
 
   return {
     inventory,
+    shoppingList: buildConcreteMixShoppingList(inventory, { store }),
     result: calculateConcreteMix({ ...input, costs: mergedCosts }),
   }
 }
@@ -69,16 +80,23 @@ export const POST = withRole(
   try {
     let result = calculateConcreteMix(validation.value)
     let inventory: InventoryResolution | null = null
+    let shoppingList: ShoppingList | null = null
 
     if (useInventory) {
-      const applied = await applyInventory(validation.value, result)
+      const applied = await applyInventory(
+        validation.value,
+        result,
+        (body as Record<string, unknown>).store
+      )
       result = applied.result
       inventory = applied.inventory
+      shoppingList = applied.shoppingList
     }
 
     return NextResponse.json({
       data: result,
       inventory,
+      shoppingList,
       summary: {
         slabCount: result.batch.slabCount,
         mixedVolumeM3: result.batch.mixedVolumeM3,
@@ -93,6 +111,7 @@ export const POST = withRole(
         estimatedCostCents: result.estimatedCostCents,
         shortfallCount: inventory?.shortfalls.length ?? null,
         fullyStocked: inventory?.fullyStocked ?? null,
+        shoppingListCost: shoppingList?.totalEstimatedCostCents ?? null,
         warningCount: result.warnings.length,
       },
     })
