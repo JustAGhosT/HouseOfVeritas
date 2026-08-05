@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
 import { KNOWLEDGE_SEED } from "@/lib/knowledge/seed"
-import { knowledgeEntrySchema } from "@/lib/knowledge/types"
+import { knowledgeEntrySchema, parseKnowledgeEntry } from "@/lib/knowledge/types"
 import { findKnowledge, getKnowledgeBySlug, rankKnowledge } from "@/lib/knowledge/retrieval"
 import { buildMaintenanceTaskDraft } from "@/lib/knowledge/task-draft"
 import { hasGuidanceSafetyBoundaries } from "@/lib/guidance"
@@ -21,6 +21,13 @@ describe("knowledge seed", () => {
     const copper = getKnowledgeBySlug("copper-pipe-condensation-wall-damp")
     expect(copper).not.toBeNull()
     expect(hasGuidanceSafetyBoundaries(copper!.guidance)).toBe(true)
+  })
+
+  it("rejects a malformed entry and parseKnowledgeEntry returns null", () => {
+    const invalid = { ...KNOWLEDGE_SEED[0], slug: "Not Kebab Case" }
+    expect(knowledgeEntrySchema.safeParse(invalid).success).toBe(false)
+    expect(parseKnowledgeEntry(invalid)).toBeNull()
+    expect(parseKnowledgeEntry({ slug: "x" })).toBeNull()
   })
 })
 
@@ -85,6 +92,47 @@ describe("knowledge retrieval", () => {
     expect(matches[0].entry.slug).toBe(strong.slug)
     expect(matches[0].score).toBeGreaterThan(matches[1].score)
   })
+
+  it("adds asset-type weight when the query asset type matches (case-insensitive)", () => {
+    const base = rankKnowledge(KNOWLEDGE_SEED, { text: "copper condensation damp", locale: "en" })[0]
+    const withAsset = rankKnowledge(KNOWLEDGE_SEED, {
+      text: "copper condensation damp",
+      locale: "en",
+      assetType: "Plumbing",
+    })[0]
+    expect(withAsset.score).toBe(base.score + 3)
+    expect(withAsset.matchedTerms).toContain("Plumbing")
+  })
+
+  it("applies the minScore threshold at the boundary", () => {
+    // "frost" is a single keyword (score 2) — below the default threshold of 3.
+    expect(findKnowledge({ text: "frost" })).toHaveLength(0)
+    // "corrosion" hits keyword (2) + symptom token (1) = 3 — meets the threshold.
+    const atThreshold = findKnowledge({ text: "corrosion" })
+    expect(atThreshold.length).toBeGreaterThan(0)
+    expect(atThreshold[0].score).toBe(3)
+  })
+
+  it("isolates locales when a query matches entries in both", () => {
+    const both = findKnowledge({ text: "wall muur", assetType: "plumbing" }).map((m) => m.entry.slug)
+    expect(both).toContain("copper-pipe-condensation-wall-damp")
+    expect(both).toContain("copper-pipe-condensation-wall-damp-af")
+
+    const en = findKnowledge({ text: "wall muur", assetType: "plumbing", locale: "en" })
+    expect(en.map((m) => m.entry.slug)).toEqual(["copper-pipe-condensation-wall-damp"])
+
+    const af = findKnowledge({ text: "wall muur", assetType: "plumbing", locale: "af" })
+    expect(af.map((m) => m.entry.slug)).toEqual(["copper-pipe-condensation-wall-damp-af"])
+  })
+
+  it("returns null for an unknown slug", () => {
+    expect(getKnowledgeBySlug("does-not-exist")).toBeNull()
+  })
+
+  it("returns nothing for an empty or whitespace-only query", () => {
+    expect(findKnowledge({ text: "" })).toHaveLength(0)
+    expect(findKnowledge({ text: "   " })).toHaveLength(0)
+  })
 })
 
 describe("knowledge → maintenance task draft", () => {
@@ -113,5 +161,22 @@ describe("knowledge → maintenance task draft", () => {
     expect(draft.task.assignedToName).toBe("charl")
     expect(draft.task.project).toBe("Winter prep")
     expect(draft.task.priority).toBe("Urgent")
+  })
+
+  it("defaults to Medium priority when the entry has no safety boundaries", () => {
+    const entry = getKnowledgeBySlug("copper-pipe-condensation-wall-damp")!
+    const withoutSafety = { ...entry, guidance: { ...entry.guidance, safety: [] } }
+    const draft = buildMaintenanceTaskDraft(withoutSafety)
+    expect(draft.task.priority).toBe("Medium")
+  })
+
+  it("orders the checklist by step order regardless of input order", () => {
+    const entry = getKnowledgeBySlug("copper-pipe-condensation-wall-damp")!
+    const shuffled = {
+      ...entry,
+      guidance: { ...entry.guidance, steps: [...entry.guidance.steps].reverse() },
+    }
+    const draft = buildMaintenanceTaskDraft(shuffled)
+    expect(draft.checklist[0]).toContain("Confirm condensation vs leak")
   })
 })
