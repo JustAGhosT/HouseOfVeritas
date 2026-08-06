@@ -2,7 +2,7 @@
 
 import { apiFetch } from "@/lib/api-client"
 import { logger } from "@/lib/logger"
-import { AlertCircle, Camera, CheckCircle2, Tag, Upload } from "lucide-react"
+import { AlertCircle, Camera, CheckCircle2, ChevronDown, Tag, Upload } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
 const INVENTORY_CATEGORIES = [
@@ -209,34 +209,46 @@ export function InventoryPhotoCapture({
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1.5">
               <span className={`text-sm font-medium ${styles.text}`}>Category</span>
-              <select
-                value={category}
-                onChange={(event) => setCategory(event.target.value)}
-                data-testid="inventory-category-select"
-                className={`h-12 rounded-lg border ${styles.border} bg-black/25 px-3 text-base text-white outline-none ${styles.focus}`}
-              >
-                {INVENTORY_CATEGORIES.map((item) => (
-                  <option key={item.value} value={item.value} className="bg-zinc-950">
-                    {item.label}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value)}
+                  data-testid="inventory-category-select"
+                  className={`h-12 w-full appearance-none rounded-lg border ${styles.border} bg-black/25 py-0 pr-12 pl-3 text-base text-white outline-none ${styles.focus}`}
+                >
+                  {INVENTORY_CATEGORIES.map((item) => (
+                    <option key={item.value} value={item.value} className="bg-zinc-950">
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-1/2 right-4 h-4 w-4 -translate-y-1/2 text-white/70"
+                />
+              </div>
             </label>
 
             <label className="grid gap-1.5">
               <span className={`text-sm font-medium ${styles.text}`}>Location</span>
-              <select
-                value={location}
-                onChange={(event) => setLocation(event.target.value)}
-                data-testid="inventory-location-select"
-                className={`h-12 rounded-lg border ${styles.border} bg-black/25 px-3 text-base text-white outline-none ${styles.focus}`}
-              >
-                {QUICK_LOCATIONS.map((item) => (
-                  <option key={item} value={item} className="bg-zinc-950">
-                    {item}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={location}
+                  onChange={(event) => setLocation(event.target.value)}
+                  data-testid="inventory-location-select"
+                  className={`h-12 w-full appearance-none rounded-lg border ${styles.border} bg-black/25 py-0 pr-12 pl-3 text-base text-white outline-none ${styles.focus}`}
+                >
+                  {QUICK_LOCATIONS.map((item) => (
+                    <option key={item} value={item} className="bg-zinc-950">
+                      {item}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-1/2 right-4 h-4 w-4 -translate-y-1/2 text-white/70"
+                />
+              </div>
             </label>
           </div>
 
