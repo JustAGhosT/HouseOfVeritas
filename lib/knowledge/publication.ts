@@ -77,10 +77,14 @@ export function checkPublishable(
   const gates = evaluateGateResults(entry.review.gateResults, profile, profileSource)
 
   if (gates.outcome !== "cleared") {
-    const detail =
-      gates.failedGates.length > 0
-        ? `failed: ${gates.failedGates.join(", ")}`
-        : `untested: ${gates.untestedGates.join(", ")}`
+    // Report both sets when both exist. The outcome names only the more severe
+    // one, so omitting the other loses context a reader needs to fix the entry.
+    const detail = [
+      gates.failedGates.length > 0 ? `failed: ${gates.failedGates.join(", ")}` : null,
+      gates.untestedGates.length > 0 ? `untested: ${gates.untestedGates.join(", ")}` : null,
+    ]
+      .filter(Boolean)
+      .join("; ")
     reasons.push(`${gates.outcome} (${detail})`)
   }
   if (!hasSafetyBoundaries) {

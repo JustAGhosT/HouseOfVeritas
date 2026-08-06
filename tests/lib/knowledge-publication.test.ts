@@ -100,6 +100,23 @@ describe("checkPublishable", () => {
     expect(check.reasons[0]).toContain("irreversible_harm")
   })
 
+  it("names both failed and untested gates when an entry has both", () => {
+    const messy = {
+      ...copper,
+      review: {
+        ...copper.review!,
+        gateResults: {
+          ...copper.review!.gateResults,
+          irreversible_harm: "fail" as const,
+          commercial_neutrality: "not_tested" as const,
+        },
+      },
+    }
+    const [reason] = checkPublishable(messy).reasons
+    expect(reason).toContain("failed: irreversible_harm")
+    expect(reason).toContain("untested: commercial_neutrality")
+  })
+
   it("blocks an entry with an untested gate", () => {
     const untested = {
       ...copper,
