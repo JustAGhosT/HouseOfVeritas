@@ -65,6 +65,8 @@ test-results/
 playwright-report/
 playwright/.cache/
 blob-report/
+# Browser console captures; production probe runs record live page output here.
+.playwright-cli/
 
 # Local dev-run output logs
 output/
