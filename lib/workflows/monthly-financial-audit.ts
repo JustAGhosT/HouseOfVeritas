@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getExpenses, getLoans, getPettyCashRequests } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { sendNotification } from "@/lib/services/notification-service"
 
@@ -7,9 +7,9 @@ export const monthlyFinancialAudit = inngest.createFunction(
   { id: "monthly-financial-audit", retries: 2 },
   { cron: "0 9 1 * *" },
   async ({ step }) => {
-    const expenses = await getExpenses({ status: "Pending" })
-    const loans = await getLoans({ status: "Active" })
-    const pettyCash = await getPettyCashRequests({ status: "Pending" })
+    const expenses = await getEstateRepository().expenses.list({ status: "Pending" })
+    const loans = await getEstateRepository().loans.list({ status: "Active" })
+    const pettyCash = await getEstateRepository().pettyCash.list({ status: "Pending" })
 
     const overdueLoans = loans.filter((l) => {
       if (!l.nextRepaymentDate) return false

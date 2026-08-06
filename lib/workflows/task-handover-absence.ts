@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getTasks, getLeaveRequests } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { toISODateString } from "@/lib/utils"
@@ -10,14 +10,14 @@ export const taskHandoverAbsence = inngest.createFunction(
   { cron: "0 7 * * *" },
   async ({ step }) => {
     const today = toISODateString()
-    const leaveRequests = await getLeaveRequests({ status: "Approved" })
+    const leaveRequests = await getEstateRepository().leaveRequests.list({ status: "Approved" })
     const onLeave = new Set(
       leaveRequests.filter((r) => r.startDate <= today && r.endDate >= today).map((r) => r.employee)
     )
 
     if (onLeave.size === 0) return { onLeave: 0, handovers: 0 }
 
-    const allTasks = await getTasks()
+    const allTasks = await getEstateRepository().tasks.list()
     const tasks = allTasks.filter((t) => t.status !== "Completed")
     const tasksToHandover = tasks.filter((t) => t.assignedTo && onLeave.has(t.assignedTo))
 

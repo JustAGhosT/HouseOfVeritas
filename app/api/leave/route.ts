@@ -2,14 +2,8 @@ import { resolveEmployeeForGet, resolveEmployeeForPost } from "@/lib/api/employe
 import { withDataSource } from "@/lib/api/response"
 import { withRole } from "@/lib/auth/rbac"
 import { logger } from "@/lib/logger"
-import {
-  createLeaveRequest,
-  getEmployee,
-  getLeaveRequest,
-  getLeaveRequests,
-  updateEmployee,
-  updateLeaveRequest,
-} from "@/lib/services/baserow"
+import type { LeaveRequest } from "@/lib/domain/estate-types"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { toISODateString } from "@/lib/utils"
 import { routeToInngest } from "@/lib/workflows"
 import { NextResponse } from "next/server"
@@ -36,7 +30,7 @@ export const GET = withRole(
   if (error) return error
 
   try {
-    const requests = await getLeaveRequests({
+    const requests = await getEstateRepository().leaveRequests.list({
       employee,
       status: status || undefined,
     })
@@ -73,7 +67,7 @@ export const POST = withRole(
     }
 
     const days = daysBetween(startDate, endDate)
-    const emp = await getEmployee(employeeId)
+    const emp = await getEstateRepository().employees.get(employeeId)
     if (!emp) {
       return NextResponse.json({ error: "Employee not found" }, { status: 404 })
     }
@@ -92,7 +86,7 @@ export const POST = withRole(
       }
     }
 
-    const leaveRequest = await createLeaveRequest({
+    const leaveRequest = await getEstateRepository().leaveRequests.create({
       employee: employeeId,
       startDate,
       endDate,
@@ -137,7 +131,7 @@ export const PATCH = withRole("admin")(async (request) => {
     }
 
     // Fetch existing request to check for status transition
-    const existingRequest = await getLeaveRequest(id)
+    const existingRequest = await getEstateRepository().leaveRequests.get(id)
     if (!existingRequest) {
       return NextResponse.json({ error: "Leave request not found" }, { status: 404 })
     }
@@ -150,9 +144,9 @@ export const PATCH = withRole("admin")(async (request) => {
       updates.approvedAt = toISODateString()
     }
 
-    const leaveRequest = await updateLeaveRequest(
+    const leaveRequest = await getEstateRepository().leaveRequests.update(
       id,
-      updates as Parameters<typeof updateLeaveRequest>[1]
+      updates as Partial<LeaveRequest>
     )
 
     if (!leaveRequest) {
@@ -161,11 +155,11 @@ export const PATCH = withRole("admin")(async (request) => {
 
     // Only deduct leave balance when transitioning TO Approved (not already Approved)
     if (status === "Approved" && previousStatus !== "Approved" && leaveRequest.type === "Annual") {
-      const emp = await getEmployee(leaveRequest.employee)
+      const emp = await getEstateRepository().employees.get(leaveRequest.employee)
       if (emp) {
         const days = daysBetween(leaveRequest.startDate, leaveRequest.endDate)
         const newBalance = Math.max(0, (emp.leaveBalance ?? 0) - days)
-        await updateEmployee(emp.id, { leaveBalance: newBalance })
+        await getEstateRepository().employees.update(emp.id, { leaveBalance: newBalance })
       }
     }
 

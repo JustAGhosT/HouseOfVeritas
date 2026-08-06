@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getEmployees, getLeaveRequests } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 
@@ -7,14 +7,14 @@ export const leaveCompulsoryAudit = inngest.createFunction(
   { id: "leave-compulsory-audit", retries: 2 },
   { cron: "0 9 1 1,4,7,10 *" },
   async ({ step }) => {
-    const employees = await getEmployees()
+    const employees = await getEstateRepository().employees.list()
     const employeeRole = ["Employee"]
     const toAudit = employees.filter((e) => employeeRole.includes(e.role))
 
     const findings: string[] = []
 
     for (const emp of toAudit) {
-      const requests = await getLeaveRequests({
+      const requests = await getEstateRepository().leaveRequests.list({
         employee: emp.id,
         status: "Approved",
       })

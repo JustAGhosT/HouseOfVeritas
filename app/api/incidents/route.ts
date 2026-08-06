@@ -1,13 +1,7 @@
 import { withRole } from "@/lib/auth/rbac"
 import { logger } from "@/lib/logger"
-import type { Incident } from "@/lib/services/baserow"
-import {
-  createIncident,
-  getBaserowEmployeeIdByAppId,
-  getEmployee,
-  getIncidents,
-  isIncidentsTableConfigured,
-} from "@/lib/services/baserow"
+import type { Incident } from "@/lib/domain/estate-types"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { routeToInngest } from "@/lib/workflows"
 import { randomUUID } from "crypto"
 import { NextResponse } from "next/server"
@@ -67,7 +61,7 @@ const SEED_INCIDENTS: ReadonlyArray<Readonly<Incident & { reporterName?: string 
 
 // NOTE: This in-memory store is NON-PERSISTENT and not shared across serverless invocations.
 // It is intended for local development and demo purposes only. In production, use Baserow.
-// The GET/POST handlers will prefer Baserow when isIncidentsTableConfigured() returns true.
+// The GET/POST handlers will prefer Baserow when getEstateRepository().incidents.isConfigured() returns true.
 const inMemoryIncidents: Incident[] = []
 const DEMO_DATA_ENABLED = process.env.ALLOW_DEMO_DATA === "true"
 
@@ -147,7 +141,7 @@ function formatIncidentForApi(incident: Incident & { reporterName?: string }) {
 async function loadIncidentsWithNames(incidents: Incident[]) {
   const result = []
   for (const i of incidents) {
-    const reporterName = i.reporter ? (await getEmployee(i.reporter))?.fullName : undefined
+    const reporterName = i.reporter ? (await getEstateRepository().employees.get(i.reporter))?.fullName : undefined
     result.push(formatIncidentForApi({ ...i, reporterName }))
   }
   return result
@@ -160,11 +154,11 @@ export const GET = withRole(
   "resident"
 )(async () => {
   try {
-    const useBaserow = isIncidentsTableConfigured()
+    const useBaserow = getEstateRepository().incidents.isConfigured()
 
     let incidents: Awaited<ReturnType<typeof loadIncidentsWithNames>>
     if (useBaserow) {
-      const baserowIncidents = await getIncidents()
+      const baserowIncidents = await getEstateRepository().incidents.list()
       incidents = await loadIncidentsWithNames(baserowIncidents)
     } else {
       incidents = await loadIncidentsWithNames(getIncidentsData())
@@ -245,9 +239,9 @@ export const POST = withRole(
     const now = new Date()
     // Use full ISO string with timezone (UTC) to preserve timezone context
     const dateTime = now.toISOString()
-    const reporterId = (await getBaserowEmployeeIdByAppId(reporter || userId)) ?? undefined
+    const reporterId = (await getEstateRepository().employees.resolveIdByAppId(reporter || userId)) ?? undefined
 
-    const useBaserow = isIncidentsTableConfigured()
+    const useBaserow = getEstateRepository().incidents.isConfigured()
 
     let newIncident: {
       id: number | string
@@ -257,7 +251,7 @@ export const POST = withRole(
     let apiIncident: ReturnType<typeof formatIncidentForApi>
 
     if (useBaserow) {
-      const created = await createIncident({
+      const created = await getEstateRepository().incidents.create({
         type,
         dateTime,
         location,
@@ -276,7 +270,7 @@ export const POST = withRole(
         victimSupportPath: !!created.victimSupportPath,
       }
       const reporterName = created.reporter
-        ? (await getEmployee(created.reporter))?.fullName
+        ? (await getEstateRepository().employees.get(created.reporter))?.fullName
         : undefined
       apiIncident = formatIncidentForApi({ ...created, reporterName })
     } else {

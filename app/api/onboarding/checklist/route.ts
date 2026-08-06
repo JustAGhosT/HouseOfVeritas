@@ -1,11 +1,6 @@
 import { withRole } from "@/lib/auth/rbac"
 import { logger } from "@/lib/logger"
-import {
-  createOnboardingChecklist,
-  getOnboardingChecklists,
-  isOnboardingTableConfigured,
-  updateOnboardingChecklist,
-} from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { toISODateString } from "@/lib/utils"
 import { routeToInngest } from "@/lib/workflows"
 import { NextResponse } from "next/server"
@@ -19,11 +14,11 @@ export const GET = withRole(
   const status = searchParams.get("status")
 
   try {
-    if (!isOnboardingTableConfigured()) {
+    if (!getEstateRepository().onboarding.isConfigured()) {
       return NextResponse.json({ checklists: [], total: 0 })
     }
     const employeeId = employee ? parseInt(employee, 10) : undefined
-    const checklists = await getOnboardingChecklists({
+    const checklists = await getEstateRepository().onboarding.list({
       employee: Number.isNaN(employeeId as number) ? undefined : employeeId,
       status: status || undefined,
     })
@@ -38,7 +33,7 @@ export const GET = withRole(
 
 export const POST = withRole("admin")(async (request) => {
   try {
-    if (!isOnboardingTableConfigured()) {
+    if (!getEstateRepository().onboarding.isConfigured()) {
       return NextResponse.json(
         { error: "Onboarding checklist requires Baserow configuration" },
         { status: 503 }
@@ -51,7 +46,7 @@ export const POST = withRole("admin")(async (request) => {
       return NextResponse.json({ error: "employee is required" }, { status: 400 })
     }
 
-    const checklist = await createOnboardingChecklist({
+    const checklist = await getEstateRepository().onboarding.create({
       employee,
       items: items ?? "[]",
       status: status || "In Progress",
@@ -81,7 +76,7 @@ export const PATCH = withRole(
   "operator"
 )(async (request) => {
   try {
-    if (!isOnboardingTableConfigured()) {
+    if (!getEstateRepository().onboarding.isConfigured()) {
       return NextResponse.json(
         { error: "Onboarding checklist requires Baserow configuration" },
         { status: 503 }
@@ -94,7 +89,7 @@ export const PATCH = withRole(
       return NextResponse.json({ error: "id is required" }, { status: 400 })
     }
 
-    const existing = (await getOnboardingChecklists({})).find((c) => c.id === id)
+    const existing = (await getEstateRepository().onboarding.list({})).find((c) => c.id === id)
     if (!existing) {
       return NextResponse.json({ error: "Checklist not found" }, { status: 404 })
     }
@@ -104,7 +99,7 @@ export const PATCH = withRole(
     if (status !== undefined) updates.status = status
     if (completedAt !== undefined) updates.completedAt = completedAt
 
-    const checklist = await updateOnboardingChecklist(id, updates)
+    const checklist = await getEstateRepository().onboarding.update(id, updates)
 
     if (!checklist) {
       return NextResponse.json({ error: "Failed to update onboarding checklist" }, { status: 500 })

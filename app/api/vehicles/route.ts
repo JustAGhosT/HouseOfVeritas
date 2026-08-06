@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
-import { isBaserowConfigured } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 
 export async function GET() {
-  const configured = isBaserowConfigured()
+  const configured = getEstateRepository().isConfigured()
 
   return NextResponse.json({
     status: "coming_soon",

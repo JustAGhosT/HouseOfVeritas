@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getEmployees } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { BASEROW_ID_TO_APP_ID } from "./constants"
@@ -14,7 +14,7 @@ export const onboardingFeedbackSurvey = inngest.createFunction(
   { id: "onboarding-feedback-survey", retries: 2 },
   { cron: "0 9 * * *" },
   async ({ step }) => {
-    const employees = await getEmployees()
+    const employees = await getEstateRepository().employees.list()
     const toSurvey: { emp: (typeof employees)[0]; day: number }[] = []
 
     for (const emp of employees) {

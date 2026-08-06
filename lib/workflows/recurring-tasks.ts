@@ -1,5 +1,6 @@
 import { inngest } from "@/lib/inngest/client"
-import { getRecurringTaskTemplates, createTask } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
+import { getRecurringTaskTemplates } from "@/lib/services/baserow"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { toISODateString } from "@/lib/utils"
@@ -43,7 +44,7 @@ export const recurringTasksCreate = inngest.createFunction(
 
       const templateCreated: { id: number; title: string }[] = []
       for (const dueDate of dueDates) {
-        const task = await createTask({
+        const task = await getEstateRepository().tasks.create({
           title: `${t.Title ?? "Task"} - ${toISODateString(dueDate)}`,
           description: t.Description ?? "",
           dueDate: toISODateString(dueDate),

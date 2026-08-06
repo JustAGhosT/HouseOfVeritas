@@ -1,7 +1,7 @@
 import { inngest } from "@/lib/inngest/client"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { sendNotification } from "@/lib/services/notification-service"
-import { createTask } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { toISODateString } from "@/lib/utils"
 import { runNotificationStep } from "@/lib/workflows/utils"
 import type { ProjectStartedPayload } from "./schema"
@@ -24,7 +24,7 @@ export const projectStarted = inngest.createFunction(
       })
     })
 
-    const task = await createTask({
+    const task = await getEstateRepository().tasks.create({
       title: `Kickoff: ${name}`,
       description: `Project ${name} has started. Assign contractor, schedule site visit, confirm materials.`,
       dueDate: toISODateString(new Date(Date.now() + 7 * 86400000)),

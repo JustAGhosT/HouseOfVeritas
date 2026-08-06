@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getPPERecords, updatePPERecord } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { BASEROW_ID_TO_APP_ID, EXPIRY_WARNING_DAYS } from "./constants"
@@ -9,7 +9,7 @@ export const ppeExpiryReminder = inngest.createFunction(
   { id: "ppe-expiry-reminder", retries: 2 },
   { cron: "0 9 * * *" },
   async ({ step }) => {
-    const records = await getPPERecords({ status: "Issued" })
+    const records = await getEstateRepository().ppe.list({ status: "Issued" })
     const expiring: { id: number; issuedTo: number; expiryDate: string }[] = []
     const expired: { id: number; issuedTo: number }[] = []
 
@@ -21,7 +21,7 @@ export const ppeExpiryReminder = inngest.createFunction(
 
       if (days < 0) {
         expired.push({ id: r.id, issuedTo: r.issuedTo })
-        await updatePPERecord(r.id, { status: "Expired" })
+        await getEstateRepository().ppe.update(r.id, { status: "Expired" })
       } else if (days <= EXPIRY_WARNING_DAYS) {
         expiring.push({ id: r.id, issuedTo: r.issuedTo, expiryDate: r.expiryDate })
       }

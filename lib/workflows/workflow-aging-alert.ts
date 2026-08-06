@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getTasks } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { sendNotification } from "@/lib/services/notification-service"
 import { STALE_DAYS } from "./constants"
@@ -8,7 +8,7 @@ export const workflowAgingAlert = inngest.createFunction(
   { id: "workflow-aging-alert", retries: 2 },
   { cron: "0 9 * * 1" },
   async ({ step }) => {
-    const tasks = await getTasks()
+    const tasks = await getEstateRepository().tasks.list()
     const now = new Date()
     const cutoff = new Date(now.getTime() - STALE_DAYS * 24 * 60 * 60 * 1000)
 

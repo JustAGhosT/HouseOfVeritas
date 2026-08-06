@@ -1,7 +1,8 @@
 import { withDataSource } from "@/lib/api/response"
 import { withRole } from "@/lib/auth/rbac"
 import { logger } from "@/lib/logger"
-import { createBudget, getBudgets, updateBudget } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
+import type { Budget } from "@/lib/domain/estate-types"
 import { NextResponse } from "next/server"
 
 export const GET = withRole(
@@ -13,7 +14,7 @@ export const GET = withRole(
   const status = searchParams.get("status")
 
   try {
-    const budgets = await getBudgets({
+    const budgets = await getEstateRepository().budgets.list({
       period: period || undefined,
       status: status || undefined,
     })
@@ -58,7 +59,7 @@ export const POST = withRole("admin")(async (request) => {
     }
 
     const year = new Date().getFullYear()
-    const budget = await createBudget({
+    const budget = await getEstateRepository().budgets.create({
       category,
       amount,
       period: typeof period === "string" ? period : String(year),
@@ -142,9 +143,9 @@ export const PATCH = withRole("admin")(async (request) => {
       )
     }
 
-    const budget = await updateBudget(
+    const budget = await getEstateRepository().budgets.update(
       Number(id),
-      allowedUpdates as Parameters<typeof updateBudget>[1]
+      allowedUpdates as Partial<Budget>
     )
 
     if (!budget) {

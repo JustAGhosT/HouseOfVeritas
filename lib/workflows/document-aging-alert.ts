@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getDocumentExpiryRows } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { AGING_MONTHS } from "./constants"
@@ -8,7 +8,7 @@ export const documentAgingAlert = inngest.createFunction(
   { id: "document-aging-alert", retries: 2 },
   { cron: "0 8 1 * *" },
   async ({ step }) => {
-    const docs = await getDocumentExpiryRows()
+    const docs = await getEstateRepository().documentExpiry.list()
     const now = new Date()
 
     const aging: { id: number; name?: string; lastReview?: string }[] = []

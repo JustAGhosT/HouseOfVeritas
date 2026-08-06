@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { createTask } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { toISODateString } from "@/lib/utils"
@@ -20,7 +20,7 @@ export const successionDrill = inngest.createFunction(
     const drillDate = new Date(quarterStart)
     drillDate.setDate(drillDate.getDate() + 14)
 
-    const task = await createTask({
+    const task = await getEstateRepository().tasks.create({
       title: `Succession Protocol Rehearsal - Q${Math.floor(now.getMonth() / 3) + 1} ${now.getFullYear()}`,
       description: `Stand-in admin (${STAND_IN_ADMIN}) to assume admin duties for a day. Verify handover documents and contact lists are usable.`,
       dueDate: toISODateString(drillDate),

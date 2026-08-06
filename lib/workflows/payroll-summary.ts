@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getEmployees, getTimeClockEntriesPaginated } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { sendNotification } from "@/lib/services/notification-service"
 import { toISODateString } from "@/lib/utils"
@@ -17,14 +17,14 @@ export const payrollSummary = inngest.createFunction(
     const now = new Date()
     const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const { start, end } = getMonthRange(prevMonth)
-    const employees = await getEmployees()
+    const employees = await getEstateRepository().employees.list()
     const employeeRole = ["Employee", "Owner"]
     const toReport = employees.filter((e) => employeeRole.includes(e.role))
 
     const summary: { name: string; totalHours: number; overtimeHours: number }[] = []
 
     for (const emp of toReport) {
-      const { items } = await getTimeClockEntriesPaginated(1, 200, { employee: emp.id })
+      const { items } = await getEstateRepository().timeClock.listPaginated(1, 200, { employee: emp.id })
       const monthEntries = items.filter((e) => e.date >= start && e.date <= end && e.clockOut)
       const totalHours = monthEntries.reduce((sum, e) => sum + (e.totalHours ?? 0), 0)
       const overtimeHours = monthEntries.reduce((sum, e) => sum + (e.overtimeHours ?? 0), 0)

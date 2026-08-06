@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createTask } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { withDataSource } from "@/lib/api/response"
 import { withRole } from "@/lib/auth/rbac"
 import { toISODateString } from "@/lib/utils"
@@ -21,7 +21,7 @@ export const POST = withRole(
     }
 
     if (type === "cross_contamination") {
-      const task = await createTask({
+      const task = await getEstateRepository().tasks.create({
         title: `Cross-Contamination Report: ${location || "Kitchen"}`,
         description,
         priority: "High",
@@ -57,7 +57,7 @@ export const POST = withRole(
         description,
       ].filter(Boolean)
 
-      const task = await createTask({
+      const task = await getEstateRepository().tasks.create({
         title: `Meal Quality Review${titleMeal}`,
         description: detailLines.join("\n"),
         priority: safeSeverity === "high" ? "High" : safeSeverity === "low" ? "Low" : "Medium",

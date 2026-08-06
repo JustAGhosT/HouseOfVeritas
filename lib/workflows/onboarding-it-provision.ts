@@ -1,9 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import {
-  getOnboardingChecklists,
-  updateOnboardingChecklist,
-  updateEmployee,
-} from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { toISODateString } from "@/lib/utils"
@@ -18,7 +14,7 @@ export const onboardingItProvision = inngest.createFunction(
     if (!checklistId && !employeeId) return { skipped: true }
 
     if (employeeId) {
-      await updateEmployee(employeeId, {
+      await getEstateRepository().employees.update(employeeId, {
         itProvisionedAt: toISODateString(),
       })
     }

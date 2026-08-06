@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { isBaserowConfigured } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { isDocuSealConfigured } from "@/lib/services/docuseal"
 
 export const dynamic = "force-dynamic"
@@ -33,7 +33,7 @@ export async function GET() {
   const checks = await Promise.all([
     checkService(
       "baserow",
-      isBaserowConfigured()
+      getEstateRepository().isConfigured()
         ? serviceBaseUrl(process.env.BASEROW_API_URL || process.env.NEXT_PUBLIC_BASEROW_URL)
         : undefined,
       "/api/_health/"
@@ -53,7 +53,7 @@ export async function GET() {
     {
       status: overall ? "healthy" : "degraded",
       build: { commit: buildCommit },
-      dataMode: isBaserowConfigured()
+      dataMode: getEstateRepository().isConfigured()
         ? "live"
         : process.env.ALLOW_DEMO_DATA === "true"
           ? "demo"

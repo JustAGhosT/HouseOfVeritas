@@ -1,10 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import {
-  getDocumentExpiryRows,
-  getEmployees,
-  updateDocumentExpiryRow,
-  updateEmployee,
-} from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import type { DocuSealSubmissionPayload } from "./schema"
@@ -17,12 +12,12 @@ export const docusealSubmissionCompleted = inngest.createFunction(
     const actions: string[] = []
 
     if (payload.templateName.includes("Employment Contract")) {
-      const employees = await getEmployees()
+      const employees = await getEstateRepository().employees.list()
       for (const email of payload.submitterEmails) {
         if (!email) continue
         const emp = employees.find((e) => e.email?.toLowerCase() === email.toLowerCase())
         if (emp) {
-          const updated = await updateEmployee(emp.id, {
+          const updated = await getEstateRepository().employees.update(emp.id, {
             contractRef: payload.documentUrl,
             probationStatus: "Completed",
           })
@@ -33,13 +28,13 @@ export const docusealSubmissionCompleted = inngest.createFunction(
       }
     }
 
-    const docRows = await getDocumentExpiryRows()
+    const docRows = await getEstateRepository().documentExpiry.list()
     const docRecord = docRows.find(
       (r) => r.docName?.toLowerCase() === payload.templateName.toLowerCase()
     )
     if (docRecord) {
       const lastReview = payload.completedAt.slice(0, 10)
-      const updated = await updateDocumentExpiryRow(docRecord.id, {
+      const updated = await getEstateRepository().documentExpiry.update(docRecord.id, {
         docuSealRef: payload.documentUrl,
         lastReview,
         status: "Active",

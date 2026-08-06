@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto"
 import type { Collection, Filter, ObjectId } from "mongodb"
 import { getCollection } from "@/lib/db/mongodb"
-import type { Task } from "@/lib/services/baserow"
+import type { Task } from "@/lib/domain/estate-types"
 
 export interface TaskFilters {
   assignedTo?: number

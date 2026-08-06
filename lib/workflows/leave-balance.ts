@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getEmployees, updateEmployee } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { sendNotification } from "@/lib/services/notification-service"
 import { BASEROW_ID_TO_APP_ID } from "./constants"
@@ -16,7 +16,7 @@ export const leaveBalanceUpdate = inngest.createFunction(
   { id: "leave-balance-update", retries: 2 },
   { cron: "0 7 1 * *" },
   async ({ step }) => {
-    const employees = await getEmployees()
+    const employees = await getEstateRepository().employees.list()
     const employeeRole = ["Employee"]
     const toUpdate = employees.filter((e) => employeeRole.includes(e.role))
     const updates: { name: string; previous: number; accrued: number; newBalance: number }[] = []
@@ -26,7 +26,7 @@ export const leaveBalanceUpdate = inngest.createFunction(
       const newBalance = calculateNewBalance(current)
       const accrued = newBalance - current
 
-      const updated = await updateEmployee(emp.id, { leaveBalance: newBalance })
+      const updated = await getEstateRepository().employees.update(emp.id, { leaveBalance: newBalance })
       if (updated) {
         updates.push({
           name: emp.fullName,

@@ -1,6 +1,6 @@
 import { inngest } from "@/lib/inngest/client"
-import type { DocumentExpiryRow } from "@/lib/services/baserow"
-import { getDocumentExpiryRows } from "@/lib/services/baserow"
+import type { DocumentExpiryRow } from "@/lib/domain/estate-types"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { buildSummaryMessage, daysUntil, getAlertLevel } from "@/lib/workflows/utils"
@@ -9,7 +9,7 @@ export const documentExpiryCheck = inngest.createFunction(
   { id: "document-expiry-check", retries: 2 },
   { cron: "0 6 * * *" },
   async ({ step }) => {
-    const documents = await getDocumentExpiryRows()
+    const documents = await getEstateRepository().documentExpiry.list()
     const alerts: Array<{
       doc: DocumentExpiryRow
       docName: string

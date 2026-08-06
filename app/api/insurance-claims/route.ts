@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server"
-import {
-  getInsuranceClaims,
-  createInsuranceClaim,
-  updateInsuranceClaim,
-} from "@/lib/services/baserow"
+import type { InsuranceClaim } from "@/lib/domain/estate-types"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { submitClaim, getClaimStatus } from "@/lib/integrations/insurance"
 import { withDataSource } from "@/lib/api/response"
 import { withRole } from "@/lib/auth/rbac"
@@ -19,7 +16,7 @@ export const GET = withRole(
   const status = searchParams.get("status")
 
   try {
-    const claims = await getInsuranceClaims({
+    const claims = await getEstateRepository().insuranceClaims.list({
       incident: incident ? parseInt(incident, 10) : undefined,
       status: status || undefined,
     })
@@ -41,7 +38,7 @@ export const POST = withRole("admin")(async (request) => {
       return NextResponse.json({ error: "Description and amount are required" }, { status: 400 })
     }
 
-    const claim = await createInsuranceClaim({
+    const claim = await getEstateRepository().insuranceClaims.create({
       incident,
       asset,
       description,
@@ -73,7 +70,7 @@ export const PATCH = withRole("admin")(async (request) => {
       return NextResponse.json({ error: "Claim ID is required" }, { status: 400 })
     }
 
-    const existing = (await getInsuranceClaims({})).find((c) => c.id === id)
+    const existing = (await getEstateRepository().insuranceClaims.list({})).find((c) => c.id === id)
     if (!existing) {
       return NextResponse.json({ error: "Claim not found" }, { status: 404 })
     }
@@ -105,9 +102,9 @@ export const PATCH = withRole("admin")(async (request) => {
       updates.status = status
     }
 
-    const claim = await updateInsuranceClaim(
+    const claim = await getEstateRepository().insuranceClaims.update(
       id,
-      updates as Parameters<typeof updateInsuranceClaim>[1]
+      updates as Partial<InsuranceClaim>
     )
 
     if (!claim) {

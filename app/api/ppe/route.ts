@@ -1,10 +1,5 @@
 import { NextResponse } from "next/server"
-import {
-  getPPERecords,
-  createPPERecord,
-  updatePPERecord,
-  getBaserowEmployeeIdByAppId,
-} from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { resolveEmployeeForGet } from "@/lib/api/employee-resolver"
 import { withDataSource } from "@/lib/api/response"
 import { withRole } from "@/lib/auth/rbac"
@@ -26,7 +21,7 @@ export const GET = withRole(
   if (error) return error
 
   try {
-    const records = await getPPERecords({
+    const records = await getEstateRepository().ppe.list({
       issuedTo: employeeId,
       status: status || undefined,
     })
@@ -51,7 +46,7 @@ export const POST = withRole(
       return NextResponse.json({ error: "Asset and issuedTo are required" }, { status: 400 })
     }
 
-    const ppe = await createPPERecord({
+    const ppe = await getEstateRepository().ppe.create({
       asset,
       issuedTo,
       issueDate: toISODateString(),
@@ -85,7 +80,7 @@ export const PATCH = withRole(
       return NextResponse.json({ error: "PPE record ID is required" }, { status: 400 })
     }
 
-    const ppe = await updatePPERecord(id, updates)
+    const ppe = await getEstateRepository().ppe.update(id, updates)
 
     if (!ppe) {
       return NextResponse.json({ error: "PPE record not found" }, { status: 404 })

@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getEmployees } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { toISODateString } from "@/lib/utils"
@@ -19,7 +19,7 @@ export const probationReminder = inngest.createFunction(
   { id: "probation-reminder", retries: 2 },
   { cron: "0 8 1 * *" },
   async ({ step }) => {
-    const employees = await getEmployees()
+    const employees = await getEstateRepository().employees.list()
     const now = new Date()
     const todayStr = toISODateString(now)
     const reminders: { name: string; employeeId: number; monthsSinceStart: number }[] = []

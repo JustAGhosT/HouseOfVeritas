@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getEmployees } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { BASEROW_ID_TO_APP_ID } from "./constants"
@@ -8,7 +8,7 @@ export const leaveCarryoverExpiry = inngest.createFunction(
   { id: "leave-carryover-expiry", retries: 2 },
   { cron: "0 8 1 11,12 *" },
   async ({ step }) => {
-    const employees = await getEmployees()
+    const employees = await getEstateRepository().employees.list()
     const employeeRole = ["Employee"]
     const toCheck = employees.filter((e) => employeeRole.includes(e.role))
 
