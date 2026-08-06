@@ -61,7 +61,7 @@ function buildSummary(
 }
 
 export async function getPublicRadarListings(): Promise<RadarListingsResult> {
-  const repository = getRadarListingRepository()
+  const repository = await getRadarListingRepository()
   const enabled = radarEnabled()
   const configured = repository.isConfigured()
 

@@ -29,6 +29,7 @@ import type {
   PaginatedResult,
   PettyCash,
   PPE,
+  RecurringTaskTemplate,
   Task,
   TimeClockEntry,
   VehicleLog,
@@ -167,7 +168,10 @@ export type TaskRepositoryPort = Listable<Task, TaskFilters> &
   Gettable<Task> &
   Creatable<Task> &
   Updatable<Task> &
-  Pageable<Task, TaskFilters>
+  Pageable<Task, TaskFilters> & {
+    /** Templates for tasks that regenerate on a schedule. */
+    listRecurringTemplates(): Promise<RecurringTaskTemplate[]>
+  }
 
 export type ExpenseRepository = Listable<Expense, ExpenseFilters> &
   Gettable<Expense> &
@@ -266,8 +270,27 @@ export interface EstateRepository {
 }
 
 // ---------------------------------------------------------------------------
-// Baserow implementation (the only one, for now)
+// Baserow implementation
 // ---------------------------------------------------------------------------
+
+/**
+ * Flatten Baserow's nested field objects into the domain shape. Keeping this
+ * here rather than in the workflow is the whole point: `"Assigned To"[0].id`
+ * and `Priority.value` are storage details, not domain concepts.
+ */
+function toRecurringTemplate(row: baserow.RecurringTaskTemplate): RecurringTaskTemplate {
+  const priority = row.Priority?.value
+  return {
+    id: row.id,
+    title: row.Title ?? "Task",
+    description: row.Description,
+    assignedTo: row["Assigned To"]?.[0]?.id,
+    recurrence: row.Recurrence,
+    isRecurring: row["Is Recurring"] !== false,
+    priority: (priority as Task["priority"]) ?? "Medium",
+    project: row.Project,
+  }
+}
 
 const baserowEstateRepository: EstateRepository = {
   backend: "baserow",
@@ -289,6 +312,8 @@ const baserowEstateRepository: EstateRepository = {
     create: (input) => baserow.createTask(input),
     update: (id, updates) => baserow.updateTask(id, updates),
     listPaginated: (page, size, filters) => baserow.getTasksPaginated(page, size, filters),
+    listRecurringTemplates: async () =>
+      (await baserow.getRecurringTaskTemplates()).map(toRecurringTemplate),
   },
 
   expenses: {
@@ -394,6 +419,13 @@ const baserowEstateRepository: EstateRepository = {
  *
  * The Postgres module is required lazily so the `pg` pool is never constructed
  * in deployments still running on Baserow.
+ *
+ * NOTE: `require()` here is a known hazard. The identical pattern in
+ * `radar-repository.ts` was statically resolved by the test module graph and
+ * dragged `pg` into every transitive importer, causing widespread timeouts; it
+ * was changed to an async `import()`. This resolver is left synchronous because
+ * ~64 call sites depend on that, and it currently measures clean — but if
+ * unexplained slowness appears across unrelated suites, suspect this first.
  */
 export function getEstateRepository(): EstateRepository {
   if (process.env.ESTATE_BACKEND?.toLowerCase() !== "postgres") {
@@ -404,4 +436,31 @@ export function getEstateRepository(): EstateRepository {
     require("@/lib/repositories/estate-repository-postgres") as typeof import("@/lib/repositories/estate-repository-postgres")
 
   return postgresEstateRepository.isConfigured() ? postgresEstateRepository : baserowEstateRepository
+}
+
+/**
+ * Which store is actually serving tasks.
+ *
+ * Tasks are the one entity with a third backend (Mongo, via task-repository),
+ * so this cannot be derived from `backend` alone. Reported to clients as a
+ * provenance hint, not used for routing.
+ */
+export type TaskDataSource = EstateBackend | "mongodb" | "empty"
+
+/**
+ * Env-only check, deliberately duplicated from `lib/db/mongodb`.
+ *
+ * Importing that module here would pull the MongoClient driver into every
+ * consumer of this seam — including `lib/api/response`, which nearly every
+ * route imports. Duplicating a two-variable predicate is the cheaper trade.
+ */
+function mongoConfigured(): boolean {
+  return Boolean(process.env.MONGODB_URI || process.env.MONGO_URL)
+}
+
+export function getTaskDataSource(): TaskDataSource {
+  const estate = getEstateRepository()
+  if (estate.isConfigured()) return estate.backend
+  if (mongoConfigured()) return "mongodb"
+  return "empty"
 }

@@ -254,6 +254,25 @@ export interface Incident {
   victimSupportPath?: boolean
 }
 
+/**
+ * Template describing a task that regenerates on a schedule.
+ *
+ * Deliberately a clean domain shape: the Baserow wire form of this record used
+ * nested field objects (`"Assigned To": [{ id }]`, `Priority: { value }`) that
+ * previously leaked all the way into the recurring-tasks workflow.
+ */
+export interface RecurringTaskTemplate {
+  id: EntityId
+  title: string
+  description?: string
+  assignedTo?: number
+  /** "Daily" | "Weekly" | "Monthly" | "Quarterly" — free text at the source. */
+  recurrence?: string
+  isRecurring: boolean
+  priority?: Task["priority"]
+  project?: string
+}
+
 export interface DocumentExpiryRow {
   id: EntityId
   docName: string

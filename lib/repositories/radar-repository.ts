@@ -142,7 +142,7 @@ function mapRadarRow(row: Record<string, unknown>): PublicRadarListing | null {
   }
 }
 
-export type RadarBackend = "baserow"
+export type RadarBackend = "baserow" | "postgres"
 
 export interface RadarListingRepository {
   readonly backend: RadarBackend
@@ -197,10 +197,21 @@ const baserowRadarRepository: RadarListingRepository = {
 /**
  * Resolve the radar listing repository.
  *
- * Single point of backend selection, mirroring `getEstateRepository()`.
+ * Async, and the Postgres module is loaded with a dynamic `import()` rather
+ * than `require()`: a bare `require` of the Postgres implementation gets
+ * statically resolved by the test/bundler module graph, which pulled the `pg`
+ * driver into every module transitively importing this one and caused
+ * widespread timeouts. `import()` keeps the edge genuinely lazy.
+ *
+ * Callers are already async (`getPublicRadarListings`), so this costs nothing.
  */
-export function getRadarListingRepository(): RadarListingRepository {
-  return baserowRadarRepository
+export async function getRadarListingRepository(): Promise<RadarListingRepository> {
+  if (process.env.ESTATE_BACKEND?.toLowerCase() !== "postgres") {
+    return baserowRadarRepository
+  }
+
+  const { postgresRadarRepository } = await import("@/lib/repositories/radar-repository-postgres")
+  return postgresRadarRepository.isConfigured() ? postgresRadarRepository : baserowRadarRepository
 }
 
 export const radarRepositoryTestInternals = {

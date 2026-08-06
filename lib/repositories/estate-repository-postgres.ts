@@ -29,6 +29,7 @@ import type {
   PaginatedResult,
   PettyCash,
   PPE,
+  RecurringTaskTemplate,
   Task,
   TimeClockEntry,
   VehicleLog,
@@ -512,6 +513,20 @@ const incidents: TableDef<Incident> = {
   },
 }
 
+const recurringTemplates: TableDef<RecurringTaskTemplate> = {
+  table: "recurring_task_templates",
+  orderBy: "id ASC",
+  fields: {
+    title: { column: "title", kind: "text" },
+    description: { column: "description", kind: "text" },
+    assignedTo: { column: "assigned_to", kind: "int" },
+    recurrence: { column: "recurrence", kind: "text" },
+    isRecurring: { column: "is_recurring", kind: "bool" },
+    priority: { column: "priority", kind: "text" },
+    project: { column: "project", kind: "text" },
+  },
+}
+
 const documentExpiry: TableDef<DocumentExpiryRow> = {
   table: "document_expiry",
   orderBy: "next_review ASC NULLS LAST, id ASC",
@@ -623,6 +638,8 @@ export const postgresEstateRepository: EstateRepository = {
     get: (id) => getRow(tasks, id),
     create: (input) => insertRow(tasks, input),
     update: (id, updates) => updateRow(tasks, id, updates),
+    listRecurringTemplates: () =>
+      listRows(recurringTemplates, buildWhere([["is_recurring", true]])),
     listPaginated: (page, size, filters?: TaskFilters) =>
       listRowsPaginated(
         tasks,

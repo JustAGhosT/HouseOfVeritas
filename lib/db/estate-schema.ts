@@ -278,6 +278,18 @@ const ESTATE_TABLES = [
   CREATE INDEX IF NOT EXISTS idx_incidents_type ON incidents(type);
   CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents(status);`,
 
+  `CREATE TABLE IF NOT EXISTS recurring_task_templates (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    title TEXT NOT NULL DEFAULT '',
+    description TEXT,
+    assigned_to INTEGER,
+    recurrence TEXT,
+    is_recurring BOOLEAN NOT NULL DEFAULT true,
+    priority TEXT,
+    project TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_recurring_templates_active ON recurring_task_templates(is_recurring);`,
+
   `CREATE TABLE IF NOT EXISTS document_expiry (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     doc_name TEXT NOT NULL DEFAULT 'Untitled Document',

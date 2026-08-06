@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import type { Task } from "@/lib/domain/estate-types"
-import { getEstateRepository } from "@/lib/repositories/estate-repository"
-import { getTaskDataSource } from "@/lib/services/baserow"
+import { getEstateRepository, getTaskDataSource } from "@/lib/repositories/estate-repository"
 import { withDataSource } from "@/lib/api/response"
 import { withRole } from "@/lib/auth/rbac"
 import { logger } from "@/lib/logger"
@@ -17,6 +16,8 @@ function withTaskDataSource<T extends Record<string, unknown>>(data: T) {
       message:
         dataSource === "baserow"
           ? "Connected to Baserow"
+          : dataSource === "postgres"
+            ? "Connected to PostgreSQL"
           : dataSource === "mongodb"
             ? "Connected to Cosmos MongoDB"
             : "Task datastore not configured",
