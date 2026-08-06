@@ -114,7 +114,38 @@ signatures/date are filled in by humans. Leaving any box unchecked = not signed 
 
 **Until this block is signed, `RADAR_ENABLED` stays `false`/unset. No agent may change it.**
 
-## 6. Cross-references
+## 6. Recorded decisions (not sign-off)
+
+This section preserves owner decisions taken outside §5 so they survive in the governing document
+rather than only in the task tracker. **Nothing here substitutes for §5.** A decision recorded here
+does not tick any §5 box, does not constitute legal approval, and does not permit enabling
+`RADAR_ENABLED`.
+
+### D1 — MVP-only position, 2026-07-17
+
+Recorded 2026-08-06 from the Baton Radar 5 closeout note dated 2026-07-17. Transcribed by an agent;
+**unconfirmed by signature.**
+
+- **Stated position:** proceeding is acceptable *while usage is limited to Jurie / private MVP
+  validation*.
+- **Explicitly NOT covered:** external users, public promotion, or any broader launch. The note
+  reads "This is not broad public/legal approval for external users or wider promotion."
+- **Conditions attached:** keep attribution, disclaimer, robots/ToS posture and `RADAR_ENABLED`
+  governance intact; revisit legal/compliance before more than single-user MVP usage.
+- **Does not satisfy** §5 box 1 (attorney written answers to the ten §4 open questions), which
+  remains an open external dependency.
+
+| Confirming this transcription is accurate | Name | Signature | Date |
+|---|---|---|---|
+| Business owner | Jurie | | |
+
+> Note on scope mismatch: §5 gates *public launch for Springs*. D1 addresses *private single-user
+> validation*, which is a narrower question §5 does not currently model. If the intent is to run a
+> private MVP without full public sign-off, that path needs its own explicit criteria (access
+> restriction, volume cap, no indexing, no promotion) agreed with the reviewer — it is not simply a
+> partial §5.
+
+## 7. Cross-references
 
 - Compliance/attribution content: `property-deal-radar-compliance.md`
 - Ingestion robots.txt / rate-limit acceptance criteria: `property-deal-radar-ingestion-compliance-spec.md`
