@@ -40,7 +40,7 @@ const ROLES = ["operator", "employee", "resident"] as const
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const { user, isAuthenticated, refresh } = useAuth()
+  const { user, isAuthenticated, isLoading: authLoading, refresh } = useAuth()
   const { openLoginModal } = useLoginModal()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -56,12 +56,16 @@ export default function OnboardingPage() {
 
   const profileUser = fetchedUser ?? user
 
-  // Open login modal when auth is required (but not when auth error is already handled)
+  // Open login modal when auth is required (but not when auth error is already handled).
+  // `isAuthenticated` is false while the session probe is still in flight, so this
+  // must wait for it to settle. Without that guard every visit — including a fully
+  // authenticated one — opened the login modal over the onboarding card, and
+  // nothing ever closes it again (the modal only closes on explicit dismissal).
   useEffect(() => {
-    if (!isAuthenticated && !authError) {
+    if (!authLoading && !isAuthenticated && !authError) {
       openLoginModal()
     }
-  }, [isAuthenticated, openLoginModal, authError])
+  }, [authLoading, isAuthenticated, openLoginModal, authError])
   const [confirmedRole, setConfirmedRole] = useState(false)
   const [confirmedResponsibilities, setConfirmedResponsibilities] = useState(false)
   const [selectedResponsibilities, setSelectedResponsibilities] = useState<Set<string>>(new Set())
@@ -308,7 +312,10 @@ export default function OnboardingPage() {
   return (
     <ErrorBoundary>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-        <Card className="relative max-h-[90vh] w-full max-w-lg overflow-hidden border-white/20 bg-[#0d0d12] shadow-2xl">
+        <Card
+          className="relative max-h-[90vh] w-full max-w-lg overflow-hidden border-white/20 bg-[#0d0d12] shadow-2xl"
+          data-testid="onboarding-page"
+        >
           <button
             onClick={handleClose}
             className="absolute top-4 right-4 z-10 rounded-lg p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
@@ -557,13 +564,19 @@ export default function OnboardingPage() {
               </div>
 
               <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={handleClose} className="border-white/20">
+                <Button
+                  variant="outline"
+                  onClick={handleClose}
+                  className="border-white/20"
+                  data-testid="onboarding-complete-later"
+                >
                   Complete later
                 </Button>
                 <Button
                   onClick={handleStartTutorial}
                   disabled={!confirmedRole || !confirmedResponsibilities}
                   className="bg-blue-600 hover:bg-blue-700"
+                  data-testid="onboarding-start-tutorial"
                 >
                   Start Guided Tour
                   <ArrowRight className="ml-2 h-4 w-4" />
