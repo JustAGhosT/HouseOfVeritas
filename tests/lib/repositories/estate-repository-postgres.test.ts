@@ -130,10 +130,12 @@ describe("decodeRow — kind-driven decoding of pg values", () => {
       // expenses, PPE, time clock) back one day on any UTC+ host. Now decoded
       // from local components, and lib/db/postgres pins the DATE type parser so
       // pg hands back the raw string in the first place.
-      const localMidnightSast = new Date(Date.UTC(2026, 6, 17, 22, 0, 0))
-      expect(decode(row({ day: localMidnightSast })).day).toBe(
-        process.env.TZ === "UTC" ? "2026-07-17" : "2026-07-18"
-      )
+      // Constructed as LOCAL midnight, which is exactly what pg produces for
+      // DATE '2026-07-18' on any host. Deliberately not Date.UTC(...): that
+      // pins a fixed instant whose local calendar day varies by offset, which
+      // made an earlier version of this test pass in SAST and fail on UTC CI.
+      const localMidnight = new Date(2026, 6, 18, 0, 0, 0)
+      expect(decode(row({ day: localMidnight })).day).toBe("2026-07-18")
     })
 
     it("omits empty and non-date values", () => {

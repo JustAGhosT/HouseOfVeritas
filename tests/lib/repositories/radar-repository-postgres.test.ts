@@ -308,9 +308,11 @@ describe("radar mapRow — projection", () => {
       // DATE '2026-07-18'. Decoding via toISOString() re-projected to UTC and
       // reported the previous day. Now decoded from local components; see
       // lib/db/postgres, which also pins the DATE type parser to a raw string.
+      // LOCAL midnight, matching what pg yields for DATE '2026-07-18' on any
+      // host — timezone-independent, unlike a fixed UTC instant.
       expect(
-        mapRow(completeRow({ last_seen: new Date(Date.UTC(2026, 6, 17, 22)) }))?.lastSeen
-      ).toBe(process.env.TZ === "UTC" ? "2026-07-17" : "2026-07-18")
+        mapRow(completeRow({ last_seen: new Date(2026, 6, 18, 0, 0, 0) }))?.lastSeen
+      ).toBe("2026-07-18")
     })
 
     it("returns null for an absent or unparseable value", () => {
