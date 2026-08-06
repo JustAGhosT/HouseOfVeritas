@@ -8,8 +8,18 @@ import {
 
 const baseUrl = process.env.BASE_URL
 const adminSessionCookies = productionSessionCookies("admin")
-const operatorSessionCookies = productionSessionCookies("operator")
 const isPostDeployProbe = process.env.POST_DEPLOY_PROBE === "true"
+
+// Production issues no identity with role=operator, so the denial boundary is
+// proved against whichever non-admin roles are actually available. Both are
+// equally unauthorized for admin routes, so each independently proves the same
+// withRole("admin") boundary. Locally both are seeded; against a deployment only
+// the roles whose sessions were supplied run, and the rest skip rather than
+// silently pass.
+const denialRoles = [
+  { role: "employee", seedId: "lucky" },
+  { role: "operator", seedId: "charl" },
+] as const satisfies ReadonlyArray<{ role: ProbeRole; seedId: string }>
 
 test.describe.configure({ timeout: 60_000 })
 
@@ -50,7 +60,8 @@ async function addSessionCookies(context: BrowserContext, sessionCookies: Sessio
 async function prepareRoleSession(
   context: BrowserContext,
   role: ProbeRole,
-  sessionCookies: SessionCookie[]
+  sessionCookies: SessionCookie[],
+  seedId = role === "admin" ? "hans" : "charl"
 ) {
   if (isPostDeployProbe) {
     await addSessionCookies(context, sessionCookies)
@@ -58,7 +69,7 @@ async function prepareRoleSession(
   }
 
   await seedSession(context, {
-    id: role === "admin" ? "hans" : "charl",
+    id: seedId,
     role,
     email: `${role}@example.invalid`,
   })
@@ -129,32 +140,38 @@ test.describe("Post-deployment Gate 0 admin acceptance", () => {
   })
 })
 
-test.describe("Post-deployment Gate 0 operator denial", () => {
-  test.skip(
-    isPostDeployProbe && (!baseUrl || operatorSessionCookies.length === 0),
-    "Requires POST_DEPLOY_PROBE, BASE_URL, and a legitimate short-lived operator session."
-  )
+for (const { role, seedId } of denialRoles) {
+  test.describe(`Post-deployment Gate 0 ${role} denial`, () => {
+    const sessionCookies = productionSessionCookies(role)
 
-  test.beforeEach(async ({ context }) => {
-    await prepareRoleSession(context, "operator", operatorSessionCookies)
+    test.skip(
+      isPostDeployProbe && (!baseUrl || sessionCookies.length === 0),
+      `Requires POST_DEPLOY_PROBE, BASE_URL, and a legitimate short-lived ${role} session.`
+    )
+
+    test.beforeEach(async ({ context }) => {
+      await prepareRoleSession(context, role, sessionCookies, seedId)
+    })
+
+    for (const path of ["/api/reviewer-trials/domain-safety", "/api/governance/gates"] as const) {
+      test(`denies ${role} API access to ${path}`, async ({ page }) => {
+        const response = await page.request.get(path)
+
+        expect(response.status()).toBe(403)
+        await expect(response.json()).resolves.toMatchObject({ error: "Insufficient permissions" })
+      })
+    }
+
+    for (const path of ["/dashboard/hans/reviewer-lab", "/dashboard/hans/governance"] as const) {
+      test(`redirects ${role === "employee" ? "an" : "a"} ${role} away from ${path}`, async ({
+        page,
+      }) => {
+        await page.goto(path)
+
+        await expect(page).not.toHaveURL(new RegExp(`${path.replaceAll("/", "\\/")}(?:\\?.*)?$`))
+        await expect(page.getByTestId("domain-reviewer-lab-page")).toHaveCount(0)
+        await expect(page.getByTestId("gate-governance-page")).toHaveCount(0)
+      })
+    }
   })
-
-  for (const path of ["/api/reviewer-trials/domain-safety", "/api/governance/gates"] as const) {
-    test(`denies operator API access to ${path}`, async ({ page }) => {
-      const response = await page.request.get(path)
-
-      expect(response.status()).toBe(403)
-      await expect(response.json()).resolves.toMatchObject({ error: "Insufficient permissions" })
-    })
-  }
-
-  for (const path of ["/dashboard/hans/reviewer-lab", "/dashboard/hans/governance"] as const) {
-    test(`redirects an operator away from ${path}`, async ({ page }) => {
-      await page.goto(path)
-
-      await expect(page).not.toHaveURL(new RegExp(`${path.replaceAll("/", "\\/")}(?:\\?.*)?$`))
-      await expect(page.getByTestId("domain-reviewer-lab-page")).toHaveCount(0)
-      await expect(page.getByTestId("gate-governance-page")).toHaveCount(0)
-    })
-  }
-})
+}
