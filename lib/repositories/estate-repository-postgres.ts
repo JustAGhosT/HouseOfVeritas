@@ -73,7 +73,14 @@ interface TableDef<T> {
 // ---------------------------------------------------------------------------
 
 function toDateString(value: unknown): string | undefined {
-  if (value instanceof Date) return value.toISOString().slice(0, 10)
+  // The DATE parser in lib/db/postgres keeps these as strings; this Date branch
+  // is a fallback and uses LOCAL components for the same reason as isoDate().
+  if (value instanceof Date) {
+    const year = value.getFullYear()
+    const month = String(value.getMonth() + 1).padStart(2, "0")
+    const day = String(value.getDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
+  }
   if (typeof value === "string" && value) return value.slice(0, 10)
   return undefined
 }
@@ -564,7 +571,13 @@ function wallClock(now: Date): string {
 }
 
 function isoDate(now: Date): string {
-  return now.toISOString().slice(0, 10)
+  // Local calendar date, deliberately NOT toISOString(): a 00:30 SAST clock-in
+  // is still "today" locally but yesterday in UTC, and the time clock is read
+  // by humans in local time.
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, "0")
+  const day = String(now.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
 }
 
 async function resolveEmployeeIdByAppId(appId: string): Promise<EntityId | null> {

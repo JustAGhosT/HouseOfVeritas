@@ -210,7 +210,7 @@ export async function getRadarListingRepository(): Promise<RadarListingRepositor
     return baserowRadarRepository
   }
 
-  const { postgresRadarRepository } = await import("@/lib/repositories/radar-repository-postgres")
+  const { postgresRadarRepository } = await import("./radar-repository-postgres")
   return postgresRadarRepository.isConfigured() ? postgresRadarRepository : baserowRadarRepository
 }
 

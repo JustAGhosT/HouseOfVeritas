@@ -47,7 +47,14 @@ function normaliseStatus(value: string): PublicRadarListing["status"] {
 }
 
 function toIsoDate(value: unknown): string | null {
-  if (value instanceof Date) return value.toISOString().slice(0, 10)
+  // See lib/db/postgres: DATE is parsed as a string, so this Date branch is a
+  // fallback. Local components, not toISOString(), to avoid a UTC day shift.
+  if (value instanceof Date) {
+    const year = value.getFullYear()
+    const month = String(value.getMonth() + 1).padStart(2, "0")
+    const day = String(value.getDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
+  }
   if (typeof value === "string" && value) return value.slice(0, 10)
   return null
 }

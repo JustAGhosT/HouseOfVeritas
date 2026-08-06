@@ -437,8 +437,12 @@ export function getEstateRepository(): EstateRepository {
     return baserowEstateRepository
   }
 
+  // Relative specifier, NOT the "@/" alias: the alias is resolved by the Next
+  // bundler but not by plain Node, so an aliased require() made this branch
+  // throw under Vitest/tsx and in any non-bundled script — i.e. the one switch
+  // that enables the whole Postgres backend was unreachable outside Next.
   const { postgresEstateRepository } =
-    require("@/lib/repositories/estate-repository-postgres") as typeof import("@/lib/repositories/estate-repository-postgres")
+    require("./estate-repository-postgres") as typeof import("./estate-repository-postgres")
 
   return postgresEstateRepository.isConfigured() ? postgresEstateRepository : baserowEstateRepository
 }
@@ -468,4 +472,9 @@ export function getTaskDataSource(): TaskDataSource {
   if (estate.tasks.isConfigured()) return estate.backend
   if (mongoConfigured()) return "mongodb"
   return "empty"
+}
+
+/** Wire-shape translation is worth testing directly; nothing else may use this. */
+export const estateRepositoryTestInternals = {
+  toRecurringTemplate,
 }
