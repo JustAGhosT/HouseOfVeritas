@@ -1,10 +1,27 @@
-type LogLevel = "debug" | "info" | "warn" | "error"
+export type LogLevel = "debug" | "info" | "warn" | "error"
 
-interface LogEntry {
+export interface LogEntry {
   level: LogLevel
   message: string
   timestamp: string
   [key: string]: unknown
+}
+
+export type LogSink = (entry: LogEntry) => void
+
+/**
+ * Optional second destination for log entries, installed at startup by
+ * `instrumentation.ts` when Azure Monitor is configured.
+ *
+ * The sink is injected rather than imported here on purpose: this module is
+ * reachable from the Edge runtime, which cannot load the OpenTelemetry SDK, and
+ * keeping the dependency in the Node-only instrumentation hook avoids pulling it
+ * in where it cannot run.
+ */
+let sink: LogSink | null = null
+
+export function setLogSink(next: LogSink | null): void {
+  sink = next
 }
 
 const LOG_LEVELS: Record<LogLevel, number> = {
@@ -28,6 +45,14 @@ function emit(entry: LogEntry) {
     console.warn(output)
   } else {
     console.log(output)
+  }
+
+  if (!sink) return
+  try {
+    sink(entry)
+  } catch {
+    // Telemetry is never allowed to break the code path that logged. The console
+    // line above has already been written, so the entry is not lost.
   }
 }
 
