@@ -495,6 +495,12 @@ judges the candidate and all six skips are on the record.
 
 ### 9.2 The admin control plane
 
+> **Not yet enforced at publication.** `evaluateKnowledgeCandidate()` and
+> `loadEffectiveGateProfile()` have no production caller — `app/api/knowledge/apply/route.ts` still
+> only reports `hasGuidanceSafetyBoundaries` as a flag. Profiles configured here are stored, audited
+> and correctly resolved, but nothing runs a candidate through them yet. Wiring the apply route is
+> the next step, and the admin page says so on its face.
+
 Profiles are durable records, not constants. An administrator changes them at
 `/dashboard/hans/knowledge-gates`; the API is `GET`/`POST /api/knowledge/gate-profiles`, both behind
 `withRole("admin")` enforced independently of UI visibility.

@@ -18,10 +18,10 @@ const operatorHeaders = {
   "Content-Type": "application/json",
 }
 
-const URL = "http://localhost/api/knowledge/gate-profiles"
+const ENDPOINT = "http://localhost/api/knowledge/gate-profiles"
 
 function profileRequest(overrides: Record<string, unknown> = {}, headers = adminHeaders) {
-  return new Request(URL, {
+  return new Request(ENDPOINT, {
     method: "POST",
     headers,
     body: JSON.stringify({
@@ -44,13 +44,15 @@ describe("/api/knowledge/gate-profiles", () => {
   })
 
   it("requires an authenticated admin for reads and writes", async () => {
-    expect(await GET(new Request(URL))).toMatchObject({ status: 401 })
-    expect(await GET(new Request(URL, { headers: operatorHeaders }))).toMatchObject({ status: 403 })
+    expect(await GET(new Request(ENDPOINT))).toMatchObject({ status: 401 })
+    expect(await GET(new Request(ENDPOINT, { headers: operatorHeaders }))).toMatchObject({
+      status: 403,
+    })
     expect(await POST(profileRequest({}, operatorHeaders))).toMatchObject({ status: 403 })
   })
 
   it("returns the built-in profiles before anything is stored", async () => {
-    const response = await GET(new Request(URL, { headers: adminHeaders }))
+    const response = await GET(new Request(ENDPOINT, { headers: adminHeaders }))
     const body = await response.json()
 
     expect(response.status).toBe(200)
@@ -64,7 +66,7 @@ describe("/api/knowledge/gate-profiles", () => {
   })
 
   it("advertises which gates can never be waived", async () => {
-    const body = await (await GET(new Request(URL, { headers: adminHeaders }))).json()
+    const body = await (await GET(new Request(ENDPOINT, { headers: adminHeaders }))).json()
     expect(body.data.nonWaivableGates.sort()).toEqual(["data_boundary", "verifiable_ground_truth"])
   })
 
@@ -137,7 +139,7 @@ describe("/api/knowledge/gate-profiles", () => {
       })
     )
 
-    const body = await (await GET(new Request(URL, { headers: adminHeaders }))).json()
+    const body = await (await GET(new Request(ENDPOINT, { headers: adminHeaders }))).json()
     const strict = body.data.profiles.find((p: { profileId: string }) => p.profileId === "strict")
 
     expect(strict.source).toBe("stored")
@@ -159,7 +161,7 @@ describe("/api/knowledge/gate-profiles", () => {
       })
     )
 
-    const body = await (await GET(new Request(URL, { headers: adminHeaders }))).json()
+    const body = await (await GET(new Request(ENDPOINT, { headers: adminHeaders }))).json()
     const recipe = body.data.profiles.find(
       (p: { profileId: string }) => p.profileId === "household-recipe"
     )
@@ -172,7 +174,7 @@ describe("/api/knowledge/gate-profiles", () => {
       profileRequest({ idempotencyKey: randomUUID(), expectedVersion: 1, disabledGates: [] })
     )
 
-    const body = await (await GET(new Request(URL, { headers: adminHeaders }))).json()
+    const body = await (await GET(new Request(ENDPOINT, { headers: adminHeaders }))).json()
     const checklist = body.data.profiles.find(
       (p: { profileId: string }) => p.profileId === "checklist"
     )

@@ -143,9 +143,9 @@ export default function KnowledgeGatesPage() {
               Knowledge publication gates
             </h1>
             <p className="text-muted-foreground mt-1 max-w-3xl text-sm">
-              Which admission checks run before a process can be published to the knowledge base.
-              Every change is recorded as an append-only event with your user ID, a rationale and a
-              version — switching a gate off is a decision, not a setting.
+              Which admission checks a process must clear before it can be published to the
+              knowledge base. Every change is recorded as an append-only event with your user ID, a
+              rationale and a version — switching a gate off is a decision, not a setting.
             </p>
           </div>
           <Button variant="outline" onClick={() => void load()} disabled={loading}>
@@ -176,6 +176,17 @@ export default function KnowledgeGatesPage() {
             {response.data.storage}
           </p>
         )}
+
+        <p
+          className="rounded-md border border-amber-600/40 bg-amber-600/10 p-3 text-sm"
+          data-testid="gate-not-enforced-notice"
+        >
+          <strong>Not yet enforced at publication.</strong> These profiles are stored and audited,
+          and the evaluator in <code>lib/knowledge/gates.ts</code> uses them, but no publication
+          path calls it yet — <code>/api/knowledge/apply</code> still only reports whether an entry
+          declares safety boundaries. Configure profiles here now; they take effect when the apply
+          route is wired to the evaluator.
+        </p>
 
         {response && response.data.nonWaivableGates.length > 0 && (
           <Card className="border-amber-600/40">

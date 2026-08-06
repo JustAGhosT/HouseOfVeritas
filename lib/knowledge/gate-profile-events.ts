@@ -3,7 +3,6 @@ import {
   getKnowledgeGate,
   KNOWLEDGE_GATE_IDS,
   KNOWLEDGE_GATE_PROFILES,
-  NON_WAIVABLE_GATE_IDS,
   STRICT_GATE_PROFILE,
   type KnowledgeGateId,
   type KnowledgeGateProfile,
@@ -200,5 +199,3 @@ export function relaxedBeyondBuiltin(
   const builtinDisabled = new Set(projection.builtin?.disabledGates ?? [])
   return projection.effective.disabledGates.filter((id) => !builtinDisabled.has(id))
 }
-
-export { NON_WAIVABLE_GATE_IDS }
