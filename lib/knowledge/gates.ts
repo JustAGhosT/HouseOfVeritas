@@ -210,17 +210,32 @@ export const KNOWLEDGE_GATE_PROFILES: readonly KnowledgeGateProfile[] = [
 export const getGateProfile = (id: string): KnowledgeGateProfile | null =>
   KNOWLEDGE_GATE_PROFILES.find((profile) => profile.id === id) ?? null
 
+/**
+ * A non-waivable gate is enabled no matter what a profile says.
+ *
+ * This is the innermost of three layers, and the only one every path goes
+ * through. The request schema guards API writes and `resolveEffectiveProfile()`
+ * guards reads from the store, but neither sees a profile constructed in code
+ * or handed straight to the evaluator by a caller. Enforcing it here makes
+ * "no profile may waive `data_boundary` or `verifiable_ground_truth`" true by
+ * construction and demotes the outer two layers to defence in depth.
+ */
 export const isGateEnabled = (profile: KnowledgeGateProfile, id: KnowledgeGateId): boolean =>
-  !profile.disabledGates.includes(id)
+  !getKnowledgeGate(id).waivable || !profile.disabledGates.includes(id)
 
 export const enabledGates = (profile: KnowledgeGateProfile): readonly KnowledgeGate[] =>
   KNOWLEDGE_PUBLICATION_GATES.filter((gate) => isGateEnabled(profile, gate.id))
 
-/** Toggle helpers return a new profile — profiles are values, not mutable state. */
+/**
+ * Toggle helpers return a new profile — profiles are values, not mutable state.
+ * Disabling a non-waivable gate is a no-op rather than an error: callers should
+ * not have to special-case it, and `isGateEnabled()` would ignore it anyway.
+ */
 export function withGateDisabled(
   profile: KnowledgeGateProfile,
   id: KnowledgeGateId
 ): KnowledgeGateProfile {
+  if (!getKnowledgeGate(id).waivable) return profile
   if (!isGateEnabled(profile, id)) return profile
   return { ...profile, disabledGates: [...profile.disabledGates, id] }
 }

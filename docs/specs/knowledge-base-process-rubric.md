@@ -524,12 +524,20 @@ Resolution order is stored record → built-in of the same id → `strict`.
 | `data_boundary`           | POPIA. Embedding household PII is not something an operator may elect to allow.                                         |
 | `verifiable_ground_truth` | It is what makes any entry safe to publish, including a `safety` entry. Waiving it leaves nothing to ground content in. |
 
-The rule is enforced twice, which is what makes it an invariant rather than a property of one code
-path. The request schema rejects it on write, so posting straight to the API cannot bypass the UI.
-And `resolveEffectiveProfile()` re-applies it on read, treating stored events as untrusted — a record
-written directly to the collection, or corrupted in place, has its non-waivable gates stripped and
-the discrepancy logged as a datastore-integrity error. The remaining four gates are waivable with a
-recorded rationale.
+The rule is enforced at three layers, which is what makes it an invariant of the system rather than a
+property of one code path:
+
+| Layer                               | Covers               | Behaviour                                                            |
+| ----------------------------------- | -------------------- | -------------------------------------------------------------------- |
+| `knowledgeGateProfileRequestSchema` | API writes           | Rejects the request outright                                         |
+| `resolveEffectiveProfile()`         | Reads from the store | Strips the gate, reports it; caller logs a datastore-integrity error |
+| `isGateEnabled()`                   | **Every** evaluation | A non-waivable gate is enabled whatever the profile says             |
+
+Only the third sees a profile built in code or handed straight to the evaluator by a caller, so it is
+the one that actually holds the line — the other two are defence in depth and give better errors.
+`withGateDisabled()` treats a non-waivable gate as a no-op for the same reason.
+
+The remaining four gates are waivable with a recorded rationale.
 
 **Outage behaviour differs by caller, deliberately.** The admin route fails closed with 503, matching
 the governance route — you cannot record a decision you cannot durably store. But `loadEffectiveGateProfile()`,

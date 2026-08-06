@@ -8,6 +8,7 @@ import {
   isGateEnabled,
   KNOWLEDGE_GATE_IDS,
   KNOWLEDGE_PUBLICATION_GATES,
+  NON_WAIVABLE_GATE_IDS,
   knowledgeCandidateSubmissionSchema,
   parseKnowledgeCandidateSubmission,
   RECIPE_GATE_PROFILE,
@@ -115,9 +116,18 @@ describe("gate profiles are selectable and toggleable", () => {
   })
 
   it("is idempotent in both directions", () => {
-    const once = withGateDisabled(STRICT_GATE_PROFILE, "data_boundary")
-    expect(withGateDisabled(once, "data_boundary")).toBe(once)
-    expect(withGateEnabled(STRICT_GATE_PROFILE, "data_boundary")).toBe(STRICT_GATE_PROFILE)
+    // Uses a waivable gate deliberately: disabling a non-waivable one is a
+    // no-op, which would make this pass without exercising anything.
+    const once = withGateDisabled(STRICT_GATE_PROFILE, "irreversible_harm")
+    expect(once).not.toBe(STRICT_GATE_PROFILE)
+    expect(withGateDisabled(once, "irreversible_harm")).toBe(once)
+    expect(withGateEnabled(STRICT_GATE_PROFILE, "irreversible_harm")).toBe(STRICT_GATE_PROFILE)
+  })
+
+  it("treats disabling a non-waivable gate as a no-op", () => {
+    for (const id of NON_WAIVABLE_GATE_IDS) {
+      expect(withGateDisabled(STRICT_GATE_PROFILE, id)).toBe(STRICT_GATE_PROFILE)
+    }
   })
 })
 
@@ -272,14 +282,56 @@ describe("a disabled gate is recorded, never silently passed", () => {
     expect(result.untestedGates).toEqual(["data_boundary"])
   })
 
-  it("disabling every gate cannot manufacture an approval on its own", () => {
+  it("cannot disable the non-waivable gates, however the profile is built", () => {
+    // The schema and the store-read sanitiser both guard this, but neither sees
+    // a profile assembled in code — so the evaluator has to hold the line too.
     let profile = STRICT_GATE_PROFILE
     for (const id of KNOWLEDGE_GATE_IDS) profile = withGateDisabled(profile, id)
+
+    for (const id of NON_WAIVABLE_GATE_IDS) {
+      expect(profile.disabledGates).not.toContain(id)
+      expect(isGateEnabled(profile, id)).toBe(true)
+    }
+    expect(
+      enabledGates(profile)
+        .map((gate) => gate.id)
+        .sort()
+    ).toEqual([...NON_WAIVABLE_GATE_IDS].sort())
+  })
+
+  it("ignores a hand-built profile that names a non-waivable gate directly", () => {
+    // Bypasses withGateDisabled() entirely — the object literal a caller could
+    // construct, or a stored record that reached the evaluator unsanitised.
+    const rogue = {
+      id: "rogue",
+      label: "",
+      description: "",
+      disabledGates: [...KNOWLEDGE_GATE_IDS],
+    }
     const result = evaluateKnowledgeCandidate(submission("bypass", {}, WELDER_SELECTION_FACTS), {
-      profile,
+      profile: rogue,
     })
-    // Tier 0 is vacuous, but Tier 1 still judges it — and every skip is recorded.
-    expect(result.skippedGates).toHaveLength(KNOWLEDGE_GATE_IDS.length)
+
+    // data_boundary and verifiable_ground_truth still ran, were never answered,
+    // and so hold the candidate at draft rather than waving it through.
+    expect(result.skippedGates.sort()).toEqual(
+      KNOWLEDGE_GATE_IDS.filter((id) => !NON_WAIVABLE_GATE_IDS.includes(id)).sort()
+    )
+    expect(result.untestedGates.sort()).toEqual([...NON_WAIVABLE_GATE_IDS].sort())
+    expect(result.disposition).toBe("hold_as_draft")
+  })
+
+  it("still lets a fully-relaxed profile through Tier 1 once the fixed gates pass", () => {
+    let profile = STRICT_GATE_PROFILE
+    for (const id of KNOWLEDGE_GATE_IDS) profile = withGateDisabled(profile, id)
+    const result = evaluateKnowledgeCandidate(
+      submission(
+        "bypass",
+        { data_boundary: "pass", verifiable_ground_truth: "pass" },
+        WELDER_SELECTION_FACTS
+      ),
+      { profile }
+    )
     expect(result.disposition).toBe("decline_not_worthwhile")
   })
 })
