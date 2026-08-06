@@ -1,6 +1,10 @@
 const DEFAULT_SESSION_COOKIE_NAME = "__Secure-authjs.session-token"
 
-export type ProbeRole = "admin" | "operator"
+// `employee` exists because production has no identity with role=operator, so the
+// admin-route denial probe is run against the real non-admin role the estate
+// actually issues. Both are unauthorized for admin routes, so either proves the
+// same withRole() boundary.
+export type ProbeRole = "admin" | "operator" | "employee"
 
 export type SessionCookie = {
   name: string
@@ -9,8 +13,14 @@ export type SessionCookie = {
 
 type SessionEnvironment = Readonly<Record<string, string | undefined>>
 
+const ENVIRONMENT_PREFIXES: Record<ProbeRole, string> = {
+  admin: "POST_DEPLOY_ADMIN_SESSION",
+  operator: "POST_DEPLOY_OPERATOR_SESSION",
+  employee: "POST_DEPLOY_EMPLOYEE_SESSION",
+}
+
 function environmentPrefix(role: ProbeRole) {
-  return role === "admin" ? "POST_DEPLOY_ADMIN_SESSION" : "POST_DEPLOY_OPERATOR_SESSION"
+  return ENVIRONMENT_PREFIXES[role]
 }
 
 function cookieBaseName(role: ProbeRole, environment: SessionEnvironment) {

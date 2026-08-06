@@ -9,6 +9,41 @@ export class GateGovernanceConflictError extends Error {}
 export class GateGovernanceIdempotencyError extends Error {}
 export class GateGovernanceStoreUnavailableError extends Error {}
 
+// Driver errors raised when the cluster cannot be reached at all, as opposed to
+// a query that reached the server and was rejected. `isMongoConfigured()` only
+// proves MONGODB_URI is set, never that the cluster answers — so without this
+// mapping an unreachable-but-configured store escapes as a generic error and the
+// route reports 500 instead of failing closed with 503.
+const UNAVAILABLE_ERROR_NAMES = new Set([
+  "MongoNetworkError",
+  "MongoNetworkTimeoutError",
+  "MongoServerSelectionError",
+  "MongoTopologyClosedError",
+  "MongoNotConnectedError",
+])
+
+function isStoreUnavailableError(error: unknown): boolean {
+  return error instanceof Error && UNAVAILABLE_ERROR_NAMES.has(error.name)
+}
+
+/**
+ * Re-throw connectivity failures as `GateGovernanceStoreUnavailableError` so the
+ * route fails closed, while letting genuine outcomes (conflict, idempotency
+ * reuse, duplicate key) through untouched for their own status codes.
+ */
+async function withStoreAvailability<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation()
+  } catch (error) {
+    if (isStoreUnavailableError(error)) {
+      throw new GateGovernanceStoreUnavailableError(
+        error instanceof Error ? error.message : "Gate governance datastore is unreachable"
+      )
+    }
+    throw error
+  }
+}
+
 export interface AppendGateDecisionInput {
   request: GateDecisionRequest
   actorId: string
@@ -90,30 +125,34 @@ const memoryRepository: GateGovernanceRepository = {
 }
 
 async function createMongoRepository(): Promise<GateGovernanceRepository> {
-  const collection: Collection<GateDecisionEvent> =
-    await getCollection<GateDecisionEvent>(COLLECTION_NAME)
-  await Promise.all([
-    collection.createIndex({ id: 1 }, { unique: true }),
-    collection.createIndex({ idempotencyKey: 1 }, { unique: true }),
-    collection.createIndex(
-      { gateId: 1, protocolVersion: 1, decisionId: 1, version: 1 },
-      { unique: true }
-    ),
-  ])
+  const collection: Collection<GateDecisionEvent> = await withStoreAvailability(() =>
+    getCollection<GateDecisionEvent>(COLLECTION_NAME)
+  )
+  await withStoreAvailability(() =>
+    Promise.all([
+      collection.createIndex({ id: 1 }, { unique: true }),
+      collection.createIndex({ idempotencyKey: 1 }, { unique: true }),
+      collection.createIndex(
+        { gateId: 1, protocolVersion: 1, decisionId: 1, version: 1 },
+        { unique: true }
+      ),
+    ])
+  )
 
   return {
     async list(gateId, protocolVersion) {
-      const documents = await collection
-        .find({ gateId, protocolVersion })
-        .sort({ createdAt: 1 })
-        .toArray()
+      const documents = await withStoreAvailability(() =>
+        collection.find({ gateId, protocolVersion }).sort({ createdAt: 1 }).toArray()
+      )
       return documents.map(withoutMongoId)
     },
     async append(input) {
       const fingerprint = fingerprintGateDecision(input.request)
-      const idempotent = await collection.findOne({
-        idempotencyKey: input.request.idempotencyKey,
-      })
+      const idempotent = await withStoreAvailability(() =>
+        collection.findOne({
+          idempotencyKey: input.request.idempotencyKey,
+        })
+      )
       if (idempotent) {
         if (idempotent.requestFingerprint !== fingerprint) {
           throw new GateGovernanceIdempotencyError("Idempotency key was reused")
@@ -121,13 +160,15 @@ async function createMongoRepository(): Promise<GateGovernanceRepository> {
         return { event: withoutMongoId(idempotent), created: false }
       }
 
-      const current = await collection.findOne(
-        {
-          gateId: input.request.gateId,
-          protocolVersion: input.request.protocolVersion,
-          decisionId: input.request.decisionId,
-        },
-        { sort: { version: -1 } }
+      const current = await withStoreAvailability(() =>
+        collection.findOne(
+          {
+            gateId: input.request.gateId,
+            protocolVersion: input.request.protocolVersion,
+            decisionId: input.request.decisionId,
+          },
+          { sort: { version: -1 } }
+        )
       )
       if ((current?.version ?? 0) !== input.request.expectedVersion) {
         throw new GateGovernanceConflictError("Decision version changed")
@@ -135,7 +176,7 @@ async function createMongoRepository(): Promise<GateGovernanceRepository> {
 
       const event = createEvent(input)
       try {
-        await collection.insertOne(event)
+        await withStoreAvailability(() => collection.insertOne(event))
         return { event, created: true }
       } catch (error) {
         if (
@@ -144,9 +185,11 @@ async function createMongoRepository(): Promise<GateGovernanceRepository> {
           "code" in error &&
           error.code === 11000
         ) {
-          const retry = await collection.findOne({
-            idempotencyKey: input.request.idempotencyKey,
-          })
+          const retry = await withStoreAvailability(() =>
+            collection.findOne({
+              idempotencyKey: input.request.idempotencyKey,
+            })
+          )
           if (retry) {
             if (retry.requestFingerprint !== fingerprint) {
               throw new GateGovernanceIdempotencyError("Idempotency key was reused")

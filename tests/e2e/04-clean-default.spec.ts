@@ -138,6 +138,12 @@ test.describe("clean-default mode", () => {
     await expect(page.locator("body")).not.toContainText(cleanModeText)
 
     await page.goto("/login")
+    // The login page holds a spinner until the Auth.js session probe resolves and
+    // only then renders the submit button. Arriving here after several dashboard
+    // loads, that probe intermittently outlasts the default assertion timeout,
+    // which surfaced as a flaky "element(s) not found". Wait for the button to
+    // exist before asserting its text.
+    await expect(page.getByTestId("login-submit")).toBeVisible({ timeout: 15_000 })
     await expect(page.getByTestId("login-submit")).toContainText("Continue with Mystira")
     await expect(page.locator("body")).not.toContainText(/demo-user|Demo Mode/i)
 
