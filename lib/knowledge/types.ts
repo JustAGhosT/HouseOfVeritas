@@ -1,5 +1,10 @@
 import { z } from "zod"
 import { guidanceDraftSchema, type GuidanceDraft, type GuidanceLocale } from "@/lib/guidance"
+import {
+  knowledgeGateResultsSchema,
+  type KnowledgeGateId,
+  type KnowledgeGateResult,
+} from "@/lib/knowledge/gates"
 
 /**
  * Curated diagnostic knowledge base.
@@ -32,6 +37,24 @@ export interface KnowledgeSupplier {
   url?: string
 }
 
+/**
+ * The recorded Tier-0 review for an entry.
+ *
+ * Gate results are human judgements about content, not properties derivable
+ * from it, so they have to be recorded rather than computed. A `published`
+ * entry without one is rejected by the schema — that is what makes the gates
+ * enforceable for a seed that is published by merging a PR rather than by an
+ * API call.
+ */
+export interface KnowledgeReview {
+  /** Gate profile the reviewer applied — see `KNOWLEDGE_GATE_PROFILES`. */
+  profileId: string
+  gateResults: Partial<Record<KnowledgeGateId, KnowledgeGateResult>>
+  /** Pseudonymous reviewer reference; never a name or contact detail. */
+  reviewedBy: string
+  reviewedAt: string
+}
+
 export interface KnowledgeEntry {
   /** Stable, human-readable identifier used for lookups and task provenance. */
   slug: string
@@ -51,6 +74,8 @@ export interface KnowledgeEntry {
    * per-task guidance share one schema, one renderer, and one safety check.
    */
   guidance: GuidanceDraft
+  /** Required once `status` is `published`; see `KnowledgeReview`. */
+  review?: KnowledgeReview
 }
 
 const supplierSchema = z.object({
@@ -66,17 +91,49 @@ const slugSchema = z
   .max(120)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "slug must be kebab-case")
 
-export const knowledgeEntrySchema = z.object({
-  slug: slugSchema,
-  domain: z.enum(KNOWLEDGE_DOMAINS),
-  status: z.enum(KNOWLEDGE_STATUSES),
-  symptoms: z.array(z.string().trim().min(1).max(160)).min(1).max(40),
-  keywords: z.array(z.string().trim().min(1).max(60)).min(1).max(60),
-  assetTypes: z.array(z.string().trim().min(1).max(80)).max(40).default([]),
-  personaHints: z.array(z.string().trim().min(1).max(40)).max(10).default([]),
-  suppliers: z.array(supplierSchema).max(20).default([]),
-  guidance: guidanceDraftSchema,
-})
+export const knowledgeReviewSchema = z
+  .object({
+    profileId: z
+      .string()
+      .trim()
+      .min(3)
+      .max(64)
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "profileId must be kebab-case"),
+    gateResults: knowledgeGateResultsSchema.default({}),
+    reviewedBy: z
+      .string()
+      .trim()
+      .min(2)
+      .max(64)
+      .regex(/^[A-Za-z][A-Za-z0-9._-]*$/, "Use a pseudonymous reviewer reference"),
+    reviewedAt: z.string().datetime({ offset: true }),
+  })
+  .strict()
+
+export const knowledgeEntrySchema = z
+  .object({
+    slug: slugSchema,
+    domain: z.enum(KNOWLEDGE_DOMAINS),
+    status: z.enum(KNOWLEDGE_STATUSES),
+    symptoms: z.array(z.string().trim().min(1).max(160)).min(1).max(40),
+    keywords: z.array(z.string().trim().min(1).max(60)).min(1).max(60),
+    assetTypes: z.array(z.string().trim().min(1).max(80)).max(40).default([]),
+    personaHints: z.array(z.string().trim().min(1).max(40)).max(10).default([]),
+    suppliers: z.array(supplierSchema).max(20).default([]),
+    guidance: guidanceDraftSchema,
+    review: knowledgeReviewSchema.optional(),
+  })
+  .superRefine((entry, context) => {
+    // Publication is the act the gates exist to control, so an entry cannot
+    // claim `published` without a recorded review to point at.
+    if (entry.status === "published" && !entry.review) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["review"],
+        message: "a published entry must carry a recorded gate review",
+      })
+    }
+  })
 
 export function parseKnowledgeEntry(input: unknown): KnowledgeEntry | null {
   const parsed = knowledgeEntrySchema.safeParse(input)

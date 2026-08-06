@@ -2,7 +2,7 @@
 
 |                    |                                                                                                                                |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| **Status**         | Active — thresholds and gates implemented in `lib/knowledge/{rubrics,gates}.ts`; §10 open questions stand                      |
+| **Status**         | Active — implemented and enforced at publication and application; §10 open questions stand                                     |
 | **Applies to**     | `lib/knowledge/**`, `lib/guidance.ts`, `app/api/knowledge/**`, `app/api/guidance/**`                                           |
 | **Pattern source** | `lib/services/radar/rubrics.ts` (rubric-as-data), `lib/reviewer-trials/domain-safety-trial.ts` (gates + quality dimensions)    |
 | **Related**        | [property-deal-radar.md](property-deal-radar.md), [task-guidance-architecture.md](../05-project/task-guidance-architecture.md) |
@@ -456,15 +456,21 @@ Shipped alongside this document:
    **`app/api/knowledge/gate-profiles/route.ts`**, **`app/dashboard/hans/knowledge-gates/page.tsx`** —
    the admin control plane described in §9.2.
 
+5. **`lib/knowledge/publication.ts`**, `KnowledgeEntry.review`, and the gate check in
+   `app/api/knowledge/apply/route.ts` — enforcement at both chokepoints, described in §9.3. This
+   also closed the `hasGuidanceSafetyBoundaries()` gap: it is now a refusal, not a flag.
+
 Still open:
 
-5. Enforce `hasGuidanceSafetyBoundaries()` at `app/api/knowledge/apply/route.ts:56` instead of
-   reporting it as a flag.
-6. Add a `rubric` block to `KnowledgeEntry` recording the composite and gate outcomes at publication,
-   so the score is auditable after the fact. This is a schema change and should wait for a second
-   opinion on whether the score belongs on the entry or in a separate review record.
+6. Record the Tier-1 composite alongside the Tier-0 review, so authoring priority is auditable after
+   the fact as well. `KnowledgeReview` is the obvious home now that it exists.
 7. Resolve the vocabulary collision: "gate" already means Gate 0 / O1–O7 in this repo, and the
    knowledge gates are a second, unrelated sense of the word.
+8. `GET /api/knowledge` serves published entries without re-checking them against the effective
+   profile. It is safe transitively — an entry cannot be `published` without clearing its built-in
+   gates — but an administrator _tightening_ a gate does not currently hide matching entries from
+   search, only stop them being applied. Retrieval is sync and pure; making it profile-aware means
+   making it async.
 
 ### 9.1 Gates are selectable per profile
 
@@ -494,12 +500,6 @@ Disabling every gate does not manufacture an approval: Tier 0 becomes vacuous, b
 judges the candidate and all six skips are on the record.
 
 ### 9.2 The admin control plane
-
-> **Not yet enforced at publication.** `evaluateKnowledgeCandidate()` and
-> `loadEffectiveGateProfile()` have no production caller — `app/api/knowledge/apply/route.ts` still
-> only reports `hasGuidanceSafetyBoundaries` as a flag. Profiles configured here are stored, audited
-> and correctly resolved, but nothing runs a candidate through them yet. Wiring the apply route is
-> the next step, and the admin page says so on its face.
 
 Profiles are durable records, not constants. An administrator changes them at
 `/dashboard/hans/knowledge-gates`; the API is `GET`/`POST /api/knowledge/gate-profiles`, both behind
@@ -538,7 +538,29 @@ mysterious.
 The UI separates a **built-in waiver** (a recipe not needing an electrical licence) from an
 **operator relaxation** (`relaxedBeyondBuiltin`), because those are different things to review.
 
-### 9.3 Two deliberate divergences from the plan
+### 9.3 Where the gates actually bite
+
+There is no publication API. Entries live in `seed.ts` and are published by merging a PR, so the
+gates are enforced at two chokepoints rather than one.
+
+| Layer                                  | Profile used                    | Question it answers         | Failure mode                                          |
+| -------------------------------------- | ------------------------------- | --------------------------- | ----------------------------------------------------- |
+| Seed module load (`assertPublishable`) | built-in                        | "Should this have shipped?" | Seed throws on import — CI fails, the PR cannot merge |
+| `POST /api/knowledge/apply`            | **effective** (administrator's) | "May it be used right now?" | `409` with the failed or untested gates named         |
+
+The second layer is what makes the control plane worth having: tightening a gate stops entries being
+turned into work immediately, with no deploy and no seed edit. The first stops an entry that never
+cleared its gates from existing at all.
+
+Gate results are judgements about content, not properties derivable from it, so they are **recorded**
+on the entry as `KnowledgeReview` rather than computed. The schema refuses `status: "published"`
+without one — that is the mechanism that makes a git-versioned seed gate-able.
+
+`hasGuidanceSafetyBoundaries()` is enforced in the same check. It was previously computed at
+`app/api/knowledge/apply/route.ts` and then only reported, which is the failure mode this whole
+document exists to prevent: a safety signal that is measured and ignored.
+
+### 9.4 Two deliberate divergences from the plan
 
 - **The band helpers are duplicated, not imported.** §9 originally proposed reusing `ScoreBand` and
   `rands()` from `lib/services/radar/rubrics.ts`. Coupling the estate knowledge base to the property

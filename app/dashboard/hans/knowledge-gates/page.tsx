@@ -178,14 +178,13 @@ export default function KnowledgeGatesPage() {
         )}
 
         <p
-          className="rounded-md border border-amber-600/40 bg-amber-600/10 p-3 text-sm"
-          data-testid="gate-not-enforced-notice"
+          className="rounded-md border border-sky-600/40 bg-sky-600/10 p-3 text-sm"
+          data-testid="gate-enforcement-notice"
         >
-          <strong>Not yet enforced at publication.</strong> These profiles are stored and audited,
-          and the evaluator in <code>lib/knowledge/gates.ts</code> uses them, but no publication
-          path calls it yet — <code>/api/knowledge/apply</code> still only reports whether an entry
-          declares safety boundaries. Configure profiles here now; they take effect when the apply
-          route is wired to the evaluator.
+          <strong>Live.</strong> These profiles are checked by <code>/api/knowledge/apply</code>{" "}
+          every time an entry is turned into a task, so tightening a gate here takes effect
+          immediately — no deploy. Entries are separately checked against their built-in profile
+          when the seed loads, so one that never cleared its gates cannot ship in the first place.
         </p>
 
         {response && response.data.nonWaivableGates.length > 0 && (

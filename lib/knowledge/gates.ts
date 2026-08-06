@@ -240,7 +240,7 @@ const gateResultSchema = z.enum(KNOWLEDGE_GATE_RESULTS)
  * Every gate key is optional: a candidate mid-review has only some gates
  * answered. `evaluateKnowledgeCandidate` reads an absent key as `not_tested`.
  */
-const gateResultsSchema = z
+export const knowledgeGateResultsSchema = z
   .object({
     statutory_competence: gateResultSchema,
     irreversible_harm: gateResultSchema,
@@ -271,7 +271,7 @@ export const knowledgeCandidateSubmissionSchema = z
   .object({
     candidateId: z.string().trim().min(1).max(200),
     /** Omitted gates are treated as `not_tested`, never as passes. */
-    gateResults: gateResultsSchema.default({}),
+    gateResults: knowledgeGateResultsSchema.default({}),
     facts: knowledgeCandidateFactsSchema.nullable().default(null),
   })
   .strict()
@@ -319,6 +319,67 @@ export interface EvaluateKnowledgeOptions {
   weights?: KnowledgeWeights
 }
 
+/** Tier-0 outcome on its own, for callers that gate publication rather than authoring. */
+export type KnowledgeGateOutcome =
+  | "cleared"
+  /** A `rescope`-mode gate failed. */
+  | "rescope_as_safety"
+  /** A `decline`-mode gate failed — nothing publishable survives. */
+  | "decline_unsafe"
+  /** A gate was never tested. Absence of evidence is not a pass. */
+  | "hold_as_draft"
+
+export interface KnowledgeGateEvaluation {
+  profileId: string
+  profileSource: KnowledgeGateProfileSource
+  outcome: KnowledgeGateOutcome
+  failedGates: KnowledgeGateId[]
+  untestedGates: KnowledgeGateId[]
+  skippedGates: KnowledgeGateId[]
+}
+
+/**
+ * Run recorded gate results against a profile. Shared by the authoring rubric
+ * (`evaluateKnowledgeCandidate`) and by publication enforcement, so the two can
+ * never drift into disagreeing about what "cleared" means.
+ */
+export function evaluateGateResults(
+  gateResults: Partial<Record<KnowledgeGateId, KnowledgeGateResult>>,
+  profile: KnowledgeGateProfile = STRICT_GATE_PROFILE,
+  profileSource: KnowledgeGateProfileSource = "builtin"
+): KnowledgeGateEvaluation {
+  const skippedGates = KNOWLEDGE_PUBLICATION_GATES.filter(
+    (gate) => !isGateEnabled(profile, gate.id)
+  ).map((gate) => gate.id)
+
+  const active = enabledGates(profile)
+  const resultFor = (id: KnowledgeGateId): KnowledgeGateResult => gateResults[id] ?? "not_tested"
+
+  const failed = active.filter((gate) => resultFor(gate.id) === "fail")
+  const untestedGates = active
+    .filter((gate) => {
+      const result = resultFor(gate.id)
+      return result === "not_tested" || result === "not_applicable"
+    })
+    .map((gate) => gate.id)
+
+  const base = {
+    profileId: profile.id,
+    profileSource,
+    failedGates: failed.map((gate) => gate.id),
+    untestedGates,
+    skippedGates,
+  }
+
+  // An ungroundable candidate cannot become a safety entry either.
+  if (failed.some((gate) => gate.failureMode === "decline")) {
+    return { ...base, outcome: "decline_unsafe" }
+  }
+  if (failed.length > 0) return { ...base, outcome: "rescope_as_safety" }
+  if (untestedGates.length > 0) return { ...base, outcome: "hold_as_draft" }
+  return { ...base, outcome: "cleared" }
+}
+
 /**
  * Tier 0 then Tier 1, in that order and never the reverse: a candidate that
  * fails a gate is not scored at all, because a high composite must never read
@@ -334,45 +395,26 @@ export function evaluateKnowledgeCandidate(
 ): KnowledgeCandidateEvaluation {
   const profile = options.profile ?? STRICT_GATE_PROFILE
   const weights = options.weights ?? DEFAULT_KNOWLEDGE_WEIGHTS
-
-  const skippedGates = KNOWLEDGE_PUBLICATION_GATES.filter(
-    (gate) => !isGateEnabled(profile, gate.id)
-  ).map((gate) => gate.id)
-
-  const active = enabledGates(profile)
-  const resultFor = (id: KnowledgeGateId): KnowledgeGateResult =>
-    submission.gateResults[id] ?? "not_tested"
-
-  const failed = active.filter((gate) => resultFor(gate.id) === "fail")
-  const untested = active
-    .filter((gate) => {
-      const result = resultFor(gate.id)
-      return result === "not_tested" || result === "not_applicable"
-    })
-    .map((gate) => gate.id)
+  const gates = evaluateGateResults(
+    submission.gateResults,
+    profile,
+    options.profileSource ?? "builtin"
+  )
 
   const base = {
     candidateId: submission.candidateId,
-    profileId: profile.id,
-    profileSource: options.profileSource ?? "builtin",
-    failedGates: failed.map((gate) => gate.id),
-    untestedGates: untested,
-    skippedGates,
+    profileId: gates.profileId,
+    profileSource: gates.profileSource,
+    failedGates: gates.failedGates,
+    untestedGates: gates.untestedGates,
+    skippedGates: gates.skippedGates,
     subScores: null,
     composite: null,
     priority: null,
   } as const
 
-  // An ungroundable candidate cannot become a safety entry either.
-  if (failed.some((gate) => gate.failureMode === "decline")) {
-    return { ...base, disposition: "decline_unsafe" }
-  }
-  if (failed.length > 0) {
-    return { ...base, disposition: "rescope_as_safety" }
-  }
-  if (untested.length > 0 || submission.facts == null) {
-    return { ...base, disposition: "hold_as_draft" }
-  }
+  if (gates.outcome !== "cleared") return { ...base, disposition: gates.outcome }
+  if (submission.facts == null) return { ...base, disposition: "hold_as_draft" }
 
   const subScores = computeKnowledgeSubScores(submission.facts)
   const composite = computeKnowledgeComposite(subScores, weights)
