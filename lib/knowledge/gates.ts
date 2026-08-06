@@ -62,9 +62,10 @@ export interface KnowledgeGate {
    * Two gates are not waivable by anyone, including an administrator, because
    * they encode obligations rather than editorial policy: `data_boundary` is
    * POPIA, and `verifiable_ground_truth` is what makes any entry — including a
-   * `safety` entry — safe to publish. A profile naming either is rejected at
-   * the schema, so the restriction cannot be bypassed by writing a record
-   * directly to the store.
+   * `safety` entry — safe to publish. A profile naming either is rejected by
+   * the request schema on write AND stripped by `resolveEffectiveProfile()` on
+   * read, so a record that reached the store without passing validation still
+   * cannot waive one.
    */
   waivable: boolean
   /** The reviewer-trial gate this mirrors. Type-checked so the mapping stays real. */

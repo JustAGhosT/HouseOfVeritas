@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "crypto"
 import type { Collection } from "mongodb"
 import { getCollection, isMongoConfigured, withoutMongoId } from "@/lib/db/mongodb"
+import { logger } from "@/lib/logger"
 import {
   resolveEffectiveProfile,
   type KnowledgeGateProfileEvent,
@@ -239,8 +240,28 @@ export async function loadEffectiveGateProfile(
   source: KnowledgeGateProfileSource
 }> {
   try {
-    return resolveEffectiveProfile(profileId, await loadEvents())
-  } catch {
+    const { profile, source, sanitizedGates } = resolveEffectiveProfile(
+      profileId,
+      await loadEvents()
+    )
+    if (sanitizedGates.length > 0) {
+      // Only reachable if a record bypassed the request schema, so this is a
+      // datastore-integrity alarm, not routine.
+      logger.error("Stored gate profile tried to waive a non-waivable gate", {
+        profileId,
+        sanitizedGates,
+      })
+    }
+    return { profile, source }
+  } catch (error) {
+    // Narrow: an unreachable store is an expected operating condition, but a
+    // bug in resolution is not. Swallowing everything would report programmer
+    // errors as an outage and hide them behind a silently stricter profile.
+    if (!(error instanceof KnowledgeGateProfileStoreUnavailableError)) throw error
+    logger.warn("Knowledge gate profile store unavailable; falling back to strict", {
+      profileId,
+      error: error.message,
+    })
     return { profile: STRICT_GATE_PROFILE, source: "builtin-fallback" }
   }
 }

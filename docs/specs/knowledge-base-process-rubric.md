@@ -524,8 +524,12 @@ Resolution order is stored record → built-in of the same id → `strict`.
 | `data_boundary`           | POPIA. Embedding household PII is not something an operator may elect to allow.                                         |
 | `verifiable_ground_truth` | It is what makes any entry safe to publish, including a `safety` entry. Waiving it leaves nothing to ground content in. |
 
-The rule lives in the request schema, not the UI, so it cannot be bypassed by posting to the API or
-writing to the collection directly. The remaining four gates are waivable with a recorded rationale.
+The rule is enforced twice, which is what makes it an invariant rather than a property of one code
+path. The request schema rejects it on write, so posting straight to the API cannot bypass the UI.
+And `resolveEffectiveProfile()` re-applies it on read, treating stored events as untrusted — a record
+written directly to the collection, or corrupted in place, has its non-waivable gates stripped and
+the discrepancy logged as a datastore-integrity error. The remaining four gates are waivable with a
+recorded rationale.
 
 **Outage behaviour differs by caller, deliberately.** The admin route fails closed with 503, matching
 the governance route — you cannot record a decision you cannot durably store. But `loadEffectiveGateProfile()`,

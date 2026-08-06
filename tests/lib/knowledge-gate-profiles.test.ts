@@ -126,6 +126,28 @@ describe("resolution", () => {
     expect(latestEventFor("strict", events)!.version).toBe(2)
     expect(resolveEffectiveProfile("strict", events).profile.disabledGates).toEqual([])
   })
+
+  it("strips a non-waivable gate from a stored record and reports it", () => {
+    // Only reachable if a record bypassed the request schema — a direct write to
+    // the collection, or corruption in place. The invariant must survive it.
+    const rogue = event("strict", 1, [
+      "data_boundary",
+      "verifiable_ground_truth",
+      "commercial_neutrality",
+    ])
+    const resolved = resolveEffectiveProfile("strict", [rogue])
+
+    expect(resolved.profile.disabledGates).toEqual(["commercial_neutrality"])
+    expect(resolved.sanitizedGates.slice().sort()).toEqual([
+      "data_boundary",
+      "verifiable_ground_truth",
+    ])
+  })
+
+  it("reports nothing sanitized for an honest record", () => {
+    const resolved = resolveEffectiveProfile("strict", [event("strict", 1, ["irreversible_harm"])])
+    expect(resolved.sanitizedGates).toEqual([])
+  })
 })
 
 describe("projection", () => {
@@ -206,6 +228,16 @@ describe("repository", () => {
     expect(resolved.source).toBe("builtin-fallback")
     expect(resolved.profile).toEqual(STRICT_GATE_PROFILE)
     expect(resolved.profile.disabledGates).toEqual([])
+  })
+
+  it("rethrows a programmer error instead of disguising it as an outage", async () => {
+    // Swallowing everything would report a bug as `builtin-fallback` and hide it
+    // behind a silently stricter profile.
+    await expect(
+      loadEffectiveGateProfile("strict", () => {
+        throw new TypeError("cannot read properties of undefined")
+      })
+    ).rejects.toBeInstanceOf(TypeError)
   })
 
   it("uses the real store when it is reachable", async () => {

@@ -60,8 +60,10 @@ export const knowledgeGateProfileRequestSchema = z
       })
     }
 
-    // The waivability rule lives here, not only in the UI, so it cannot be
-    // bypassed by posting to the API or writing to the collection directly.
+    // The waivability rule lives here, not only in the UI, so posting straight
+    // to the API cannot bypass it. This schema does NOT run over records already
+    // in the datastore, so `toProfile()` re-applies the rule on read — the two
+    // together are what make the invariant hold.
     for (const id of request.disabledGates) {
       if (!getKnowledgeGate(id).waivable) {
         context.addIssue({
@@ -106,12 +108,34 @@ export function parseKnowledgeGateProfileRequest(
   return parsed.success ? parsed.data : null
 }
 
-const toProfile = (event: KnowledgeGateProfileEvent): KnowledgeGateProfile => ({
-  id: event.profileId,
-  label: event.label,
-  description: event.description,
-  disabledGates: event.disabledGates,
-})
+/**
+ * Stored events are treated as untrusted on read.
+ *
+ * The request schema rejects a non-waivable gate, but it only runs over API
+ * input — a record written straight to the collection, or corrupted in place,
+ * never passes through it. Re-applying the rule here is what makes
+ * "no profile may waive `data_boundary` or `verifiable_ground_truth`" an
+ * invariant of the system rather than a property of one code path.
+ *
+ * Returns the gates it had to strip so the caller can log a datastore that is
+ * carrying records it should not.
+ */
+function toProfile(event: KnowledgeGateProfileEvent): {
+  profile: KnowledgeGateProfile
+  sanitizedGates: KnowledgeGateId[]
+} {
+  const sanitizedGates = event.disabledGates.filter((id) => !getKnowledgeGate(id).waivable)
+  const disabledGates = event.disabledGates.filter((id) => getKnowledgeGate(id).waivable)
+  return {
+    profile: {
+      id: event.profileId,
+      label: event.label,
+      description: event.description,
+      disabledGates,
+    },
+    sanitizedGates,
+  }
+}
 
 /** Latest event wins; events are append-only and version-ordered. */
 export function latestEventFor(
@@ -133,18 +157,27 @@ export function latestEventFor(
  * A stored record wins over the built-in of the same id. An unknown id with no
  * stored record falls back to `strict` rather than erroring, because the caller
  * is about to gate content either way and the safe answer is "run every gate".
+ *
+ * `sanitizedGates` is non-empty when a stored record tried to waive a
+ * non-waivable gate. That cannot happen through the API, so it means the
+ * datastore holds a record that never passed validation — worth logging loudly
+ * at the call site.
  */
 export function resolveEffectiveProfile(
   profileId: string,
   events: readonly KnowledgeGateProfileEvent[]
-): { profile: KnowledgeGateProfile; source: KnowledgeGateProfileSource } {
+): {
+  profile: KnowledgeGateProfile
+  source: KnowledgeGateProfileSource
+  sanitizedGates: KnowledgeGateId[]
+} {
   const stored = latestEventFor(profileId, events)
-  if (stored) return { profile: toProfile(stored), source: "stored" }
+  if (stored) return { ...toProfile(stored), source: "stored" }
 
   const builtin = KNOWLEDGE_GATE_PROFILES.find((profile) => profile.id === profileId)
-  if (builtin) return { profile: builtin, source: "builtin" }
+  if (builtin) return { profile: builtin, source: "builtin", sanitizedGates: [] }
 
-  return { profile: STRICT_GATE_PROFILE, source: "builtin" }
+  return { profile: STRICT_GATE_PROFILE, source: "builtin", sanitizedGates: [] }
 }
 
 const sameGateSet = (
