@@ -452,13 +452,19 @@ Shipped alongside this document:
 3. **`tests/lib/knowledge-rubrics.test.ts`**, **`tests/lib/knowledge-gates.test.ts`** — 38 tests,
    including the §8 worked examples as executable fixtures.
 
+4. **`lib/knowledge/gate-profile-events.ts`**, **`lib/repositories/knowledge-gate-profile-repository.ts`**,
+   **`app/api/knowledge/gate-profiles/route.ts`**, **`app/dashboard/hans/knowledge-gates/page.tsx`** —
+   the admin control plane described in §9.2.
+
 Still open:
 
-4. Enforce `hasGuidanceSafetyBoundaries()` at `app/api/knowledge/apply/route.ts:56` instead of
+5. Enforce `hasGuidanceSafetyBoundaries()` at `app/api/knowledge/apply/route.ts:56` instead of
    reporting it as a flag.
-5. Add a `rubric` block to `KnowledgeEntry` recording the composite and gate outcomes at publication,
+6. Add a `rubric` block to `KnowledgeEntry` recording the composite and gate outcomes at publication,
    so the score is auditable after the fact. This is a schema change and should wait for a second
    opinion on whether the score belongs on the entry or in a separate review record.
+7. Resolve the vocabulary collision: "gate" already means Gate 0 / O1–O7 in this repo, and the
+   knowledge gates are a second, unrelated sense of the word.
 
 ### 9.1 Gates are selectable per profile
 
@@ -487,7 +493,46 @@ Three safety properties hold regardless of configuration, and each has a test:
 Disabling every gate does not manufacture an approval: Tier 0 becomes vacuous, but Tier 1 still
 judges the candidate and all six skips are on the record.
 
-### 9.2 Two deliberate divergences from the plan
+### 9.2 The admin control plane
+
+Profiles are durable records, not constants. An administrator changes them at
+`/dashboard/hans/knowledge-gates`; the API is `GET`/`POST /api/knowledge/gate-profiles`, both behind
+`withRole("admin")` enforced independently of UI visibility.
+
+The storage model is the append-only event log already used by `gate_governance_events`: every
+change carries an actor ID derived server-side, a required rationale, a monotonic version with
+optimistic concurrency, and an idempotency key fingerprinted against the payload. Nothing is updated
+in place, so "who turned this gate off, when, and why" is always answerable.
+
+Knowledge profiles get their **own** collection, `knowledge_gate_profile_events`. Sharing
+`gate_governance_events` would have meant putting an open-ended configuration lifecycle inside a
+collection built for the bounded Gate 0 O1–O7 state machine, and forcing the Gate 0 projection to
+filter foreign events.
+
+Resolution order is stored record → built-in of the same id → `strict`.
+
+**Two gates cannot be waived by anyone, including an administrator:**
+
+| Gate                      | Why it is not a policy choice                                                                                           |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `data_boundary`           | POPIA. Embedding household PII is not something an operator may elect to allow.                                         |
+| `verifiable_ground_truth` | It is what makes any entry safe to publish, including a `safety` entry. Waiving it leaves nothing to ground content in. |
+
+The rule lives in the request schema, not the UI, so it cannot be bypassed by posting to the API or
+writing to the collection directly. The remaining four gates are waivable with a recorded rationale.
+
+**Outage behaviour differs by caller, deliberately.** The admin route fails closed with 503, matching
+the governance route — you cannot record a decision you cannot durably store. But `loadEffectiveGateProfile()`,
+which content evaluation calls, never throws: it falls back to `strict` and reports
+`profileSource: "builtin-fallback"`. Refusing to evaluate would not be safer, it would just move the
+failure; running every gate is the strictest available answer. The source is recorded on every
+evaluation so a configured relaxation silently reverting during an outage is visible rather than
+mysterious.
+
+The UI separates a **built-in waiver** (a recipe not needing an electrical licence) from an
+**operator relaxation** (`relaxedBeyondBuiltin`), because those are different things to review.
+
+### 9.3 Two deliberate divergences from the plan
 
 - **The band helpers are duplicated, not imported.** §9 originally proposed reusing `ScoreBand` and
   `rands()` from `lib/services/radar/rubrics.ts`. Coupling the estate knowledge base to the property

@@ -56,6 +56,17 @@ export interface KnowledgeGate {
   label: string
   description: string
   failureMode: KnowledgeGateFailureMode
+  /**
+   * Whether a gate profile may switch this gate off at all.
+   *
+   * Two gates are not waivable by anyone, including an administrator, because
+   * they encode obligations rather than editorial policy: `data_boundary` is
+   * POPIA, and `verifiable_ground_truth` is what makes any entry — including a
+   * `safety` entry — safe to publish. A profile naming either is rejected at
+   * the schema, so the restriction cannot be bypassed by writing a record
+   * directly to the store.
+   */
+  waivable: boolean
   /** The reviewer-trial gate this mirrors. Type-checked so the mapping stays real. */
   trialGate: DomainSafetyCriticalGateId | null
 }
@@ -77,6 +88,7 @@ export const KNOWLEDGE_PUBLICATION_GATES: readonly KnowledgeGate[] = [
     description:
       "South African law, municipal bylaw, or the estate's insurance reserves the work to a registered person — electrical CoC work under SANS 10142-1, gas installation (SAQCC), notifiable plumbing (PIRB). The register itself is unconfirmed; see spec §10.",
     failureMode: "rescope",
+    waivable: true,
     trialGate: "credential_process",
   },
   {
@@ -85,6 +97,7 @@ export const KNOWLEDGE_PUBLICATION_GATES: readonly KnowledgeGate[] = [
     description:
       "One plausible mistake causes death, serious injury, or fire — live mains, arc flash, gas, work at height, tree felling, confined space, structural removal.",
     failureMode: "rescope",
+    waivable: true,
     trialGate: "critical_defect_recall",
   },
   {
@@ -93,6 +106,7 @@ export const KNOWLEDGE_PUBLICATION_GATES: readonly KnowledgeGate[] = [
     description:
       "Every dimension, torque, ratio, rating, dose, and timing traces to a citable source (manufacturer spec, SANS clause, supplier datasheet). Declines rather than re-scopes: a safety entry makes claims too.",
     failureMode: "decline",
+    waivable: false,
     trialGate: "unsafe_assertion",
   },
   {
@@ -101,6 +115,7 @@ export const KNOWLEDGE_PUBLICATION_GATES: readonly KnowledgeGate[] = [
     description:
       "Suppliers are listed as availability with a scope note, never ranked or recommended.",
     failureMode: "rescope",
+    waivable: true,
     trialGate: "independence",
   },
   {
@@ -109,6 +124,7 @@ export const KNOWLEDGE_PUBLICATION_GATES: readonly KnowledgeGate[] = [
     description:
       "No household PII, address, identifiable person, or photograph of the real estate is embedded in the entry.",
     failureMode: "rescope",
+    waivable: false,
     trialGate: "data_boundary",
   },
   {
@@ -117,12 +133,32 @@ export const KNOWLEDGE_PUBLICATION_GATES: readonly KnowledgeGate[] = [
     description:
       "The procedure cannot be applied to the wrong root cause and make it worse — a confirm-first step exists. No trial analogue; specific to procedural content.",
     failureMode: "rescope",
+    waivable: true,
     trialGate: null,
   },
 ]
 
 export const getKnowledgeGate = (id: KnowledgeGateId): KnowledgeGate =>
   KNOWLEDGE_PUBLICATION_GATES.find((gate) => gate.id === id)!
+
+/** Gates no profile may switch off. Enforced by the profile request schema. */
+export const NON_WAIVABLE_GATE_IDS: readonly KnowledgeGateId[] = KNOWLEDGE_PUBLICATION_GATES.filter(
+  (gate) => !gate.waivable
+).map((gate) => gate.id)
+
+export const isWaivableGate = (id: KnowledgeGateId): boolean => getKnowledgeGate(id).waivable
+
+/**
+ * Where the profile used for an evaluation came from.
+ *  - `builtin`          — a code-defined profile, no stored override exists
+ *  - `stored`           — an administrator's recorded configuration
+ *  - `builtin-fallback` — the store was unreachable, so `strict` was used
+ *
+ * Recorded on every evaluation so a relaxed configuration silently reverting to
+ * strict during an outage is visible rather than mysterious.
+ */
+export const KNOWLEDGE_GATE_PROFILE_SOURCES = ["builtin", "stored", "builtin-fallback"] as const
+export type KnowledgeGateProfileSource = (typeof KNOWLEDGE_GATE_PROFILE_SOURCES)[number]
 
 // ── Profiles: selectable, toggleable gate sets ───────────────────────────────
 
@@ -264,6 +300,8 @@ export type KnowledgeDisposition =
 export interface KnowledgeCandidateEvaluation {
   candidateId: string
   profileId: string
+  /** Whether the profile was code-defined, administrator-stored, or an outage fallback. */
+  profileSource: KnowledgeGateProfileSource
   disposition: KnowledgeDisposition
   failedGates: KnowledgeGateId[]
   untestedGates: KnowledgeGateId[]
@@ -276,6 +314,8 @@ export interface KnowledgeCandidateEvaluation {
 
 export interface EvaluateKnowledgeOptions {
   profile?: KnowledgeGateProfile
+  /** Defaults to `builtin`; callers loading from the store pass the real source. */
+  profileSource?: KnowledgeGateProfileSource
   weights?: KnowledgeWeights
 }
 
@@ -314,6 +354,7 @@ export function evaluateKnowledgeCandidate(
   const base = {
     candidateId: submission.candidateId,
     profileId: profile.id,
+    profileSource: options.profileSource ?? "builtin",
     failedGates: failed.map((gate) => gate.id),
     untestedGates: untested,
     skippedGates,
