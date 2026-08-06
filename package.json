@@ -20,6 +20,7 @@
     "test:e2e": "playwright test",
     "test:e2e:gate0": "playwright test tests/e2e/06-post-deploy-gate0-acceptance.spec.ts",
     "test:e2e:post-deploy-gate0": "playwright test tests/e2e/06-post-deploy-gate0-acceptance.spec.ts",
+    "test:e2e:post-deploy-governance-write": "playwright test tests/e2e/08-post-deploy-governance-write.spec.ts",
     "test:e2e:install": "npx playwright install chromium",
     "verify:alpha-review-e2e": "node scripts/verify-alpha-review-e2e.mjs tests/fixtures/alpha-review/synthetic-complete.json",
     "inngest:dev": "npx --ignore-scripts=false @inngest/cli@1.17.1 dev",
