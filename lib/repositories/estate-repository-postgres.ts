@@ -627,6 +627,7 @@ export const postgresEstateRepository: EstateRepository = {
   },
 
   tasks: {
+    isConfigured: () => isPostgresConfigured(),
     list: (filters?: TaskFilters) =>
       listRows(
         tasks,

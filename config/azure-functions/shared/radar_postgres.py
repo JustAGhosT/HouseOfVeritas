@@ -13,6 +13,7 @@ in both or not at all.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from typing import Any, Dict, List, Optional
@@ -126,8 +127,6 @@ class RadarPostgresClient:
                 mapped["qa_failure_reason"] = str(
                     data.get("QA Reasons") or data.get("qa_failure_reason") or ""
                 )
-            import json
-
             mapped["payload"] = json.dumps(payload)
             return mapped
 

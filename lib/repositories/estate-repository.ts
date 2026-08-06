@@ -168,7 +168,8 @@ export type TaskRepositoryPort = Listable<Task, TaskFilters> &
   Gettable<Task> &
   Creatable<Task> &
   Updatable<Task> &
-  Pageable<Task, TaskFilters> & {
+  Pageable<Task, TaskFilters> &
+  Configurable & {
     /** Templates for tasks that regenerate on a schedule. */
     listRecurringTemplates(): Promise<RecurringTaskTemplate[]>
   }
@@ -307,6 +308,10 @@ const baserowEstateRepository: EstateRepository = {
   },
 
   tasks: {
+    // Mirrors the Baserow rule exactly: the tasks table id must be set, not
+    // just the connection. Without it baserow.getTasks() falls back to the
+    // Mongo task repository, so reporting "baserow" here would be a lie.
+    isConfigured: () => baserow.getTaskDataSource() === "baserow",
     list: (filters) => baserow.getTasks(filters),
     get: (id) => baserow.getTask(id),
     create: (input) => baserow.createTask(input),
@@ -460,7 +465,7 @@ function mongoConfigured(): boolean {
 
 export function getTaskDataSource(): TaskDataSource {
   const estate = getEstateRepository()
-  if (estate.isConfigured()) return estate.backend
+  if (estate.tasks.isConfigured()) return estate.backend
   if (mongoConfigured()) return "mongodb"
   return "empty"
 }
