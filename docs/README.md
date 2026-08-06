@@ -89,19 +89,22 @@ _Note: 06 reserved for future deployment documentation._
 
 Dated session continuity notes (root cause, files changed, verification, next-owner steps).
 
-| Document                                                                                                            | Description                                                                          |
-| ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| [2026-07-11-mystira-oidc-prod-login-fix.md](handoffs/2026-07-11-mystira-oidc-prod-login-fix.md)                     | Production login `/api/auth/error` fix — Mystira OIDC app settings + AUTH_TRUST_HOST |
-| [2026-07-20-prod-telemetry-project-store.md](handoffs/2026-07-20-prod-telemetry-project-store.md)                   | Production telemetry and project datastore remediation handoff                       |
-| [2026-07-22-project-datastore-ai-hardening.md](handoffs/2026-07-22-project-datastore-ai-hardening.md)               | Project datastore API and AI project suggestion hardening closeout                   |
-| [2026-07-27-gate0-production-auth-probes-prepared.md](handoffs/2026-07-27-gate0-production-auth-probes-prepared.md) | Secure operator boundary for legitimate production Gate 0 acceptance probes          |
-| [2026-07-28-recipe-guidance-phase1-contracts.md](handoffs/2026-07-28-recipe-guidance-phase1-contracts.md)           | Recipe guidance Phase 1 typed document and media contracts                           |
-| [2026-07-29-recipe-guidance-persistence.md](handoffs/2026-07-29-recipe-guidance-persistence.md)                     | Dedicated recipe guidance repository and safe migration boundary                     |
-| [2026-07-29-recipe-guidance-builder-api.md](handoffs/2026-07-29-recipe-guidance-builder-api.md)                     | Deterministic recipe draft builder and bounded preview/read APIs                     |
-| [2026-07-29-recipe-guidance-authoring-api.md](handoffs/2026-07-29-recipe-guidance-authoring-api.md)                 | Explicit recipe draft creation and optimistic reviewed-section updates               |
-| [2026-07-29-recipe-guidance-lifecycle.md](handoffs/2026-07-29-recipe-guidance-lifecycle.md)                         | Review transitions, readiness evidence, publication, and immutable archival          |
-| [2026-07-31-recipe-guidance-ui.md](handoffs/2026-07-31-recipe-guidance-ui.md)                                       | Hans review workspace and Irma mobile published-guidance reader                      |
-| [2026-07-31-recipe-guidance-media-intake.md](handoffs/2026-07-31-recipe-guidance-media-intake.md)                   | Authenticated recipe media intake and deterministic section planning                 |
-| [2026-07-31-recipe-guidance-brief-approval.md](handoffs/2026-07-31-recipe-guidance-brief-approval.md)               | Human image-brief review and disabled provider-neutral request contract              |
-| [2026-07-31-sluice-image-generation-capability.md](handoffs/2026-07-31-sluice-image-generation-capability.md)       | Sluice image-generation capability audit and fail-closed go/no-go decision           |
-| [2026-07-28-user-selectable-themes.md](handoffs/2026-07-28-user-selectable-themes.md)                               | User-selectable workspace themes implementation, review, and merge handoff           |
+| Document                                                                                                                        | Description                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| [2026-07-11-mystira-oidc-prod-login-fix.md](handoffs/2026-07-11-mystira-oidc-prod-login-fix.md)                                 | Production login `/api/auth/error` fix — Mystira OIDC app settings + AUTH_TRUST_HOST  |
+| [2026-07-20-prod-telemetry-project-store.md](handoffs/2026-07-20-prod-telemetry-project-store.md)                               | Production telemetry and project datastore remediation handoff                        |
+| [2026-07-22-project-datastore-ai-hardening.md](handoffs/2026-07-22-project-datastore-ai-hardening.md)                           | Project datastore API and AI project suggestion hardening closeout                    |
+| [2026-07-27-gate0-production-auth-probes-prepared.md](handoffs/2026-07-27-gate0-production-auth-probes-prepared.md)             | Secure operator boundary for legitimate production Gate 0 acceptance probes           |
+| [2026-07-28-recipe-guidance-phase1-contracts.md](handoffs/2026-07-28-recipe-guidance-phase1-contracts.md)                       | Recipe guidance Phase 1 typed document and media contracts                            |
+| [2026-07-29-recipe-guidance-persistence.md](handoffs/2026-07-29-recipe-guidance-persistence.md)                                 | Dedicated recipe guidance repository and safe migration boundary                      |
+| [2026-07-29-recipe-guidance-builder-api.md](handoffs/2026-07-29-recipe-guidance-builder-api.md)                                 | Deterministic recipe draft builder and bounded preview/read APIs                      |
+| [2026-07-29-recipe-guidance-authoring-api.md](handoffs/2026-07-29-recipe-guidance-authoring-api.md)                             | Explicit recipe draft creation and optimistic reviewed-section updates                |
+| [2026-07-29-recipe-guidance-lifecycle.md](handoffs/2026-07-29-recipe-guidance-lifecycle.md)                                     | Review transitions, readiness evidence, publication, and immutable archival           |
+| [2026-07-31-recipe-guidance-ui.md](handoffs/2026-07-31-recipe-guidance-ui.md)                                                   | Hans review workspace and Irma mobile published-guidance reader                       |
+| [2026-07-31-recipe-guidance-media-intake.md](handoffs/2026-07-31-recipe-guidance-media-intake.md)                               | Authenticated recipe media intake and deterministic section planning                  |
+| [2026-07-31-recipe-guidance-brief-approval.md](handoffs/2026-07-31-recipe-guidance-brief-approval.md)                           | Human image-brief review and disabled provider-neutral request contract               |
+| [2026-07-31-sluice-image-generation-capability.md](handoffs/2026-07-31-sluice-image-generation-capability.md)                   | Sluice image-generation capability audit and fail-closed go/no-go decision            |
+| [2026-07-28-user-selectable-themes.md](handoffs/2026-07-28-user-selectable-themes.md)                                           | User-selectable workspace themes implementation, review, and merge handoff            |
+| [2026-08-02-hov-native-auth-domain.md](handoffs/2026-08-02-hov-native-auth-domain.md)                                           | Hosting Mystira Identity authorization on the HOV domain                              |
+| [2026-08-03-hov-mystira-oidc-secret-drift.md](handoffs/2026-08-03-hov-mystira-oidc-secret-drift.md)                             | Production OIDC client-secret drift repair and deployment reconciliation guard        |
+| [2026-08-06-governance-503-observability-evidence-gates.md](handoffs/2026-08-06-governance-503-observability-evidence-gates.md) | Gate governance 500→503 fix, Azure Monitor log bridge, and the blocked evidence gates |
