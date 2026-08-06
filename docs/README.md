@@ -85,6 +85,20 @@ _Note: 06 reserved for future deployment documentation._
 | [onboarding-flow.md](05-project/onboarding-flow.md)                               | User onboarding steps, invite flow, guided tour                             |
 | [employees-vs-users.md](05-project/employees-vs-users.md)                         | Users (auth) vs Employees (Baserow), Team page consolidation                |
 
+## specs/ -- Feature Specifications
+
+Per-feature specs, compliance boundaries, and content rubrics.
+
+| Document                                                                                                   | Description                                                                                     |
+| ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| [knowledge-base-process-rubric.md](specs/knowledge-base-process-rubric.md)                                 | Which processes the knowledge base carries — publication gates, priority rubric, quality rubric |
+| [property-deal-radar.md](specs/property-deal-radar.md)                                                     | Property Deal Radar feature spec (HOV public module)                                            |
+| [property-deal-radar-canonicalkey-spike.md](specs/property-deal-radar-canonicalkey-spike.md)               | `canonicalKey` dedupe spike findings (Radar 2)                                                  |
+| [property-deal-radar-compliance.md](specs/property-deal-radar-compliance.md)                               | Compliance & attribution page content                                                           |
+| [property-deal-radar-ingestion-compliance-spec.md](specs/property-deal-radar-ingestion-compliance-spec.md) | Ingestion robots.txt and rate-limit adherence spec                                              |
+| [property-deal-radar-killswitch-popia.md](specs/property-deal-radar-killswitch-popia.md)                   | Kill-switch (`RADAR_ENABLED`) and POPIA boundary note                                           |
+| [property-deal-radar-legal-signoff.md](specs/property-deal-radar-legal-signoff.md)                         | Legal sign-off checklist and residual-risk memo                                                 |
+
 ## handoffs/ -- Session Handoffs
 
 Dated session continuity notes (root cause, files changed, verification, next-owner steps).
