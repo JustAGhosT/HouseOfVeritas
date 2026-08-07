@@ -36,7 +36,10 @@ const COPPER_SLUG = "copper-pipe-condensation-wall-damp"
 describe("GET /api/knowledge", () => {
   it("returns ranked matches for a symptom query", async () => {
     const response = await GET(
-      getRequest(`q=${encodeURIComponent("copper pipe condensation wall damp")}`, headersFor("operator"))
+      getRequest(
+        `q=${encodeURIComponent("copper pipe condensation wall damp")}`,
+        headersFor("operator")
+      )
     )
 
     expect(response.status).toBe(200)
@@ -65,7 +68,10 @@ describe("GET /api/knowledge", () => {
 
   it("passes the domain filter through (empty when the domain mismatches)", async () => {
     const response = await GET(
-      getRequest(`q=${encodeURIComponent("copper condensation damp")}&domain=vehicle`, headersFor("operator"))
+      getRequest(
+        `q=${encodeURIComponent("copper condensation damp")}&domain=vehicle`,
+        headersFor("operator")
+      )
     )
 
     expect(response.status).toBe(200)
@@ -100,7 +106,9 @@ describe("POST /api/knowledge/apply", () => {
   })
 
   it("allows an operator to apply", async () => {
-    const response = await POST(applyRequest({ slug: COPPER_SLUG }, headersFor("operator", "charl")))
+    const response = await POST(
+      applyRequest({ slug: COPPER_SLUG }, headersFor("operator", "charl"))
+    )
     expect(response.status).toBe(200)
   })
 

@@ -1,4 +1,4 @@
-# Knowledge Base — Process Selection, Safety Gate, and Quality Rubric
+# Knowledge Base — Process Selection, Publication Safeguard, and Quality Rubric
 
 |                    |                                                                                                                                |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
@@ -25,7 +25,7 @@ Two failure modes are already visible in how the codebase is built:
   credential process, jurisdiction and experience, independence, critical-defect recall, unsafe
   assertion, data boundary — with a parallel `DOMAIN_SAFETY_FINDING_CATEGORIES` naming the failures).
   Those gates were built for reviewer rehearsal, not for content admission — but they are the right
-  gates, and the knowledge base should reuse them rather than invent a second vocabulary.
+  checks, and the knowledge base should reuse their vocabulary rather than invent a second one.
 
 This document supplies the missing rubric: **which processes House of Veritas should carry, which it
 must refuse to carry as procedures, and what "good enough to publish" means.**
@@ -44,7 +44,7 @@ A process is a `KnowledgeEntry` whose `guidance.kind` is one of the five values 
 | `recipe`          | Household consumable, provenance-bound to `lib/recipes` | Meal-plan dishes                            |
 
 The `safety` kind matters most to this rubric. It is the designated home for work the estate must
-_not_ self-perform — and it is what a Tier-0 gate failure converts a candidate into, rather than a
+_not_ self-perform — and it is what a Tier-0 safeguard failure converts a candidate into, rather than a
 rejection that leaves the topic undocumented.
 
 ## 3. The pipeline
@@ -52,7 +52,7 @@ rejection that leaves the topic undocumented.
 ```
 candidate topic
    │
-   ├─ Tier 0  Publication gates ── any FAIL ──▶ re-scope as `safety` stop-and-escalate entry
+   ├─ Tier 0  Publication safeguards ── any FAIL ──▶ re-scope as `safety` stop-and-escalate entry
    │                            └─ untested ──▶ stays `draft`
    ▼
    ├─ Tier 1  Priority rubric ──▶ composite 0–10 ──▶ P0 / P1 / P2 / decline
@@ -65,7 +65,7 @@ candidate topic
 
 ---
 
-## 4. Tier 0 — Publication gates
+## 4. Tier 0 — Publication safeguards
 
 Hard pass/fail. These mirror `DOMAIN_SAFETY_CRITICAL_GATES` so the knowledge base and the reviewer
 trial speak one language.
@@ -74,7 +74,7 @@ The trial vocabulary has two distinct sets — `DOMAIN_SAFETY_CRITICAL_GATES` (w
 `DOMAIN_SAFETY_FINDING_CATEGORIES` (what a failure is called). Both columns are given so the mapping
 stays honest; they are not interchangeable.
 
-| Gate                      | Fails when                                                                                                                                                                                            | Trial gate               | Trial finding            |
+| Safeguard                 | Fails when                                                                                                                                                                                            | Trial gate               | Trial finding            |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ------------------------ |
 | `statutory_competence`    | South African law, municipal bylaw, or the estate's insurance reserves the work to a registered person — electrical CoC work under SANS 10142-1, gas installation (SAQCC), notifiable plumbing (PIRB) | `credential_process`     | `credential_process_gap` |
 | `irreversible_harm`       | One plausible mistake causes death, serious injury, or fire — live mains, arc flash, gas, work at height, tree felling, confined space, structural removal                                            | `critical_defect_recall` | `missing_escalation`     |
@@ -88,13 +88,13 @@ scope, not an entry's. It is deliberately not carried over.
 
 **Disposition** — deliberately parallel to `evaluateDomainSafetyTrial`:
 
-| Condition             | Outcome                                                                                                                                        |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Any gate `fail`       | Not publishable as `procedure`/`troubleshooting`. Re-scope to a `safety` entry naming the recognition signals, the stop rule, and who to call. |
-| Any gate `not_tested` | Remains `draft`. Absence of evidence is not a pass.                                                                                            |
-| All gates `pass`      | Proceeds to Tier 1.                                                                                                                            |
+| Condition                  | Outcome                                                                                                                                        |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Any safeguard `fail`       | Not publishable as `procedure`/`troubleshooting`. Re-scope to a `safety` entry naming the recognition signals, the stop rule, and who to call. |
+| Any safeguard `not_tested` | Remains `draft`. Absence of evidence is not a pass.                                                                                            |
+| All safeguards `pass`      | Proceeds to Tier 1.                                                                                                                            |
 
-A gate failure is **not** a reason to leave the topic out of the knowledge base. An estate that welds
+A safeguard failure is **not** a reason to leave the topic out of the knowledge base. An estate that welds
 badly is more dangerous than one with a `safety` entry explaining why it doesn't weld.
 
 ---
@@ -275,7 +275,7 @@ Tiers below are indicative pending per-entry scoring; §8 works three of them fu
 
 ### maintenance — Charl, Hans
 
-| Process                                                | Gate                                                 | Tier        | Note                                                  |
+| Process                                                | Safeguard                                            | Tier        | Note                                                  |
 | ------------------------------------------------------ | ---------------------------------------------------- | ----------- | ----------------------------------------------------- |
 | Copper-pipe condensation → wall damp                   | pass                                                 | **shipped** | EN + AF in `seed.ts`                                  |
 | Geyser drip tray, TP valve and vacuum breaker check    | pass                                                 | P0          | High consequence, annual-plus, cheap to verify        |
@@ -290,7 +290,7 @@ Tiers below are indicative pending per-entry scoring; §8 works three of them fu
 
 ### vehicle — Charl
 
-| Process                                      | Gate                         | Tier     | Note                                                  |
+| Process                                      | Safeguard                    | Tier     | Note                                                  |
 | -------------------------------------------- | ---------------------------- | -------- | ----------------------------------------------------- |
 | Tyre pressure, tread and spare check         | pass                         | P0       | Deterministic, fortnightly, safety-relevant           |
 | Pre-trip lights, wipers and fluids checklist | pass                         | P0       | `checklist` kind; very low authoring effort           |
@@ -302,7 +302,7 @@ Tiers below are indicative pending per-entry scoring; §8 works three of them fu
 
 ### garden — Lucky
 
-| Process                                    | Gate                         | Tier     | Note                                                         |
+| Process                                    | Safeguard                    | Tier     | Note                                                         |
 | ------------------------------------------ | ---------------------------- | -------- | ------------------------------------------------------------ |
 | Irrigation zone test and dripper repair    | pass                         | P0       | Recurs, cheap, AF variant needed                             |
 | Mower service — blade, air filter, oil     | pass                         | P0       | Deterministic, compounding-asset                             |
@@ -313,17 +313,17 @@ Tiers below are indicative pending per-entry scoring; §8 works three of them fu
 
 ### household — Irma
 
-| Process                                     | Gate | Tier               | Note                                            |
-| ------------------------------------------- | ---- | ------------------ | ----------------------------------------------- |
-| Meal planning and pantry rotation           | pass | **partly shipped** | `lib/recipe-guidance.ts` covers the recipe half |
-| Allergy-safe substitution procedure         | pass | P0                 | High consequence; must cite the allergen source |
-| Fire extinguisher and blanket monthly check | pass | P0                 | `checklist`; near-zero authoring effort         |
-| First-aid kit inventory and expiry          | pass | P0                 | Same                                            |
-| Stain and laundry treatment by fabric       | pass | P2                 | Low consequence, high variety                   |
+| Process                                     | Safeguard | Tier               | Note                                            |
+| ------------------------------------------- | --------- | ------------------ | ----------------------------------------------- |
+| Meal planning and pantry rotation           | pass      | **partly shipped** | `lib/recipe-guidance.ts` covers the recipe half |
+| Allergy-safe substitution procedure         | pass      | P0                 | High consequence; must cite the allergen source |
+| Fire extinguisher and blanket monthly check | pass      | P0                 | `checklist`; near-zero authoring effort         |
+| First-aid kit inventory and expiry          | pass      | P0                 | Same                                            |
+| Stain and laundry treatment by fabric       | pass      | P2                 | Low consequence, high variety                   |
 
 ### workshop — Charl
 
-| Process                                           | Gate                                                    | Tier        | Note                                    |
+| Process                                           | Safeguard                                               | Tier        | Note                                    |
 | ------------------------------------------------- | ------------------------------------------------------- | ----------- | --------------------------------------- |
 | Concrete mix, pigment and casting                 | pass                                                    | **shipped** | `lib/concrete-mix-guidance.ts`          |
 | Tool checkout, return and condition log           | pass                                                    | P0          | Feeds the equipment/loan module         |
@@ -339,9 +339,9 @@ Tiers below are indicative pending per-entry scoring; §8 works three of them fu
 
 ### 8.1 Copper-pipe condensation — the reference entry
 
-Gates: all pass. `diagnosis_before_action` passes _because_ step 1 is the dry-and-watch test that
+Safeguards: all pass. `diagnosis_before_action` passes _because_ step 1 is the dry-and-watch test that
 separates condensation from a leak, with the warning "Do not insulate or foam over the pipe until
-this is answered". That step is precisely what the gate exists to require — insulating a leak hides
+this is answered". That step is precisely what the safeguard exists to require — insulating a leak hides
 it and accelerates corrosion.
 
 | Dimension          | Value                       | Sub   | ×w      |
@@ -361,7 +361,7 @@ it and accelerates corrosion.
 
 ### 8.2 Fire extinguisher monthly check — cheapest P0
 
-Gates: all pass. Sub-scores: recurrence 8 (monthly), costAvoided 3 (unknown — no trade equivalent),
+Safeguards: all pass. Sub-scores: recurrence 8 (monthly), costAvoided 3 (unknown — no trade equivalent),
 consequenceOfDelay 10, personaFit 8, assetCoverage 10, repeatability 10, retrievability 6,
 authoringEffort 10, localeReach 10.
 
@@ -370,7 +370,7 @@ authoringEffort 10, localeReach 10.
 Note how the unknown-cost penalty (3, not 5) costs it 0.375 and it _still_ clears P0 — the safety
 consequence and near-zero authoring effort carry it. That is the rubric behaving correctly.
 
-### 8.3 Welding — the gate case
+### 8.3 Welding — the safeguard case
 
 Welding was raised directly in session as a candidate, in two forms. They resolve differently:
 
@@ -396,7 +396,7 @@ decline, rather than an argument.
 The third form of the same topic, and the most instructive, because **it fails nowhere in Tier 0**.
 Choosing what to purchase injures nobody: there is no statutory reservation on reading a spec sheet,
 no irreversible harm, no unsourceable claim (manufacturer duty-cycle and amperage figures are
-citable), no supplier steering if alternatives are listed neutrally, no PII. All six gates pass.
+citable), no supplier steering if alternatives are listed neutrally, no PII. All six safeguards pass.
 
 It declines on **worth**, not safety:
 
@@ -420,11 +420,11 @@ P2 backlog, never P0. The verdict is stable, which is what makes it a good fixtu
 **Why this is the case worth testing.** The three welding variants exercise three different code
 paths that a naive implementation would collapse into one "reject":
 
-| Candidate             | Tier 0       | Tier 1 | Disposition            |
-| --------------------- | ------------ | ------ | ---------------------- |
-| How to weld safely    | 1 gate fails | n/a    | re-scope to `safety`   |
-| How to build a welder | 2 gates fail | n/a    | decline (unsafe)       |
-| Which welder to buy   | all pass     | 3.69   | decline (not worth it) |
+| Candidate             | Tier 0            | Tier 1 | Disposition            |
+| --------------------- | ----------------- | ------ | ---------------------- |
+| How to weld safely    | 1 safeguard fails | n/a    | re-scope to `safety`   |
+| How to build a welder | 2 safeguards fail | n/a    | decline (unsafe)       |
+| Which welder to buy   | all pass          | 3.69   | decline (not worth it) |
 
 "Declined because it would hurt someone" and "declined because it isn't worth authoring" must not
 produce the same record — the first is permanent, the second should be revisited if the estate
@@ -446,80 +446,86 @@ Shipped alongside this document:
 
 1. **`lib/knowledge/rubrics.ts`** — every band table, floor, ordinal sub-score and weight from §5 as
    exported data, each threshold carrying its "why".
-2. **`lib/knowledge/gates.ts`** — `KNOWLEDGE_PUBLICATION_GATES`, the profile model below, and
+2. **`lib/knowledge/safeguards.ts`** — `KNOWLEDGE_PUBLICATION_SAFEGUARDS`, the profile model below, and
    `evaluateKnowledgeCandidate()` returning a disposition, structured like
    `evaluateDomainSafetyTrial()`.
-3. **`tests/lib/knowledge-rubrics.test.ts`**, **`tests/lib/knowledge-gates.test.ts`** — 38 tests,
+3. **`tests/lib/knowledge-rubrics.test.ts`**, **`tests/lib/knowledge-safeguards.test.ts`** — 38 tests,
    including the §8 worked examples as executable fixtures.
 
-4. **`lib/knowledge/gate-profile-events.ts`**, **`lib/repositories/knowledge-gate-profile-repository.ts`**,
-   **`app/api/knowledge/gate-profiles/route.ts`**, **`app/dashboard/hans/knowledge-gates/page.tsx`** —
+4. **`lib/knowledge/safeguard-profile-events.ts`**, **`lib/repositories/knowledge-safeguard-profile-repository.ts`**,
+   **`app/api/knowledge/safeguard-profiles/route.ts`**, **`app/dashboard/hans/knowledge-safeguards/page.tsx`** —
    the admin control plane described in §9.2.
 
-5. **`lib/knowledge/publication.ts`**, `KnowledgeEntry.review`, and the gate check in
+5. **`lib/knowledge/publication.ts`**, `KnowledgeEntry.review`, and the safeguard check in
    `app/api/knowledge/apply/route.ts` — enforcement at both chokepoints, described in §9.3. This
    also closed the `hasGuidanceSafetyBoundaries()` gap: it is now a refusal, not a flag.
 
+6. **Vocabulary.** These were originally called _gates_, which collided with two established senses
+   in this repo — the Gate 0 / O1–O7 governance protocol, and `DOMAIN_SAFETY_CRITICAL_GATES` in the
+   reviewer trial. They are now **safeguards** throughout: `KNOWLEDGE_PUBLICATION_SAFEGUARDS`,
+   `lib/knowledge/safeguards.ts`, `/api/knowledge/safeguard-profiles`,
+   `knowledge_safeguard_profile_events`. "Gate" in this document now refers only to Gate 0. The one
+   place the old word survives is `trialGate`, which points _at_ the reviewer trial's gates and is
+   meant to.
+
 Still open:
 
-6. Record the Tier-1 composite alongside the Tier-0 review, so authoring priority is auditable after
+7. Record the Tier-1 composite alongside the Tier-0 review, so authoring priority is auditable after
    the fact as well. `KnowledgeReview` is the obvious home now that it exists.
-7. Resolve the vocabulary collision: "gate" already means Gate 0 / O1–O7 in this repo, and the
-   knowledge gates are a second, unrelated sense of the word.
 8. `GET /api/knowledge` serves published entries without re-checking them against the effective
    profile. It is safe transitively — an entry cannot be `published` without clearing its built-in
-   gates — but an administrator _tightening_ a gate does not currently hide matching entries from
+   safeguards — but an administrator _tightening_ a safeguard does not currently hide matching entries from
    search, only stop them being applied. Retrieval is sync and pure; making it profile-aware means
    making it async.
 
-### 9.1 Gates are selectable per profile
+### 9.1 Safeguards are selectable per profile
 
-Not every gate applies to every kind of entry — a recipe has no root cause to misdiagnose, and
-cooking is not a statutorily reserved activity. A `KnowledgeGateProfile` names the gates it switches
+Not every safeguard applies to every kind of entry — a recipe has no root cause to misdiagnose, and
+cooking is not a statutorily reserved activity. A `KnowledgeSafeguardProfile` names the safeguards it switches
 **off**; everything else runs.
 
-| Profile            | Disables                                          | Rationale                                                   |
-| ------------------ | ------------------------------------------------- | ----------------------------------------------------------- |
-| `strict` (default) | nothing                                           | Any `procedure` or `troubleshooting` entry                  |
-| `household-recipe` | `statutory_competence`, `diagnosis_before_action` | Allergen safety and sourcing still gate — that is the point |
-| `checklist`        | `diagnosis_before_action`                         | Inspect-and-record content transforms nothing               |
+| Profile            | Disables                                          | Rationale                                                        |
+| ------------------ | ------------------------------------------------- | ---------------------------------------------------------------- |
+| `strict` (default) | nothing                                           | Any `procedure` or `troubleshooting` entry                       |
+| `household-recipe` | `statutory_competence`, `diagnosis_before_action` | Allergen safety and sourcing still safeguard — that is the point |
+| `checklist`        | `diagnosis_before_action`                         | Inspect-and-record content transforms nothing                    |
 
-`withGateDisabled()` / `withGateEnabled()` return new profiles rather than mutating, so a profile is
+`withSafeguardDisabled()` / `withSafeguardEnabled()` return new profiles rather than mutating, so a profile is
 a value that can be stored, diffed and audited.
 
 Three safety properties hold regardless of configuration, and each has a test:
 
 - **Default-on, structurally.** A profile carries only a disable list, so there is no enable list to
-  forget. A gate added later applies to every existing profile immediately.
-- **Disabled ≠ passed.** A switched-off gate is recorded in `skippedGates`, never folded into
+  forget. A safeguard added later applies to every existing profile immediately.
+- **Disabled ≠ passed.** A switched-off safeguard is recorded in `skippedSafeguards`, never folded into
   passes. An audit can always separate "checked and fine" from "never checked".
-- **Missing ≠ passed.** A gate with no submitted result is `not_tested` and holds the candidate at
-  `draft`. So is an explicit `not_applicable` — only the profile may waive a gate, not the submitter.
+- **Missing ≠ passed.** A safeguard with no submitted result is `not_tested` and holds the candidate at
+  `draft`. So is an explicit `not_applicable` — only the profile may waive a safeguard, not the submitter.
 
-Disabling every gate does not manufacture an approval: Tier 0 becomes vacuous, but Tier 1 still
+Disabling every safeguard does not manufacture an approval: Tier 0 becomes vacuous, but Tier 1 still
 judges the candidate and all six skips are on the record.
 
 ### 9.2 The admin control plane
 
 Profiles are durable records, not constants. An administrator changes them at
-`/dashboard/hans/knowledge-gates`; the API is `GET`/`POST /api/knowledge/gate-profiles`, both behind
+`/dashboard/hans/knowledge-safeguards`; the API is `GET`/`POST /api/knowledge/safeguard-profiles`, both behind
 `withRole("admin")` enforced independently of UI visibility.
 
 The storage model is the append-only event log already used by `gate_governance_events`: every
 change carries an actor ID derived server-side, a required rationale, a monotonic version with
 optimistic concurrency, and an idempotency key fingerprinted against the payload. Nothing is updated
-in place, so "who turned this gate off, when, and why" is always answerable.
+in place, so "who turned this safeguard off, when, and why" is always answerable.
 
-Knowledge profiles get their **own** collection, `knowledge_gate_profile_events`. Sharing
+Knowledge profiles get their **own** collection, `knowledge_safeguard_profile_events`. Sharing
 `gate_governance_events` would have meant putting an open-ended configuration lifecycle inside a
 collection built for the bounded Gate 0 O1–O7 state machine, and forcing the Gate 0 projection to
 filter foreign events.
 
 Resolution order is stored record → built-in of the same id → `strict`.
 
-**Two gates cannot be waived by anyone, including an administrator:**
+**Two safeguards cannot be waived by anyone, including an administrator:**
 
-| Gate                      | Why it is not a policy choice                                                                                           |
+| Safeguard                 | Why it is not a policy choice                                                                                           |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `data_boundary`           | POPIA. Embedding household PII is not something an operator may elect to allow.                                         |
 | `verifiable_ground_truth` | It is what makes any entry safe to publish, including a `safety` entry. Waiving it leaves nothing to ground content in. |
@@ -527,46 +533,46 @@ Resolution order is stored record → built-in of the same id → `strict`.
 The rule is enforced at three layers, which is what makes it an invariant of the system rather than a
 property of one code path:
 
-| Layer                               | Covers               | Behaviour                                                            |
-| ----------------------------------- | -------------------- | -------------------------------------------------------------------- |
-| `knowledgeGateProfileRequestSchema` | API writes           | Rejects the request outright                                         |
-| `resolveEffectiveProfile()`         | Reads from the store | Strips the gate, reports it; caller logs a datastore-integrity error |
-| `isGateEnabled()`                   | **Every** evaluation | A non-waivable gate is enabled whatever the profile says             |
+| Layer                                    | Covers               | Behaviour                                                                 |
+| ---------------------------------------- | -------------------- | ------------------------------------------------------------------------- |
+| `knowledgeSafeguardProfileRequestSchema` | API writes           | Rejects the request outright                                              |
+| `resolveEffectiveProfile()`              | Reads from the store | Strips the safeguard, reports it; caller logs a datastore-integrity error |
+| `isSafeguardEnabled()`                   | **Every** evaluation | A non-waivable safeguard is enabled whatever the profile says             |
 
 Only the third sees a profile built in code or handed straight to the evaluator by a caller, so it is
 the one that actually holds the line — the other two are defence in depth and give better errors.
-`withGateDisabled()` treats a non-waivable gate as a no-op for the same reason.
+`withSafeguardDisabled()` treats a non-waivable safeguard as a no-op for the same reason.
 
-The remaining four gates are waivable with a recorded rationale.
+The remaining four safeguards are waivable with a recorded rationale.
 
 **Outage behaviour differs by caller, deliberately.** The admin route fails closed with 503, matching
-the governance route — you cannot record a decision you cannot durably store. But `loadEffectiveGateProfile()`,
+the governance route — you cannot record a decision you cannot durably store. But `loadEffectiveSafeguardProfile()`,
 which content evaluation calls, never throws: it falls back to `strict` and reports
 `profileSource: "builtin-fallback"`. Refusing to evaluate would not be safer, it would just move the
-failure; running every gate is the strictest available answer. The source is recorded on every
+failure; running every safeguard is the strictest available answer. The source is recorded on every
 evaluation so a configured relaxation silently reverting during an outage is visible rather than
 mysterious.
 
 The UI separates a **built-in waiver** (a recipe not needing an electrical licence) from an
 **operator relaxation** (`relaxedBeyondBuiltin`), because those are different things to review.
 
-### 9.3 Where the gates actually bite
+### 9.3 Where the safeguards actually bite
 
 There is no publication API. Entries live in `seed.ts` and are published by merging a PR, so the
-gates are enforced at two chokepoints rather than one.
+safeguards are enforced at two chokepoints rather than one.
 
 | Layer                                  | Profile used                    | Question it answers         | Failure mode                                          |
 | -------------------------------------- | ------------------------------- | --------------------------- | ----------------------------------------------------- |
 | Seed module load (`assertPublishable`) | built-in                        | "Should this have shipped?" | Seed throws on import — CI fails, the PR cannot merge |
-| `POST /api/knowledge/apply`            | **effective** (administrator's) | "May it be used right now?" | `409` with the failed or untested gates named         |
+| `POST /api/knowledge/apply`            | **effective** (administrator's) | "May it be used right now?" | `409` with the failed or untested safeguards named    |
 
-The second layer is what makes the control plane worth having: tightening a gate stops entries being
+The second layer is what makes the control plane worth having: tightening a safeguard stops entries being
 turned into work immediately, with no deploy and no seed edit. The first stops an entry that never
-cleared its gates from existing at all.
+cleared its safeguards from existing at all.
 
-Gate results are judgements about content, not properties derivable from it, so they are **recorded**
+Safeguard results are judgements about content, not properties derivable from it, so they are **recorded**
 on the entry as `KnowledgeReview` rather than computed. The schema refuses `status: "published"`
-without one — that is the mechanism that makes a git-versioned seed gate-able.
+without one — that is the mechanism that makes a git-versioned seed enforceable.
 
 `hasGuidanceSafetyBoundaries()` is enforced in the same check. It was previously computed at
 `app/api/knowledge/apply/route.ts` and then only reported, which is the failure mode this whole
@@ -578,16 +584,16 @@ document exists to prevent: a safety signal that is measured and ignored.
   `rands()` from `lib/services/radar/rubrics.ts`. Coupling the estate knowledge base to the property
   deal tool buys nothing and neither copy is complex enough to drift meaningfully. Extracting a
   shared `lib/scoring/bands.ts` is the follow-up if a third consumer appears.
-- **`verifiable_ground_truth` declines rather than re-scopes.** Every other gate failure re-scopes
+- **`verifiable_ground_truth` declines rather than re-scopes.** Every other safeguard failure re-scopes
   the candidate into a `safety` entry. That one cannot: a safety entry makes claims too, so a topic
   with no citable ground truth has nothing to become. This is what separates §8.3's two welding
   cases in code.
 
 ## 10. Open questions
 
-- **Is the statutory register accurate?** The `statutory_competence` gate names SANS 10142-1, SAQCC
+- **Is the statutory register accurate?** The `statutory_competence` safeguard names SANS 10142-1, SAQCC
   gas, and PIRB from the existing reviewer-trial vocabulary. That list should be confirmed by a
-  competent person before it is relied on — this document is not legal advice, and a wrong gate here
+  competent person before it is relied on — this document is not legal advice, and a wrong safeguard here
   fails in the dangerous direction.
 - **Does `costAvoided` distort toward trade-substitution content?** It weights 3, which may
   systematically under-rank household and garden processes where no trade equivalent exists. The
@@ -599,7 +605,7 @@ document exists to prevent: a safety signal that is measured and ignored.
   case §8.4 found. But the values themselves are asserted, not derived — `RECURRENCE_FLOOR = 1` says
   a once-per-decade task is worth almost nothing to document, which is a judgement no evidence backs
   yet.
-- **Should a Tier-1 decline expire?** A gate decline is permanent; a worth-based decline is a
+- **Should a Tier-1 decline expire?** A safeguard decline is permanent; a worth-based decline is a
   snapshot of what the estate owns and does today. §8.4 declines "which welder to buy" partly on
   `assetCoverage: not-owned` — which changes the moment one is bought. Declines probably need a
   recorded re-evaluation trigger, not just a recorded score.

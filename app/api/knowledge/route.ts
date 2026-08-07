@@ -18,7 +18,12 @@ const querySchema = z.object({
  * Ranked curated troubleshooting/procedure entries matching a reported symptom.
  * Read access for every role; this is reference content, not mutable data.
  */
-export const GET = withRole("admin", "operator", "employee", "resident")(async (request) => {
+export const GET = withRole(
+  "admin",
+  "operator",
+  "employee",
+  "resident"
+)(async (request) => {
   try {
     const { searchParams } = new URL(request.url)
     const parsed = querySchema.safeParse({

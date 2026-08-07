@@ -26,9 +26,7 @@ describe("knowledge grounding", () => {
 
   it("reports provenance refs for the entries it rendered", () => {
     const grounding = buildKnowledgeGrounding(copperMatches)
-    expect(grounding!.refs).toHaveLength(
-      Math.min(copperMatches.length, 2)
-    )
+    expect(grounding!.refs).toHaveLength(Math.min(copperMatches.length, 2))
     expect(grounding!.refs[0]).toMatchObject({
       slug: "copper-pipe-condensation-wall-damp",
       title: copperMatches[0].entry.guidance.title,
@@ -44,9 +42,7 @@ describe("knowledge grounding", () => {
 
   it("caps steps per entry to keep the prompt bounded", () => {
     const grounding = buildKnowledgeGrounding(copperMatches, { maxStepsPerEntry: 2 })
-    const stepLines = grounding!.text
-      .split("\n")
-      .filter((line) => /^\d+\. /.test(line))
+    const stepLines = grounding!.text.split("\n").filter((line) => /^\d+\. /.test(line))
     expect(stepLines).toHaveLength(2)
   })
 

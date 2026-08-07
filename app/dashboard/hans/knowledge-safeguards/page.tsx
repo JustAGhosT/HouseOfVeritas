@@ -18,20 +18,20 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ApiError, apiFetch } from "@/lib/api-client"
 import {
-  KNOWLEDGE_GATE_PROFILE_SCHEMA_VERSION,
-  type KnowledgeGateProfileProjection,
-} from "@/lib/knowledge/gate-profile-events"
-import type { KnowledgeGate, KnowledgeGateId } from "@/lib/knowledge/gates"
+  KNOWLEDGE_SAFEGUARD_PROFILE_SCHEMA_VERSION,
+  type KnowledgeSafeguardProfileProjection,
+} from "@/lib/knowledge/safeguard-profile-events"
+import type { KnowledgeSafeguard, KnowledgeSafeguardId } from "@/lib/knowledge/safeguards"
 import { AlertTriangle, History, Loader2, Lock, RefreshCw, ShieldCheck } from "lucide-react"
 
-interface ProfileProjection extends KnowledgeGateProfileProjection {
-  relaxedBeyondBuiltin: KnowledgeGateId[]
+interface ProfileProjection extends KnowledgeSafeguardProfileProjection {
+  relaxedBeyondBuiltin: KnowledgeSafeguardId[]
 }
 
-interface GateProfilesResponse {
+interface SafeguardProfilesResponse {
   data: {
-    gates: KnowledgeGate[]
-    nonWaivableGates: KnowledgeGateId[]
+    safeguards: KnowledgeSafeguard[]
+    nonWaivableSafeguards: KnowledgeSafeguardId[]
     profiles: ProfileProjection[]
     storage: "mongodb" | "memory"
   }
@@ -48,7 +48,7 @@ function getErrorMessage(error: unknown): string {
       return body.error
     }
   }
-  return "The gate profile request could not be completed."
+  return "The safeguard profile request could not be completed."
 }
 
 function sourceBadge(source: ProfileProjection["source"]) {
@@ -57,12 +57,12 @@ function sourceBadge(source: ProfileProjection["source"]) {
   return <Badge variant="secondary">Built-in default</Badge>
 }
 
-export default function KnowledgeGatesPage() {
-  const [response, setResponse] = useState<GateProfilesResponse | null>(null)
+export default function KnowledgeSafeguardsPage() {
+  const [response, setResponse] = useState<SafeguardProfilesResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [selected, setSelected] = useState<ProfileProjection | null>(null)
-  const [disabled, setDisabled] = useState<KnowledgeGateId[]>([])
+  const [disabled, setDisabled] = useState<KnowledgeSafeguardId[]>([])
   const [rationale, setRationale] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [mutationError, setMutationError] = useState<string | null>(null)
@@ -73,8 +73,8 @@ export default function KnowledgeGatesPage() {
     setLoadError(null)
     try {
       setResponse(
-        await apiFetch<GateProfilesResponse>("/api/knowledge/gate-profiles", {
-          label: "KnowledgeGateProfiles",
+        await apiFetch<SafeguardProfilesResponse>("/api/knowledge/safeguard-profiles", {
+          label: "KnowledgeSafeguardProfiles",
         })
       )
     } catch (error) {
@@ -90,15 +90,15 @@ export default function KnowledgeGatesPage() {
 
   const openProfile = (profile: ProfileProjection) => {
     setSelected(profile)
-    setDisabled([...profile.effective.disabledGates])
+    setDisabled([...profile.effective.disabledSafeguards])
     setRationale("")
     setMutationError(null)
     setSavedMessage(null)
   }
 
-  const toggleGate = (id: KnowledgeGateId, checked: boolean) => {
+  const toggleSafeguard = (id: KnowledgeSafeguardId, checked: boolean) => {
     setDisabled((current) =>
-      checked ? current.filter((gate) => gate !== id) : [...new Set([...current, id])]
+      checked ? current.filter((safeguard) => safeguard !== id) : [...new Set([...current, id])]
     )
   }
 
@@ -107,15 +107,15 @@ export default function KnowledgeGatesPage() {
     setSubmitting(true)
     setMutationError(null)
     try {
-      await apiFetch("/api/knowledge/gate-profiles", {
+      await apiFetch("/api/knowledge/safeguard-profiles", {
         method: "POST",
-        label: "KnowledgeGateProfileMutation",
+        label: "KnowledgeSafeguardProfileMutation",
         body: {
-          schemaVersion: KNOWLEDGE_GATE_PROFILE_SCHEMA_VERSION,
+          schemaVersion: KNOWLEDGE_SAFEGUARD_PROFILE_SCHEMA_VERSION,
           profileId: selected.profileId,
           label: selected.effective.label,
           description: selected.effective.description,
-          disabledGates: disabled,
+          disabledSafeguards: disabled,
           rationale,
           expectedVersion: selected.current?.version ?? 0,
           idempotencyKey: crypto.randomUUID(),
@@ -131,7 +131,7 @@ export default function KnowledgeGatesPage() {
     }
   }
 
-  const gates = response?.data.gates ?? []
+  const safeguards = response?.data.safeguards ?? []
 
   return (
     <DashboardLayout persona="hans">
@@ -140,12 +140,12 @@ export default function KnowledgeGatesPage() {
           <div>
             <h1 className="flex items-center gap-2 text-2xl font-semibold">
               <ShieldCheck className="h-6 w-6" />
-              Knowledge publication gates
+              Knowledge publication safeguards
             </h1>
             <p className="text-muted-foreground mt-1 max-w-3xl text-sm">
               Which admission checks a process must clear before it can be published to the
               knowledge base. Every change is recorded as an append-only event with your user ID, a
-              rationale and a version — switching a gate off is a decision, not a setting.
+              rationale and a version — switching a safeguard off is a decision, not a setting.
             </p>
           </div>
           <Button variant="outline" onClick={() => void load()} disabled={loading}>
@@ -170,7 +170,7 @@ export default function KnowledgeGatesPage() {
         )}
 
         {response && (
-          <p className="text-muted-foreground text-sm" data-testid="gate-profile-summary">
+          <p className="text-muted-foreground text-sm" data-testid="safeguard-profile-summary">
             {response.summary.total} profiles · {response.summary.stored} administrator-set ·{" "}
             {response.summary.deviating} deviating from the built-in default · storage:{" "}
             {response.data.storage}
@@ -179,20 +179,21 @@ export default function KnowledgeGatesPage() {
 
         <p
           className="rounded-md border border-sky-600/40 bg-sky-600/10 p-3 text-sm"
-          data-testid="gate-enforcement-notice"
+          data-testid="safeguard-enforcement-notice"
         >
           <strong>Live.</strong> These profiles are checked by <code>/api/knowledge/apply</code>{" "}
-          every time an entry is turned into a task, so tightening a gate here takes effect
+          every time an entry is turned into a task, so tightening a safeguard here takes effect
           immediately — no deploy. Entries are separately checked against their built-in profile
-          when the seed loads, so one that never cleared its gates cannot ship in the first place.
+          when the seed loads, so one that never cleared its safeguards cannot ship in the first
+          place.
         </p>
 
-        {response && response.data.nonWaivableGates.length > 0 && (
+        {response && response.data.nonWaivableSafeguards.length > 0 && (
           <Card className="border-amber-600/40">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Lock className="h-4 w-4" />
-                Gates that cannot be switched off
+                Safeguards that cannot be switched off
               </CardTitle>
               <CardDescription>
                 These encode obligations rather than editorial policy, so no profile — and no
@@ -200,9 +201,9 @@ export default function KnowledgeGatesPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2">
-              {response.data.nonWaivableGates.map((id) => (
+              {response.data.nonWaivableSafeguards.map((id) => (
                 <Badge key={id} variant="outline">
-                  {gates.find((gate) => gate.id === id)?.label ?? id}
+                  {safeguards.find((safeguard) => safeguard.id === id)?.label ?? id}
                 </Badge>
               ))}
             </CardContent>
@@ -211,7 +212,7 @@ export default function KnowledgeGatesPage() {
 
         <div className="grid gap-4 lg:grid-cols-2">
           {response?.data.profiles.map((profile) => (
-            <Card key={profile.profileId} data-testid={`gate-profile-${profile.profileId}`}>
+            <Card key={profile.profileId} data-testid={`safeguard-profile-${profile.profileId}`}>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -228,19 +229,21 @@ export default function KnowledgeGatesPage() {
                     <span>
                       Relaxed beyond the built-in default:{" "}
                       {profile.relaxedBeyondBuiltin
-                        .map((id) => gates.find((gate) => gate.id === id)?.label ?? id)
+                        .map(
+                          (id) => safeguards.find((safeguard) => safeguard.id === id)?.label ?? id
+                        )
                         .join(", ")}
                     </span>
                   </p>
                 )}
 
                 <ul className="space-y-1 text-sm">
-                  {gates.map((gate) => {
-                    const off = profile.effective.disabledGates.includes(gate.id)
+                  {safeguards.map((safeguard) => {
+                    const off = profile.effective.disabledSafeguards.includes(safeguard.id)
                     return (
-                      <li key={gate.id} className="flex items-center justify-between gap-2">
+                      <li key={safeguard.id} className="flex items-center justify-between gap-2">
                         <span className={off ? "text-muted-foreground line-through" : ""}>
-                          {gate.label}
+                          {safeguard.label}
                         </span>
                         {off ? (
                           <Badge variant="outline">Skipped</Badge>
@@ -273,30 +276,32 @@ export default function KnowledgeGatesPage() {
             <DialogHeader>
               <DialogTitle>Change &ldquo;{selected?.profileId}&rdquo;</DialogTitle>
               <DialogDescription>
-                Unticking a gate means it will not run for this profile. Skipped gates are recorded
-                as skipped on every evaluation — they never count as having passed.
+                Unticking a safeguard means it will not run for this profile. Skipped safeguards are
+                recorded as skipped on every evaluation — they never count as having passed.
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                {gates.map((gate) => {
-                  const locked = !gate.waivable
+                {safeguards.map((safeguard) => {
+                  const locked = !safeguard.waivable
                   return (
-                    <div key={gate.id} className="flex items-start gap-2">
+                    <div key={safeguard.id} className="flex items-start gap-2">
                       <Checkbox
-                        id={`gate-${gate.id}`}
-                        checked={locked || !disabled.includes(gate.id)}
+                        id={`safeguard-${safeguard.id}`}
+                        checked={locked || !disabled.includes(safeguard.id)}
                         disabled={locked}
-                        onCheckedChange={(checked) => toggleGate(gate.id, checked === true)}
+                        onCheckedChange={(checked) =>
+                          toggleSafeguard(safeguard.id, checked === true)
+                        }
                       />
-                      <Label htmlFor={`gate-${gate.id}`} className="text-sm leading-snug">
+                      <Label htmlFor={`safeguard-${safeguard.id}`} className="text-sm leading-snug">
                         <span className="flex items-center gap-1 font-medium">
-                          {gate.label}
+                          {safeguard.label}
                           {locked && <Lock className="h-3 w-3" />}
                         </span>
                         <span className="text-muted-foreground block font-normal">
-                          {gate.description}
+                          {safeguard.description}
                         </span>
                       </Label>
                     </div>
@@ -305,9 +310,9 @@ export default function KnowledgeGatesPage() {
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="gate-rationale">Rationale</Label>
+                <Label htmlFor="safeguard-rationale">Rationale</Label>
                 <Textarea
-                  id="gate-rationale"
+                  id="safeguard-rationale"
                   value={rationale}
                   onChange={(event) => setRationale(event.target.value)}
                   placeholder="Why is this the right configuration? Recorded against your user ID."

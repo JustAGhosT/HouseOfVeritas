@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { STRICT_GATE_PROFILE, withGateDisabled, withGateEnabled } from "@/lib/knowledge/gates"
+import {
+  STRICT_SAFEGUARD_PROFILE,
+  withSafeguardDisabled,
+  withSafeguardEnabled,
+} from "@/lib/knowledge/safeguards"
 import {
   assertPublishable,
   builtinProfileForEntry,
@@ -26,12 +30,12 @@ describe("profile selection", () => {
   })
 
   it("returns the profile object, not just an id", () => {
-    expect(builtinProfileForEntry(copper)).toEqual(STRICT_GATE_PROFILE)
+    expect(builtinProfileForEntry(copper)).toEqual(STRICT_SAFEGUARD_PROFILE)
   })
 })
 
 describe("published seed entries", () => {
-  it("every published entry clears its own gates", () => {
+  it("every published entry clears its own safeguards", () => {
     for (const entry of KNOWLEDGE_SEED.filter((e) => e.status === "published")) {
       const check = checkPublishable(entry)
       expect(check.reasons).toEqual([])
@@ -68,10 +72,10 @@ describe("the schema will not let an entry claim published without a review", ()
     expect(knowledgeEntrySchema.safeParse(bad).success).toBe(false)
   })
 
-  it("rejects an unknown gate id in the recorded results", () => {
+  it("rejects an unknown safeguard id in the recorded results", () => {
     const bad = {
       ...copper,
-      review: { ...copper.review!, gateResults: { not_a_gate: "pass" } },
+      review: { ...copper.review!, safeguardResults: { not_a_safeguard: "pass" } },
     }
     expect(knowledgeEntrySchema.safeParse(bad).success).toBe(false)
   })
@@ -82,31 +86,34 @@ describe("checkPublishable", () => {
     const { review: _review, ...withoutReview } = copper
     const check = checkPublishable(withoutReview as KnowledgeEntry)
     expect(check.publishable).toBe(false)
-    expect(check.gates).toBeNull()
-    expect(check.reasons).toEqual(["no recorded gate review"])
+    expect(check.safeguards).toBeNull()
+    expect(check.reasons).toEqual(["no recorded safeguard review"])
   })
 
-  it("blocks an entry whose recorded review fails a gate", () => {
+  it("blocks an entry whose recorded review fails a safeguard", () => {
     const failing = {
       ...copper,
       review: {
         ...copper.review!,
-        gateResults: { ...copper.review!.gateResults, irreversible_harm: "fail" as const },
+        safeguardResults: {
+          ...copper.review!.safeguardResults,
+          irreversible_harm: "fail" as const,
+        },
       },
     }
     const check = checkPublishable(failing)
     expect(check.publishable).toBe(false)
-    expect(check.gates!.outcome).toBe("rescope_as_safety")
+    expect(check.safeguards!.outcome).toBe("rescope_as_safety")
     expect(check.reasons[0]).toContain("irreversible_harm")
   })
 
-  it("names both failed and untested gates when an entry has both", () => {
+  it("names both failed and untested safeguards when an entry has both", () => {
     const messy = {
       ...copper,
       review: {
         ...copper.review!,
-        gateResults: {
-          ...copper.review!.gateResults,
+        safeguardResults: {
+          ...copper.review!.safeguardResults,
           irreversible_harm: "fail" as const,
           commercial_neutrality: "not_tested" as const,
         },
@@ -117,17 +124,20 @@ describe("checkPublishable", () => {
     expect(reason).toContain("untested: commercial_neutrality")
   })
 
-  it("blocks an entry with an untested gate", () => {
+  it("blocks an entry with an untested safeguard", () => {
     const untested = {
       ...copper,
       review: {
         ...copper.review!,
-        gateResults: { ...copper.review!.gateResults, data_boundary: "not_tested" as const },
+        safeguardResults: {
+          ...copper.review!.safeguardResults,
+          data_boundary: "not_tested" as const,
+        },
       },
     }
     const check = checkPublishable(untested)
     expect(check.publishable).toBe(false)
-    expect(check.gates!.outcome).toBe("hold_as_draft")
+    expect(check.safeguards!.outcome).toBe("hold_as_draft")
   })
 
   it("blocks an entry that declares no safety boundaries", () => {
@@ -140,13 +150,13 @@ describe("checkPublishable", () => {
 
   it("re-checks against a stricter administrator profile, not the shipped one", () => {
     // The recipe built-in waives statutory_competence. An admin re-enabling it
-    // must immediately block an entry whose review never tested that gate.
+    // must immediately block an entry whose review never tested that safeguard.
     const recipeEntry = {
       ...withKind(copper, "recipe"),
       review: {
         ...copper.review!,
         profileId: "household-recipe",
-        gateResults: {
+        safeguardResults: {
           irreversible_harm: "pass" as const,
           verifiable_ground_truth: "pass" as const,
           commercial_neutrality: "pass" as const,
@@ -158,30 +168,33 @@ describe("checkPublishable", () => {
     const asShipped = checkPublishable(recipeEntry, builtinProfileForEntry(recipeEntry))
     expect(asShipped.publishable).toBe(true)
 
-    const tightened = withGateEnabled(builtinProfileForEntry(recipeEntry), "statutory_competence")
+    const tightened = withSafeguardEnabled(
+      builtinProfileForEntry(recipeEntry),
+      "statutory_competence"
+    )
     const afterTightening = checkPublishable(recipeEntry, tightened, "stored")
     expect(afterTightening.publishable).toBe(false)
-    expect(afterTightening.gates!.untestedGates).toContain("statutory_competence")
-    expect(afterTightening.gates!.profileSource).toBe("stored")
+    expect(afterTightening.safeguards!.untestedSafeguards).toContain("statutory_competence")
+    expect(afterTightening.safeguards!.profileSource).toBe("stored")
   })
 
-  it("lets a relaxed administrator profile skip a gate, and records the skip", () => {
+  it("lets a relaxed administrator profile skip a safeguard, and records the skip", () => {
     const missingOne = {
       ...copper,
       review: {
         ...copper.review!,
-        gateResults: {
-          ...copper.review!.gateResults,
+        safeguardResults: {
+          ...copper.review!.safeguardResults,
           commercial_neutrality: "not_tested" as const,
         },
       },
     }
     expect(checkPublishable(missingOne).publishable).toBe(false)
 
-    const relaxed = withGateDisabled(STRICT_GATE_PROFILE, "commercial_neutrality")
+    const relaxed = withSafeguardDisabled(STRICT_SAFEGUARD_PROFILE, "commercial_neutrality")
     const check = checkPublishable(missingOne, relaxed, "stored")
     expect(check.publishable).toBe(true)
-    expect(check.gates!.skippedGates).toContain("commercial_neutrality")
+    expect(check.safeguards!.skippedSafeguards).toContain("commercial_neutrality")
   })
 })
 
@@ -189,13 +202,13 @@ describe("assertPublishable", () => {
   it("throws for a published entry that does not clear", () => {
     const broken = {
       ...copper,
-      review: { ...copper.review!, gateResults: { data_boundary: "fail" as const } },
+      review: { ...copper.review!, safeguardResults: { data_boundary: "fail" as const } },
     }
-    expect(() => assertPublishable(broken)).toThrow(/does not clear its gates/)
+    expect(() => assertPublishable(broken)).toThrow(/does not clear its safeguards/)
     expect(() => assertPublishable(broken)).toThrow(copper.slug)
   })
 
-  it("ignores a draft entry — gates govern publication, not authoring", () => {
+  it("ignores a draft entry — safeguards govern publication, not authoring", () => {
     const { review: _review, ...withoutReview } = copper
     expect(() =>
       assertPublishable({ ...withoutReview, status: "draft" } as KnowledgeEntry)

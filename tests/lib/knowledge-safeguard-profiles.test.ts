@@ -1,42 +1,42 @@
 import { randomUUID } from "crypto"
 import { beforeEach, describe, expect, it } from "vitest"
 import {
-  KNOWLEDGE_GATE_PROFILE_SCHEMA_VERSION,
-  knowledgeGateProfileRequestSchema,
+  KNOWLEDGE_SAFEGUARD_PROFILE_SCHEMA_VERSION,
+  knowledgeSafeguardProfileRequestSchema,
   latestEventFor,
-  parseKnowledgeGateProfileRequest,
-  projectGateProfiles,
+  parseKnowledgeSafeguardProfileRequest,
+  projectSafeguardProfiles,
   relaxedBeyondBuiltin,
   resolveEffectiveProfile,
-  type KnowledgeGateProfileEvent,
-} from "@/lib/knowledge/gate-profile-events"
+  type KnowledgeSafeguardProfileEvent,
+} from "@/lib/knowledge/safeguard-profile-events"
 import {
   evaluateKnowledgeCandidate,
-  KNOWLEDGE_PUBLICATION_GATES,
-  NON_WAIVABLE_GATE_IDS,
-  STRICT_GATE_PROFILE,
-  type KnowledgeGateId,
-} from "@/lib/knowledge/gates"
+  KNOWLEDGE_PUBLICATION_SAFEGUARDS,
+  NON_WAIVABLE_SAFEGUARD_IDS,
+  STRICT_SAFEGUARD_PROFILE,
+  type KnowledgeSafeguardId,
+} from "@/lib/knowledge/safeguards"
 import {
-  getKnowledgeGateProfileRepository,
-  KnowledgeGateProfileConflictError,
-  KnowledgeGateProfileStoreUnavailableError,
-  loadEffectiveGateProfile,
-  resetKnowledgeGateProfileRepositoryForTests,
-} from "@/lib/repositories/knowledge-gate-profile-repository"
+  getKnowledgeSafeguardProfileRepository,
+  KnowledgeSafeguardProfileConflictError,
+  KnowledgeSafeguardProfileStoreUnavailableError,
+  loadEffectiveSafeguardProfile,
+  resetKnowledgeSafeguardProfileRepositoryForTests,
+} from "@/lib/repositories/knowledge-safeguard-profile-repository"
 
 function event(
   profileId: string,
   version: number,
-  disabledGates: KnowledgeGateId[],
+  disabledSafeguards: KnowledgeSafeguardId[],
   createdAt = "2026-08-06T00:00:00.000Z"
-): KnowledgeGateProfileEvent {
+): KnowledgeSafeguardProfileEvent {
   return {
-    schemaVersion: KNOWLEDGE_GATE_PROFILE_SCHEMA_VERSION,
+    schemaVersion: KNOWLEDGE_SAFEGUARD_PROFILE_SCHEMA_VERSION,
     profileId,
     label: profileId,
     description: "test",
-    disabledGates,
+    disabledSafeguards,
     rationale: "test rationale",
     expectedVersion: version - 1,
     idempotencyKey: randomUUID(),
@@ -49,56 +49,60 @@ function event(
   }
 }
 
-describe("gate profile schema", () => {
+describe("safeguard profile schema", () => {
   const valid = {
-    schemaVersion: KNOWLEDGE_GATE_PROFILE_SCHEMA_VERSION,
+    schemaVersion: KNOWLEDGE_SAFEGUARD_PROFILE_SCHEMA_VERSION,
     profileId: "checklist",
     label: "Checklist",
     description: "Inspect-and-record.",
-    disabledGates: ["diagnosis_before_action"],
+    disabledSafeguards: ["diagnosis_before_action"],
     rationale: "Changes nothing on the asset.",
     expectedVersion: 0,
     idempotencyKey: randomUUID(),
   }
 
   it("accepts a well-formed request", () => {
-    expect(parseKnowledgeGateProfileRequest(valid)).not.toBeNull()
+    expect(parseKnowledgeSafeguardProfileRequest(valid)).not.toBeNull()
   })
 
-  it("blocks every non-waivable gate", () => {
-    expect(NON_WAIVABLE_GATE_IDS.slice().sort()).toEqual([
+  it("blocks every non-waivable safeguard", () => {
+    expect(NON_WAIVABLE_SAFEGUARD_IDS.slice().sort()).toEqual([
       "data_boundary",
       "verifiable_ground_truth",
     ])
-    for (const gate of NON_WAIVABLE_GATE_IDS) {
+    for (const safeguard of NON_WAIVABLE_SAFEGUARD_IDS) {
       expect(
-        knowledgeGateProfileRequestSchema.safeParse({ ...valid, disabledGates: [gate] }).success
+        knowledgeSafeguardProfileRequestSchema.safeParse({
+          ...valid,
+          disabledSafeguards: [safeguard],
+        }).success
       ).toBe(false)
     }
   })
 
-  it("allows every waivable gate", () => {
-    const waivable = KNOWLEDGE_PUBLICATION_GATES.filter((gate) => gate.waivable).map(
-      (gate) => gate.id
+  it("allows every waivable safeguard", () => {
+    const waivable = KNOWLEDGE_PUBLICATION_SAFEGUARDS.filter((safeguard) => safeguard.waivable).map(
+      (safeguard) => safeguard.id
     )
     expect(
-      knowledgeGateProfileRequestSchema.safeParse({ ...valid, disabledGates: waivable }).success
+      knowledgeSafeguardProfileRequestSchema.safeParse({ ...valid, disabledSafeguards: waivable })
+        .success
     ).toBe(true)
   })
 
   it("rejects duplicates, bad ids and missing rationale", () => {
     expect(
-      knowledgeGateProfileRequestSchema.safeParse({
+      knowledgeSafeguardProfileRequestSchema.safeParse({
         ...valid,
-        disabledGates: ["diagnosis_before_action", "diagnosis_before_action"],
+        disabledSafeguards: ["diagnosis_before_action", "diagnosis_before_action"],
       }).success
     ).toBe(false)
     expect(
-      knowledgeGateProfileRequestSchema.safeParse({ ...valid, profileId: "Bad Id" }).success
+      knowledgeSafeguardProfileRequestSchema.safeParse({ ...valid, profileId: "Bad Id" }).success
     ).toBe(false)
-    expect(knowledgeGateProfileRequestSchema.safeParse({ ...valid, rationale: "" }).success).toBe(
-      false
-    )
+    expect(
+      knowledgeSafeguardProfileRequestSchema.safeParse({ ...valid, rationale: "" }).success
+    ).toBe(false)
   })
 })
 
@@ -107,27 +111,27 @@ describe("resolution", () => {
     const events = [event("strict", 1, ["commercial_neutrality"])]
     const resolved = resolveEffectiveProfile("strict", events)
     expect(resolved.source).toBe("stored")
-    expect(resolved.profile.disabledGates).toEqual(["commercial_neutrality"])
+    expect(resolved.profile.disabledSafeguards).toEqual(["commercial_neutrality"])
   })
 
   it("uses the built-in when nothing is stored", () => {
     const resolved = resolveEffectiveProfile("household-recipe", [])
     expect(resolved.source).toBe("builtin")
-    expect(resolved.profile.disabledGates).toContain("statutory_competence")
+    expect(resolved.profile.disabledSafeguards).toContain("statutory_competence")
   })
 
   it("falls back to strict for an unknown id rather than throwing", () => {
     const resolved = resolveEffectiveProfile("does-not-exist", [])
-    expect(resolved.profile).toEqual(STRICT_GATE_PROFILE)
+    expect(resolved.profile).toEqual(STRICT_SAFEGUARD_PROFILE)
   })
 
   it("takes the highest version, not the last inserted", () => {
     const events = [event("strict", 2, []), event("strict", 1, ["commercial_neutrality"])]
     expect(latestEventFor("strict", events)!.version).toBe(2)
-    expect(resolveEffectiveProfile("strict", events).profile.disabledGates).toEqual([])
+    expect(resolveEffectiveProfile("strict", events).profile.disabledSafeguards).toEqual([])
   })
 
-  it("strips a non-waivable gate from a stored record and reports it", () => {
+  it("strips a non-waivable safeguard from a stored record and reports it", () => {
     // Only reachable if a record bypassed the request schema — a direct write to
     // the collection, or corruption in place. The invariant must survive it.
     const rogue = event("strict", 1, [
@@ -137,8 +141,8 @@ describe("resolution", () => {
     ])
     const resolved = resolveEffectiveProfile("strict", [rogue])
 
-    expect(resolved.profile.disabledGates).toEqual(["commercial_neutrality"])
-    expect(resolved.sanitizedGates.slice().sort()).toEqual([
+    expect(resolved.profile.disabledSafeguards).toEqual(["commercial_neutrality"])
+    expect(resolved.sanitizedSafeguards.slice().sort()).toEqual([
       "data_boundary",
       "verifiable_ground_truth",
     ])
@@ -146,13 +150,13 @@ describe("resolution", () => {
 
   it("reports nothing sanitized for an honest record", () => {
     const resolved = resolveEffectiveProfile("strict", [event("strict", 1, ["irreversible_harm"])])
-    expect(resolved.sanitizedGates).toEqual([])
+    expect(resolved.sanitizedSafeguards).toEqual([])
   })
 })
 
 describe("projection", () => {
   it("includes built-ins and stored-only profiles, sorted", () => {
-    const projections = projectGateProfiles([event("custom-one", 1, [])])
+    const projections = projectSafeguardProfiles([event("custom-one", 1, [])])
     expect(projections.map((p) => p.profileId)).toEqual([
       "checklist",
       "custom-one",
@@ -162,15 +166,15 @@ describe("projection", () => {
   })
 
   it("flags deviation only when the effective set differs from the built-in", () => {
-    const unchanged = projectGateProfiles([event("checklist", 1, ["diagnosis_before_action"])])
+    const unchanged = projectSafeguardProfiles([event("checklist", 1, ["diagnosis_before_action"])])
     expect(unchanged.find((p) => p.profileId === "checklist")!.deviatesFromBuiltin).toBe(false)
 
-    const changed = projectGateProfiles([event("checklist", 1, [])])
+    const changed = projectSafeguardProfiles([event("checklist", 1, [])])
     expect(changed.find((p) => p.profileId === "checklist")!.deviatesFromBuiltin).toBe(true)
   })
 
   it("separates operator relaxation from built-in waivers", () => {
-    const projections = projectGateProfiles([
+    const projections = projectSafeguardProfiles([
       event("household-recipe", 1, [
         "statutory_competence",
         "diagnosis_before_action",
@@ -182,7 +186,7 @@ describe("projection", () => {
   })
 
   it("reports no relaxation for a stored profile matching its built-in", () => {
-    const projections = projectGateProfiles([
+    const projections = projectSafeguardProfiles([
       event("household-recipe", 1, ["statutory_competence"]),
     ])
     expect(
@@ -192,16 +196,16 @@ describe("projection", () => {
 })
 
 describe("repository", () => {
-  beforeEach(() => resetKnowledgeGateProfileRepositoryForTests())
+  beforeEach(() => resetKnowledgeSafeguardProfileRepositoryForTests())
 
   it("appends with a monotonic version and rejects a stale expectedVersion", async () => {
-    const { repository } = await getKnowledgeGateProfileRepository()
+    const { repository } = await getKnowledgeSafeguardProfileRepository()
     const base = {
-      schemaVersion: KNOWLEDGE_GATE_PROFILE_SCHEMA_VERSION,
+      schemaVersion: KNOWLEDGE_SAFEGUARD_PROFILE_SCHEMA_VERSION,
       profileId: "checklist",
       label: "Checklist",
       description: "d",
-      disabledGates: [] as KnowledgeGateId[],
+      disabledSafeguards: [] as KnowledgeSafeguardId[],
       rationale: "reason enough",
       expectedVersion: 0,
       idempotencyKey: randomUUID(),
@@ -217,33 +221,33 @@ describe("repository", () => {
         actorId: "admin-1",
         actorRole: "admin",
       })
-    ).rejects.toBeInstanceOf(KnowledgeGateProfileConflictError)
+    ).rejects.toBeInstanceOf(KnowledgeSafeguardProfileConflictError)
   })
 
   it("falls back to strict when the store is unreachable, and says so", async () => {
-    const resolved = await loadEffectiveGateProfile("household-recipe", () => {
-      throw new KnowledgeGateProfileStoreUnavailableError("unreachable")
+    const resolved = await loadEffectiveSafeguardProfile("household-recipe", () => {
+      throw new KnowledgeSafeguardProfileStoreUnavailableError("unreachable")
     })
-    // household-recipe normally waives two gates; the outage must not preserve that.
+    // household-recipe normally waives two safeguards; the outage must not preserve that.
     expect(resolved.source).toBe("builtin-fallback")
-    expect(resolved.profile).toEqual(STRICT_GATE_PROFILE)
-    expect(resolved.profile.disabledGates).toEqual([])
+    expect(resolved.profile).toEqual(STRICT_SAFEGUARD_PROFILE)
+    expect(resolved.profile.disabledSafeguards).toEqual([])
   })
 
   it("rethrows a programmer error instead of disguising it as an outage", async () => {
     // Swallowing everything would report a bug as `builtin-fallback` and hide it
     // behind a silently stricter profile.
     await expect(
-      loadEffectiveGateProfile("strict", () => {
+      loadEffectiveSafeguardProfile("strict", () => {
         throw new TypeError("cannot read properties of undefined")
       })
     ).rejects.toBeInstanceOf(TypeError)
   })
 
   it("uses the real store when it is reachable", async () => {
-    const resolved = await loadEffectiveGateProfile("household-recipe")
+    const resolved = await loadEffectiveSafeguardProfile("household-recipe")
     expect(resolved.source).toBe("builtin")
-    expect(resolved.profile.disabledGates).toContain("statutory_competence")
+    expect(resolved.profile.disabledSafeguards).toContain("statutory_competence")
   })
 })
 
@@ -251,7 +255,7 @@ describe("evaluation records where its profile came from", () => {
   it("defaults to builtin", () => {
     const result = evaluateKnowledgeCandidate({
       candidateId: "x",
-      gateResults: {},
+      safeguardResults: {},
       facts: null,
     })
     expect(result.profileSource).toBe("builtin")
@@ -259,13 +263,13 @@ describe("evaluation records where its profile came from", () => {
 
   it("carries a stored or fallback source through to the evaluation", () => {
     const stored = evaluateKnowledgeCandidate(
-      { candidateId: "x", gateResults: {}, facts: null },
+      { candidateId: "x", safeguardResults: {}, facts: null },
       { profileSource: "stored" }
     )
     expect(stored.profileSource).toBe("stored")
 
     const fallback = evaluateKnowledgeCandidate(
-      { candidateId: "x", gateResults: {}, facts: null },
+      { candidateId: "x", safeguardResults: {}, facts: null },
       { profileSource: "builtin-fallback" }
     )
     expect(fallback.profileSource).toBe("builtin-fallback")

@@ -6,7 +6,7 @@ import type { KnowledgeEntry } from "@/lib/knowledge/types"
 /**
  * The 409 branch of /api/knowledge/apply.
  *
- * Every seed entry clears its gates by construction — `assertPublishable()`
+ * Every seed entry clears its safeguards by construction — `assertPublishable()`
  * refuses to let the seed import otherwise — so the blocked path cannot be
  * reached with real data. Retrieval is mocked to hand the route an entry that
  * does not clear, which is the only way to prove the route actually refuses
@@ -44,12 +44,12 @@ describe("POST /api/knowledge/apply — refuses entries that do not clear", () =
     blocked.entry = null
   })
 
-  it("returns 409 and no task draft when a gate failed", async () => {
+  it("returns 409 and no task draft when a safeguard failed", async () => {
     blocked.entry = {
       ...base,
       review: {
         ...base.review!,
-        gateResults: { ...base.review!.gateResults, irreversible_harm: "fail" },
+        safeguardResults: { ...base.review!.safeguardResults, irreversible_harm: "fail" },
       },
     }
 
@@ -59,21 +59,21 @@ describe("POST /api/knowledge/apply — refuses entries that do not clear", () =
     expect(response.status).toBe(409)
     expect(body.data).toBeUndefined()
     expect(body.reasons[0]).toContain("irreversible_harm")
-    expect(body.gates.outcome).toBe("rescope_as_safety")
+    expect(body.safeguards.outcome).toBe("rescope_as_safety")
   })
 
-  it("returns 409 when a gate was never tested", async () => {
+  it("returns 409 when a safeguard was never tested", async () => {
     blocked.entry = {
       ...base,
       review: {
         ...base.review!,
-        gateResults: { ...base.review!.gateResults, data_boundary: "not_tested" },
+        safeguardResults: { ...base.review!.safeguardResults, data_boundary: "not_tested" },
       },
     }
 
     const response = await POST(applyRequest())
     expect(response.status).toBe(409)
-    expect((await response.json()).gates.outcome).toBe("hold_as_draft")
+    expect((await response.json()).safeguards.outcome).toBe("hold_as_draft")
   })
 
   it("returns 409 when the entry carries no recorded review at all", async () => {
@@ -83,7 +83,7 @@ describe("POST /api/knowledge/apply — refuses entries that do not clear", () =
     const response = await POST(applyRequest())
     const body = await response.json()
     expect(response.status).toBe(409)
-    expect(body.reasons).toEqual(["no recorded gate review"])
+    expect(body.reasons).toEqual(["no recorded safeguard review"])
   })
 
   it("returns 409 when the guidance declares no safety boundaries", async () => {
@@ -98,7 +98,7 @@ describe("POST /api/knowledge/apply — refuses entries that do not clear", () =
   it("does not leak the entry body in a refusal", async () => {
     blocked.entry = {
       ...base,
-      review: { ...base.review!, gateResults: { data_boundary: "fail" } },
+      review: { ...base.review!, safeguardResults: { data_boundary: "fail" } },
     }
     const raw = await (await POST(applyRequest())).text()
     expect(raw).not.toContain("dry-and-watch")

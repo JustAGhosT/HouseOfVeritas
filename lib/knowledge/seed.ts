@@ -9,7 +9,7 @@ import {
  * Recorded Tier-0 review shared by the EN and AF copper-pipe entries — same
  * content, same judgements, so one record rather than two divergent copies.
  *
- * Why each gate passes:
+ * Why each safeguard passes:
  *  - statutory_competence: fitting pipe lagging is not reserved work; the entry
  *    routes a suspected leak to a plumber rather than describing a repair.
  *  - irreversible_harm: no live services, height, gas or hot work.
@@ -23,7 +23,7 @@ import {
  */
 const COPPER_PIPE_REVIEW: KnowledgeReview = {
   profileId: "strict",
-  gateResults: {
+  safeguardResults: {
     statutory_competence: "pass",
     irreversible_harm: "pass",
     verifiable_ground_truth: "pass",
@@ -293,8 +293,8 @@ export const KNOWLEDGE_SEED: KnowledgeEntry[] = rawSeed.map((entry, index) => {
   }
   const validated = parsed.data as KnowledgeEntry
   // Schema conformance is not enough: a published entry must also clear the
-  // Tier-0 gates it recorded. Failing here means the seed cannot even import,
-  // so an ungated entry fails CI rather than reaching a user.
+  // Tier-0 safeguards it recorded. Failing here means the seed cannot even import,
+  // so an entry that never cleared them fails CI rather than reaching a user.
   assertPublishable(validated)
   return validated
 })

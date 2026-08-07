@@ -1,12 +1,12 @@
 import { randomUUID } from "crypto"
 import { beforeEach, describe, expect, it } from "vitest"
 import { POST as APPLY } from "@/app/api/knowledge/apply/route"
-import { POST as SET_PROFILE } from "@/app/api/knowledge/gate-profiles/route"
-import { KNOWLEDGE_GATE_PROFILE_SCHEMA_VERSION } from "@/lib/knowledge/gate-profile-events"
-import { resetKnowledgeGateProfileRepositoryForTests } from "@/lib/repositories/knowledge-gate-profile-repository"
+import { POST as SET_PROFILE } from "@/app/api/knowledge/safeguard-profiles/route"
+import { KNOWLEDGE_SAFEGUARD_PROFILE_SCHEMA_VERSION } from "@/lib/knowledge/safeguard-profile-events"
+import { resetKnowledgeSafeguardProfileRepositoryForTests } from "@/lib/repositories/knowledge-safeguard-profile-repository"
 
 /**
- * The wiring test: an administrator changing a gate profile must change what
+ * The wiring test: an administrator changing a safeguard profile must change what
  * /api/knowledge/apply will do, with no deploy and no seed edit. Everything
  * below goes through the real routes rather than calling the evaluator, because
  * the point being proved is that they are connected.
@@ -29,16 +29,16 @@ function applyRequest(slug = COPPER_SLUG) {
   })
 }
 
-function setProfile(disabledGates: string[], expectedVersion: number, rationale: string) {
-  return new Request("http://localhost/api/knowledge/gate-profiles", {
+function setProfile(disabledSafeguards: string[], expectedVersion: number, rationale: string) {
+  return new Request("http://localhost/api/knowledge/safeguard-profiles", {
     method: "POST",
     headers: adminHeaders,
     body: JSON.stringify({
-      schemaVersion: KNOWLEDGE_GATE_PROFILE_SCHEMA_VERSION,
+      schemaVersion: KNOWLEDGE_SAFEGUARD_PROFILE_SCHEMA_VERSION,
       profileId: "strict",
       label: "Strict",
-      description: "Every gate runs.",
-      disabledGates,
+      description: "Every safeguard runs.",
+      disabledSafeguards,
       rationale,
       expectedVersion,
       idempotencyKey: randomUUID(),
@@ -46,37 +46,37 @@ function setProfile(disabledGates: string[], expectedVersion: number, rationale:
   })
 }
 
-describe("POST /api/knowledge/apply — gate enforcement", () => {
+describe("POST /api/knowledge/apply — safeguard enforcement", () => {
   beforeEach(() => {
-    resetKnowledgeGateProfileRepositoryForTests()
+    resetKnowledgeSafeguardProfileRepositoryForTests()
   })
 
-  it("applies a seed entry that clears its gates, and reports the profile used", async () => {
+  it("applies a seed entry that clears its safeguards, and reports the profile used", async () => {
     const response = await APPLY(applyRequest())
     const body = await response.json()
 
     expect(response.status).toBe(200)
     expect(body.data.taskDraft).toBeDefined()
     expect(body.summary.knowledgeSlug).toBe(COPPER_SLUG)
-    expect(body.summary.gateProfileId).toBe("strict")
-    expect(body.summary.gateProfileSource).toBe("builtin")
+    expect(body.summary.safeguardProfileId).toBe("strict")
+    expect(body.summary.safeguardProfileSource).toBe("builtin")
     expect(body.summary.hasSafetyBoundaries).toBe(true)
-    expect(body.summary.skippedGates).toEqual([])
+    expect(body.summary.skippedSafeguards).toEqual([])
   })
 
-  it("still 404s for an unknown slug rather than leaking a gate decision", async () => {
+  it("still 404s for an unknown slug rather than leaking a safeguard decision", async () => {
     expect((await APPLY(applyRequest("does-not-exist"))).status).toBe(404)
   })
 
-  it("reports a skipped gate when an administrator relaxes the profile", async () => {
+  it("reports a skipped safeguard when an administrator relaxes the profile", async () => {
     expect(
       (await SET_PROFILE(setProfile(["commercial_neutrality"], 0, "Reviewed by hand this sprint.")))
         .status
     ).toBe(201)
 
     const body = await (await APPLY(applyRequest())).json()
-    expect(body.summary.gateProfileSource).toBe("stored")
-    expect(body.summary.skippedGates).toEqual(["commercial_neutrality"])
+    expect(body.summary.safeguardProfileSource).toBe("stored")
+    expect(body.summary.skippedSafeguards).toEqual(["commercial_neutrality"])
   })
 
   it("keeps applying when a relaxed profile is reverted", async () => {
@@ -86,8 +86,8 @@ describe("POST /api/knowledge/apply — gate enforcement", () => {
     const response = await APPLY(applyRequest())
     const body = await response.json()
     expect(response.status).toBe(200)
-    expect(body.summary.skippedGates).toEqual([])
-    expect(body.summary.gateProfileSource).toBe("stored")
+    expect(body.summary.skippedSafeguards).toEqual([])
+    expect(body.summary.safeguardProfileSource).toBe("stored")
   })
 
   it("falls back to the built-in profile for an entry kind with no stored record", async () => {
@@ -96,7 +96,7 @@ describe("POST /api/knowledge/apply — gate enforcement", () => {
     await SET_PROFILE(setProfile(["commercial_neutrality"], 0, "Unrelated to checklists."))
     const body = await (await APPLY(applyRequest())).json()
     // The copper entry is `troubleshooting`, so it uses "strict" — stored.
-    expect(body.summary.gateProfileId).toBe("strict")
-    expect(body.summary.gateProfileSource).toBe("stored")
+    expect(body.summary.safeguardProfileId).toBe("strict")
+    expect(body.summary.safeguardProfileSource).toBe("stored")
   })
 })

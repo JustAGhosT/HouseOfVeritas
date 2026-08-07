@@ -3,36 +3,39 @@ import { NextResponse } from "next/server"
 import { ZodError } from "zod"
 import { withRole } from "@/lib/auth/rbac"
 import {
-  knowledgeGateProfileRequestSchema,
-  projectGateProfiles,
+  knowledgeSafeguardProfileRequestSchema,
+  projectSafeguardProfiles,
   relaxedBeyondBuiltin,
-} from "@/lib/knowledge/gate-profile-events"
-import { KNOWLEDGE_PUBLICATION_GATES, NON_WAIVABLE_GATE_IDS } from "@/lib/knowledge/gates"
+} from "@/lib/knowledge/safeguard-profile-events"
+import {
+  KNOWLEDGE_PUBLICATION_SAFEGUARDS,
+  NON_WAIVABLE_SAFEGUARD_IDS,
+} from "@/lib/knowledge/safeguards"
 import { logger } from "@/lib/logger"
 import {
-  getKnowledgeGateProfileRepository,
-  KnowledgeGateProfileConflictError,
-  KnowledgeGateProfileIdempotencyError,
-  KnowledgeGateProfileStoreUnavailableError,
-} from "@/lib/repositories/knowledge-gate-profile-repository"
+  getKnowledgeSafeguardProfileRepository,
+  KnowledgeSafeguardProfileConflictError,
+  KnowledgeSafeguardProfileIdempotencyError,
+  KnowledgeSafeguardProfileStoreUnavailableError,
+} from "@/lib/repositories/knowledge-safeguard-profile-repository"
 
 function storeUnavailableResponse() {
   return NextResponse.json(
-    { error: "Knowledge gate profile datastore is unavailable" },
+    { error: "Knowledge safeguard profile datastore is unavailable" },
     { status: 503 }
   )
 }
 
 export const GET = withRole("admin")(async () => {
   try {
-    const { repository, mode } = await getKnowledgeGateProfileRepository()
+    const { repository, mode } = await getKnowledgeSafeguardProfileRepository()
     const events = await repository.list()
-    const profiles = projectGateProfiles(events)
+    const profiles = projectSafeguardProfiles(events)
 
     return NextResponse.json({
       data: {
-        gates: KNOWLEDGE_PUBLICATION_GATES,
-        nonWaivableGates: NON_WAIVABLE_GATE_IDS,
+        safeguards: KNOWLEDGE_PUBLICATION_SAFEGUARDS,
+        nonWaivableSafeguards: NON_WAIVABLE_SAFEGUARD_IDS,
         profiles: profiles.map((profile) => ({
           ...profile,
           relaxedBeyondBuiltin: relaxedBeyondBuiltin(profile),
@@ -46,32 +49,35 @@ export const GET = withRole("admin")(async () => {
       },
     })
   } catch (error) {
-    if (error instanceof KnowledgeGateProfileStoreUnavailableError) {
+    if (error instanceof KnowledgeSafeguardProfileStoreUnavailableError) {
       return storeUnavailableResponse()
     }
-    logger.error("Knowledge gate profile read failed", {
+    logger.error("Knowledge safeguard profile read failed", {
       error: error instanceof Error ? error.message : String(error),
     })
-    return NextResponse.json({ error: "Failed to load knowledge gate profiles" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to load knowledge safeguard profiles" },
+      { status: 500 }
+    )
   }
 })
 
 export const POST = withRole("admin")(async (request, context) => {
   try {
-    const parsed = knowledgeGateProfileRequestSchema.parse(await request.json())
-    const { repository, mode } = await getKnowledgeGateProfileRepository()
+    const parsed = knowledgeSafeguardProfileRequestSchema.parse(await request.json())
+    const { repository, mode } = await getKnowledgeSafeguardProfileRepository()
     const result = await repository.append({
       request: parsed,
       actorId: context.userId,
       actorRole: "admin",
     })
 
-    // Relaxing a gate is the event worth finding later, so it is logged
+    // Relaxing a safeguard is the event worth finding later, so it is logged
     // explicitly rather than left to be reconstructed from the collection.
-    if (result.created && parsed.disabledGates.length > 0) {
-      logger.warn("Knowledge gate profile disabled gates", {
+    if (result.created && parsed.disabledSafeguards.length > 0) {
+      logger.warn("Knowledge safeguard profile disabled safeguards", {
         profileId: parsed.profileId,
-        disabledGates: parsed.disabledGates,
+        disabledSafeguards: parsed.disabledSafeguards,
         version: result.event.version,
         actorId: context.userId,
       })
@@ -85,26 +91,32 @@ export const POST = withRole("admin")(async (request, context) => {
     if (error instanceof ZodError) {
       return NextResponse.json(
         {
-          error: "Invalid knowledge gate profile",
+          error: "Invalid knowledge safeguard profile",
           issues: error.issues.map((issue) => issue.path.join(".")),
           messages: error.issues.map((issue) => issue.message),
         },
         { status: 400 }
       )
     }
-    if (error instanceof KnowledgeGateProfileStoreUnavailableError) {
+    if (error instanceof KnowledgeSafeguardProfileStoreUnavailableError) {
       return storeUnavailableResponse()
     }
-    if (error instanceof KnowledgeGateProfileConflictError) {
-      return NextResponse.json({ error: "Knowledge gate profile version changed" }, { status: 409 })
+    if (error instanceof KnowledgeSafeguardProfileConflictError) {
+      return NextResponse.json(
+        { error: "Knowledge safeguard profile version changed" },
+        { status: 409 }
+      )
     }
-    if (error instanceof KnowledgeGateProfileIdempotencyError) {
+    if (error instanceof KnowledgeSafeguardProfileIdempotencyError) {
       return NextResponse.json({ error: "Idempotency key was reused" }, { status: 409 })
     }
-    logger.error("Knowledge gate profile mutation failed", {
+    logger.error("Knowledge safeguard profile mutation failed", {
       traceId: randomUUID(),
       error: error instanceof Error ? error.message : String(error),
     })
-    return NextResponse.json({ error: "Failed to record knowledge gate profile" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to record knowledge safeguard profile" },
+      { status: 500 }
+    )
   }
 })

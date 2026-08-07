@@ -5,7 +5,7 @@ import { getKnowledgeBySlug } from "@/lib/knowledge/retrieval"
 import { checkPublishable, profileIdForEntry } from "@/lib/knowledge/publication"
 import { buildMaintenanceTaskDraft } from "@/lib/knowledge/task-draft"
 import { logger } from "@/lib/logger"
-import { loadEffectiveGateProfile } from "@/lib/repositories/knowledge-gate-profile-repository"
+import { loadEffectiveSafeguardProfile } from "@/lib/repositories/knowledge-safeguard-profile-repository"
 
 const bodySchema = z.object({
   slug: z
@@ -27,9 +27,9 @@ const bodySchema = z.object({
  * Returns a review-required draft — it does NOT create the task. The client
  * confirms, then posts to /api/tasks.
  *
- * The Tier-0 gates are re-checked here against the administrator's *effective*
+ * The Tier-0 safeguards are re-checked here against the administrator's *effective*
  * profile, not just the built-in one the entry shipped against. That is the
- * point of re-checking: tightening a gate in the control plane stops entries
+ * point of re-checking: tightening a safeguard in the control plane stops entries
  * being turned into work immediately, with no deploy and no seed change.
  */
 export const POST = withRole(
@@ -47,10 +47,10 @@ export const POST = withRole(
       return NextResponse.json({ error: "Knowledge entry not found." }, { status: 404 })
     }
 
-    const { profile, source } = await loadEffectiveGateProfile(profileIdForEntry(entry))
+    const { profile, source } = await loadEffectiveSafeguardProfile(profileIdForEntry(entry))
     const check = checkPublishable(entry, profile, source)
     if (!check.publishable) {
-      logger.warn("Blocked applying a knowledge entry that does not clear its gates", {
+      logger.warn("Blocked applying a knowledge entry that does not clear its safeguards", {
         slug: entry.slug,
         profileId: profile.id,
         profileSource: source,
@@ -58,9 +58,9 @@ export const POST = withRole(
       })
       return NextResponse.json(
         {
-          error: "This knowledge entry does not currently clear its publication gates.",
+          error: "This knowledge entry does not currently clear its publication safeguards.",
           reasons: check.reasons,
-          gates: check.gates,
+          safeguards: check.safeguards,
         },
         { status: 409 }
       )
@@ -80,9 +80,9 @@ export const POST = withRole(
         requiresHumanReview: true,
         hasSafetyBoundaries: check.hasSafetyBoundaries,
         knowledgeSlug: entry.slug,
-        gateProfileId: profile.id,
-        gateProfileSource: source,
-        skippedGates: check.gates?.skippedGates ?? [],
+        safeguardProfileId: profile.id,
+        safeguardProfileSource: source,
+        skippedSafeguards: check.safeguards?.skippedSafeguards ?? [],
       },
     })
   } catch (error) {

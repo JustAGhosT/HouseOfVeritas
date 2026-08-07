@@ -1,8 +1,8 @@
 import { randomUUID } from "crypto"
 import { beforeEach, describe, expect, it } from "vitest"
-import { GET, POST } from "@/app/api/knowledge/gate-profiles/route"
-import { KNOWLEDGE_GATE_PROFILE_SCHEMA_VERSION } from "@/lib/knowledge/gate-profile-events"
-import { resetKnowledgeGateProfileRepositoryForTests } from "@/lib/repositories/knowledge-gate-profile-repository"
+import { GET, POST } from "@/app/api/knowledge/safeguard-profiles/route"
+import { KNOWLEDGE_SAFEGUARD_PROFILE_SCHEMA_VERSION } from "@/lib/knowledge/safeguard-profile-events"
+import { resetKnowledgeSafeguardProfileRepositoryForTests } from "@/lib/repositories/knowledge-safeguard-profile-repository"
 
 const adminHeaders = {
   "x-user-id": "admin-1",
@@ -18,18 +18,18 @@ const operatorHeaders = {
   "Content-Type": "application/json",
 }
 
-const ENDPOINT = "http://localhost/api/knowledge/gate-profiles"
+const ENDPOINT = "http://localhost/api/knowledge/safeguard-profiles"
 
 function profileRequest(overrides: Record<string, unknown> = {}, headers = adminHeaders) {
   return new Request(ENDPOINT, {
     method: "POST",
     headers,
     body: JSON.stringify({
-      schemaVersion: KNOWLEDGE_GATE_PROFILE_SCHEMA_VERSION,
+      schemaVersion: KNOWLEDGE_SAFEGUARD_PROFILE_SCHEMA_VERSION,
       profileId: "checklist",
       label: "Checklist",
       description: "Inspect-and-record entries.",
-      disabledGates: ["diagnosis_before_action"],
+      disabledSafeguards: ["diagnosis_before_action"],
       rationale: "Checklists change nothing on the asset, so misdiagnosis is not a risk.",
       expectedVersion: 0,
       idempotencyKey: randomUUID(),
@@ -38,9 +38,9 @@ function profileRequest(overrides: Record<string, unknown> = {}, headers = admin
   })
 }
 
-describe("/api/knowledge/gate-profiles", () => {
+describe("/api/knowledge/safeguard-profiles", () => {
   beforeEach(() => {
-    resetKnowledgeGateProfileRepositoryForTests()
+    resetKnowledgeSafeguardProfileRepositoryForTests()
   })
 
   it("requires an authenticated admin for reads and writes", async () => {
@@ -65,9 +65,12 @@ describe("/api/knowledge/gate-profiles", () => {
     expect(body.summary).toEqual({ total: 3, stored: 0, deviating: 0 })
   })
 
-  it("advertises which gates can never be waived", async () => {
+  it("advertises which safeguards can never be waived", async () => {
     const body = await (await GET(new Request(ENDPOINT, { headers: adminHeaders }))).json()
-    expect(body.data.nonWaivableGates.sort()).toEqual(["data_boundary", "verifiable_ground_truth"])
+    expect(body.data.nonWaivableSafeguards.sort()).toEqual([
+      "data_boundary",
+      "verifiable_ground_truth",
+    ])
   })
 
   it("records the authenticated actor and rejects client-supplied actor fields", async () => {
@@ -82,23 +85,23 @@ describe("/api/knowledge/gate-profiles", () => {
     expect(body.data.event.version).toBe(1)
   })
 
-  it("refuses to waive a non-waivable gate, whatever the rationale", async () => {
-    for (const gate of ["data_boundary", "verifiable_ground_truth"]) {
+  it("refuses to waive a non-waivable safeguard, whatever the rationale", async () => {
+    for (const safeguard of ["data_boundary", "verifiable_ground_truth"]) {
       const response = await POST(
         profileRequest({
           profileId: "loose",
-          disabledGates: [gate],
+          disabledSafeguards: [safeguard],
           rationale: "The administrator has decided this is acceptable for now.",
         })
       )
       const body = await response.json()
       expect(response.status).toBe(400)
-      expect(body.messages.join(" ")).toContain(`${gate} cannot be waived`)
+      expect(body.messages.join(" ")).toContain(`${safeguard} cannot be waived`)
     }
   })
 
-  it("requires a rationale even when re-enabling every gate", async () => {
-    const response = await POST(profileRequest({ disabledGates: [], rationale: "" }))
+  it("requires a rationale even when re-enabling every safeguard", async () => {
+    const response = await POST(profileRequest({ disabledSafeguards: [], rationale: "" }))
     expect(response.status).toBe(400)
   })
 
@@ -107,7 +110,7 @@ describe("/api/knowledge/gate-profiles", () => {
     const stale = await POST(profileRequest({ expectedVersion: 0 }))
     expect(stale.status).toBe(409)
 
-    const next = await POST(profileRequest({ expectedVersion: 1, disabledGates: [] }))
+    const next = await POST(profileRequest({ expectedVersion: 1, disabledSafeguards: [] }))
     expect(next.status).toBe(201)
     expect((await next.json()).data.event.version).toBe(2)
   })
@@ -133,7 +136,7 @@ describe("/api/knowledge/gate-profiles", () => {
         profileId: "strict",
         label: "Strict",
         description: "Relaxed for a bounded content push.",
-        disabledGates: ["commercial_neutrality"],
+        disabledSafeguards: ["commercial_neutrality"],
         rationale:
           "Supplier notes are being reworked; neutrality is reviewed manually this sprint.",
       })
@@ -143,7 +146,7 @@ describe("/api/knowledge/gate-profiles", () => {
     const strict = body.data.profiles.find((p: { profileId: string }) => p.profileId === "strict")
 
     expect(strict.source).toBe("stored")
-    expect(strict.effective.disabledGates).toEqual(["commercial_neutrality"])
+    expect(strict.effective.disabledSafeguards).toEqual(["commercial_neutrality"])
     expect(strict.deviatesFromBuiltin).toBe(true)
     expect(strict.relaxedBeyondBuiltin).toEqual(["commercial_neutrality"])
     expect(body.summary).toMatchObject({ stored: 1, deviating: 1 })
@@ -156,7 +159,11 @@ describe("/api/knowledge/gate-profiles", () => {
         label: "Household recipe",
         description: "Recipes.",
         // statutory_competence is already waived by the built-in; irreversible_harm is not.
-        disabledGates: ["statutory_competence", "diagnosis_before_action", "irreversible_harm"],
+        disabledSafeguards: [
+          "statutory_competence",
+          "diagnosis_before_action",
+          "irreversible_harm",
+        ],
         rationale: "Temporarily relaxed while allergen sourcing is re-verified by hand.",
       })
     )
@@ -171,7 +178,7 @@ describe("/api/knowledge/gate-profiles", () => {
   it("keeps full history for a profile", async () => {
     await POST(profileRequest({ idempotencyKey: randomUUID(), expectedVersion: 0 }))
     await POST(
-      profileRequest({ idempotencyKey: randomUUID(), expectedVersion: 1, disabledGates: [] })
+      profileRequest({ idempotencyKey: randomUUID(), expectedVersion: 1, disabledSafeguards: [] })
     )
 
     const body = await (await GET(new Request(ENDPOINT, { headers: adminHeaders }))).json()
@@ -183,16 +190,18 @@ describe("/api/knowledge/gate-profiles", () => {
     expect(checklist.current.version).toBe(2)
   })
 
-  it("rejects unknown fields, unknown gates and malformed ids", async () => {
+  it("rejects unknown fields, unknown safeguards and malformed ids", async () => {
     expect((await POST(profileRequest({ surprise: true }))).status).toBe(400)
-    expect((await POST(profileRequest({ disabledGates: ["not_a_gate"] }))).status).toBe(400)
+    expect((await POST(profileRequest({ disabledSafeguards: ["not_a_safeguard"] }))).status).toBe(
+      400
+    )
     expect((await POST(profileRequest({ profileId: "Not Kebab" }))).status).toBe(400)
     expect((await POST(profileRequest({ idempotencyKey: "not-a-uuid" }))).status).toBe(400)
   })
 
-  it("rejects a repeated gate in disabledGates", async () => {
+  it("rejects a repeated safeguard in disabledSafeguards", async () => {
     const response = await POST(
-      profileRequest({ disabledGates: ["diagnosis_before_action", "diagnosis_before_action"] })
+      profileRequest({ disabledSafeguards: ["diagnosis_before_action", "diagnosis_before_action"] })
     )
     expect(response.status).toBe(400)
   })

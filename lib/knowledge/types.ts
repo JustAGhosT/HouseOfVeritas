@@ -1,10 +1,10 @@
 import { z } from "zod"
 import { guidanceDraftSchema, type GuidanceDraft, type GuidanceLocale } from "@/lib/guidance"
 import {
-  knowledgeGateResultsSchema,
-  type KnowledgeGateId,
-  type KnowledgeGateResult,
-} from "@/lib/knowledge/gates"
+  knowledgeSafeguardResultsSchema,
+  type KnowledgeSafeguardId,
+  type KnowledgeSafeguardResult,
+} from "@/lib/knowledge/safeguards"
 
 /**
  * Curated diagnostic knowledge base.
@@ -40,16 +40,16 @@ export interface KnowledgeSupplier {
 /**
  * The recorded Tier-0 review for an entry.
  *
- * Gate results are human judgements about content, not properties derivable
+ * Safeguard results are human judgements about content, not properties derivable
  * from it, so they have to be recorded rather than computed. A `published`
- * entry without one is rejected by the schema — that is what makes the gates
+ * entry without one is rejected by the schema — that is what makes the safeguards
  * enforceable for a seed that is published by merging a PR rather than by an
  * API call.
  */
 export interface KnowledgeReview {
-  /** Gate profile the reviewer applied — see `KNOWLEDGE_GATE_PROFILES`. */
+  /** Safeguard profile the reviewer applied — see `KNOWLEDGE_SAFEGUARD_PROFILES`. */
   profileId: string
-  gateResults: Partial<Record<KnowledgeGateId, KnowledgeGateResult>>
+  safeguardResults: Partial<Record<KnowledgeSafeguardId, KnowledgeSafeguardResult>>
   /** Pseudonymous reviewer reference; never a name or contact detail. */
   reviewedBy: string
   reviewedAt: string
@@ -99,7 +99,7 @@ export const knowledgeReviewSchema = z
       .min(3)
       .max(64)
       .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "profileId must be kebab-case"),
-    gateResults: knowledgeGateResultsSchema.default({}),
+    safeguardResults: knowledgeSafeguardResultsSchema.default({}),
     reviewedBy: z
       .string()
       .trim()
@@ -124,13 +124,13 @@ export const knowledgeEntrySchema = z
     review: knowledgeReviewSchema.optional(),
   })
   .superRefine((entry, context) => {
-    // Publication is the act the gates exist to control, so an entry cannot
+    // Publication is the act the safeguards exist to control, so an entry cannot
     // claim `published` without a recorded review to point at.
     if (entry.status === "published" && !entry.review) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["review"],
-        message: "a published entry must carry a recorded gate review",
+        message: "a published entry must carry a recorded safeguard review",
       })
     }
   })
