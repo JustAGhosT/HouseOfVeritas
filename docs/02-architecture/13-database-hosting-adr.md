@@ -40,34 +40,40 @@ Baserow remains a supported backend, Terraform-provisioned and flag-gated (`enab
 
 ---
 
-## Decision 2 — Host on the shared `nl-prod-convolens-pg` server
+## Decision 2 — Host on an org-level shared server, `nl-prod-shared-pg`
 
-HOV's `houseofveritas` database is created on the **existing** `nl-prod-convolens-pg` Flexible Server (South Africa North, PostgreSQL 16, `Standard_B1ms`), rather than provisioning a dedicated HOV server.
+A dedicated server, `nl-prod-shared-pg` (resource group `nl-prod-shared-rg`, South Africa North, PostgreSQL 16, `Standard_B1ms`, 32 GB), is owned at organisation level rather than by any one application. Each application gets its own database and its own scoped login role.
+
+**Current tenants**
+
+| Database | Owner role | Migrated |
+| --- | --- | --- |
+| `houseofveritas` | `houseofveritas` | 2026-08-06 — schema self-creates; no data to move |
+| `convolens` | `convolens` | 2026-08-06 — 6 tables, 26 rows |
+
+**How this was reached.** HOV was first placed on the existing `nl-prod-convolens-pg` server, on the reasoning that cost was the binding constraint and a second B1ms was unjustified. That was correct about cost and wrong about structure: it made HOV a guest on another application's production instance, with a shared administrative credential and coupled backup/restore. Moving *both* applications onto a neutral server keeps the server count — and therefore the cost — unchanged, while removing the guest relationship entirely.
 
 **Rationale**
 
-- **Cost is the binding constraint.** The project is pre-revenue; a second `Standard_B1ms` is unjustified spend for four users.
-- **Capacity is not a concern at this scale.** Four personas and a once-daily ingestion job will not stress a B1ms.
-- **Region is right.** It is the only candidate in South Africa North. The two `nl-dev-omnipost-*` servers are in North Europe and Sweden Central — wrong on both latency and POPIA data-residency grounds.
+- **Server count is unchanged**, so the cost argument that drove the original decision still holds. `nl-prod-convolens-pg` is retained only as rollback and should be deleted once both applications have been observed healthy.
+- **No application is a guest of another.** Ownership sits with the organisation; neither app's lifecycle, maintenance window or restore decision is imposed on the other.
+- **Least privilege by construction.** Each database is owned by its own role. Neither role holds rights on the other's objects, and no application uses the server admin.
+- **Region is correct** — South Africa North, matching both applications and POPIA residency expectations.
 
-**Accepted costs — recorded deliberately, not overlooked**
+**Remaining costs, honestly stated**
 
-1. **Shared blast radius.** A runaway query, a restart, a storage-full event or a maintenance window on convolens affects HOV, and vice versa. This was raised and consciously accepted: at alpha, an outage is cheap and cash is not.
-2. ~~**Shared administrative credential.**~~ **Resolved 2026-08-06.** HOV initially connected as `convolensadmin`, the server admin for another application, which gave each app full rights over the other's data. A dedicated `houseofveritas` login role now owns the `houseofveritas` database, its schema, and all 18 tables and their sequences; the connection string is stored at `nl-prod-convolens-kv/hov-estate-database-url` and the admin credential is no longer used by HOV. Verified by running the live round-trip suite as the scoped role.
-3. ~~**No least-privilege role.**~~ **Resolved 2026-08-06** — see above. `ensureEstateSchema()` now runs as `houseofveritas`, which owns the objects it alters.
-
-   *Residual:* PostgreSQL grants `CONNECT` on every database to `PUBLIC` by default, so the `houseofveritas` role can still open a connection to convolens' database (without rights on its objects). Closing that requires `REVOKE CONNECT ON DATABASE <convolens> FROM PUBLIC`, which touches convolens' own access path and was therefore left to its owner rather than changed unilaterally.
-4. **Backup and restore are coupled.** Point-in-time restore operates on the server, so restoring HOV means restoring convolens' server too.
-5. **Cross-project ownership.** `nl-prod-convolens-rg` is not HOV's resource group; HOV's Terraform does not own the server it depends on.
-
----
+1. **Shared blast radius persists.** One server still means one restart, one storage limit, one maintenance window, one CPU-credit budget. This is inherent to consolidation and was accepted deliberately: at alpha, an outage is cheap and a second server is not.
+2. **Backup and restore remain server-scoped.** Point-in-time restore still affects both databases. Per-database recovery requires a dump, not PITR.
+3. **`PUBLIC` retains `CONNECT` by default.** PostgreSQL grants `CONNECT` on every database to `PUBLIC`, so either role can open a connection to the other's database, though it holds no rights on its objects. Closing this means `REVOKE CONNECT ON DATABASE <db> FROM PUBLIC` for each.
+4. **The server is not yet in Terraform.** It was created with `az` during the migration. Codifying it — ideally in an org-level stack rather than HOV's — is outstanding, and until then it is drift by definition.
 
 ## Alternatives considered
 
 | Option | Verdict |
 | --- | --- |
-| Dedicated `nl-prod-hov-pg` (flip `enable_database = true`) | Cleanest isolation and the ADR-005 assumption. Rejected on cost alone. |
-| **Shared `nl-prod-*` org server, database-per-app** | **The right end state.** One deliberately-shared server owned at org level, with a database and a scoped role per app — same cost as today, without grafting onto another app's production instance. Deferred, not rejected. |
+| Dedicated `nl-prod-hov-pg` (flip `enable_database = true`) | Cleanest isolation and the ADR-005 assumption. Rejected on cost: it adds a server rather than relocating one. |
+| **Shared `nl-prod-*` org server, database-per-app** | **Adopted 2026-08-06.** See Decision 2. |
+| Host HOV on `nl-prod-convolens-pg` | Adopted briefly, then superseded the same day — see Decision 2. |
 | Graft onto `nl-dev-omnipost-*` | Rejected: North Europe / Sweden Central. |
 | Cosmos (Mongo API) as primary estate store | Rejected — see Decision 1. |
 
@@ -89,8 +95,9 @@ Move to a dedicated org-level shared server when **any** of these becomes true:
 
 ## Consequences
 
-- `DATABASE_URL` for HOV points at `nl-prod-convolens-pg.postgres.database.azure.com/houseofveritas`.
-- The server's firewall permits `allow-azure-services`, which covers the HOV App Service and Function App. Ad-hoc access from developer machines requires a temporary firewall rule, added and removed per use.
+- `DATABASE_URL` for HOV points at `nl-prod-shared-pg.postgres.database.azure.com/houseofveritas`, stored at `nl-prod-convolens-kv/hov-estate-database-url`. That vault is a temporary home; the secret belongs in an org-level vault alongside the server.
+- The server's firewall permits Azure services only, which covers the HOV App Service, the Function App and the convolens container app. Ad-hoc access from developer machines requires a temporary firewall rule, added and removed per use — as was done throughout this migration.
+- `nl-prod-convolens-pg` still holds both original databases and is the rollback path. Deleting it is a separate, deliberate step once both applications have run healthy for long enough to trust.
 - `ensureEstateSchema()` and `ensureRadarSchema()` create their tables idempotently on first use; there is no separate migration step.
 - The Function App now receives `ESTATE_BACKEND`, `DATABASE_URL` and `POSTGRES_URL`, and creates its own radar schema, so the ingestion job no longer depends on the web app having run first. Under Postgres it addresses tables by name; the `TABLE_DEAL_RADAR_*` settings apply to the Baserow path only.
 - Verified live on 2026-08-06: schema creation, insert/read/update round-trip, `DATE` fidelity, `NUMERIC` decoding, and time-clock clock-in/clock-out all pass against this server (`tests/integration/postgres-roundtrip.test.ts`) — first as the server admin, then again as the scoped `houseofveritas` role.
