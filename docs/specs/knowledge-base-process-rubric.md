@@ -227,7 +227,15 @@ total weight       16
 
 `composite = Σ(subScore × weight) / 16`, giving 0–10.
 
-Missing facts fall back to a **neutral 5** (`NEUTRAL_SUBSCORE`), except `costAvoided` as noted.
+**There is no neutral fallback for a missing fact**, and this is where Tier 1 deliberately departs
+from Deal Radar. Radar scores listings it scrapes, so it must cope with absent data and defaults to
+`NEUTRAL_SUBSCORE`. Tier 1 scores a candidate a human is proposing, so every field of
+`KnowledgeCandidateFacts` is required — being unable to say how often the estate does something is
+itself a reason not to author it yet, not a five.
+
+The one exception is `costAvoidedCents`, which is nullable because "no trade equivalent exists" is a
+real answer rather than an unknown. It scores `COST_AVOIDED_UNKNOWN_SUBSCORE` (3), below neutral, so
+an unquantified saving cannot read as an average one.
 
 ### 5.3 Priority bands
 
