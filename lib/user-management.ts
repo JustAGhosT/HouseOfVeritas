@@ -1,4 +1,4 @@
-import { isPostgresConfigured, query, withClient } from "@/lib/db/postgres"
+import { ensureSchema, isPostgresConfigured, query, withClient } from "@/lib/db/postgres"
 import { User, UserRole, findUserByIdAsync, getAllUsersAsync } from "@/lib/users"
 import { defaultUserThemeForColor, isUserThemeId } from "@/lib/user-themes"
 
@@ -25,6 +25,17 @@ let schemaEnsured = false
 
 async function ensureUserManagementSchema(): Promise<void> {
   if (!schemaEnsured && isPostgresConfigured()) {
+    // Everything below is ALTER TABLE users — additive columns on a table this
+    // module does not create. ensureSchema() owns `users`, and it is idempotent,
+    // so establishing that dependency here costs nothing and removes the
+    // assumption that some other caller happened to run first.
+    //
+    // On a database where nothing had yet created `users`, the first ALTER threw
+    // 42P01 relation "users" does not exist. That was invisible while Baserow was
+    // the backend — isPostgresConfigured() was false, so none of this ran — and
+    // surfaced immediately on the 2026-08-07 Postgres cutover.
+    await ensureSchema()
+
     await withClient(async (client) => {
       await client.query(`
         DO $$ BEGIN
