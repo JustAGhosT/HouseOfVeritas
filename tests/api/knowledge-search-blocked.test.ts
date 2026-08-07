@@ -94,6 +94,33 @@ describe("GET /api/knowledge — withholds entries that do not clear", () => {
     expect(body.summary.count).toBe(1)
   })
 
+  it("backfills — blocked entries at the top do not shrink the result set", async () => {
+    // The route serves 5 but ranks 50. If the limit were applied before the
+    // safeguard filter, these six blocked entries would occupy the whole page
+    // and the clearing entry behind them would never surface, making search
+    // look empty depending on which blocked entry happened to rank highest.
+    const blocked = Array.from({ length: 6 }, (_, i) => ({
+      ...base,
+      slug: `blocked-${i}`,
+      review: { ...base.review!, safeguardResults: { data_boundary: "fail" as const } },
+    }))
+    injected.matches = [...blocked.map(asMatch), asMatch(base)]
+
+    const body = await (await search()).json()
+    expect(body.data.matches.map((m: { slug: string }) => m.slug)).toEqual([base.slug])
+    expect(body.summary.count).toBe(1)
+    expect(body.summary.withheld).toBe(6)
+  })
+
+  it("counts withheld over the candidate set, not the served page", async () => {
+    // Seven clearing entries exceed the page size of 5. The two trimmed by the
+    // limit are not "withheld" — nothing was wrong with them.
+    injected.matches = Array.from({ length: 7 }, (_, i) => asMatch({ ...base, slug: `ok-${i}` }))
+    const body = await (await search()).json()
+    expect(body.data.matches).toHaveLength(5)
+    expect(body.summary.withheld).toBe(0)
+  })
+
   it("does not leak the withheld entry's body", async () => {
     injected.matches = [
       asMatch({

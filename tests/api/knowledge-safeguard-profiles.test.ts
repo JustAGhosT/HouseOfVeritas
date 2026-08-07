@@ -148,7 +148,10 @@ describe("/api/knowledge/safeguard-profiles", () => {
     expect(strict.source).toBe("stored")
     expect(strict.effective.disabledSafeguards).toEqual(["commercial_neutrality"])
     expect(strict.deviatesFromBuiltin).toBe(true)
-    expect(strict.relaxedBeyondBuiltin).toEqual(["commercial_neutrality"])
+    expect(strict.relaxedBeyondBuiltin).toEqual({
+      kind: "vs-builtin",
+      safeguards: ["commercial_neutrality"],
+    })
     expect(body.summary).toMatchObject({ stored: 1, deviating: 1 })
   })
 
@@ -172,7 +175,10 @@ describe("/api/knowledge/safeguard-profiles", () => {
     const recipe = body.data.profiles.find(
       (p: { profileId: string }) => p.profileId === "household-recipe"
     )
-    expect(recipe.relaxedBeyondBuiltin).toEqual(["irreversible_harm"])
+    expect(recipe.relaxedBeyondBuiltin).toEqual({
+      kind: "vs-builtin",
+      safeguards: ["irreversible_harm"],
+    })
   })
 
   it("keeps full history for a profile", async () => {

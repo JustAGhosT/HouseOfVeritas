@@ -20,12 +20,13 @@ import { ApiError, apiFetch } from "@/lib/api-client"
 import {
   KNOWLEDGE_SAFEGUARD_PROFILE_SCHEMA_VERSION,
   type KnowledgeSafeguardProfileProjection,
+  type RelaxationSummary,
 } from "@/lib/knowledge/safeguard-profile-events"
 import type { KnowledgeSafeguard, KnowledgeSafeguardId } from "@/lib/knowledge/safeguards"
 import { AlertTriangle, History, Loader2, Lock, RefreshCw, ShieldCheck } from "lucide-react"
 
 interface ProfileProjection extends KnowledgeSafeguardProfileProjection {
-  relaxedBeyondBuiltin: KnowledgeSafeguardId[]
+  relaxedBeyondBuiltin: RelaxationSummary
 }
 
 interface SafeguardProfilesResponse {
@@ -223,12 +224,14 @@ export default function KnowledgeSafeguardsPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                {profile.relaxedBeyondBuiltin.length > 0 && (
+                {profile.relaxedBeyondBuiltin.safeguards.length > 0 && (
                   <p className="flex items-start gap-2 rounded-md border border-amber-600/40 bg-amber-600/10 p-2 text-sm">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                     <span>
-                      Relaxed beyond the built-in default:{" "}
-                      {profile.relaxedBeyondBuiltin
+                      {profile.relaxedBeyondBuiltin.kind === "vs-builtin"
+                        ? "Relaxed beyond the built-in default: "
+                        : "Custom profile with no built-in baseline — switched off: "}
+                      {profile.relaxedBeyondBuiltin.safeguards
                         .map(
                           (id) => safeguards.find((safeguard) => safeguard.id === id)?.label ?? id
                         )

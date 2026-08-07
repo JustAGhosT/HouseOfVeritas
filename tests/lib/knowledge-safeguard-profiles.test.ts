@@ -182,7 +182,10 @@ describe("projection", () => {
       ]),
     ])
     const recipe = projections.find((p) => p.profileId === "household-recipe")!
-    expect(relaxedBeyondBuiltin(recipe)).toEqual(["irreversible_harm"])
+    expect(relaxedBeyondBuiltin(recipe)).toEqual({
+      kind: "vs-builtin",
+      safeguards: ["irreversible_harm"],
+    })
   })
 
   it("reports no relaxation for a stored profile matching its built-in", () => {
@@ -191,7 +194,19 @@ describe("projection", () => {
     ])
     expect(
       relaxedBeyondBuiltin(projections.find((p) => p.profileId === "household-recipe")!)
-    ).toEqual([])
+    ).toEqual({ kind: "vs-builtin", safeguards: [] })
+  })
+
+  it("does not claim a custom profile is relaxed beyond a baseline it never had", () => {
+    // With no built-in of the same id there is no baseline, so calling every
+    // disabled safeguard "relaxed beyond the default" would be misleading.
+    const projections = projectSafeguardProfiles([event("custom-one", 1, ["irreversible_harm"])])
+    const custom = projections.find((p) => p.profileId === "custom-one")!
+    expect(custom.builtin).toBeNull()
+    expect(relaxedBeyondBuiltin(custom)).toEqual({
+      kind: "no-baseline",
+      safeguards: ["irreversible_harm"],
+    })
   })
 })
 

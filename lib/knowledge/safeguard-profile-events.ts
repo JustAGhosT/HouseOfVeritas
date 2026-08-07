@@ -239,9 +239,28 @@ export function projectSafeguardProfiles(
  * `disabledSafeguards` because a built-in waiver (a recipe not needing an electrical
  * licence) and an operator waiver are different things to review.
  */
+export interface RelaxationSummary {
+  /**
+   * `vs-builtin` — the profile shadows a code-defined one, so `safeguards` is
+   * genuinely "switched off beyond what the system intended".
+   * `no-baseline` — a custom profile with no built-in of the same id. Every
+   * disabled safeguard is an operator choice, but none of them is *beyond* a
+   * baseline, because there is no baseline. Callers must not label these the
+   * same way.
+   */
+  kind: "vs-builtin" | "no-baseline"
+  safeguards: KnowledgeSafeguardId[]
+}
+
 export function relaxedBeyondBuiltin(
   projection: KnowledgeSafeguardProfileProjection
-): KnowledgeSafeguardId[] {
-  const builtinDisabled = new Set(projection.builtin?.disabledSafeguards ?? [])
-  return projection.effective.disabledSafeguards.filter((id) => !builtinDisabled.has(id))
+): RelaxationSummary {
+  if (!projection.builtin) {
+    return { kind: "no-baseline", safeguards: [...projection.effective.disabledSafeguards] }
+  }
+  const builtinDisabled = new Set(projection.builtin.disabledSafeguards)
+  return {
+    kind: "vs-builtin",
+    safeguards: projection.effective.disabledSafeguards.filter((id) => !builtinDisabled.has(id)),
+  }
 }

@@ -8,6 +8,11 @@ import { KNOWLEDGE_DOMAINS } from "@/lib/knowledge/types"
 import { GUIDANCE_LOCALES } from "@/lib/guidance"
 import { logger } from "@/lib/logger"
 
+/** What a caller gets back. Matches `rankKnowledge`'s previous default. */
+const SEARCH_RESULT_LIMIT = 5
+/** How deep to rank before filtering, so the safeguard check can backfill. */
+const SEARCH_CANDIDATE_LIMIT = 50
+
 const querySchema = z.object({
   q: z.string().trim().min(2).max(2_000),
   domain: z.enum(KNOWLEDGE_DOMAINS).optional(),
@@ -42,23 +47,35 @@ export const GET = withRole(
       )
     }
 
-    const ranked = findKnowledge({
-      text: parsed.data.q,
-      domain: parsed.data.domain,
-      assetType: parsed.data.assetType,
-      locale: parsed.data.locale,
-    })
+    // Rank wider than we serve. The safeguard filter runs after ranking, so if
+    // the limit were applied first, blocked entries occupying top slots would
+    // shrink the result set instead of being backfilled by lower-ranked entries
+    // that do clear — making search look empty in a way that depends on which
+    // blocked entry happened to score highest.
+    const ranked = findKnowledge(
+      {
+        text: parsed.data.q,
+        domain: parsed.data.domain,
+        assetType: parsed.data.assetType,
+        locale: parsed.data.locale,
+      },
+      { limit: SEARCH_CANDIDATE_LIMIT }
+    )
 
     // Search is re-checked against the administrator's effective profile, not
     // just the built-in the entry shipped against. Without this, tightening a
     // safeguard would stop an entry being applied while still surfacing it in
     // results — which reads as an endorsement the safeguards no longer give.
     const resolveProfile = await loadSafeguardProfileResolver()
-    const matches = ranked.filter((match) => {
+    const cleared = ranked.filter((match) => {
       const { profile, source } = resolveProfile(profileIdForEntry(match.entry))
       return checkPublishable(match.entry, profile, source).publishable
     })
-    const withheld = ranked.length - matches.length
+    // Counted over the whole candidate set, not the served page: "how many
+    // matching entries are currently blocked" is the useful number, and it must
+    // not move just because the page size did.
+    const withheld = ranked.length - cleared.length
+    const matches = cleared.slice(0, SEARCH_RESULT_LIMIT)
     if (withheld > 0) {
       // Deliberately not the query. It is user-supplied free text describing a
       // household problem, so it can carry exactly the personal detail the
@@ -70,7 +87,7 @@ export const GET = withRole(
         withheld,
         queryLength: parsed.data.q.length,
         withheldSlugs: ranked
-          .filter((match) => !matches.includes(match))
+          .filter((match) => !cleared.includes(match))
           .map((match) => match.entry.slug),
       })
     }
