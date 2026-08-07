@@ -180,6 +180,12 @@ variable "terraform_key_vault_access_policy_object_id" {
   default     = "593a093c-d4fd-4390-977b-a64abfc97606"
 }
 
+variable "key_vault_operator_object_ids" {
+  description = "Microsoft Entra object IDs of operators granted Get/List/Set on Key Vault secrets. This vault uses access policies, so subscription Owner grants nothing without being listed here."
+  type        = list(string)
+  default     = ["99b63adb-8f1a-4d7a-a98c-5bfe9c7fcd96"]
+}
+
 variable "key_vault_network_default_action" {
   description = "Default network action for the Key Vault firewall"
   type        = string

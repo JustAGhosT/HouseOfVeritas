@@ -68,24 +68,24 @@ resource "azurerm_linux_function_app" "main" {
     DOCUSEAL_API_KEY        = var.docuseal_api_key
     DOCUSEAL_WEBHOOK_SECRET = var.docuseal_webhook_secret
 
-    TABLE_EMPLOYEES               = var.baserow_table_employees
-    TABLE_ASSETS                  = var.baserow_table_assets
-    TABLE_TASKS                   = var.baserow_table_tasks
-    TABLE_TIME_CLOCK              = var.baserow_table_time_clock
-    TABLE_INCIDENTS               = var.baserow_table_incidents
-    TABLE_VEHICLE_LOGS            = var.baserow_table_vehicle_logs
-    TABLE_EXPENSES                = var.baserow_table_expenses
-    TABLE_DOCUMENT_EXPIRY         = var.baserow_table_document_expiry
-    TABLE_DEAL_RADAR_LISTINGS     = var.baserow_table_deal_radar_listings
-    TABLE_DEAL_RADAR_QUARANTINE   = var.baserow_table_deal_radar_quarantine
-    RADAR_ENABLED                 = tostring(var.radar_enabled)
+    TABLE_EMPLOYEES             = var.baserow_table_employees
+    TABLE_ASSETS                = var.baserow_table_assets
+    TABLE_TASKS                 = var.baserow_table_tasks
+    TABLE_TIME_CLOCK            = var.baserow_table_time_clock
+    TABLE_INCIDENTS             = var.baserow_table_incidents
+    TABLE_VEHICLE_LOGS          = var.baserow_table_vehicle_logs
+    TABLE_EXPENSES              = var.baserow_table_expenses
+    TABLE_DOCUMENT_EXPIRY       = var.baserow_table_document_expiry
+    TABLE_DEAL_RADAR_LISTINGS   = var.baserow_table_deal_radar_listings
+    TABLE_DEAL_RADAR_QUARANTINE = var.baserow_table_deal_radar_quarantine
+    RADAR_ENABLED               = tostring(var.radar_enabled)
 
     # Estate/radar datastore selection. With ESTATE_BACKEND=postgres the
     # ingestion job addresses tables by name and creates its own schema; the
     # TABLE_DEAL_RADAR_* ids above apply to the Baserow path only.
-    ESTATE_BACKEND = var.estate_backend
-    DATABASE_URL   = var.database_url
-    POSTGRES_URL   = var.database_url
+    ESTATE_BACKEND                = var.estate_backend
+    DATABASE_URL                  = var.database_url
+    POSTGRES_URL                  = var.database_url
     RADAR_SEED_ENABLED            = tostring(var.radar_seed_enabled)
     RADAR_ROW_DELTA_THRESHOLD_PCT = tostring(var.radar_row_delta_threshold_pct)
 

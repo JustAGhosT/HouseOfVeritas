@@ -116,6 +116,7 @@ module "security" {
   network_default_action            = var.key_vault_network_default_action
   container_subnet_id               = module.network.container_subnet_id
   terraform_access_policy_object_id = var.terraform_key_vault_access_policy_object_id
+  operator_access_policy_object_ids = var.key_vault_operator_object_ids
   deployer_ip_addresses             = local.ci_ip_rules_keyvault
   db_admin_password                 = var.db_admin_password
   docuseal_secret_key               = random_password.docuseal_secret.result

@@ -62,6 +62,12 @@ variable "terraform_access_policy_object_id" {
   }
 }
 
+variable "operator_access_policy_object_ids" {
+  description = "Microsoft Entra object IDs of operators granted Get/List/Set on secrets. Object IDs are directory identifiers, not secrets, and belong in review."
+  type        = list(string)
+  default     = []
+}
+
 variable "network_default_action" {
   description = "Default network action for the Key Vault firewall"
   type        = string
