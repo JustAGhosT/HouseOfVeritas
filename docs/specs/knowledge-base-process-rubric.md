@@ -1,11 +1,11 @@
 # Knowledge Base — Process Selection, Publication Safeguard, and Quality Rubric
 
-|                    |                                                                                                                                |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| **Status**         | Active — fully implemented; §10.0 deferred pending a competent person, §10.1 are content questions                             |
-| **Applies to**     | `lib/knowledge/**`, `lib/guidance.ts`, `app/api/knowledge/**`, `app/api/guidance/**`                                           |
-| **Pattern source** | `lib/services/radar/rubrics.ts` (rubric-as-data), `lib/reviewer-trials/domain-safety-trial.ts` (gates + quality dimensions)    |
-| **Related**        | [property-deal-radar.md](property-deal-radar.md), [task-guidance-architecture.md](../05-project/task-guidance-architecture.md) |
+|                    |                                                                                                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**         | Active — fully implemented. §10.0 deferred (needs a competent person); §10.1 mostly closed by measurement, one new open question on band discrimination |
+| **Applies to**     | `lib/knowledge/**`, `lib/guidance.ts`, `app/api/knowledge/**`, `app/api/guidance/**`                                                                    |
+| **Pattern source** | `lib/services/radar/rubrics.ts` (rubric-as-data), `lib/reviewer-trials/domain-safety-trial.ts` (gates + quality dimensions)                             |
+| **Related**        | [property-deal-radar.md](property-deal-radar.md), [task-guidance-architecture.md](../05-project/task-guidance-architecture.md)                          |
 
 ---
 
@@ -637,17 +637,68 @@ same warning so it is visible at the point of use, not only here.
 
 ### 10.1 Questions about the rubric's content
 
-- **Does `costAvoided` distort toward trade-substitution content?** It weights 3, which may
-  systematically under-rank household and garden processes where no trade equivalent exists. The
-  fire-extinguisher example clears P0 anyway, but a second such case would justify re-weighting.
-- **Where does per-task guidance end and curated knowledge begin?** `repeatability: case-by-case`
-  scores 3 precisely to push one-off content into `lib/guidance` packs instead — but the boundary is
-  asserted here, not agreed.
-- **Are the band floor _values_ right?** Every table now has a floor (§9), which closes the crash
-  case §8.4 found. But the values themselves are asserted, not derived — `RECURRENCE_FLOOR = 1` says
-  a once-per-decade task is worth almost nothing to document, which is a judgement no evidence backs
-  yet.
-- **Should a Tier-1 decline expire?** A safeguard decline is permanent; a worth-based decline is a
-  snapshot of what the estate owns and does today. §8.4 declines "which welder to buy" partly on
-  `assetCoverage: not-owned` — which changes the moment one is bought. Declines probably need a
-  recorded re-evaluation trigger, not just a recorded score.
+Three of the four have been measured or decided. `tests/lib/knowledge-rubric-calibration.test.ts`
+scores 13 representative candidates from §7 across all five domains and asserts the properties
+below, so a future re-tuning has to confront its effect on the whole catalogue rather than on one
+worked example. **The facts in that suite are estimates — nobody has timed a gutter clearing** — so
+it asserts bounds and shapes, never specific composites.
+
+#### CLOSED — `costAvoided` does not distort toward trade-substitution content
+
+Measured. Candidates with a trade equivalent mean **7.77**; those without mean **7.68**. A gap of
+**0.09**, far inside the noise of the input estimates. The worry does not reproduce: where no
+call-out is being avoided, `consequenceOfDelay` and `recurrence` carry the candidate instead, which
+is the rubric working as designed. Re-weighting is not warranted, and the calibration suite now
+fails if a change opens the gap past 0.5.
+
+#### OPEN (new, and more serious) — the bands barely discriminate
+
+Measuring the above surfaced a better question. Across the 13 realistic candidates the composite
+spans only **7.19 – 8.19**, and **9 of 13 are P0**. Nothing lands in P2 at all. A priority scheme
+where two thirds of the catalogue is "author now" is not ranking anything.
+
+Two plausible reads, and it matters which:
+
+1. The bands are too generous — `PRIORITY_BANDS` should shift up.
+2. Estate maintenance genuinely is uniformly worth documenting, and P0/P1/P2 is the wrong output —
+   rank order within the set would be more useful than a band.
+
+**Not resolved here on purpose.** Re-tuning bands against 13 numbers invented for this analysis
+would be exactly the "asserted, not derived" failure this document keeps objecting to. The honest
+move is to wait until ~15 entries exist with facts recorded by a reviewer under `tier1`, then re-run
+the calibration against real data. `KnowledgeReview.tier1` was built partly to make that possible.
+
+#### BOUNDED — the band floor values matter less than feared
+
+`RECURRENCE_FLOOR = 1` is still asserted rather than derived, but the exposure is now quantified:
+moving it from 1 to 3 shifts a composite by at most **0.375**, and **no candidate in the catalogue
+is sub-annual**, so the floor is almost never exercised. Worth revisiting only if sub-annual
+candidates start appearing. Downgraded from open question to a documented bound.
+
+#### DECIDED — the guidance/knowledge boundary is structural, not scored
+
+`repeatability: case-by-case` scoring 3 was doing work the type system already does. The rule:
+
+|                         | `KnowledgeEntry`         | `GuidancePack` |
+| ----------------------- | ------------------------ | -------------- |
+| Bound to                | a symptom or asset class | one `taskId`   |
+| Reused across instances | yes                      | no             |
+| Authored                | ahead of need, reviewed  | on demand      |
+
+An entry is knowledge if it would still be true for the next occurrence on a different asset. The
+`case-by-case` score stays at 3 — a one-off scoring low is a useful signal — but it is a nudge, not
+the arbiter. A high-recurrence case-by-case candidate can still clear P1, and should.
+
+#### DECIDED — worth-based declines carry a re-evaluation trigger, recorded here
+
+A safeguard decline is permanent; a worth-based one is a snapshot. Rather than build a decline
+registry for three entries, they live in this table with the fact that would flip each:
+
+| Declined                              | Composite    | Why                                                      | Flips when                                     |
+| ------------------------------------- | ------------ | -------------------------------------------------------- | ---------------------------------------------- |
+| How to build a DIY welder             | n/a — Tier 0 | `verifiable_ground_truth` fails                          | Never. Permanent.                              |
+| Which welder should the estate buy    | 3.69         | `assetCoverage: not-owned`, `recurrence` once-per-decade | The estate buys a welder                       |
+| Stain and laundry treatment by fabric | not scored   | low consequence, high variety                            | A recurring stain problem is actually reported |
+
+Build a real registry when the catalogue is large enough that re-proposals happen — at three
+declines, a table someone reads is worth more than a store nobody queries.
