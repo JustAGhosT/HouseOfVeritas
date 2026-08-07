@@ -60,9 +60,18 @@ export const GET = withRole(
     })
     const withheld = ranked.length - matches.length
     if (withheld > 0) {
+      // Deliberately not the query. It is user-supplied free text describing a
+      // household problem, so it can carry exactly the personal detail the
+      // `data_boundary` safeguard exists to keep out of stored records — a
+      // symptom search naming a room, a person or a medical circumstance would
+      // otherwise be written to logs by the very feature enforcing POPIA.
+      // Length and the withheld slugs are enough to investigate with.
       logger.info("Withheld knowledge matches that no longer clear their safeguards", {
         withheld,
-        query: parsed.data.q,
+        queryLength: parsed.data.q.length,
+        withheldSlugs: ranked
+          .filter((match) => !matches.includes(match))
+          .map((match) => match.entry.slug),
       })
     }
 

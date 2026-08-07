@@ -44,15 +44,6 @@ export interface KnowledgeSupplier {
 }
 
 /**
- * The recorded Tier-0 review for an entry.
- *
- * Safeguard results are human judgements about content, not properties derivable
- * from it, so they have to be recorded rather than computed. A `published`
- * entry without one is rejected by the schema — that is what makes the safeguards
- * enforceable for a seed that is published by merging a PR rather than by an
- * API call.
- */
-/**
  * The Tier-1 priority assessment recorded at review time.
  *
  * Both the inputs and the resulting score are kept. The facts alone would let
@@ -69,6 +60,15 @@ export interface KnowledgeReviewPriority {
   priority: KnowledgePriority
 }
 
+/**
+ * The recorded Tier-0 review for an entry.
+ *
+ * Safeguard results are human judgements about content, not properties derivable
+ * from it, so they have to be recorded rather than computed. A `published`
+ * entry without one is rejected by the schema — that is what makes the safeguards
+ * enforceable for a seed that is published by merging a PR rather than by an
+ * API call.
+ */
 export interface KnowledgeReview {
   /** Safeguard profile the reviewer applied — see `KNOWLEDGE_SAFEGUARD_PROFILES`. */
   profileId: string
