@@ -53,8 +53,10 @@ HOV's `houseofveritas` database is created on the **existing** `nl-prod-convolen
 **Accepted costs — recorded deliberately, not overlooked**
 
 1. **Shared blast radius.** A runaway query, a restart, a storage-full event or a maintenance window on convolens affects HOV, and vice versa. This was raised and consciously accepted: at alpha, an outage is cheap and cash is not.
-2. **Shared administrative credential.** HOV currently connects as `convolensadmin` — the *server admin for another application* — read from `nl-prod-convolens-kv`. HOV therefore has full rights over convolens' data, and vice versa. This is the sharpest edge of the decision.
-3. **No least-privilege role.** Schema creation (`ensureEstateSchema`) runs as that admin. A dedicated `houseofveritas` role scoped to its own database is the obvious hardening step.
+2. ~~**Shared administrative credential.**~~ **Resolved 2026-08-06.** HOV initially connected as `convolensadmin`, the server admin for another application, which gave each app full rights over the other's data. A dedicated `houseofveritas` login role now owns the `houseofveritas` database, its schema, and all 18 tables and their sequences; the connection string is stored at `nl-prod-convolens-kv/hov-estate-database-url` and the admin credential is no longer used by HOV. Verified by running the live round-trip suite as the scoped role.
+3. ~~**No least-privilege role.**~~ **Resolved 2026-08-06** — see above. `ensureEstateSchema()` now runs as `houseofveritas`, which owns the objects it alters.
+
+   *Residual:* PostgreSQL grants `CONNECT` on every database to `PUBLIC` by default, so the `houseofveritas` role can still open a connection to convolens' database (without rights on its objects). Closing that requires `REVOKE CONNECT ON DATABASE <convolens> FROM PUBLIC`, which touches convolens' own access path and was therefore left to its owner rather than changed unilaterally.
 4. **Backup and restore are coupled.** Point-in-time restore operates on the server, so restoring HOV means restoring convolens' server too.
 5. **Cross-project ownership.** `nl-prod-convolens-rg` is not HOV's resource group; HOV's Terraform does not own the server it depends on.
 
@@ -90,8 +92,9 @@ Move to a dedicated org-level shared server when **any** of these becomes true:
 - `DATABASE_URL` for HOV points at `nl-prod-convolens-pg.postgres.database.azure.com/houseofveritas`.
 - The server's firewall permits `allow-azure-services`, which covers the HOV App Service and Function App. Ad-hoc access from developer machines requires a temporary firewall rule, added and removed per use.
 - `ensureEstateSchema()` and `ensureRadarSchema()` create their tables idempotently on first use; there is no separate migration step.
-- The Function App still lacks `DATABASE_URL` / `ESTATE_BACKEND` in its app settings, so the radar ingestion continues to fall back to Baserow until that is wired.
-- Verified live on 2026-08-06: schema creation, insert/read/update round-trip, `DATE` fidelity, `NUMERIC` decoding, and time-clock clock-in/clock-out all pass against this server (`tests/integration/postgres-roundtrip.test.ts`).
+- The Function App now receives `ESTATE_BACKEND`, `DATABASE_URL` and `POSTGRES_URL`, and creates its own radar schema, so the ingestion job no longer depends on the web app having run first. Under Postgres it addresses tables by name; the `TABLE_DEAL_RADAR_*` settings apply to the Baserow path only.
+- Verified live on 2026-08-06: schema creation, insert/read/update round-trip, `DATE` fidelity, `NUMERIC` decoding, and time-clock clock-in/clock-out all pass against this server (`tests/integration/postgres-roundtrip.test.ts`) — first as the server admin, then again as the scoped `houseofveritas` role.
+- The connection string lives only in Key Vault. `estate_database_url` is a `sensitive` Terraform variable supplied out of band; nothing is committed.
 
 ---
 
