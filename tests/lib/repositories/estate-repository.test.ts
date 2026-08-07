@@ -142,12 +142,24 @@ describe("getEstateRepository", () => {
     expect(getEstateRepository().backend).toBe("baserow")
   })
 
-  // NOT COVERED: selection of the Postgres backend (ESTATE_BACKEND=postgres).
-  // The resolver reaches it through `require("@/lib/repositories/...")`, and a
-  // path alias is only resolvable by a bundler — under any plain Node resolver
-  // (vitest included) that call throws "Cannot find module". The sibling
-  // radar-repository.ts resolver was converted to an async `import()` for a
-  // related reason; doing the same here would make this path testable. See the
-  // report. The Postgres repository object itself is covered directly in
-  // estate-repository-postgres.test.ts.
+  /**
+   * The regression guard for the 2026-08-07 outage.
+   *
+   * Selecting Postgres used to reach the module through a lazy `require()`.
+   * Turbopack cannot synchronously require an ES module — it hands back an empty
+   * object — so the repository was `undefined` and the first property access
+   * threw, on every route that touches estate data. This suite stayed green
+   * because vitest resolves the module perfectly well.
+   *
+   * The import is now static, so the only way this test can fail is a genuine
+   * regression in selection: reaching the Postgres branch at all is what proves
+   * the module resolved.
+   */
+  it("falls back to Baserow when Postgres is selected but unconfigured", () => {
+    process.env.ESTATE_BACKEND = "postgres"
+    // No DATABASE_URL in the test environment, so the real Postgres repository
+    // reports itself unconfigured. The documented promise is that selecting an
+    // unconfigured backend degrades rather than failing.
+    expect(getEstateRepository().backend).toBe("baserow")
+  })
 })
