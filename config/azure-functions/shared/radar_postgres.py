@@ -66,6 +66,8 @@ FIELD_TO_COLUMN: Dict[str, str] = {
     "Suburb Median Cents": "suburb_median_cents",
     "QA Status": "qa_status",
     "QA Reasons": "qa_reasons",
+    "Change Log": "change_log",
+    "Delisted At": "delisted_at",
 }
 
 COLUMN_TO_FIELD: Dict[str, str] = {column: field for field, column in FIELD_TO_COLUMN.items()}
@@ -213,7 +215,9 @@ class RadarPostgresClient:
             return self._to_fields(dict(zip(names, row))) if row else None
 
 
-ALLOWED_TABLES = {"deal_radar_listings", "deal_radar_quarantine"}
+LISTINGS_TABLE = "deal_radar_listings"
+QUARANTINE_TABLE = "deal_radar_quarantine"
+ALLOWED_TABLES = {LISTINGS_TABLE, QUARANTINE_TABLE}
 
 
 def _safe_table(table: str) -> str:
@@ -226,3 +230,97 @@ def _safe_table(table: str) -> str:
     if table not in ALLOWED_TABLES:
         raise ValueError(f"Refusing to query non-radar table: {table!r}")
     return table
+
+
+# ---------------------------------------------------------------------------
+# Schema ownership
+# ---------------------------------------------------------------------------
+#
+# Mirrors lib/db/radar-schema.ts. Duplicated deliberately: the ingestion timer
+# fires at 04:00 and may well run before the web app has ever served a request
+# with Postgres configured, in which case ensureRadarSchema() has not run and
+# the first SELECT would raise UndefinedTable and abort the whole job.
+#
+# Both definitions are CREATE TABLE IF NOT EXISTS, so whichever side runs first
+# wins and the other is a no-op. The column list is a contract with the TS file
+# and with FIELD_TO_COLUMN above -- a schema/field-map contract test is the
+# right place to keep the three honest.
+
+_LISTINGS_DDL = """
+CREATE TABLE IF NOT EXISTS deal_radar_listings (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    source_key TEXT NOT NULL UNIQUE,
+    listing_id TEXT NOT NULL DEFAULT '',
+    source_url TEXT NOT NULL,
+    source_portal TEXT NOT NULL,
+    suburb TEXT NOT NULL DEFAULT '',
+    price_cents BIGINT NOT NULL DEFAULT 0,
+    bedrooms INTEGER,
+    bathrooms INTEGER,
+    erf_size_m2 INTEGER,
+    floor_size_m2 INTEGER,
+    property_type TEXT NOT NULL DEFAULT 'unknown',
+    confidence TEXT NOT NULL DEFAULT 'estimate',
+    status TEXT NOT NULL DEFAULT 'active',
+    distress_flag TEXT NOT NULL DEFAULT 'none',
+    effort TEXT NOT NULL DEFAULT 'unknown',
+    buy_in_cents BIGINT,
+    all_in_cents BIGINT,
+    flip_pct NUMERIC,
+    deal_score NUMERIC,
+    rental_yield_gross NUMERIC,
+    arv_estimate_cents BIGINT,
+    reno_cost_estimate_cents BIGINT,
+    area_quality_index NUMERIC,
+    proximity_index NUMERIC,
+    days_on_market INTEGER,
+    subdivide_potential BOOLEAN NOT NULL DEFAULT false,
+    transfer_friction TEXT NOT NULL DEFAULT 'unknown',
+    physical_risk_dolomite BOOLEAN NOT NULL DEFAULT false,
+    physical_risk_flood BOOLEAN NOT NULL DEFAULT false,
+    analyst_note TEXT,
+    canonical_key TEXT,
+    last_seen DATE,
+    agency TEXT,
+    ai_generated BOOLEAN NOT NULL DEFAULT false,
+    classification_reasons TEXT,
+    holding_cost_monthly_cents BIGINT,
+    monthly_bond_cents BIGINT,
+    monthly_rent_cents BIGINT,
+    suburb_median_cents BIGINT,
+    qa_status TEXT,
+    qa_reasons TEXT,
+    change_log TEXT,
+    delisted_at DATE,
+    publish_status TEXT NOT NULL DEFAULT 'staged'
+);
+CREATE INDEX IF NOT EXISTS idx_radar_publish_status ON deal_radar_listings(publish_status);
+CREATE INDEX IF NOT EXISTS idx_radar_canonical_key ON deal_radar_listings(canonical_key);
+CREATE INDEX IF NOT EXISTS idx_radar_suburb ON deal_radar_listings(suburb);
+"""
+
+_QUARANTINE_DDL = """
+CREATE TABLE IF NOT EXISTS deal_radar_quarantine (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    source_key TEXT NOT NULL UNIQUE,
+    source_url TEXT,
+    source_portal TEXT,
+    suburb TEXT,
+    price_cents BIGINT,
+    payload JSONB,
+    qa_failure_reason TEXT NOT NULL DEFAULT '',
+    quarantined_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_radar_quarantine_at ON deal_radar_quarantine(quarantined_at DESC);
+"""
+
+
+def ensure_radar_schema(dsn: Optional[str] = None) -> None:
+    """Create the radar tables if absent. Idempotent."""
+    import psycopg
+
+    with psycopg.connect(dsn or _dsn()) as conn, conn.cursor() as cur:
+        cur.execute(_LISTINGS_DDL)
+        cur.execute(_QUARANTINE_DDL)
+        conn.commit()
+    logger.info("Radar Postgres schema ensured")

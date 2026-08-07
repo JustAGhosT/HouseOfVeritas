@@ -15,7 +15,13 @@ import azure.functions as func
 
 sys.path.append("..")
 from shared.radar_ingestion import SeedRadarSource, build_monitoring_payload, run_ingestion
-from shared.radar_postgres import RadarPostgresClient, is_postgres_configured
+from shared.radar_postgres import (
+    LISTINGS_TABLE,
+    QUARANTINE_TABLE,
+    RadarPostgresClient,
+    ensure_radar_schema,
+    is_postgres_configured,
+)
 from shared.utils import BaserowClient, EmailClient, config, setup_logging
 
 logger = setup_logging("deal-radar-refresh")
@@ -50,14 +56,28 @@ def main(timer: func.TimerRequest) -> None:
 
     store, backend = _build_store_client()
     logger.info("Deal Radar refresh using %s backend", backend)
+
+    if backend == "postgres":
+        # Postgres addresses tables by NAME, owned by the client. The
+        # TABLE_DEAL_RADAR_* settings carry Baserow numeric ids and are
+        # meaningless here -- passing one through would trip the table
+        # allowlist. Also create the schema: this job may run before the web
+        # app has ever called ensureRadarSchema().
+        ensure_radar_schema()
+        listings_table = LISTINGS_TABLE
+        quarantine_table = QUARANTINE_TABLE
+    else:
+        listings_table = config.table_deal_radar_listings
+        quarantine_table = config.table_deal_radar_quarantine
+
     email_client = EmailClient()
 
     result = run_ingestion(
         store,
         email_client,
         [SeedRadarSource()],
-        listings_table_id=config.table_deal_radar_listings,
-        quarantine_table_id=config.table_deal_radar_quarantine,
+        listings_table_id=listings_table,
+        quarantine_table_id=quarantine_table,
         radar_enabled=config.radar_enabled,
     )
 

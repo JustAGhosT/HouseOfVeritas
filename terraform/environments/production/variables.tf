@@ -706,3 +706,21 @@ variable "sluice_api_key_key_vault_secret_name" {
   type        = string
   default     = "sluice-api-key"
 }
+
+variable "estate_backend" {
+  description = "Datastore backing estate and radar data: \"baserow\" or \"postgres\". Falls back to Baserow when postgres is selected but unconfigured."
+  type        = string
+  default     = "baserow"
+
+  validation {
+    condition     = contains(["baserow", "postgres"], var.estate_backend)
+    error_message = "estate_backend must be either \"baserow\" or \"postgres\"."
+  }
+}
+
+variable "estate_database_url" {
+  description = "PostgreSQL connection string for estate/radar data. Supplied out of band; never committed."
+  type        = string
+  default     = ""
+  sensitive   = true
+}

@@ -58,6 +58,11 @@ const RADAR_TABLES = [
     suburb_median_cents BIGINT,
     qa_status TEXT,
     qa_reasons TEXT,
+    -- Appended price-change history and the delist timestamp. Both are written
+    -- by the ingestion job after build_listing_row; without columns here their
+    -- writes were silently dropped with only a log warning.
+    change_log TEXT,
+    delisted_at DATE,
     -- Publication gate. Rows are only ever served to the public page when this
     -- is 'published'; ingestion writes 'staged' unless RADAR_ENABLED is on.
     publish_status TEXT NOT NULL DEFAULT 'staged'
