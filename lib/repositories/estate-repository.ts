@@ -13,6 +13,10 @@
  */
 
 import * as baserow from "@/lib/services/baserow"
+// Relative, not the "@/" alias: this one specifier has to resolve under the
+// bundler, vitest, and plain Node alike, and the alias only works under the
+// first two.
+import { postgresEstateRepository } from "./estate-repository-postgres"
 import type {
   Asset,
   Budget,
@@ -422,14 +426,26 @@ const baserowEstateRepository: EstateRepository = {
  * otherwise Baserow remains the default so nothing changes for existing
  * deployments until the flag is flipped deliberately.
  *
- * The Postgres module is required lazily so the `pg` pool is never constructed
- * in deployments still running on Baserow.
+ * The Postgres module is imported statically. It used to be `require()`d lazily,
+ * to avoid loading `pg` on Baserow deployments — but that took production down
+ * on 2026-08-07 and the saving was imaginary anyway.
  *
- * NOTE: `require()` here is a known hazard. The identical pattern in
- * `radar-repository.ts` was statically resolved by the test module graph and
- * dragged `pg` into every transitive importer, causing widespread timeouts; it
- * was changed to an async `import()`. This resolver is left synchronous because
- * ~64 call sites depend on that, and it currently measures clean — but if
+ * Turbopack, which builds this app, cannot synchronously `require()` an ES
+ * module: it returns an empty object. So `postgresEstateRepository` was
+ * `undefined`, reading `.isConfigured()` off it threw, and because every route
+ * touching estate data calls this function, one TypeError became a site-wide
+ * 500. Neither the unit suite nor `next dev` reproduced it — both resolve the
+ * module fine — so it only appeared in the production bundle.
+ *
+ * The laziness bought nothing: `lib/db/postgres` already imports `pg` at module
+ * scope, and the pool itself is created on first query inside `getPool()`, not
+ * at import. Importing this module costs a module load, never a connection.
+ *
+ * A static import also cannot fail at call time, which is what makes the
+ * fallback below honest: selection can now only turn on configuration, not on
+ * whether a module system cooperated. The one real cost is that `pg` joins the
+ * module graph of anything importing this seam — see `radar-repository.ts`,
+ * where that caused test slowness and was solved with an async `import()`. If
  * unexplained slowness appears across unrelated suites, suspect this first.
  */
 export function getEstateRepository(): EstateRepository {
@@ -437,15 +453,11 @@ export function getEstateRepository(): EstateRepository {
     return baserowEstateRepository
   }
 
-  // Relative specifier, NOT the "@/" alias: the alias is resolved by the Next
-  // bundler but not by plain Node, so an aliased require() made this branch
-  // throw under Vitest/tsx and in any non-bundled script — i.e. the one switch
-  // that enables the whole Postgres backend was unreachable outside Next.
-  const { postgresEstateRepository } =
-    require("./estate-repository-postgres") as typeof import("./estate-repository-postgres")
-
-  return postgresEstateRepository.isConfigured() ? postgresEstateRepository : baserowEstateRepository
+  return postgresEstateRepository.isConfigured()
+    ? postgresEstateRepository
+    : baserowEstateRepository
 }
+
 
 /**
  * Which store is actually serving tasks.
