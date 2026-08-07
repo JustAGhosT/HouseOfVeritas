@@ -30,10 +30,20 @@ function serviceBaseUrl(url: string | undefined): string | undefined {
 }
 
 export async function GET() {
+  const estate = getEstateRepository()
+
+  // Probe Baserow only when Baserow is the store actually in use. This used to
+  // key off `estate.isConfigured()`, which conflated "the estate repository is
+  // configured" with "Baserow is configured" — fine while Baserow was the only
+  // backend, wrong the moment ESTATE_BACKEND=postgres. On cutover it started
+  // pinging a Baserow instance that had never been configured, which answered
+  // "down" and reported the whole service degraded while it was in fact healthy.
+  const baserowInUse = estate.backend === "baserow" && estate.isConfigured()
+
   const checks = await Promise.all([
     checkService(
       "baserow",
-      getEstateRepository().isConfigured()
+      baserowInUse
         ? serviceBaseUrl(process.env.BASEROW_API_URL || process.env.NEXT_PUBLIC_BASEROW_URL)
         : undefined,
       "/api/_health/"
@@ -53,7 +63,11 @@ export async function GET() {
     {
       status: overall ? "healthy" : "degraded",
       build: { commit: buildCommit },
-      dataMode: getEstateRepository().isConfigured()
+      // Which store is actually backing estate data. Reported because "is this
+      // deployment on Postgres yet?" was previously only answerable by reading
+      // app settings, and dataMode alone cannot distinguish the backends.
+      backend: estate.backend,
+      dataMode: estate.isConfigured()
         ? "live"
         : process.env.ALLOW_DEMO_DATA === "true"
           ? "demo"
