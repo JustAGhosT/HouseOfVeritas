@@ -8,7 +8,18 @@ export default defineConfig({
   test: {
     environment: "happy-dom",
     globals: true,
-    testTimeout: 10000,
+    // The heaviest component tests land within a few percent of a 10s budget, so
+    // on a loaded machine they tip over and the suite fails for no reason that
+    // reflects the code. One observed failure came in at 10255ms — a 2.5%
+    // overshoot — while the same file passes comfortably when run alone.
+    //
+    // This is headroom, not a way to hide a hang: a genuinely stuck test still
+    // fails, just 20s later. The real cost driver is that every one of the 116
+    // test files builds a happy-dom environment, including the API and lib suites
+    // that never touch a DOM. Moving those to the node environment is the actual
+    // fix and a larger change than raising a limit.
+    testTimeout: 20000,
+    hookTimeout: 20000,
     setupFiles: ["./tests/setup.ts"],
     include: ["tests/**/*.test.{ts,tsx}"],
     // Inline next-auth so vite transforms it (rather than letting Node
