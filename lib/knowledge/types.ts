@@ -1,5 +1,16 @@
 import { z } from "zod"
 import { guidanceDraftSchema, type GuidanceDraft, type GuidanceLocale } from "@/lib/guidance"
+import {
+  knowledgeCandidateFactsSchema,
+  knowledgeSafeguardResultsSchema,
+  type KnowledgeSafeguardId,
+  type KnowledgeSafeguardResult,
+} from "@/lib/knowledge/safeguards"
+import {
+  KNOWLEDGE_PRIORITIES,
+  type KnowledgeCandidateFacts,
+  type KnowledgePriority,
+} from "@/lib/knowledge/rubrics"
 
 /**
  * Curated diagnostic knowledge base.
@@ -32,6 +43,43 @@ export interface KnowledgeSupplier {
   url?: string
 }
 
+/**
+ * The Tier-1 priority assessment recorded at review time.
+ *
+ * Both the inputs and the resulting score are kept. The facts alone would let
+ * the score be recomputed, but not tell you what the reviewer actually acted
+ * on; the score alone would be unauditable. Holding both means a later change
+ * to the weights or bands is *detectable* — `auditRecordedPriority()` recomputes
+ * and reports drift, and the seed refuses to load if a published entry has
+ * drifted.
+ */
+export interface KnowledgeReviewPriority {
+  facts: KnowledgeCandidateFacts
+  /** Composite at review time, under the weights then in force. */
+  composite: number
+  priority: KnowledgePriority
+}
+
+/**
+ * The recorded Tier-0 review for an entry.
+ *
+ * Safeguard results are human judgements about content, not properties derivable
+ * from it, so they have to be recorded rather than computed. A `published`
+ * entry without one is rejected by the schema — that is what makes the safeguards
+ * enforceable for a seed that is published by merging a PR rather than by an
+ * API call.
+ */
+export interface KnowledgeReview {
+  /** Safeguard profile the reviewer applied — see `KNOWLEDGE_SAFEGUARD_PROFILES`. */
+  profileId: string
+  safeguardResults: Partial<Record<KnowledgeSafeguardId, KnowledgeSafeguardResult>>
+  /** Pseudonymous reviewer reference; never a name or contact detail. */
+  reviewedBy: string
+  reviewedAt: string
+  /** Optional: Tier 0 governs publication, Tier 1 only explains the priority. */
+  tier1?: KnowledgeReviewPriority
+}
+
 export interface KnowledgeEntry {
   /** Stable, human-readable identifier used for lookups and task provenance. */
   slug: string
@@ -51,6 +99,8 @@ export interface KnowledgeEntry {
    * per-task guidance share one schema, one renderer, and one safety check.
    */
   guidance: GuidanceDraft
+  /** Required once `status` is `published`; see `KnowledgeReview`. */
+  review?: KnowledgeReview
 }
 
 const supplierSchema = z.object({
@@ -66,17 +116,57 @@ const slugSchema = z
   .max(120)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "slug must be kebab-case")
 
-export const knowledgeEntrySchema = z.object({
-  slug: slugSchema,
-  domain: z.enum(KNOWLEDGE_DOMAINS),
-  status: z.enum(KNOWLEDGE_STATUSES),
-  symptoms: z.array(z.string().trim().min(1).max(160)).min(1).max(40),
-  keywords: z.array(z.string().trim().min(1).max(60)).min(1).max(60),
-  assetTypes: z.array(z.string().trim().min(1).max(80)).max(40).default([]),
-  personaHints: z.array(z.string().trim().min(1).max(40)).max(10).default([]),
-  suppliers: z.array(supplierSchema).max(20).default([]),
-  guidance: guidanceDraftSchema,
-})
+export const knowledgeReviewSchema = z
+  .object({
+    profileId: z
+      .string()
+      .trim()
+      .min(3)
+      .max(64)
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "profileId must be kebab-case"),
+    safeguardResults: knowledgeSafeguardResultsSchema.default({}),
+    reviewedBy: z
+      .string()
+      .trim()
+      .min(2)
+      .max(64)
+      .regex(/^[A-Za-z][A-Za-z0-9._-]*$/, "Use a pseudonymous reviewer reference"),
+    reviewedAt: z.string().datetime({ offset: true }),
+    tier1: z
+      .object({
+        facts: knowledgeCandidateFactsSchema,
+        composite: z.number().min(0).max(10),
+        priority: z.enum(KNOWLEDGE_PRIORITIES),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict()
+
+export const knowledgeEntrySchema = z
+  .object({
+    slug: slugSchema,
+    domain: z.enum(KNOWLEDGE_DOMAINS),
+    status: z.enum(KNOWLEDGE_STATUSES),
+    symptoms: z.array(z.string().trim().min(1).max(160)).min(1).max(40),
+    keywords: z.array(z.string().trim().min(1).max(60)).min(1).max(60),
+    assetTypes: z.array(z.string().trim().min(1).max(80)).max(40).default([]),
+    personaHints: z.array(z.string().trim().min(1).max(40)).max(10).default([]),
+    suppliers: z.array(supplierSchema).max(20).default([]),
+    guidance: guidanceDraftSchema,
+    review: knowledgeReviewSchema.optional(),
+  })
+  .superRefine((entry, context) => {
+    // Publication is the act the safeguards exist to control, so an entry cannot
+    // claim `published` without a recorded review to point at.
+    if (entry.status === "published" && !entry.review) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["review"],
+        message: "a published entry must carry a recorded safeguard review",
+      })
+    }
+  })
 
 export function parseKnowledgeEntry(input: unknown): KnowledgeEntry | null {
   const parsed = knowledgeEntrySchema.safeParse(input)

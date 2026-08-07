@@ -92,7 +92,10 @@ function scoreEntry(
     }
   }
 
-  if (assetType && entry.assetTypes.some((type) => type.toLowerCase() === assetType.toLowerCase())) {
+  if (
+    assetType &&
+    entry.assetTypes.some((type) => type.toLowerCase() === assetType.toLowerCase())
+  ) {
     score += WEIGHTS.assetType
     matchedTerms.add(assetType)
   }
@@ -127,7 +130,9 @@ export function rankKnowledge(
       return { entry, score, matchedTerms }
     })
     .filter((match) => match.score >= minScore)
-    .sort((left, right) => right.score - left.score || left.entry.slug.localeCompare(right.entry.slug))
+    .sort(
+      (left, right) => right.score - left.score || left.entry.slug.localeCompare(right.entry.slug)
+    )
     .slice(0, limit)
 }
 

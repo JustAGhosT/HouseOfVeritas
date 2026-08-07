@@ -1,4 +1,58 @@
-import { knowledgeEntrySchema, type KnowledgeEntry } from "@/lib/knowledge/types"
+import { assertPublishable } from "@/lib/knowledge/publication"
+import {
+  knowledgeEntrySchema,
+  type KnowledgeEntry,
+  type KnowledgeReview,
+} from "@/lib/knowledge/types"
+
+/**
+ * Recorded Tier-0 review shared by the EN and AF copper-pipe entries — same
+ * content, same judgements, so one record rather than two divergent copies.
+ *
+ * Why each safeguard passes:
+ *  - statutory_competence: fitting pipe lagging is not reserved work; the entry
+ *    routes a suspected leak to a plumber rather than describing a repair.
+ *  - irreversible_harm: no live services, height, gas or hot work.
+ *  - verifiable_ground_truth: materials cite product classes and bore sizes
+ *    (closed-cell Class O, 15mm/22mm) rather than invented figures.
+ *  - commercial_neutrality: three suppliers listed as availability with scope
+ *    notes, none ranked or recommended.
+ *  - data_boundary: no address, person or photograph of the estate.
+ *  - diagnosis_before_action: step 1 is the dry-and-watch test, with a warning
+ *    against insulating before it is answered.
+ */
+const COPPER_PIPE_REVIEW: KnowledgeReview = {
+  profileId: "strict",
+  safeguardResults: {
+    statutory_competence: "pass",
+    irreversible_harm: "pass",
+    verifiable_ground_truth: "pass",
+    commercial_neutrality: "pass",
+    data_boundary: "pass",
+    diagnosis_before_action: "pass",
+  },
+  reviewedBy: "hov-editorial-1",
+  reviewedAt: "2026-08-06T00:00:00.000Z",
+  // Spec §8.1, worked longhand there. Recorded so the priority is auditable and
+  // so a later change to the bands or weights fails the seed instead of quietly
+  // restating the entry's rank.
+  tier1: {
+    facts: {
+      recurrencePerYear: 4, // seasonal, worst in the coldest weeks
+      costAvoidedCents: 90_000, // ~R900 plumber call-out
+      consequenceOfDelay: "compounding-structural", // damp into plaster and brick
+      personaFit: "named-owner-routine", // Charl's standing maintenance scope
+      assetCoverage: "owned-multiple", // pipework throughout the house
+      repeatability: "diagnostic-branching", // confirm-then-branch, not a line
+      symptomCount: 11,
+      keywordCount: 15,
+      authoringEffortHours: 8, // including the Afrikaans variant
+      localeReach: "both-locales-planned",
+    },
+    composite: 8,
+    priority: "P0",
+  },
+}
 
 /**
  * Curated seed knowledge, versioned in git so it is available without a
@@ -14,6 +68,7 @@ const rawSeed: KnowledgeEntry[] = [
     slug: "copper-pipe-condensation-wall-damp",
     domain: "maintenance",
     status: "published",
+    review: COPPER_PIPE_REVIEW,
     symptoms: [
       "wall damp",
       "damp patch",
@@ -84,7 +139,8 @@ const rawSeed: KnowledgeEntry[] = [
           title: "Confirm condensation vs leak (dry-and-watch test)",
           instruction:
             "Dry the pipe completely, then watch it. If beads return within minutes-to-hours with no tap or appliance running, it is condensation. If it re-wets at a joint or stays constantly wet regardless of weather, treat it as a leak and fix the pipe before doing anything else.",
-          check: "Have you decided: condensation (intermittent, weather-driven) or leak (constant)?",
+          check:
+            "Have you decided: condensation (intermittent, weather-driven) or leak (constant)?",
           warning:
             "Do not insulate or foam over the pipe until this is answered — sealing in a leak makes it worse and invisible.",
         },
@@ -121,7 +177,8 @@ const rawSeed: KnowledgeEntry[] = [
           title: "Dry, treat and make good",
           instruction:
             "Once the source is fixed, let the wall dry fully, treat any mould with a fungicidal wash, then re-plaster and redecorate the blistered area. Doing this before the pipe is sealed will just blister again next winter.",
-          warning: "Do not re-plaster until the wall has dried and the moisture source is resolved.",
+          warning:
+            "Do not re-plaster until the wall has dried and the moisture source is resolved.",
         },
       ],
     },
@@ -130,6 +187,7 @@ const rawSeed: KnowledgeEntry[] = [
     slug: "copper-pipe-condensation-wall-damp-af",
     domain: "maintenance",
     status: "published",
+    review: COPPER_PIPE_REVIEW,
     symptoms: [
       "muur klam",
       "klam kol",
@@ -208,7 +266,8 @@ const rawSeed: KnowledgeEntry[] = [
           title: "Isoleer eers die koue pyp",
           instruction:
             "Sit geslote-sel skuimisolasie oor die koue koper. Klik die gesnyde buis oor die pyp en gom of plak dan die snit oor sy hele lengte toe sodat klam lug nie by die koper kan kom nie. Stoot lengtes styf teen mekaar en seël elke las. Neem die isolasie reg tot by draaie en waar die pyp die muur ingaan — gapings is waar sweet weer begin.",
-          visualCue: "Geen kaal koper sigbaar nie; snit geseël; geen gapings by punte of draaie nie.",
+          visualCue:
+            "Geen kaal koper sigbaar nie; snit geseël; geen gapings by punte of draaie nie.",
           check: "Is die koue pyp ten volle en lugdig toegemaak?",
         },
         {
@@ -251,5 +310,10 @@ export const KNOWLEDGE_SEED: KnowledgeEntry[] = rawSeed.map((entry, index) => {
       `Invalid knowledge seed at index ${index} (${entry.slug}): ${parsed.error.message}`
     )
   }
-  return parsed.data as KnowledgeEntry
+  const validated = parsed.data as KnowledgeEntry
+  // Schema conformance is not enough: a published entry must also clear the
+  // Tier-0 safeguards it recorded. Failing here means the seed cannot even import,
+  // so an entry that never cleared them fails CI rather than reaching a user.
+  assertPublishable(validated)
+  return validated
 })

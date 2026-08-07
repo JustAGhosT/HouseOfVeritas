@@ -41,11 +41,7 @@ export function buildMaintenanceTaskDraft(
     .sort((left, right) => left.order - right.order)
     .map((step) => step.title)
 
-  const descriptionLines = [
-    entry.guidance.summary,
-    "",
-    `Source: knowledge/${entry.slug}`,
-  ]
+  const descriptionLines = [entry.guidance.summary, "", `Source: knowledge/${entry.slug}`]
 
   return {
     task: {

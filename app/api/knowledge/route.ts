@@ -2,9 +2,16 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { withRole } from "@/lib/auth/rbac"
 import { findKnowledge } from "@/lib/knowledge/retrieval"
+import { checkPublishable, profileIdForEntry } from "@/lib/knowledge/publication"
+import { loadSafeguardProfileResolver } from "@/lib/repositories/knowledge-safeguard-profile-repository"
 import { KNOWLEDGE_DOMAINS } from "@/lib/knowledge/types"
 import { GUIDANCE_LOCALES } from "@/lib/guidance"
 import { logger } from "@/lib/logger"
+
+/** What a caller gets back. Matches `rankKnowledge`'s previous default. */
+const SEARCH_RESULT_LIMIT = 5
+/** How deep to rank before filtering, so the safeguard check can backfill. */
+const SEARCH_CANDIDATE_LIMIT = 50
 
 const querySchema = z.object({
   q: z.string().trim().min(2).max(2_000),
@@ -18,7 +25,12 @@ const querySchema = z.object({
  * Ranked curated troubleshooting/procedure entries matching a reported symptom.
  * Read access for every role; this is reference content, not mutable data.
  */
-export const GET = withRole("admin", "operator", "employee", "resident")(async (request) => {
+export const GET = withRole(
+  "admin",
+  "operator",
+  "employee",
+  "resident"
+)(async (request) => {
   try {
     const { searchParams } = new URL(request.url)
     const parsed = querySchema.safeParse({
@@ -35,12 +47,50 @@ export const GET = withRole("admin", "operator", "employee", "resident")(async (
       )
     }
 
-    const matches = findKnowledge({
-      text: parsed.data.q,
-      domain: parsed.data.domain,
-      assetType: parsed.data.assetType,
-      locale: parsed.data.locale,
+    // Rank wider than we serve. The safeguard filter runs after ranking, so if
+    // the limit were applied first, blocked entries occupying top slots would
+    // shrink the result set instead of being backfilled by lower-ranked entries
+    // that do clear — making search look empty in a way that depends on which
+    // blocked entry happened to score highest.
+    const ranked = findKnowledge(
+      {
+        text: parsed.data.q,
+        domain: parsed.data.domain,
+        assetType: parsed.data.assetType,
+        locale: parsed.data.locale,
+      },
+      { limit: SEARCH_CANDIDATE_LIMIT }
+    )
+
+    // Search is re-checked against the administrator's effective profile, not
+    // just the built-in the entry shipped against. Without this, tightening a
+    // safeguard would stop an entry being applied while still surfacing it in
+    // results — which reads as an endorsement the safeguards no longer give.
+    const resolveProfile = await loadSafeguardProfileResolver()
+    const cleared = ranked.filter((match) => {
+      const { profile, source } = resolveProfile(profileIdForEntry(match.entry))
+      return checkPublishable(match.entry, profile, source).publishable
     })
+    // Counted over the whole candidate set, not the served page: "how many
+    // matching entries are currently blocked" is the useful number, and it must
+    // not move just because the page size did.
+    const withheld = ranked.length - cleared.length
+    const matches = cleared.slice(0, SEARCH_RESULT_LIMIT)
+    if (withheld > 0) {
+      // Deliberately not the query. It is user-supplied free text describing a
+      // household problem, so it can carry exactly the personal detail the
+      // `data_boundary` safeguard exists to keep out of stored records — a
+      // symptom search naming a room, a person or a medical circumstance would
+      // otherwise be written to logs by the very feature enforcing POPIA.
+      // Length and the withheld slugs are enough to investigate with.
+      logger.info("Withheld knowledge matches that no longer clear their safeguards", {
+        withheld,
+        queryLength: parsed.data.q.length,
+        withheldSlugs: ranked
+          .filter((match) => !cleared.includes(match))
+          .map((match) => match.entry.slug),
+      })
+    }
 
     return NextResponse.json({
       data: {
@@ -57,6 +107,7 @@ export const GET = withRole("admin", "operator", "employee", "resident")(async (
       },
       summary: {
         count: matches.length,
+        withheld,
         query: parsed.data.q,
       },
     })
