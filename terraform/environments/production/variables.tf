@@ -551,12 +551,30 @@ variable "custom_domain" {
 # -----------------------------------------------------------------------------
 # Auth.js v5 + Mystira OIDC (relying party: neuralliquid-hov-web)
 # -----------------------------------------------------------------------------
-# The issuer defaults to the production Mystira Identity host that HOV currently
-# authenticates against. The issuer host is public config, not a secret; keep the
-# client secret in Key Vault and reference it via
-# mystira_oidc_client_secret_key_vault_secret_name.
+# WARNING: this default does NOT match production. Verified 2026-08-07.
+#
+#   default (here):  https://identity.mystira.app
+#   nl-prod-hov-app: https://mys-dev-id-webapi.azurewebsites.net
+#
+# Production authenticates against the *dev* Mystira Identity host, with a
+# dev-default client secret. So a plain `terraform apply` will flip production
+# authentication to the production IdP while leaving the client secret pointing
+# at the dev one — which will break sign-in, not fix it. A real plan on
+# 2026-08-07 showed exactly that change queued.
+#
+# Until the move is done deliberately, pin the live value for any apply:
+#
+#   -var 'mystira_oidc_issuer=https://mys-dev-id-webapi.azurewebsites.net'
+#
+# Completing the move means registering HOV at identity.mystira.app with the
+# right redirect URIs, issuing a client secret there, storing it in
+# nl-prod-hov-kv, and changing issuer and secret together. See
+# docs/handoffs/2026-07-23-hov-mystira-oidc-prod-closeout.md.
+#
+# The issuer host is public config, not a secret; keep the client secret in Key
+# Vault and reference it via mystira_oidc_client_secret_key_vault_secret_name.
 variable "mystira_oidc_issuer" {
-  description = "Mystira OIDC issuer URL"
+  description = "Mystira OIDC issuer URL. NOTE: the default does not match production — see the comment above before applying."
   type        = string
   default     = "https://identity.mystira.app"
 }
