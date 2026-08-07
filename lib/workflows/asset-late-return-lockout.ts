@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getAssets, updateAsset } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { toISODateString } from "@/lib/utils"
@@ -10,7 +10,7 @@ export const assetLateReturnLockout = inngest.createFunction(
   { id: "asset-late-return-lockout", retries: 2 },
   { cron: "0 9 * * *" },
   async ({ step }) => {
-    const assets = await getAssets()
+    const assets = await getEstateRepository().assets.list()
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
@@ -37,7 +37,7 @@ export const assetLateReturnLockout = inngest.createFunction(
 
     await step.run("send-lockout-notifications", async () => {
       for (const o of overdue) {
-        await updateAsset(o.id, { lateReturnLockoutUntil: lockoutStr })
+        await getEstateRepository().assets.update(o.id, { lateReturnLockoutUntil: lockoutStr })
         await sendNotification({
           type: "system_alert",
           userId: getAdminNotificationRecipient(),

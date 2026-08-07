@@ -1,4 +1,4 @@
-import type { Task } from "@/lib/services/baserow"
+import type { Task } from "@/lib/domain/estate-types"
 import type { KnowledgeEntry } from "@/lib/knowledge/types"
 
 /**

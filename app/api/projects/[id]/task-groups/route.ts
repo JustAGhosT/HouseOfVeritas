@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { withRole } from "@/lib/auth/rbac"
-import { getTasks, createTask, type Task } from "@/lib/services/baserow"
+import type { Task } from "@/lib/domain/estate-types"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import {
   createJobTaskMetadata,
   listJobTaskMetadata,
@@ -28,7 +29,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   if (!projectName) return NextResponse.json({ error: "projectName is required" }, { status: 400 })
 
   try {
-    const [tasks, metadata] = await Promise.all([getTasks({ status: undefined }), listJobTaskMetadata(id)])
+    const [tasks, metadata] = await Promise.all([getEstateRepository().tasks.list({ status: undefined }), listJobTaskMetadata(id)])
     const projectTasks = tasks.filter(
       (task) => task.project === projectName || metadata.some((item) => item.taskId === task.id)
     )
@@ -54,7 +55,7 @@ export const POST = withRole("admin", "operator", "employee")(async (request, co
     if (!title) return NextResponse.json({ error: "title is required" }, { status: 400 })
     if (!projectName) return NextResponse.json({ error: "projectName is required" }, { status: 400 })
 
-    const task = await createTask({
+    const task = await getEstateRepository().tasks.create({
       title,
       description: typeof body.description === "string" ? body.description : undefined,
       priority: body.priority || "Medium",

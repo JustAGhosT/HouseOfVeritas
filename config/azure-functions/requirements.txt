@@ -15,5 +15,8 @@ azure-communication-email>=1.0.0
 # Twilio SMS (optional)
 twilio>=8.10.0
 
+# PostgreSQL (Deal Radar ingestion when RADAR_BACKEND=postgres)
+psycopg[binary]>=3.1.0
+
 # Date/Time utilities
 python-dateutil>=2.8.2

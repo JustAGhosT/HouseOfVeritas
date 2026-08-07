@@ -1,9 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import {
-  getEmployees,
-  getOnboardingChecklists,
-  updateOnboardingChecklist,
-} from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { toISODateString } from "@/lib/utils"
 import { BASEROW_ID_TO_APP_ID } from "./constants"
@@ -14,8 +10,8 @@ export const onboardingBuddyAssign = inngest.createFunction(
   { id: "onboarding-buddy-assign", retries: 2 },
   { cron: "0 8 * * *" },
   async ({ step }) => {
-    const employees = await getEmployees()
-    const checklists = await getOnboardingChecklists({ status: "In Progress" })
+    const employees = await getEstateRepository().employees.list()
+    const checklists = await getEstateRepository().onboarding.list({ status: "In Progress" })
 
     let assigned = 0
     for (const oc of checklists) {
@@ -28,7 +24,7 @@ export const onboardingBuddyAssign = inngest.createFunction(
       if (buddies.length === 0) continue
 
       const buddy = buddies[0]
-      await updateOnboardingChecklist(oc.id, { assignedBuddy: buddy.id })
+      await getEstateRepository().onboarding.update(oc.id, { assignedBuddy: buddy.id })
       assigned++
 
       const buddyAppId = BASEROW_ID_TO_APP_ID[buddy.id] ?? "hans"

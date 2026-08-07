@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { randomUUID } from "crypto"
-import { updateTask } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { withRole } from "@/lib/auth/rbac"
 import { getExpandedAudienceAliases, isRecipeAudienceMatch } from "@/lib/recipes"
 import {
@@ -160,7 +160,7 @@ export const POST = withRole("admin", "operator", "employee", "resident")(
       })
 
       if (taskId !== undefined) {
-        await updateTask(taskId, {
+        await getEstateRepository().tasks.update(taskId, {
           status: "Completed",
           completionNotes: `Rating submitted: ${score}/5`,
         }).catch(() => null)

@@ -24,7 +24,7 @@ import {
   Shirt,
 } from "lucide-react"
 
-import { type Task } from "@/lib/services/baserow"
+import { type Task } from "@/lib/domain/estate-types"
 
 // Home/Domestic-themed background pattern
 function HomePattern() {

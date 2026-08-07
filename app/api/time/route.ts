@@ -1,12 +1,5 @@
 import { NextResponse } from "next/server"
-import {
-  getTimeClockEntries,
-  clockIn,
-  clockOut,
-  clockInByAppId,
-  clockOutByAppId,
-  getBaserowEmployeeIdByAppId,
-} from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { withDataSource } from "@/lib/api/response"
 import { toISODateString } from "@/lib/utils"
 import { logger } from "@/lib/logger"
@@ -22,11 +15,11 @@ export async function GET(request: Request) {
     employee = parseInt(employeeParam, 10)
     if (Number.isNaN(employee)) employee = undefined
   } else if (personaId) {
-    employee = (await getBaserowEmployeeIdByAppId(personaId)) ?? undefined
+    employee = (await getEstateRepository().employees.resolveIdByAppId(personaId)) ?? undefined
   }
 
   try {
-    const entries = await getTimeClockEntries({
+    const entries = await getEstateRepository().timeClock.list({
       employee,
       date: date || undefined,
     })
@@ -59,14 +52,14 @@ export async function POST(request: Request) {
     if (action === "clockIn") {
       let entry
       if (personaId && typeof personaId === "string") {
-        entry = await clockInByAppId(personaId)
+        entry = await getEstateRepository().timeClock.clockInByAppId(personaId)
       } else if (employeeId != null) {
         const id = typeof employeeId === "number" ? employeeId : parseInt(String(employeeId), 10)
         if (Number.isNaN(id)) {
           // Treat non-numeric string employeeId as a persona/app ID
-          entry = await clockInByAppId(String(employeeId))
+          entry = await getEstateRepository().timeClock.clockInByAppId(String(employeeId))
         } else {
-          entry = await clockIn(id)
+          entry = await getEstateRepository().timeClock.clockIn(id)
         }
       } else {
         return NextResponse.json(
@@ -78,7 +71,7 @@ export async function POST(request: Request) {
       return withDataSource({ entry, message: "Clocked in successfully" })
     } else if (action === "clockOut") {
       if (personaId && typeof personaId === "string") {
-        const entry = await clockOutByAppId(personaId)
+        const entry = await getEstateRepository().timeClock.clockOutByAppId(personaId)
         return withDataSource({ entry, message: "Clocked out successfully" })
       }
       if (!entryId) {
@@ -88,7 +81,7 @@ export async function POST(request: Request) {
         )
       }
 
-      const entry = await clockOut(
+      const entry = await getEstateRepository().timeClock.clockOut(
         typeof entryId === "number" ? entryId : parseInt(String(entryId), 10)
       )
 

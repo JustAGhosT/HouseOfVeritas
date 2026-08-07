@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getLoans } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { sendNotification } from "@/lib/services/notification-service"
 import { BASEROW_ID_TO_APP_ID, REMINDER_DAYS_AHEAD } from "./constants"
@@ -9,7 +9,7 @@ export const loanRepaymentReminder = inngest.createFunction(
   { id: "loan-repayment-reminder", retries: 2 },
   { cron: "0 9 * * *" },
   async ({ step }) => {
-    const loans = await step.run("get-loans", () => getLoans({ status: "Active" }))
+    const loans = await step.run("get-loans", () => getEstateRepository().loans.list({ status: "Active" }))
 
     const reminders: { loanId: number; employeeId: number; amount: number; dueDate: string }[] = []
 

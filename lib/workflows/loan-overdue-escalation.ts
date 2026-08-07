@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getLoans } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { sendNotification } from "@/lib/services/notification-service"
 import { BASEROW_ID_TO_APP_ID } from "./constants"
@@ -9,7 +9,7 @@ export const loanOverdueEscalation = inngest.createFunction(
   { id: "loan-overdue-escalation", retries: 2 },
   { cron: "0 10 * * *" },
   async ({ step }) => {
-    const loans = await getLoans({ status: "Active" })
+    const loans = await getEstateRepository().loans.list({ status: "Active" })
 
     const overdue: { loanId: number; employeeId: number; amount: number; dueDate: string }[] = []
 

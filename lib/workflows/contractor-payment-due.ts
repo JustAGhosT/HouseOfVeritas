@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getContractorContracts } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { sendNotification } from "@/lib/services/notification-service"
 import { formatCurrency } from "@/lib/workflows/utils"
@@ -8,7 +8,7 @@ export const contractorPaymentDue = inngest.createFunction(
   { id: "contractor-payment-due", retries: 2 },
   { cron: "0 8 * * *" },
   async ({ step }) => {
-    const contracts = await getContractorContracts({ status: "Active" })
+    const contracts = await getEstateRepository().contractorContracts.list({ status: "Active" })
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 

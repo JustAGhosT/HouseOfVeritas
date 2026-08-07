@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getBudgets, getExpenses } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { sendNotification } from "@/lib/services/notification-service"
 import { formatCurrency } from "@/lib/workflows/utils"
@@ -8,8 +8,8 @@ export const budgetBreachAlert = inngest.createFunction(
   { id: "budget-breach-alert", retries: 2 },
   { cron: "0 10 1 * *" },
   async ({ step }) => {
-    const budgets = await getBudgets({ status: "Active" })
-    const expenses = await getExpenses({ status: "Approved" })
+    const budgets = await getEstateRepository().budgets.list({ status: "Active" })
+    const expenses = await getEstateRepository().expenses.list({ status: "Approved" })
 
     const now = new Date()
     const currentPeriod = String(now.getFullYear())

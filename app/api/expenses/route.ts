@@ -4,13 +4,8 @@ import { withDataSource } from "@/lib/api/response"
 import { withRole } from "@/lib/auth/rbac"
 import { logger } from "@/lib/logger"
 import { emitApprovalRequired } from "@/lib/realtime/event-store"
-import {
-  createExpense,
-  getBaserowEmployeeIdByAppId,
-  getExpense,
-  getExpenses,
-  updateExpense,
-} from "@/lib/services/baserow"
+import type { Expense } from "@/lib/domain/estate-types"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { toISODateString } from "@/lib/utils"
 import { routeToInngest } from "@/lib/workflows"
@@ -80,7 +75,7 @@ export const GET = withRole(
       })
       if (error) return error
 
-      const expenses = await getExpenses({
+      const expenses = await getEstateRepository().expenses.list({
         requester,
         status: status || undefined,
       })
@@ -128,7 +123,7 @@ export const POST = withRole(
       return NextResponse.json({ error: "Amount and category are required" }, { status: 400 })
     }
 
-    const expense = await createExpense({
+    const expense = await getEstateRepository().expenses.create({
       requester: finalRequester,
       type: type || "Request",
       category,
@@ -205,7 +200,7 @@ export const PATCH = withRole("admin")(async (request, context) => {
       return NextResponse.json({ error: "Invalid expense ID" }, { status: 400 })
     }
 
-    const existing = await getExpense(numericId)
+    const existing = await getEstateRepository().expenses.get(numericId)
     if (!existing) {
       return NextResponse.json({ error: "Expense not found" }, { status: 404 })
     }
@@ -225,7 +220,7 @@ export const PATCH = withRole("admin")(async (request, context) => {
         )
       }
 
-      const approverId = await getBaserowEmployeeIdByAppId(context.userId)
+      const approverId = await getEstateRepository().employees.resolveIdByAppId(context.userId)
       if (!approverId) {
         return NextResponse.json(
           { error: "Could not resolve approver from authenticated user" },
@@ -238,7 +233,7 @@ export const PATCH = withRole("admin")(async (request, context) => {
         approver: approverId,
         approvalDate: toISODateString(),
       })
-      const expense = await updateExpense(numericId, updates as Parameters<typeof updateExpense>[1])
+      const expense = await getEstateRepository().expenses.update(numericId, updates as Partial<Expense>)
       if (!expense) {
         return NextResponse.json({ error: "Expense not found" }, { status: 404 })
       }
@@ -280,7 +275,7 @@ export const PATCH = withRole("admin")(async (request, context) => {
         }
         secondaryApproverId = numericApprover
       } else {
-        const resolvedId = await getBaserowEmployeeIdByAppId(context.userId)
+        const resolvedId = await getEstateRepository().employees.resolveIdByAppId(context.userId)
         if (!resolvedId) {
           return NextResponse.json(
             {
@@ -299,7 +294,7 @@ export const PATCH = withRole("admin")(async (request, context) => {
       })
     }
 
-    const expense = await updateExpense(numericId, updates as Parameters<typeof updateExpense>[1])
+    const expense = await getEstateRepository().expenses.update(numericId, updates as Partial<Expense>)
 
     if (!expense) {
       return NextResponse.json({ error: "Expense not found" }, { status: 404 })

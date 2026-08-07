@@ -1,12 +1,7 @@
 import { withDataSource } from "@/lib/api/response"
 import { withRole } from "@/lib/auth/rbac"
 import { logger } from "@/lib/logger"
-import {
-  createEmployee,
-  getEmployee,
-  getEmployees,
-  isEmployeesTableConfigured,
-} from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { routeToInngest } from "@/lib/workflows"
 import { NextResponse } from "next/server"
 
@@ -20,14 +15,14 @@ export async function GET(request: Request) {
       if (isNaN(parsedId)) {
         return NextResponse.json({ error: "Invalid employee ID" }, { status: 400 })
       }
-      const employee = await getEmployee(parsedId)
+      const employee = await getEstateRepository().employees.get(parsedId)
       if (!employee) {
         return NextResponse.json({ error: "Employee not found" }, { status: 404 })
       }
       return withDataSource({ employee })
     }
 
-    const employees = await getEmployees()
+    const employees = await getEstateRepository().employees.list()
     return withDataSource({ employees, total: employees.length })
   } catch (error) {
     logger.error("Error fetching employees", {
@@ -39,9 +34,10 @@ export async function GET(request: Request) {
 
 export const POST = withRole("admin")(async (request) => {
   try {
-    if (!isEmployeesTableConfigured()) {
+    const estate = getEstateRepository()
+    if (!estate.employees.isConfigured()) {
       return NextResponse.json(
-        { error: "Employee creation requires Baserow configuration" },
+        { error: "Employee creation requires a configured estate datastore" },
         { status: 503 }
       )
     }
@@ -69,7 +65,7 @@ export const POST = withRole("admin")(async (request) => {
       return NextResponse.json({ error: "fullName and email are required" }, { status: 400 })
     }
 
-    const employee = await createEmployee({
+    const employee = await estate.employees.create({
       fullName: String(fullName),
       idNumber: idNumber ? String(idNumber) : undefined,
       role: String(role),

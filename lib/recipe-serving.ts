@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto"
 import { toISODateString } from "@/lib/utils"
-import { createTask } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import {
   getExpandedAudienceAliases,
   RATING_RECIPE_RECIPIENTS,
@@ -84,7 +84,7 @@ export async function createMealFromRecipe(
       const assignedTo = TASK_RECIPIENT_TO_BASEROW_ID[persona]
       if (!assignedTo) continue
 
-      const task = await createTask({
+      const task = await getEstateRepository().tasks.create({
         title: `Rate meal: ${input.recipe.titleEn}`,
         description:
           `Meal rating needed for ${input.mealName ?? input.recipe.titleEn}\n` +

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server"
 import { isDocuSealConfigured } from "@/lib/services/docuseal"
-import { isBaserowConfigured } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 
 export async function GET() {
   const docusealConfigured = isDocuSealConfigured()
-  const baserowConfigured = isBaserowConfigured()
+  const baserowConfigured = getEstateRepository().isConfigured()
 
   const services = {
     docuseal: {

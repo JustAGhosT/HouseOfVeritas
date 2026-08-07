@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getTasks, getEmployees } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { sendNotification } from "@/lib/services/notification-service"
 import { BASEROW_ID_TO_APP_ID } from "./constants"
@@ -8,9 +8,9 @@ export const taskAssignmentRotate = inngest.createFunction(
   { id: "task-assignment-rotate", retries: 2 },
   { cron: "0 6 * * 1" },
   async ({ step }) => {
-    const allTasks = await getTasks()
+    const allTasks = await getEstateRepository().tasks.list()
     const tasks = allTasks.filter((t) => t.status !== "Completed")
-    const employees = await getEmployees()
+    const employees = await getEstateRepository().employees.list()
     const employeeRole = employees.filter((e) => e.role === "Employee")
 
     const assignCount: Record<number, number> = {}

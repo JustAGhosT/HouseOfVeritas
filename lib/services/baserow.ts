@@ -5,6 +5,25 @@ import { logger } from "@/lib/logger"
 import { toISODateString } from "@/lib/utils"
 import { isMongoConfigured } from "@/lib/db/mongodb"
 import { getTaskRepository } from "@/lib/repositories/task-repository"
+import type {
+  Asset,
+  Budget,
+  ContractorContract,
+  DocumentExpiryRow,
+  Employee,
+  Expense,
+  Incident,
+  InsuranceClaim,
+  LeaveRequest,
+  Loan,
+  OnboardingChecklist,
+  PaginatedResult,
+  PettyCash,
+  PPE,
+  Task,
+  TimeClockEntry,
+  VehicleLog,
+} from "@/lib/domain/estate-types"
 
 interface BaserowConfig {
   apiUrl: string
@@ -39,10 +58,36 @@ interface BaserowRow {
   [key: string]: any
 }
 
-export interface PaginatedResult<T> {
-  items: T[]
-  count: number
-}
+/**
+ * Domain types moved to `lib/domain/estate-types` so they are no longer owned by
+ * this backend module. Re-exported here purely for backward compatibility with
+ * the existing consumers that import them from this path.
+ *
+ * New code should import types from `@/lib/domain/estate-types` and reach data
+ * through `@/lib/repositories/estate-repository` rather than calling this
+ * service directly.
+ */
+export type {
+  Asset,
+  Budget,
+  ContractorContract,
+  DocumentExpiryRow,
+  EntityId,
+  Employee,
+  Expense,
+  Incident,
+  InsuranceClaim,
+  LeaveRequest,
+  Loan,
+  OnboardingChecklist,
+  PaginatedResult,
+  PettyCash,
+  PolicyVersion,
+  PPE,
+  Task,
+  TimeClockEntry,
+  VehicleLog,
+} from "@/lib/domain/estate-types"
 
 const DEFAULT_PAGE_SIZE = 100
 const DEMO_DATA_ENABLED = process.env.ALLOW_DEMO_DATA === "true"
@@ -56,113 +101,7 @@ function appendPagination(endpoint: string, page?: number, size?: number): strin
   return `${endpoint}${sep}${params.toString()}`
 }
 
-// Employee type
-export interface Employee {
-  id: number
-  fullName: string
-  idNumber?: string
-  role: string
-  employmentStartDate?: string
-  probationStatus?: string
-  contractRef?: string
-  leaveBalance: number
-  email: string
-  phone: string
-  photo?: string
-  onboardingStatus?: string
-  buddyId?: number
-  itProvisionedAt?: string
-}
-
-// Asset type
-export interface Asset {
-  id: number
-  assetId: string
-  type: string
-  description?: string
-  purchaseDate?: string
-  price?: number
-  condition: string
-  location: string
-  checkedOutBy?: number
-  checkOutDate?: string
-  photo?: string
-  expectedReturnDate?: string
-  lateReturnLockoutUntil?: string
-}
-
-// Task type
-export interface Task {
-  id: number
-  title: string
-  description?: string
-  assignedTo?: number
-  assignedToName?: string
-  dueDate?: string
-  priority: "Low" | "Medium" | "High" | "Urgent"
-  status: "Not Started" | "In Progress" | "Completed"
-  timeSpent?: number
-  completionNotes?: string
-  relatedAsset?: number
-  project?: string
-  createdDate?: string
-  completedDate?: string
-  dependsOn?: number[]
-}
-
-// Time Clock Entry type
-export interface TimeClockEntry {
-  id: number
-  employee: number
-  employeeName?: string
-  date: string
-  clockIn?: string
-  clockOut?: string
-  breakDuration?: number
-  totalHours?: number
-  overtimeHours?: number
-  approvalStatus: "Pending" | "Approved" | "Rejected"
-  notes?: string
-}
-
-// Expense type
-export interface Expense {
-  id: number
-  requester: number
-  requesterName?: string
-  type: "Request" | "Post-Hoc"
-  category: string
-  amount: number
-  vendor?: string
-  date: string
-  approvalStatus: "Pending" | "Approved" | "Rejected" | "Post-Hoc" | "Pending Secondary"
-  receipt?: string
-  project?: string
-  milestone?: string
-  notes?: string
-  approver?: number
-  approvalDate?: string
-  secondaryApprover?: number
-  secondaryApprovalDate?: string
-}
-
-// Vehicle Log type
-export interface VehicleLog {
-  id: number
-  driver: number
-  driverName?: string
-  vehicle: number
-  vehicleName?: string
-  dateOut: string
-  dateIn?: string
-  odometerStart: number
-  odometerEnd?: number
-  distance?: number
-  fuelAdded?: number
-  fuelCost?: number
-  childPassenger?: boolean
-  notes?: string
-}
+// Entity shapes live in lib/domain/estate-types (re-exported above).
 
 // Default config - uses environment variables or fallback
 const getConfig = (): BaserowConfig => ({
@@ -2095,19 +2034,6 @@ export interface DocumentExpiryRowRaw {
   Status?: string
 }
 
-export interface DocumentExpiryRow {
-  id: number
-  docName: string
-  type: string
-  lastReview?: string
-  nextReview?: string
-  partyResponsible?: number[]
-  supersededBy?: number[]
-  versionBlocked: boolean
-  docuSealRef?: string
-  status?: string
-}
-
 export function mapBaserowToDocumentExpiryRow(raw: DocumentExpiryRowRaw): DocumentExpiryRow {
   return {
     id: raw.id,
@@ -2121,136 +2047,6 @@ export function mapBaserowToDocumentExpiryRow(raw: DocumentExpiryRowRaw): Docume
     docuSealRef: raw["DocuSeal Ref"],
     status: raw.Status,
   }
-}
-
-export interface LeaveRequest {
-  id: number
-  employee: number
-  startDate: string
-  endDate: string
-  type: string
-  status: "Pending" | "Approved" | "Rejected"
-  approver?: number
-  approvedAt?: string
-  submittedAt: string
-  notes?: string
-}
-
-export interface Loan {
-  id: number
-  employee: number
-  amount: number
-  purpose: string
-  repaymentSchedule?: string
-  status: "Pending" | "Approved" | "Rejected" | "Active" | "Repaid"
-  outstandingBalance: number
-  nextRepaymentDate?: string
-  approvedBy?: number
-  approvedAt?: string
-  disbursedAt?: string
-  createdAt: string
-  notes?: string
-}
-
-export interface PettyCash {
-  id: number
-  requester: number
-  amount: number
-  purpose: string
-  receipt?: string
-  status: "Pending" | "Approved" | "Rejected" | "Issued"
-  issuedBy?: number
-  issuedAt?: string
-  approvedBy?: number
-  approvedAt?: string
-  createdAt: string
-  notes?: string
-}
-
-export interface OnboardingChecklist {
-  id: number
-  employee: number
-  items: string
-  completedAt?: string
-  assignedBuddy?: number
-  status: "In Progress" | "Completed"
-  createdAt: string
-  notes?: string
-}
-
-export interface Budget {
-  id: number
-  category: string
-  amount: number
-  period: string
-  version: number
-  status: "Draft" | "Active" | "Superseded"
-  approvedBy?: number
-  approvedAt?: string
-  docuSealRef?: string
-  notes?: string
-}
-
-export interface PPE {
-  id: number
-  asset: number
-  issuedTo: number
-  issueDate: string
-  expiryDate?: string
-  returnDate?: string
-  status: "Issued" | "Returned" | "Expired"
-  notes?: string
-}
-
-export interface PolicyVersion {
-  id: number
-  document: number
-  version: string
-  effectiveDate: string
-  supersededBy?: number
-  status: "Current" | "Superseded"
-  docuSealRef?: string
-  notes?: string
-}
-
-export interface ContractorContract {
-  id: number
-  contractor: string | number
-  project: string
-  milestones: string
-  amounts: string
-  status: "Active" | "Completed" | "Terminated"
-  startDate?: string
-  endDate?: string
-  notes?: string
-}
-
-export interface InsuranceClaim {
-  id: number
-  incident?: number
-  asset?: number
-  description: string
-  amount: number
-  status: "Draft" | "Submitted" | "Under Review" | "Approved" | "Denied"
-  claimId?: string
-  submittedAt?: string
-  createdAt: string
-  notes?: string
-}
-
-export interface Incident {
-  id: number
-  type: string
-  dateTime: string
-  location?: string
-  reporter?: number
-  description: string
-  severity: "Low" | "Medium" | "High" | "Critical"
-  status: string
-  relatedAsset?: number
-  relatedEmployee?: number
-  relatedIncidentIds?: string
-  victimSupportPath?: boolean
 }
 
 export async function getDocumentExpiryRows(): Promise<DocumentExpiryRow[]> {

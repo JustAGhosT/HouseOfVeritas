@@ -1,9 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import {
-  getEmployees,
-  getTimeClockEntriesPaginated,
-  updateTimeClockEntry,
-} from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { sendNotification } from "@/lib/services/notification-service"
 import { toISODateString } from "@/lib/utils"
@@ -39,14 +35,14 @@ export const overtimeCalculate = inngest.createFunction(
   { id: "overtime-calculate", retries: 2 },
   { cron: "0 23 * * 0" },
   async ({ step }) => {
-    const employees = await getEmployees()
+    const employees = await getEstateRepository().employees.list()
     const now = new Date()
     const { start, end } = getWeekRange(now)
     const reports: { name: string; totalHours: number; overtimeHours: number }[] = []
 
     for (const emp of employees) {
       if (["Owner", "Resident"].includes(emp.role)) continue
-      const { items } = await getTimeClockEntriesPaginated(1, 100, {
+      const { items } = await getEstateRepository().timeClock.listPaginated(1, 100, {
         employee: emp.id,
       })
       const weekEntries = items.filter((e) => e.date >= start && e.date <= end && e.clockOut)
@@ -62,7 +58,7 @@ export const overtimeCalculate = inngest.createFunction(
           overtimeHours,
         })
         for (const entry of weekEntries) {
-          await updateTimeClockEntry(entry.id, { approvalStatus: "Pending" })
+          await getEstateRepository().timeClock.update(entry.id, { approvalStatus: "Pending" })
         }
       }
     }

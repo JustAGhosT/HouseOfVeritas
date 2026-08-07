@@ -2,7 +2,7 @@ import { readFile, writeFile, mkdir } from "fs/promises"
 import { dirname, join } from "path"
 import type { Filter } from "mongodb"
 import { getCollection, isMongoConfigured, withoutMongoId } from "@/lib/db/mongodb"
-import type { Task } from "@/lib/services/baserow"
+import type { Task } from "@/lib/domain/estate-types"
 
 export type JobAreaKind = "room" | "area" | "component" | "zone"
 

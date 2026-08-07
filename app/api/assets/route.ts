@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getAssets } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { withDataSource } from "@/lib/api/response"
 import { logger } from "@/lib/logger"
 
@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const location = searchParams.get("location")
 
   try {
-    const assets = await getAssets({
+    const assets = await getEstateRepository().assets.list({
       type: type || undefined,
       location: location || undefined,
     })

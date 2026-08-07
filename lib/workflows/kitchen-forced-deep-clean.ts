@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { createTask, getTasks } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { toISODateString } from "@/lib/utils"
@@ -9,7 +9,7 @@ export const kitchenForcedDeepClean = inngest.createFunction(
   { cron: "0 7 1,15 * *" },
   async ({ step }) => {
     const today = toISODateString()
-    const existing = await getTasks()
+    const existing = await getEstateRepository().tasks.list()
     const recentDeepClean = existing.filter(
       (t) =>
         t.project === "Kitchen" &&
@@ -21,7 +21,7 @@ export const kitchenForcedDeepClean = inngest.createFunction(
 
     if (recentDeepClean.length > 0) return { created: 0, reason: "Already completed this period" }
 
-    const task = await createTask({
+    const task = await getEstateRepository().tasks.create({
       title: "Mandatory Kitchen Deep Clean",
       description: "Scheduled forced deep clean - must be completed by deadline",
       priority: "High",

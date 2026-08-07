@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server"
-import {
-  getTasks,
-  createTask,
-  updateTask,
-  getEmployee,
-  getTaskDataSource,
-} from "@/lib/services/baserow"
+import type { Task } from "@/lib/domain/estate-types"
+import { getEstateRepository, getTaskDataSource } from "@/lib/repositories/estate-repository"
 import { withDataSource } from "@/lib/api/response"
 import { withRole } from "@/lib/auth/rbac"
 import { logger } from "@/lib/logger"
@@ -21,6 +16,8 @@ function withTaskDataSource<T extends Record<string, unknown>>(data: T) {
       message:
         dataSource === "baserow"
           ? "Connected to Baserow"
+          : dataSource === "postgres"
+            ? "Connected to PostgreSQL"
           : dataSource === "mongodb"
             ? "Connected to Cosmos MongoDB"
             : "Task datastore not configured",
@@ -48,13 +45,13 @@ export async function GET(request: Request) {
   const applyProjectFilter = userId && !isAdmin
 
   try {
-    let tasks: Awaited<ReturnType<typeof getTasks>>
+    let tasks: Task[]
     if (applyProjectFilter) {
-      tasks = await getTasks({ status: status || undefined })
+      tasks = await getEstateRepository().tasks.list({ status: status || undefined })
       const accessScope = await getTaskAccessScope(userId, userRole ?? "")
       tasks = tasks.filter((task) => canAccessTask(task, accessScope))
     } else {
-      tasks = await getTasks({
+      tasks = await getEstateRepository().tasks.list({
         assignedTo,
         assignedToName: assignee ?? undefined,
         status: status || undefined,
@@ -93,7 +90,7 @@ export const POST = withRole(
       return NextResponse.json({ error: "Title is required" }, { status: 400 })
     }
 
-    const task = await createTask({
+    const task = await getEstateRepository().tasks.create({
       title,
       description,
       assignedTo,
@@ -104,7 +101,7 @@ export const POST = withRole(
     })
 
     if (task) {
-      const assignee = assignedTo ? await getEmployee(assignedTo) : null
+      const assignee = assignedTo ? await getEstateRepository().employees.get(assignedTo) : null
       await routeToInngest({
         name: "house-of-veritas/task.created",
         data: {
@@ -138,7 +135,7 @@ export const PATCH = withRole(
       return NextResponse.json({ error: "Task ID is required" }, { status: 400 })
     }
 
-    const existing = (await getTasks({ status: undefined })).find((t) => t.id === id)
+    const existing = (await getEstateRepository().tasks.list({ status: undefined })).find((t) => t.id === id)
     if (!existing) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 })
     }
@@ -169,7 +166,7 @@ export const PATCH = withRole(
       effectiveUpdates = safeUpdates
     }
 
-    const task = await updateTask(id, effectiveUpdates)
+    const task = await getEstateRepository().tasks.update(id, effectiveUpdates)
 
     if (!task) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 })

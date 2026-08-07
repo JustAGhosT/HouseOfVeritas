@@ -116,6 +116,7 @@ module "security" {
   network_default_action            = var.key_vault_network_default_action
   container_subnet_id               = module.network.container_subnet_id
   terraform_access_policy_object_id = var.terraform_key_vault_access_policy_object_id
+  operator_access_policy_object_ids = var.key_vault_operator_object_ids
   deployer_ip_addresses             = local.ci_ip_rules_keyvault
   db_admin_password                 = var.db_admin_password
   docuseal_secret_key               = random_password.docuseal_secret.result
@@ -144,6 +145,14 @@ module "database" {
   tags = local.common_tags
 
   depends_on = [module.network, module.security]
+}
+
+locals {
+  # An externally-supplied DSN wins over the in-stack database module. HOV's
+  # estate data currently lives on a shared server outside this stack (see
+  # docs/02-architecture/13-database-hosting-adr.md), so enable_database may be
+  # false while Postgres is nonetheless the backend.
+  estate_database_url = var.estate_database_url != "" ? var.estate_database_url : try(module.database[0].connection_string_app, "")
 }
 
 module "cosmos_mongo" {
@@ -249,6 +258,8 @@ module "functions" {
   baserow_table_deal_radar_listings   = var.baserow_table_deal_radar_listings
   baserow_table_deal_radar_quarantine = var.baserow_table_deal_radar_quarantine
   radar_enabled                       = var.radar_enabled
+  estate_backend                      = var.estate_backend
+  database_url                        = local.estate_database_url
   radar_seed_enabled                  = var.radar_seed_enabled
   radar_row_delta_threshold_pct       = var.radar_row_delta_threshold_pct
   docuseal_api_key                    = var.docuseal_api_key
@@ -307,8 +318,9 @@ module "webapp" {
   document_intelligence_endpoint                   = try(module.cognitive[0].endpoint, "")
   document_intelligence_key                        = try(module.cognitive[0].primary_access_key, "")
   extra_app_settings = {
-    DATABASE_URL          = try(module.database[0].connection_string_app, "")
-    POSTGRES_URL          = try(module.database[0].connection_string_app, "")
+    ESTATE_BACKEND        = var.estate_backend
+    DATABASE_URL          = local.estate_database_url
+    POSTGRES_URL          = local.estate_database_url
     MONGODB_URI           = try(module.cosmos_mongo[0].mongo_connection_string, "")
     DB_NAME               = try(module.cosmos_mongo[0].mongo_database_name, "")
     SLUICE_BASE_URL       = var.sluice_base_url

@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getEmployees, createTask } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { toISODateString } from "@/lib/utils"
 import { BASEROW_ID_TO_APP_ID } from "./constants"
@@ -19,7 +19,7 @@ export const emergencyDrillReminder = inngest.createFunction(
     drillDate.setDate(drillDate.getDate() + 7)
     const drillDateStr = toISODateString(drillDate)
 
-    const task = await createTask({
+    const task = await getEstateRepository().tasks.create({
       title: `Emergency Drill - Q${Math.floor(now.getMonth() / 3) + 1} ${now.getFullYear()}`,
       description: "Quarterly emergency drill. All staff must participate.",
       dueDate: drillDateStr,
@@ -28,7 +28,7 @@ export const emergencyDrillReminder = inngest.createFunction(
       project: "Safety",
     })
 
-    const employees = await getEmployees()
+    const employees = await getEstateRepository().employees.list()
     const staff = employees.filter((e) => !["Resident"].includes(e.role))
 
     await step.run("send-drill-notifications", async () => {

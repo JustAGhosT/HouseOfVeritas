@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getTasks } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { sendNotification } from "@/lib/services/notification-service"
 import { toISODateString } from "@/lib/utils"
@@ -15,7 +15,7 @@ export const taskOverdueCheck = inngest.createFunction(
     cutoff.setDate(cutoff.getDate() - OVERDUE_DAYS)
     const cutoffStr = toISODateString(cutoff)
 
-    const tasks = await getTasks()
+    const tasks = await getEstateRepository().tasks.list()
     const overdue = tasks.filter(
       (t) => t.status !== "Completed" && t.dueDate && t.dueDate < cutoffStr
     )

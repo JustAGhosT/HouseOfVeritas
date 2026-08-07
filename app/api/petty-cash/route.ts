@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server"
-import {
-  getPettyCashRequests,
-  createPettyCashRequest,
-  updatePettyCashRequest,
-  getBaserowEmployeeIdByAppId,
-} from "@/lib/services/baserow"
+import type { PettyCash } from "@/lib/domain/estate-types"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { resolveEmployeeForGet, resolveEmployeeForPost } from "@/lib/api/employee-resolver"
 import { withDataSource } from "@/lib/api/response"
 import { withRole } from "@/lib/auth/rbac"
@@ -30,7 +26,7 @@ export const GET = withRole(
   if (error) return error
 
   try {
-    const requests = await getPettyCashRequests({
+    const requests = await getEstateRepository().pettyCash.list({
       requester,
       status: status || undefined,
     })
@@ -85,7 +81,7 @@ export const POST = withRole(
     const now = new Date()
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
     const monthStartStr = toISODateString(monthStart)
-    const existing = await getPettyCashRequests({ requester: resolvedRequesterId })
+    const existing = await getEstateRepository().pettyCash.list({ requester: resolvedRequesterId })
     const thisMonth = existing.filter((r) => {
       const created = r.createdAt || ""
       return created >= monthStartStr && (r.status === "Issued" || r.status === "Approved")
@@ -111,7 +107,7 @@ export const POST = withRole(
       )
     }
 
-    const pc = await createPettyCashRequest({
+    const pc = await getEstateRepository().pettyCash.create({
       requester: resolvedRequesterId,
       amount,
       purpose: purpose || "",
@@ -158,7 +154,7 @@ export const PATCH = withRole("admin")(async (request, context) => {
     if (issuedBy !== undefined) updates.issuedBy = issuedBy
 
     if (status === "Approved" || status === "Issued") {
-      const approverId = approvedBy ?? (await getBaserowEmployeeIdByAppId(context.userId))
+      const approverId = approvedBy ?? (await getEstateRepository().employees.resolveIdByAppId(context.userId))
       if (!approverId || typeof approverId !== "number") {
         return NextResponse.json(
           {
@@ -172,7 +168,7 @@ export const PATCH = withRole("admin")(async (request, context) => {
     }
 
     if (status === "Issued") {
-      const issuerId = issuedBy ?? (await getBaserowEmployeeIdByAppId(context.userId))
+      const issuerId = issuedBy ?? (await getEstateRepository().employees.resolveIdByAppId(context.userId))
       if (!issuerId || typeof issuerId !== "number") {
         return NextResponse.json(
           {
@@ -185,9 +181,9 @@ export const PATCH = withRole("admin")(async (request, context) => {
       updates.issuedAt = toISODateString()
     }
 
-    const pc = await updatePettyCashRequest(
+    const pc = await getEstateRepository().pettyCash.update(
       id,
-      updates as Parameters<typeof updatePettyCashRequest>[1]
+      updates as Partial<PettyCash>
     )
 
     if (!pc) {

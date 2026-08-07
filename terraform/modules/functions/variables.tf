@@ -151,3 +151,16 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "estate_backend" {
+  description = "Datastore backing estate and radar data: \"baserow\" or \"postgres\""
+  type        = string
+  default     = "baserow"
+}
+
+variable "database_url" {
+  description = "PostgreSQL connection string used when estate_backend is postgres"
+  type        = string
+  default     = ""
+  sensitive   = true
+}

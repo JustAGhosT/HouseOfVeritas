@@ -1,5 +1,16 @@
-import { Pool, PoolClient } from "pg"
+import { Pool, PoolClient, types } from "pg"
 import { logger } from "@/lib/logger"
+
+// DATE (oid 1082) must stay a plain "YYYY-MM-DD" string.
+//
+// node-postgres otherwise parses it into a JS Date at LOCAL midnight; calling
+// .toISOString() on that then re-projects to UTC and loses a day on any host
+// east of Greenwich. On SAST (UTC+2), DATE '2026-07-18' read back as
+// "2026-07-17" across tasks, leave, expenses, PPE and the time clock.
+//
+// Overriding the parser fixes every date-typed column for both the estate and
+// radar repositories at once, and matches what Baserow returned (strings).
+types.setTypeParser(1082, (value) => value)
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL
 

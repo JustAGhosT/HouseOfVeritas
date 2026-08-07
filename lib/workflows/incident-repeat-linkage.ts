@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getIncidents, updateIncident } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 
@@ -20,7 +20,7 @@ export const incidentRepeatLinkage = inngest.createFunction(
   { id: "incident-repeat-linkage", retries: 2 },
   { cron: "0 10 * * *" },
   async ({ step }) => {
-    const incidents = await getIncidents()
+    const incidents = await getEstateRepository().incidents.list()
     const now = new Date()
     const cutoff = new Date(now.getTime() - REPEAT_WINDOW_DAYS * 24 * 60 * 60 * 1000)
 
@@ -45,7 +45,7 @@ export const incidentRepeatLinkage = inngest.createFunction(
         const currentIds = parseIncidentIds(existing?.relatedIncidentIds)
         const allIds = [...new Set([...currentIds, ...ids])].sort((a, b) => a - b)
         if (JSON.stringify(allIds) !== (existing?.relatedIncidentIds || "")) {
-          await updateIncident(g.id, {
+          await getEstateRepository().incidents.update(g.id, {
             relatedIncidentIds: JSON.stringify(allIds),
           })
         }

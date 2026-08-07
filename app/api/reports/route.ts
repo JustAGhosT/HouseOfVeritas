@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { withRole } from "@/lib/auth/rbac"
-import {
-  getExpenses,
-  getTasks,
-  getTimeClockEntries,
-  isBaserowConfigured,
-} from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { toISODateString } from "@/lib/utils"
 
 const reportsQuerySchema = z.object({
@@ -74,7 +69,7 @@ export const GET = withRole("admin")(async (request) => {
 
   return NextResponse.json({
     reportType,
-    dataSource: isBaserowConfigured()
+    dataSource: getEstateRepository().isConfigured()
       ? "live"
       : process.env.ALLOW_DEMO_DATA === "true"
         ? "demo"
@@ -86,7 +81,7 @@ export const GET = withRole("admin")(async (request) => {
 })
 
 async function buildExpenseReport(userId?: string) {
-  const expenses = await getExpenses()
+  const expenses = await getEstateRepository().expenses.list()
   const filtered = userId
     ? expenses.filter((e) => e.requesterName?.toLowerCase() === userId.toLowerCase())
     : expenses
@@ -116,7 +111,7 @@ async function buildExpenseReport(userId?: string) {
 }
 
 async function buildTaskReport(userId?: string) {
-  const tasks = await getTasks()
+  const tasks = await getEstateRepository().tasks.list()
   const filtered = userId
     ? tasks.filter((t) => t.assignedToName?.toLowerCase() === userId.toLowerCase())
     : tasks
@@ -138,7 +133,7 @@ async function buildTaskReport(userId?: string) {
 }
 
 async function buildTimeReport(userId?: string) {
-  const entries = await getTimeClockEntries()
+  const entries = await getEstateRepository().timeClock.list()
   const filtered = userId
     ? entries.filter((e) => e.employeeName?.toLowerCase() === userId.toLowerCase())
     : entries

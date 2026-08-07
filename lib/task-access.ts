@@ -1,4 +1,5 @@
-import { getTask, type Task } from "@/lib/services/baserow"
+import type { Task } from "@/lib/domain/estate-types"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { getProjectNamesForMember } from "@/lib/projects"
 
 export const PERSONA_TO_ASSIGNED_ID: Record<string, number> = {
@@ -51,7 +52,7 @@ export async function resolveTaskAccess(
     return { task: null, status: 404 }
   }
 
-  const task = await getTask(numericTaskId)
+  const task = await getEstateRepository().tasks.get(numericTaskId)
   if (!task) return { task: null, status: 404 }
 
   const scope = await getTaskAccessScope(userId, role)

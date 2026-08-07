@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { isBaserowConfigured } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 
 interface DataSourceOptions {
   configured?: boolean
@@ -11,7 +11,7 @@ export function withDataSource<T extends Record<string, unknown>>(
   data: T,
   options?: DataSourceOptions
 ) {
-  const configured = options?.configured ?? isBaserowConfigured()
+  const configured = options?.configured ?? getEstateRepository().isConfigured()
   const dataSourceMessage =
     options?.message ?? (configured ? "Connected to Baserow" : "Baserow not configured")
   return NextResponse.json({

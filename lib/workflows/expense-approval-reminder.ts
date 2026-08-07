@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getExpenses } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 
 const REMINDER_HOURS = 48
@@ -24,7 +24,7 @@ export const expenseApprovalReminder = inngest.createFunction(
   { id: "expense-approval-reminder", retries: 2 },
   { cron: "TZ=Africa/Johannesburg 0 9 * * *" },
   async ({ step }) => {
-    const expenses = await step.run("fetch_expenses", () => getExpenses({ status: "Pending" }))
+    const expenses = await step.run("fetch_expenses", () => getEstateRepository().expenses.list({ status: "Pending" }))
     const pending = expenses.filter((e) => {
       const hours = hoursSince(e.date)
       return hours >= REMINDER_HOURS

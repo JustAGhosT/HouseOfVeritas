@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server"
-import { getTasks, getExpenses, getEmployees, isBaserowConfigured } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { withAuth } from "@/lib/auth/rbac"
 
 export const GET = withAuth(async (_request) => {
   const [tasks, expenses, employees] = await Promise.all([
-    getTasks(),
-    getExpenses(),
-    getEmployees(),
+    getEstateRepository().tasks.list(),
+    getEstateRepository().expenses.list(),
+    getEstateRepository().employees.list(),
   ])
 
   const now = new Date()
@@ -15,7 +15,7 @@ export const GET = withAuth(async (_request) => {
   const monthExpenses = expenses.filter((e) => e.date >= monthStart)
 
   const stats = {
-    dataSource: isBaserowConfigured()
+    dataSource: getEstateRepository().isConfigured()
       ? "live"
       : process.env.ALLOW_DEMO_DATA === "true"
         ? "demo"

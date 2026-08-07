@@ -1,10 +1,5 @@
 import { NextResponse } from "next/server"
-import {
-  clockInByAppId,
-  clockOutByAppId,
-  getTimeClockEntries,
-  isBaserowConfigured,
-} from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { withAuth } from "@/lib/auth/rbac"
 
 // Biometric device configuration
@@ -165,8 +160,8 @@ export const GET = withAuth(async (request) => {
   const today = new Date().toISOString().split("T")[0]
   let records = [...clockRecords]
 
-  if (isBaserowConfigured()) {
-    const baserowEntries = await getTimeClockEntries({
+  if (getEstateRepository().isConfigured()) {
+    const baserowEntries = await getEstateRepository().timeClock.list({
       date: date || today,
     })
     const baserowRecords: ClockRecord[] = []
@@ -284,11 +279,11 @@ export const POST = withAuth(async (request) => {
 
       clockRecords.push(record)
 
-      if (isBaserowConfigured()) {
+      if (getEstateRepository().isConfigured()) {
         if (action === "clock_in") {
-          await clockInByAppId(employeeId)
+          await getEstateRepository().timeClock.clockInByAppId(employeeId)
         } else {
-          await clockOutByAppId(employeeId)
+          await getEstateRepository().timeClock.clockOutByAppId(employeeId)
         }
       }
 
@@ -296,7 +291,7 @@ export const POST = withAuth(async (request) => {
         success: true,
         mode: getBiometricMode(),
         record,
-        persisted: isBaserowConfigured(),
+        persisted: getEstateRepository().isConfigured(),
         message: `${employee.name} ${action === "clock_in" ? "clocked in" : "clocked out"} successfully`,
       })
     }

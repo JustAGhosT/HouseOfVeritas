@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getRecurringTaskTemplates, createTask } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 import { toISODateString } from "@/lib/utils"
@@ -28,29 +28,29 @@ export const recurringTasksCreate = inngest.createFunction(
   { id: "recurring-tasks-create", retries: 2 },
   { cron: "0 8 * * 1" },
   async ({ step }) => {
-    const templates = await getRecurringTaskTemplates()
+    const templates = await getEstateRepository().tasks.listRecurringTemplates()
     const now = new Date()
     const weekStart = getWeekStart(new Date(now))
     const created: { id: number; title: string }[] = []
 
     for (const t of templates) {
-      if (!shouldCreateThisWeek(t.Recurrence, now)) continue
-      const assigneeId = t["Assigned To"]?.[0]?.id
+      if (!shouldCreateThisWeek(t.recurrence, now)) continue
+      const assigneeId = t.assignedTo
       const dueDates: Date[] =
-        t.Recurrence === "Daily"
+        t.recurrence === "Daily"
           ? Array.from({ length: 7 }, (_, i) => new Date(weekStart.getTime() + i * 86400000))
           : [new Date(weekStart.getTime() + 4 * 86400000)]
 
       const templateCreated: { id: number; title: string }[] = []
       for (const dueDate of dueDates) {
-        const task = await createTask({
-          title: `${t.Title ?? "Task"} - ${toISODateString(dueDate)}`,
-          description: t.Description ?? "",
+        const task = await getEstateRepository().tasks.create({
+          title: `${t.title} - ${toISODateString(dueDate)}`,
+          description: t.description ?? "",
           dueDate: toISODateString(dueDate),
-          priority: (t.Priority?.value as "Low" | "Medium" | "High") ?? "Medium",
+          priority: t.priority ?? "Medium",
           status: "Not Started",
           assignedTo: assigneeId,
-          project: t.Project,
+          project: t.project,
         })
         if (task) {
           created.push({ id: task.id, title: task.title })
@@ -67,7 +67,7 @@ export const recurringTasksCreate = inngest.createFunction(
             message:
               templateCreated.length === 1
                 ? `${templateCreated[0].title}`
-                : `${t.Title ?? "Task"}: ${templateCreated.length} tasks created`,
+                : `${t.title}: ${templateCreated.length} tasks created`,
             channels: ["in_app"],
             data: { taskIds: templateCreated.map((c) => c.id), assigneeId },
             priority: "medium",

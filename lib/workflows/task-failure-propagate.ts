@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest/client"
-import { getTasks } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { sendNotification } from "@/lib/services/notification-service"
 import { getAdminNotificationRecipient } from "@/lib/workflows/notification-recipients"
 
@@ -7,7 +7,7 @@ export const taskFailurePropagate = inngest.createFunction(
   { id: "task-failure-propagate", retries: 2 },
   { cron: "0 8 * * *" },
   async ({ step }) => {
-    const allTasks = await getTasks()
+    const allTasks = await getEstateRepository().tasks.list()
     const tasks = allTasks.filter((t) => t.status !== "Completed")
     const overdue = tasks.filter((t) => {
       if (!t.dueDate) return false

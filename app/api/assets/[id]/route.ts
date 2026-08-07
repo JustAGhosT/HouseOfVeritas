@@ -1,7 +1,7 @@
 import { rateLimitAsync } from "@/lib/auth/rate-limit"
 import { getAuthContext, isAdminOrOperator, withRole } from "@/lib/auth/rbac"
 import { logger } from "@/lib/logger"
-import { getAsset, getBaserowEmployeeIdByAppId, updateAsset } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { toISODateString } from "@/lib/utils"
 import { NextResponse } from "next/server"
 
@@ -22,7 +22,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Too Many Requests" }, { status: 429 })
   }
   try {
-    const asset = await getAsset(id)
+    const asset = await getEstateRepository().assets.get(id)
     if (!asset) {
       return NextResponse.json({ error: "Asset not found" }, { status: 404 })
     }
@@ -61,7 +61,7 @@ export const PATCH = withRole(
     }
     const { action, checkedOutBy, expectedReturnDate, personaId } = body
 
-    const asset = await getAsset(id)
+    const asset = await getEstateRepository().assets.get(id)
     if (!asset) {
       return NextResponse.json({ error: "Asset not found" }, { status: 404 })
     }
@@ -121,7 +121,7 @@ export const PATCH = withRole(
         // In else branch, checkedOutBy is falsy and callerId is guaranteed to exist
         userInput = callerId
       }
-      const employeeId = (await getBaserowEmployeeIdByAppId(userInput)) ?? undefined
+      const employeeId = (await getEstateRepository().employees.resolveIdByAppId(userInput)) ?? undefined
       if (!employeeId) {
         return NextResponse.json(
           { error: "Could not resolve checkout user to employee" },
@@ -130,7 +130,7 @@ export const PATCH = withRole(
       }
 
       const today = toISODateString()
-      const updated = await updateAsset(id, {
+      const updated = await getEstateRepository().assets.update(id, {
         checkedOutBy: employeeId,
         checkOutDate: today,
         expectedReturnDate: expectedReturnDate.trim(),
@@ -146,7 +146,7 @@ export const PATCH = withRole(
         return NextResponse.json({ error: "Asset is not checked out" }, { status: 400 })
       }
 
-      const updated = await updateAsset(id, {
+      const updated = await getEstateRepository().assets.update(id, {
         checkedOutBy: null,
         checkOutDate: null,
         expectedReturnDate: null,

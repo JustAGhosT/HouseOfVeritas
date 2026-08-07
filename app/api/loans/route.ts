@@ -3,14 +3,8 @@ import { withDataSource } from "@/lib/api/response"
 import { isAdminOrOperator, withRole } from "@/lib/auth/rbac"
 import { submitPayment } from "@/lib/integrations/bank"
 import { logger } from "@/lib/logger"
-import {
-  createLoan,
-  getBaserowEmployeeIdByAppId,
-  getEmployee,
-  getLoan,
-  getLoans,
-  updateLoan,
-} from "@/lib/services/baserow"
+import type { Loan } from "@/lib/domain/estate-types"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { toISODateString } from "@/lib/utils"
 import { routeToInngest } from "@/lib/workflows"
 import { NextResponse } from "next/server"
@@ -53,7 +47,7 @@ export const GET = withRole(
   if (error) return error
 
   try {
-    const loans = await getLoans({
+    const loans = await getEstateRepository().loans.list({
       employee,
       status: status || undefined,
     })
@@ -86,7 +80,7 @@ export const POST = withRole(
     let employeeId = resolvedEmployeeId!
 
     if (!isAdminOrOperator(context.role)) {
-      const callerEmployeeId = (await getBaserowEmployeeIdByAppId(context.userId)) ?? undefined
+      const callerEmployeeId = (await getEstateRepository().employees.resolveIdByAppId(context.userId)) ?? undefined
       if (!callerEmployeeId || employeeId !== callerEmployeeId) {
         return NextResponse.json(
           { error: "You can only create loans for yourself" },
@@ -102,7 +96,7 @@ export const POST = withRole(
       return NextResponse.json({ error: "Valid numeric amount is required" }, { status: 400 })
     }
 
-    const existingLoans = await getLoans({ employee: employeeId, status: "Active" })
+    const existingLoans = await getEstateRepository().loans.list({ employee: employeeId, status: "Active" })
     const totalOutstanding = existingLoans.reduce((s, l) => s + l.outstandingBalance, 0)
     if (totalOutstanding >= MAX_OUTSTANDING) {
       return NextResponse.json(
@@ -133,7 +127,7 @@ export const POST = withRole(
       )
     }
 
-    const loan = await createLoan({
+    const loan = await getEstateRepository().loans.create({
       employee: employeeId,
       amount: amountNum,
       purpose: purpose || "",
@@ -176,7 +170,7 @@ export const PATCH = withRole("admin")(async (request) => {
       return NextResponse.json({ error: "Loan ID is required" }, { status: 400 })
     }
 
-    const existingLoan = await getLoan(Number(id))
+    const existingLoan = await getEstateRepository().loans.get(Number(id))
     if (!existingLoan) {
       return NextResponse.json({ error: "Loan not found" }, { status: 404 })
     }
@@ -233,7 +227,7 @@ export const PATCH = withRole("admin")(async (request) => {
 
     if (status === "Approved" && existingLoan.status !== "Approved") {
       try {
-        const emp = await getEmployee(existingLoan.employee)
+        const emp = await getEstateRepository().employees.get(existingLoan.employee)
         const result = await submitPayment({
           recipientId: String(existingLoan.employee),
           recipientName: emp?.fullName ?? "Employee",
@@ -258,14 +252,14 @@ export const PATCH = withRole("admin")(async (request) => {
       }
     }
 
-    const loan = await updateLoan(loanId, updates as Parameters<typeof updateLoan>[1])
+    const loan = await getEstateRepository().loans.update(loanId, updates as Partial<Loan>)
 
     if (!loan) {
       return NextResponse.json({ error: "Loan not found" }, { status: 404 })
     }
 
     if (updates.outstandingBalance === 0) {
-      await updateLoan(loanId, { status: "Repaid" })
+      await getEstateRepository().loans.update(loanId, { status: "Repaid" })
     }
 
     return withDataSource({ loan })

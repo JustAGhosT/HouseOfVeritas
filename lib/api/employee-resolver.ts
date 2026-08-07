@@ -1,5 +1,5 @@
 import { isAdminOrOperator, type RouteContext } from "@/lib/auth/rbac"
-import { getBaserowEmployeeIdByAppId } from "@/lib/services/baserow"
+import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { NextResponse } from "next/server"
 
 export interface ResolveEmployeeForGetOptions {
@@ -26,14 +26,14 @@ export async function resolveEmployeeForGet(
       employeeId = parseInt(paramValue, 10)
       if (Number.isNaN(employeeId)) employeeId = undefined
     } else if (personaId) {
-      employeeId = (await getBaserowEmployeeIdByAppId(personaId)) ?? undefined
+      employeeId = (await getEstateRepository().employees.resolveIdByAppId(personaId)) ?? undefined
     } else {
       employeeId = undefined
     }
     return { employeeId }
   }
 
-  const callerEmployeeId = (await getBaserowEmployeeIdByAppId(context.userId)) ?? undefined
+  const callerEmployeeId = (await getEstateRepository().employees.resolveIdByAppId(context.userId)) ?? undefined
   if (!callerEmployeeId) {
     return {
       employeeId: undefined,
@@ -87,16 +87,16 @@ export async function resolveEmployeeForPost(
   }
 
   if (!employeeId && personaId) {
-    employeeId = (await getBaserowEmployeeIdByAppId(personaId)) ?? undefined
+    employeeId = (await getEstateRepository().employees.resolveIdByAppId(personaId)) ?? undefined
   }
   if (!employeeId) {
     const auth = request.headers.get("x-user-id")
     if (auth) {
-      employeeId = (await getBaserowEmployeeIdByAppId(auth)) ?? undefined
+      employeeId = (await getEstateRepository().employees.resolveIdByAppId(auth)) ?? undefined
     }
   }
   if (!employeeId && fallbackToCaller) {
-    employeeId = (await getBaserowEmployeeIdByAppId(context.userId)) ?? undefined
+    employeeId = (await getEstateRepository().employees.resolveIdByAppId(context.userId)) ?? undefined
   }
 
   if (!employeeId && required) {
