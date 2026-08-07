@@ -222,12 +222,12 @@ export async function getKnowledgeSafeguardProfileRepository(): Promise<{
 }
 
 /**
- * The profile the evaluator should use right now, for callers that safeguard content.
+ * The profile the evaluator should use right now, for callers that gate content.
  *
  * Unlike the admin route, this NEVER throws on an unreachable store: it falls
  * back to `strict` and reports `builtin-fallback`. Refusing to evaluate would
- * not be safer — it would just move the failure — whereas running every safeguard is
- * the strictest available answer. The source is returned so the caller can
+ * not be safer — it would just move the failure — whereas running every safeguard
+ * is the strictest available answer. The source is returned so the caller can
  * record that a configured relaxation was not applied.
  */
 export async function loadEffectiveSafeguardProfile(
@@ -265,6 +265,52 @@ export async function loadEffectiveSafeguardProfile(
       error: error.message,
     })
     return { profile: STRICT_SAFEGUARD_PROFILE, source: "builtin-fallback" }
+  }
+}
+
+export type SafeguardProfileResolver = (profileId: string) => {
+  profile: KnowledgeSafeguardProfile
+  source: KnowledgeSafeguardProfileSource
+}
+
+/**
+ * One store read, then synchronous resolution for many entries.
+ *
+ * Search matches can span several profiles, and calling
+ * `loadEffectiveSafeguardProfile()` per match would re-read the collection each
+ * time. This keeps `rankKnowledge()` pure and synchronous — the route does the
+ * single async load and filters with the resolver.
+ *
+ * Fails the same way: an unreachable store yields a resolver that returns
+ * `strict` / `builtin-fallback` for everything, so search degrades to the
+ * strictest answer rather than erroring or silently serving relaxed content.
+ */
+export async function loadSafeguardProfileResolver(
+  loadEvents: () => Promise<KnowledgeSafeguardProfileEvent[]> = async () => {
+    const { repository } = await getKnowledgeSafeguardProfileRepository()
+    return repository.list()
+  }
+): Promise<SafeguardProfileResolver> {
+  let events: KnowledgeSafeguardProfileEvent[]
+  try {
+    events = await loadEvents()
+  } catch (error) {
+    if (!(error instanceof KnowledgeSafeguardProfileStoreUnavailableError)) throw error
+    logger.warn("Safeguard profile store unavailable; search falls back to strict", {
+      error: error.message,
+    })
+    return () => ({ profile: STRICT_SAFEGUARD_PROFILE, source: "builtin-fallback" })
+  }
+
+  return (profileId: string) => {
+    const { profile, source, sanitizedSafeguards } = resolveEffectiveProfile(profileId, events)
+    if (sanitizedSafeguards.length > 0) {
+      logger.error("Stored safeguard profile tried to waive a non-waivable safeguard", {
+        profileId,
+        sanitizedSafeguards,
+      })
+    }
+    return { profile, source }
   }
 }
 

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { withRole } from "@/lib/auth/rbac"
 import { findKnowledge } from "@/lib/knowledge/retrieval"
+import { checkPublishable, profileIdForEntry } from "@/lib/knowledge/publication"
+import { loadSafeguardProfileResolver } from "@/lib/repositories/knowledge-safeguard-profile-repository"
 import { KNOWLEDGE_DOMAINS } from "@/lib/knowledge/types"
 import { GUIDANCE_LOCALES } from "@/lib/guidance"
 import { logger } from "@/lib/logger"
@@ -40,12 +42,29 @@ export const GET = withRole(
       )
     }
 
-    const matches = findKnowledge({
+    const ranked = findKnowledge({
       text: parsed.data.q,
       domain: parsed.data.domain,
       assetType: parsed.data.assetType,
       locale: parsed.data.locale,
     })
+
+    // Search is re-checked against the administrator's effective profile, not
+    // just the built-in the entry shipped against. Without this, tightening a
+    // safeguard would stop an entry being applied while still surfacing it in
+    // results — which reads as an endorsement the safeguards no longer give.
+    const resolveProfile = await loadSafeguardProfileResolver()
+    const matches = ranked.filter((match) => {
+      const { profile, source } = resolveProfile(profileIdForEntry(match.entry))
+      return checkPublishable(match.entry, profile, source).publishable
+    })
+    const withheld = ranked.length - matches.length
+    if (withheld > 0) {
+      logger.info("Withheld knowledge matches that no longer clear their safeguards", {
+        withheld,
+        query: parsed.data.q,
+      })
+    }
 
     return NextResponse.json({
       data: {
@@ -62,6 +81,7 @@ export const GET = withRole(
       },
       summary: {
         count: matches.length,
+        withheld,
         query: parsed.data.q,
       },
     })

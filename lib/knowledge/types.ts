@@ -1,10 +1,16 @@
 import { z } from "zod"
 import { guidanceDraftSchema, type GuidanceDraft, type GuidanceLocale } from "@/lib/guidance"
 import {
+  knowledgeCandidateFactsSchema,
   knowledgeSafeguardResultsSchema,
   type KnowledgeSafeguardId,
   type KnowledgeSafeguardResult,
 } from "@/lib/knowledge/safeguards"
+import {
+  KNOWLEDGE_PRIORITIES,
+  type KnowledgeCandidateFacts,
+  type KnowledgePriority,
+} from "@/lib/knowledge/rubrics"
 
 /**
  * Curated diagnostic knowledge base.
@@ -46,6 +52,23 @@ export interface KnowledgeSupplier {
  * enforceable for a seed that is published by merging a PR rather than by an
  * API call.
  */
+/**
+ * The Tier-1 priority assessment recorded at review time.
+ *
+ * Both the inputs and the resulting score are kept. The facts alone would let
+ * the score be recomputed, but not tell you what the reviewer actually acted
+ * on; the score alone would be unauditable. Holding both means a later change
+ * to the weights or bands is *detectable* — `auditRecordedPriority()` recomputes
+ * and reports drift, and the seed refuses to load if a published entry has
+ * drifted.
+ */
+export interface KnowledgeReviewPriority {
+  facts: KnowledgeCandidateFacts
+  /** Composite at review time, under the weights then in force. */
+  composite: number
+  priority: KnowledgePriority
+}
+
 export interface KnowledgeReview {
   /** Safeguard profile the reviewer applied — see `KNOWLEDGE_SAFEGUARD_PROFILES`. */
   profileId: string
@@ -53,6 +76,8 @@ export interface KnowledgeReview {
   /** Pseudonymous reviewer reference; never a name or contact detail. */
   reviewedBy: string
   reviewedAt: string
+  /** Optional: Tier 0 governs publication, Tier 1 only explains the priority. */
+  tier1?: KnowledgeReviewPriority
 }
 
 export interface KnowledgeEntry {
@@ -107,6 +132,14 @@ export const knowledgeReviewSchema = z
       .max(64)
       .regex(/^[A-Za-z][A-Za-z0-9._-]*$/, "Use a pseudonymous reviewer reference"),
     reviewedAt: z.string().datetime({ offset: true }),
+    tier1: z
+      .object({
+        facts: knowledgeCandidateFactsSchema,
+        composite: z.number().min(0).max(10),
+        priority: z.enum(KNOWLEDGE_PRIORITIES),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
 

@@ -87,7 +87,7 @@ export const KNOWLEDGE_PUBLICATION_SAFEGUARDS: readonly KnowledgeSafeguard[] = [
     id: "statutory_competence",
     label: "Statutory competence",
     description:
-      "South African law, municipal bylaw, or the estate's insurance reserves the work to a registered person — electrical CoC work under SANS 10142-1, gas installation (SAQCC), notifiable plumbing (PIRB). The register itself is unconfirmed; see spec §10.",
+      "South African law, municipal bylaw, or the estate's insurance reserves the work to a registered person — electrical CoC work under SANS 10142-1, gas installation (SAQCC), notifiable plumbing (PIRB). DEFERRED: this register is unverified and needs a competent person to confirm it (spec §10.0). Until then, when in doubt whether work is reserved, record a failure and publish a `safety` entry — being needlessly cautious is the cheap direction to be wrong in.",
     failureMode: "rescope",
     waivable: true,
     trialGate: "credential_process",

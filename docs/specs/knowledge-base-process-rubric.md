@@ -2,7 +2,7 @@
 
 |                    |                                                                                                                                |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| **Status**         | Active — implemented and enforced at publication and application; §10 open questions stand                                     |
+| **Status**         | Active — fully implemented; §10.0 deferred pending a competent person, §10.1 are content questions                             |
 | **Applies to**     | `lib/knowledge/**`, `lib/guidance.ts`, `app/api/knowledge/**`, `app/api/guidance/**`                                           |
 | **Pattern source** | `lib/services/radar/rubrics.ts` (rubric-as-data), `lib/reviewer-trials/domain-safety-trial.ts` (gates + quality dimensions)    |
 | **Related**        | [property-deal-radar.md](property-deal-radar.md), [task-guidance-architecture.md](../05-project/task-guidance-architecture.md) |
@@ -476,15 +476,23 @@ Shipped alongside this document:
    place the old word survives is `trialGate`, which points _at_ the reviewer trial's gates and is
    meant to.
 
-Still open:
+7. **`KnowledgeReview.tier1`** — the Tier-1 facts, composite and priority recorded at review time,
+   with `auditRecordedPriority()` recomputing from the facts and reporting drift. Both are kept
+   deliberately: the facts alone would not say what the reviewer acted on, the score alone would be
+   unauditable. `assertPublishable()` refuses to load a published entry whose recorded score no
+   longer follows from its recorded facts, so moving a band or a weight fails CI and forces a
+   re-review rather than quietly restating every entry's rank.
 
-7. Record the Tier-1 composite alongside the Tier-0 review, so authoring priority is auditable after
-   the fact as well. `KnowledgeReview` is the obvious home now that it exists.
-8. `GET /api/knowledge` serves published entries without re-checking them against the effective
-   profile. It is safe transitively — an entry cannot be `published` without clearing its built-in
-   safeguards — but an administrator _tightening_ a safeguard does not currently hide matching entries from
-   search, only stop them being applied. Retrieval is sync and pure; making it profile-aware means
-   making it async.
+8. **Safeguard-filtered search** — `GET /api/knowledge` now resolves the effective profile and drops
+   matches that no longer clear, reporting `summary.withheld` so the filtering is visible rather than
+   silent. `rankKnowledge()` stays sync and pure; `loadSafeguardProfileResolver()` does one store
+   read and hands the route a synchronous resolver, so a query spanning several profiles still costs
+   one read. Search and apply now answer the same question — _may this be used right now_ — and an
+   administrator tightening a safeguard no longer leaves an entry listed but unusable, which read as
+   an endorsement the safeguards had withdrawn.
+
+Nothing from the original plan is outstanding. The remaining §10 items are questions about the
+rubric's content, not gaps in its implementation.
 
 ### 9.1 Safeguards are selectable per profile
 
@@ -599,10 +607,36 @@ document exists to prevent: a safety signal that is measured and ignored.
 
 ## 10. Open questions
 
-- **Is the statutory register accurate?** The `statutory_competence` safeguard names SANS 10142-1, SAQCC
-  gas, and PIRB from the existing reviewer-trial vocabulary. That list should be confirmed by a
-  competent person before it is relied on — this document is not legal advice, and a wrong safeguard here
-  fails in the dangerous direction.
+### 10.0 DEFERRED — the statutory register is unverified
+
+**Status: deferred, blocked on a competent person. Not closeable by code review.**
+
+The `statutory_competence` safeguard names SANS 10142-1 (electrical CoC), SAQCC (gas installation)
+and PIRB (notifiable plumbing). Those came from the existing reviewer-trial vocabulary in
+`lib/reviewer-trials/domain-safety-trial.ts`, not from anyone who checked them. **This document is
+not legal advice.**
+
+Why it is deferred rather than open: no amount of engineering closes it. Four rounds of automated
+review passed over this safeguard's definition without ever asking whether the citations are
+correct — which is exactly the limit of what those tools check. It needs a South African
+electrician, plumber or attorney, or the estate's insurer.
+
+What "wrong" costs, in each direction:
+
+| Failure                                     | Consequence                                                                                  |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Register too narrow — reserved work missing | An entry teaches a persona to do work the law reserves. **This is the dangerous direction.** |
+| Register too broad — unreserved work listed | Entries are needlessly re-scoped to `safety`. Wasteful, not harmful.                         |
+
+Until it is confirmed, the safeguard is deliberately biased toward the second failure: when in doubt
+whether work is reserved, record `statutory_competence: fail` and publish a `safety` entry.
+
+**What would close it:** a named competent person confirming or correcting the register, recorded
+against a dated review. The safeguard's `description` in `lib/knowledge/safeguards.ts` carries the
+same warning so it is visible at the point of use, not only here.
+
+### 10.1 Questions about the rubric's content
+
 - **Does `costAvoided` distort toward trade-substitution content?** It weights 3, which may
   systematically under-rank household and garden processes where no trade equivalent exists. The
   fire-extinguisher example clears P0 anyway, but a second such case would justify re-weighting.

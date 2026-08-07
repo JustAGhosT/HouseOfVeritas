@@ -33,6 +33,25 @@ const COPPER_PIPE_REVIEW: KnowledgeReview = {
   },
   reviewedBy: "hov-editorial-1",
   reviewedAt: "2026-08-06T00:00:00.000Z",
+  // Spec §8.1, worked longhand there. Recorded so the priority is auditable and
+  // so a later change to the bands or weights fails the seed instead of quietly
+  // restating the entry's rank.
+  tier1: {
+    facts: {
+      recurrencePerYear: 4, // seasonal, worst in the coldest weeks
+      costAvoidedCents: 90_000, // ~R900 plumber call-out
+      consequenceOfDelay: "compounding-structural", // damp into plaster and brick
+      personaFit: "named-owner-routine", // Charl's standing maintenance scope
+      assetCoverage: "owned-multiple", // pipework throughout the house
+      repeatability: "diagnostic-branching", // confirm-then-branch, not a line
+      symptomCount: 11,
+      keywordCount: 15,
+      authoringEffortHours: 8, // including the Afrikaans variant
+      localeReach: "both-locales-planned",
+    },
+    composite: 8,
+    priority: "P0",
+  },
 }
 
 /**

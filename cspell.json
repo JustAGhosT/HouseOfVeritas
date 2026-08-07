@@ -105,6 +105,7 @@
     "tfstate",
     "tfvars",
     "toggleable",
+    "unauditable",
     "unconfigured",
     "ungroundable",
     "unfused",
