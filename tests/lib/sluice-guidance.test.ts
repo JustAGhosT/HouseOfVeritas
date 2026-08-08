@@ -68,10 +68,14 @@ describe("Sluice task guidance", () => {
       }>
     }
     expect(body.model).toBe("cheap-long-context")
+    // Field names are fixed by the Sluice contract (ADR 10, MUST under ADR 17).
+    // This assertion previously encoded `consumer`/`capability`/`task_id`, which
+    // are not contract fields — so it locked in the bug instead of catching it.
+    // The contract itself is covered in tests/lib/sluice-request-metadata.test.ts.
     expect(body.metadata).toMatchObject({
-      consumer: "house-of-veritas",
-      capability: "task-guidance-vision",
-      task_id: "42",
+      app: "house-of-veritas",
+      agent: "task-guidance-vision",
+      request_id: "42",
     })
     expect(body.messages[0].content).toContain("untrusted observations")
     const userContent = body.messages[1].content as Array<{ type: string; text?: string }>

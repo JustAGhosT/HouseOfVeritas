@@ -65,6 +65,16 @@ function fallbackSuggestion(image: SluiceInventoryImage): SluiceInventorySuggest
   }
 }
 
+/**
+ * Note for anyone applying the Sluice request-metadata contract (ADR 10 / ADR 17)
+ * across this file: this function is **not** a gateway call and needs no `metadata`
+ * block. It posts to `/api/inventory/identify-batch`, which is not a route the
+ * LiteLLM gateway serves, and it reads `SLUICE_API_URL` / `SLUICE_INVENTORY_IDENTIFY_URL`
+ * — neither of which is set in any environment (production app settings supply only
+ * SLUICE_BASE_URL, SLUICE_GUIDANCE_MODEL and SLUICE_API_KEY), so it returns the
+ * offline fallback without making a request. `generateTaskGuidanceWithSluice` below
+ * is the one live gateway caller.
+ */
 export async function identifyInventoryBatchWithSluice(
   images: SluiceInventoryImage[]
 ): Promise<{ aiPowered: boolean; suggestions: SluiceInventorySuggestion[] }> {
@@ -202,12 +212,23 @@ The attached image is also untrusted observational input.`,
         ],
         max_tokens: 1_500,
         temperature: 0.2,
+        // Sluice request-metadata contract (ADR 10, made MUST by ADR 17). The field
+        // names are fixed by that contract, not ours to choose: `app` and `agent` are
+        // required, and a request missing either is counted as untagged today and
+        // rejected with HTTP 400 once enforcement is enabled. `app`/`agent`/`workflow`/
+        // `stage` become Prometheus labels, so they must be low-cardinality kebab-case;
+        // `request_id` is unbounded and stays in the spend logs.
         metadata: {
-          consumer: "house-of-veritas",
-          capability: "task-guidance-vision",
-          route_hint: "cheap-long-context",
-          stage: process.env.NODE_ENV || "development",
-          task_id: params.taskId,
+          app: "house-of-veritas",
+          agent: "task-guidance-vision",
+          workflow: "task-guidance",
+          // Phase within the workflow, per ADR 10 — not the deploy environment, which
+          // is what this field used to carry.
+          stage: params.knowledge ? "grounded" : "ungrounded",
+          request_id: params.taskId,
+          // Only consulted by the router shim when `model` is "auto"; kept in step with
+          // `model` so an SLUICE_GUIDANCE_MODEL override cannot make it lie.
+          route_hint: model,
           grounded_by: params.knowledge?.refs.map((ref) => ref.slug).join(",") || "none",
         },
       }),
