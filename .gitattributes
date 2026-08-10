@@ -1,1 +1,7 @@
 *.pdf binary
+
+# Claude Code hooks are executed by bash. With core.autocrlf=true these drift to
+# CRLF in the worktree, which bash outside Git-for-Windows will not parse — the
+# hook then exits 1, and exit 1 does not block, so a guard would silently become
+# a no-op. All of them are already stored LF, so this only pins the checkout.
+*.sh text eol=lf
