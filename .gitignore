@@ -71,3 +71,11 @@ blob-report/
 
 # Local dev-run output logs
 output/
+
+# Python bytecode (config/azure-functions/). Five .pyc files reached main via
+# #184 because nothing here excluded them. They are build output, they are
+# interpreter- and version-specific, and they ship to the Function App on
+# deploy — where a stale committed .pyc sitting beside edited source is exactly
+# the kind of thing that is hard to see and easy to blame on something else.
+__pycache__/
+*.pyc
