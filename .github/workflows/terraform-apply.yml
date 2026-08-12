@@ -16,6 +16,9 @@ on:
         required: true
         default: ""
 
+concurrency:
+  group: hov-terraform-production-state
+
 permissions:
   contents: write
 

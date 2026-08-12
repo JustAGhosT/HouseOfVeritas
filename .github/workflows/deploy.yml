@@ -30,6 +30,9 @@ on:
   release:
     types: [published]
 
+concurrency:
+  group: deploy-${{ github.ref }}
+
 permissions:
   contents: read
   id-token: write

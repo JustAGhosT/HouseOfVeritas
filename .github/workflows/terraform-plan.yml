@@ -8,6 +8,9 @@ on:
       - "terraform/**"
       - ".github/workflows/terraform-plan.yml"
 
+concurrency:
+  group: terraform-plan-${{ github.event.pull_request.number || github.ref }}
+
 permissions:
   contents: read
   pull-requests: write

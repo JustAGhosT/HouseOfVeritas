@@ -26,6 +26,9 @@ on:
       - "scripts/verify-deployment-build.mjs"
       - ".github/workflows/deploy-on-merge.yml"
 
+concurrency:
+  group: deploy-on-merge-${{ github.ref }}
+
 permissions:
   contents: read
   id-token: write
