@@ -17,6 +17,9 @@ Add two published bilingual household recipes to the explicit catalog seed, and 
 3. **Smoky Boerewors, Bacon and Tomato Rice Pot** — one pot; brown the coil whole; vegetables; rice; slice the wors back on top. Saves sirloin, potatoes, and spaghetti.
 4. **Loaded Bacon, Tomato and Cheddar Potato Bake** — salted tomatoes, layered potatoes, bacon, pepper, cheddar at 190°C.
 5. **Cheesy Bacon, Tomato and Pepper Spaghetti** — cheddar stirred through off the boil with pasta water.
+6. **Boerewors, Potato and Cheddar Skillet** — parboil potatoes, brown the coil whole, melt cheddar on top.
+7. **Cheesy Boerewors and Tomato Pasta Bake** — underdone spaghetti, tomato sauce, cheddar at 200°C or melt in a covered pan.
+8. **Sirloin, Onion and Pepper Rice Bowls** — flash-fry sliced sirloin; cheddar optional.
 
 All are audience `hans` + `irma`, with licensed Wikimedia image metadata.
 

@@ -784,6 +784,227 @@ export const SAMPLE_RECIPES: RecipeCreatePayload[] = [
       },
     ],
   },
+  {
+    status: "published",
+    audienceUserIds: ["hans", "irma"],
+    titleEn: "Boerewors, Potato and Cheddar Skillet",
+    summaryEn:
+      "A heavier rustic meal: browned boerewors, fried potatoes, onion, pepper, tomato, and melted cheddar. Bacon is optional.",
+    titleAf: "Boerewors-, Aartappel- en Cheddarpan",
+    summaryAf:
+      "'n Swarter, rustieke ete: gebraaide boerewors, gebraaide aartappels, ui, peper, tamatie en gesmelte cheddar. Spek is opsioneel.",
+    servings: 4,
+    prepMinutes: 20,
+    cookMinutes: 30,
+    cuisine: "Family",
+    category: "Main",
+    image: {
+      url: "https://upload.wikimedia.org/wikipedia/commons/3/3f/Italian_Sausage_in_the_Iron_Skillet_%282489944971%29.jpg",
+      source: "Wikimedia Commons",
+      author: "Ryan Snyder",
+      license: "CC BY 2.0",
+      attributionText: "Ryan Snyder, CC BY 2.0, via Wikimedia Commons",
+      retrievedAt: "2026-08-14",
+    },
+    ingredients: [
+      { name: "Boerewors", quantity: "300-500", unit: "g" },
+      { name: "Potatoes", quantity: "4-6", unit: "diced small" },
+      { name: "Onion", quantity: 1, unit: "chopped" },
+      { name: "Green pepper", quantity: 1, unit: "chopped" },
+      { name: "Ripe tomatoes", quantity: "1-2", unit: "diced" },
+      { name: "Bacon", quantity: "optional", unit: "chopped" },
+      { name: "Cheddar", quantity: "generous", unit: "grated" },
+      { name: "Black pepper", quantity: "to taste" },
+      { name: "Paprika, garlic, chilli, Worcestershire sauce, or chutney", quantity: "optional" },
+    ],
+    steps: [
+      {
+        order: 1,
+        timerMinutes: 8,
+        instructionEn: "Dice the potatoes into small cubes and parboil for 6 to 8 minutes. Drain well.",
+        instructionAf: "Sny die aartappels in klein blokkies en voorkook 6 tot 8 minute. Dreineer goed.",
+      },
+      {
+        order: 2,
+        timerMinutes: 10,
+        instructionEn: "Brown the boerewors whole, remove it, then slice it.",
+        instructionAf: "Braai die boerewors heel, verwyder dit, en sny dit dan.",
+      },
+      {
+        order: 3,
+        timerMinutes: 4,
+        instructionEn: "Fry chopped bacon in the same pan, if using.",
+        instructionAf: "Braai gekapte spek in dieselfde pan, indien gebruik.",
+      },
+      {
+        order: 4,
+        timerMinutes: 8,
+        instructionEn: "Add the potatoes and fry until browned.",
+        instructionAf: "Voeg die aartappels by en braai tot bruin.",
+      },
+      {
+        order: 5,
+        timerMinutes: 6,
+        instructionEn: "Add the onion and green pepper. Cook until softened.",
+        instructionAf: "Voeg die ui en groentepeper by. Kook tot sag.",
+      },
+      {
+        order: 6,
+        timerMinutes: 8,
+        instructionEn:
+          "Add the diced tomato and the sliced boerewors. Season, cover, and cook for about 8 minutes. Good with paprika, garlic, chilli, Worcestershire sauce, or chutney.",
+        instructionAf:
+          "Voeg die gekapte tamatie en die gesnyde boerewors by. Geur, sit die deksel op, en kook ongeveer 8 minute. Werk goed met paprika, knoffel, rissie, Worcestershire of blatjang.",
+      },
+      {
+        order: 7,
+        timerMinutes: 3,
+        instructionEn: "Scatter cheddar over the top, cover again, and let it melt.",
+        instructionAf: "Strooi cheddar oor die bokant, sit weer die deksel op, en laat dit smelt.",
+      },
+    ],
+  },
+  {
+    status: "published",
+    audienceUserIds: ["hans", "irma"],
+    titleEn: "Cheesy Boerewors and Tomato Pasta Bake",
+    summaryEn:
+      "Thicker than the stove-top spaghetti: underdone pasta, boerewors, tomato sauce, and cheddar baked at 200°C. No oven: melt the cheddar in a covered pan on very low heat.",
+    titleAf: "Kaasagtige Boerewors- en Tamatie-pastabak",
+    summaryAf:
+      "Dikker as die stoofspaghetti: halfgaar pasta, boerewors, tamatiesous en cheddar by 200°C. Sonder oond: smelt die cheddar in 'n toemaakpan op baie lae hitte.",
+    servings: 4,
+    prepMinutes: 20,
+    cookMinutes: 35,
+    cuisine: "Family",
+    category: "Main",
+    image: {
+      url: "https://upload.wikimedia.org/wikipedia/commons/b/ba/Lasagne_-_stonesoup.jpg",
+      source: "Wikimedia Commons",
+      author: "jules / stonesoup",
+      license: "CC BY 2.0",
+      attributionText: "jules / stonesoup, CC BY 2.0, via Wikimedia Commons",
+      retrievedAt: "2026-08-14",
+    },
+    ingredients: [
+      { name: "Spaghetti", quantity: "400", unit: "g" },
+      { name: "Boerewors", quantity: "300-500", unit: "g" },
+      { name: "Ripe tomatoes", quantity: "3-4", unit: "chopped" },
+      { name: "Onion", quantity: 1, unit: "chopped" },
+      { name: "Green pepper", quantity: 1, unit: "chopped" },
+      { name: "Cheddar", quantity: "generous", unit: "grated" },
+      { name: "Black pepper", quantity: "to taste" },
+      { name: "Paprika or mixed herbs", quantity: "optional" },
+    ],
+    steps: [
+      {
+        order: 1,
+        timerMinutes: 8,
+        instructionEn: "Cook the spaghetti slightly underdone. Drain.",
+        instructionAf: "Kook die spaghetti tot net ondergaar. Dreineer.",
+      },
+      {
+        order: 2,
+        timerMinutes: 10,
+        instructionEn: "Brown the boerewors, then slice it.",
+        instructionAf: "Braai die boerewors, sny dit dan.",
+      },
+      {
+        order: 3,
+        timerMinutes: 6,
+        instructionEn: "Fry the onion and green pepper.",
+        instructionAf: "Braai die ui en groentepeper.",
+      },
+      {
+        order: 4,
+        timerMinutes: 10,
+        instructionEn: "Add the chopped tomatoes and seasoning. Simmer into a thick sauce.",
+        instructionAf: "Voeg die gekapte tamaties en geur by. Prut tot 'n dik sous.",
+      },
+      {
+        order: 5,
+        instructionEn: "Mix the pasta, sauce, and boerewors together.",
+        instructionAf: "Meng die pasta, sous en boerewors saam.",
+      },
+      {
+        order: 6,
+        timerMinutes: 20,
+        instructionEn:
+          "Place in an oven dish, cover with grated cheddar, and bake at 200°C for 15 to 20 minutes. Without an oven, put everything in a large pan, add the cheddar, cover, and melt it over very low heat.",
+        instructionAf:
+          "Sit in 'n oondskottel, bedek met gerasperde cheddar, en bak 15 tot 20 minute by 200°C. Sonder oond: sit alles in 'n groot pan, voeg die cheddar by, sit die deksel op, en smelt dit op baie lae hitte.",
+      },
+    ],
+  },
+  {
+    status: "published",
+    audienceUserIds: ["hans", "irma"],
+    titleEn: "Sirloin, Onion and Pepper Rice Bowls",
+    summaryEn:
+      "Quick-fried sliced sirloin over rice with onion, pepper, carrot, and tomato. Cheddar is optional, not central.",
+    titleAf: "Sirloin-, Ui- en Peper-ryskomme",
+    summaryAf:
+      "Vinnig gebraaide gesnyde sirloin oor rys met ui, peper, wortel en tamatie. Cheddar is opsioneel, nie die hoofsaak nie.",
+    servings: 3,
+    prepMinutes: 15,
+    cookMinutes: 25,
+    cuisine: "Family",
+    category: "Main",
+    image: {
+      url: "https://upload.wikimedia.org/wikipedia/commons/8/83/Mongolian_Beef_with_rice_and_noodles.jpg",
+      source: "Wikimedia Commons",
+      author: "Craig Dugas",
+      license: "CC BY-SA 2.0",
+      attributionText: "Craig Dugas, CC BY-SA 2.0, via Wikimedia Commons",
+      retrievedAt: "2026-08-14",
+    },
+    ingredients: [
+      { name: "Sirloin", quantity: "300-400", unit: "g, sliced thin across the grain" },
+      { name: "Uncooked rice", quantity: "1.5", unit: "cups" },
+      { name: "Onion", quantity: 1, unit: "sliced" },
+      { name: "Green pepper", quantity: 1, unit: "sliced" },
+      { name: "Carrot", quantity: 1, unit: "sliced" },
+      { name: "Ripe tomato", quantity: 1, unit: "diced" },
+      { name: "Cheddar", quantity: "optional", unit: "a little grated" },
+      { name: "Black pepper", quantity: "to taste" },
+      { name: "Garlic, paprika, chilli, or Worcestershire sauce", quantity: "optional" },
+    ],
+    steps: [
+      {
+        order: 1,
+        timerMinutes: 15,
+        instructionEn: "Cook the rice separately.",
+        instructionAf: "Kook die rys apart.",
+      },
+      {
+        order: 2,
+        timerMinutes: 3,
+        instructionEn:
+          "Slice the sirloin thinly across the grain. Fry it quickly over high heat, then remove it before it overcooks.",
+        instructionAf:
+          "Sny die sirloin dun oor die graan. Braai dit vinnig oor hoë hitte en verwyder dit voordat dit oorkook.",
+      },
+      {
+        order: 3,
+        timerMinutes: 6,
+        instructionEn: "Fry the sliced onion, pepper, and carrot.",
+        instructionAf: "Braai die gesnyde ui, peper en wortel.",
+      },
+      {
+        order: 4,
+        timerMinutes: 3,
+        instructionEn:
+          "Add the diced tomato and a small splash of water. Return the steak and cook for only another minute. Best with black pepper, garlic, paprika, chilli, or Worcestershire sauce.",
+        instructionAf:
+          "Voeg die gekapte tamatie en 'n klein slukkie water by. Sit die steak terug en kook net nog 'n minuut. Werk die beste met swartpeper, knoffel, paprika, rissie of Worcestershire.",
+      },
+      {
+        order: 5,
+        instructionEn: "Serve over rice with a little grated cheddar if you want it.",
+        instructionAf: "Bedien oor rys met 'n bietjie gerasperde cheddar indien jy wil.",
+      },
+    ],
+  },
 ]
 
 export function normalizeRecipeTitleKey(title: string): string {

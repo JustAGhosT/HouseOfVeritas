@@ -102,7 +102,7 @@ describe("sample recipe catalog", () => {
     expect(requiredText(recipe?.image.attributionText)).toContain(recipe?.image.author ?? "")
   })
 
-  it("includes the rice pot, potato bake, and cheesy bacon spaghetti", () => {
+  it("includes the rice pot, potato bake, cheesy bacon spaghetti, and remaining cheddar alternatives", () => {
     const ricePot = SAMPLE_RECIPES.find((item) =>
       item.titleEn.toLowerCase().includes("tomato rice pot")
     )
@@ -110,7 +110,16 @@ describe("sample recipe catalog", () => {
       item.titleEn.toLowerCase().includes("potato bake")
     )
     const spaghetti = SAMPLE_RECIPES.find((item) =>
-      item.titleEn.toLowerCase().includes("cheesy bacon")
+      item.titleEn.toLowerCase().includes("cheesy bacon, tomato")
+    )
+    const worsSkillet = SAMPLE_RECIPES.find((item) =>
+      item.titleEn.toLowerCase().includes("potato and cheddar skillet")
+    )
+    const pastaBake = SAMPLE_RECIPES.find((item) =>
+      item.titleEn.toLowerCase().includes("tomato pasta bake")
+    )
+    const riceBowls = SAMPLE_RECIPES.find((item) =>
+      item.titleEn.toLowerCase().includes("pepper rice bowls")
     )
 
     expect(ricePot?.ingredients.map((item) => item.name.toLowerCase())).toEqual(
@@ -126,7 +135,14 @@ describe("sample recipe catalog", () => {
     expect(spaghetti?.ingredients.map((item) => item.name.toLowerCase())).toEqual(
       expect.arrayContaining(["spaghetti", "cheddar", "carrot"])
     )
-    for (const recipe of [ricePot, potatoBake, spaghetti]) {
+    expect(worsSkillet?.ingredients.map((item) => item.name.toLowerCase())).toEqual(
+      expect.arrayContaining(["boerewors", "potatoes", "cheddar"])
+    )
+    expect(pastaBake?.steps.some((step) => step.instructionEn.includes("200"))).toBe(true)
+    expect(riceBowls?.steps.some((step) => step.instructionEn.toLowerCase().includes("across the grain"))).toBe(
+      true
+    )
+    for (const recipe of [ricePot, potatoBake, spaghetti, worsSkillet, pastaBake, riceBowls]) {
       expect(recipe?.status).toBe("published")
       expect(recipe?.audienceUserIds).toEqual(["hans", "irma"])
       expect(recipe?.steps.every((step) => step.instructionEn.trim() && step.instructionAf.trim())).toBe(
