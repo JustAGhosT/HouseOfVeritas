@@ -60,6 +60,10 @@ describe("sample recipe catalog", () => {
     expect(missing.some((recipe) => recipe.titleEn.toLowerCase().includes("sirloin skillet"))).toBe(
       true
     )
+    expect(missing.some((recipe) => recipe.titleEn.toLowerCase().includes("tomato rice pot"))).toBe(
+      true
+    )
+    expect(missing.some((recipe) => recipe.titleEn.toLowerCase().includes("potato bake"))).toBe(true)
   })
 
   it("includes a published bilingual one-pan skillet for Hans and Irma", () => {
@@ -96,5 +100,39 @@ describe("sample recipe catalog", () => {
     expect(recipe?.image.source).toBe("Wikimedia Commons")
     expect(recipe?.image.license).toMatch(/^CC /)
     expect(requiredText(recipe?.image.attributionText)).toContain(recipe?.image.author ?? "")
+  })
+
+  it("includes the rice pot, potato bake, and cheesy bacon spaghetti", () => {
+    const ricePot = SAMPLE_RECIPES.find((item) =>
+      item.titleEn.toLowerCase().includes("tomato rice pot")
+    )
+    const potatoBake = SAMPLE_RECIPES.find((item) =>
+      item.titleEn.toLowerCase().includes("potato bake")
+    )
+    const spaghetti = SAMPLE_RECIPES.find((item) =>
+      item.titleEn.toLowerCase().includes("cheesy bacon")
+    )
+
+    expect(ricePot?.ingredients.map((item) => item.name.toLowerCase())).toEqual(
+      expect.arrayContaining(["boerewors", "bacon", "uncooked rice", "green pepper"])
+    )
+    expect(ricePot?.steps.some((step) => step.instructionEn.toLowerCase().includes("do not cut"))).toBe(
+      true
+    )
+    expect(potatoBake?.ingredients.map((item) => item.name.toLowerCase())).toEqual(
+      expect.arrayContaining(["potatoes", "bacon", "cheddar", "ripe tomatoes"])
+    )
+    expect(potatoBake?.steps[0]?.instructionEn).toContain("190")
+    expect(spaghetti?.ingredients.map((item) => item.name.toLowerCase())).toEqual(
+      expect.arrayContaining(["spaghetti", "cheddar", "carrot"])
+    )
+    for (const recipe of [ricePot, potatoBake, spaghetti]) {
+      expect(recipe?.status).toBe("published")
+      expect(recipe?.audienceUserIds).toEqual(["hans", "irma"])
+      expect(recipe?.steps.every((step) => step.instructionEn.trim() && step.instructionAf.trim())).toBe(
+        true
+      )
+      expect(recipe?.image.license).toMatch(/^CC /)
+    }
   })
 })

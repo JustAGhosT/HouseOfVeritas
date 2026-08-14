@@ -513,6 +513,277 @@ export const SAMPLE_RECIPES: RecipeCreatePayload[] = [
       },
     ],
   },
+  {
+    status: "published",
+    audienceUserIds: ["hans", "irma"],
+    titleEn: "Smoky Boerewors, Bacon and Tomato Rice Pot",
+    summaryEn:
+      "A filling one-pot meal that uses the vegetables before they spoil. Keep the sirloin, potatoes, and spaghetti for another meal.",
+    titleAf: "Rookagtige Boerewors-, Spek- en Tamatie-ryspot",
+    summaryAf:
+      "'n Vol eenpot-maal wat die groente gebruik voordat dit bederf. Hou die sirloin, aartappels en spaghetti vir 'n ander ete.",
+    servings: 4,
+    prepMinutes: 15,
+    cookMinutes: 40,
+    cuisine: "Family",
+    category: "Main",
+    image: {
+      url: "https://upload.wikimedia.org/wikipedia/commons/f/f7/Chicken_and_andouille_sausage_jambalaya.jpg",
+      source: "Wikimedia Commons",
+      author: "Jessica Rossi",
+      license: "CC BY-SA 2.0",
+      attributionText: "Jessica Rossi, CC BY-SA 2.0, via Wikimedia Commons",
+      retrievedAt: "2026-08-14",
+    },
+    ingredients: [
+      { name: "Boerewors", quantity: "300-500", unit: "g" },
+      { name: "Bacon", quantity: "3-5", unit: "strips, chopped" },
+      { name: "Uncooked rice", quantity: "1.5", unit: "cups" },
+      { name: "Ripe tomatoes", quantity: 3, unit: "diced or grated" },
+      { name: "Onions", quantity: 2, unit: "chopped" },
+      { name: "Carrot", quantity: 1, unit: "grated or finely diced" },
+      { name: "Green pepper", quantity: 1, unit: "chopped" },
+      { name: "Water", quantity: "2.5-3", unit: "cups" },
+      { name: "Cooking oil", quantity: "optional", unit: "only if the bacon is very lean" },
+      { name: "Salt", quantity: "to taste" },
+      { name: "Black pepper", quantity: "to taste" },
+      { name: "Paprika", quantity: "1", unit: "teaspoon (optional)" },
+      { name: "Curry powder", quantity: "0.5", unit: "teaspoon (optional)" },
+      { name: "Garlic", quantity: "optional" },
+      { name: "Chilli", quantity: "optional" },
+      { name: "Stock cube", quantity: "optional" },
+      { name: "Worcestershire sauce or chutney", quantity: "1", unit: "tablespoon (optional)" },
+    ],
+    steps: [
+      {
+        order: 1,
+        timerMinutes: 10,
+        instructionEn:
+          "Brown the whole boerewors coil over medium-high heat for 8 to 10 minutes, both sides, until nearly cooked. Remove it and let it rest. Do not cut it before browning, or it will lose more juice.",
+        instructionAf:
+          "Braai die hele boerewors-kring 8 tot 10 minute oor medium-hoë hitte, beide kante, tot byna gaar. Verwyder dit en laat rus. Moenie dit sny voor die braai nie, anders verloor dit meer sap.",
+      },
+      {
+        order: 2,
+        timerMinutes: 4,
+        instructionEn:
+          "Add the chopped bacon to the same pot over medium heat. Cook 3 to 4 minutes until it releases some fat and begins to brown. Add a little oil only if the bacon is very lean.",
+        instructionAf:
+          "Voeg die gekapte spek in dieselfde pot oor medium hitte. Kook 3 tot 4 minute totdat dit vet los en begin bruin. Voeg net 'n bietjie olie by as die spek baie maer is.",
+      },
+      {
+        order: 3,
+        timerMinutes: 8,
+        instructionEn:
+          "Add the onions and cook about 3 minutes. Add the carrot and green pepper and cook another 4 to 5 minutes.",
+        instructionAf:
+          "Voeg die uie by en kook ongeveer 3 minute. Voeg die wortel en groentepeper by en kook nog 4 tot 5 minute.",
+      },
+      {
+        order: 4,
+        timerMinutes: 5,
+        instructionEn:
+          "Add the tomatoes, black pepper, paprika, and any garlic, curry powder, chilli, or a tablespoon of Worcestershire sauce or chutney. Cook until the tomatoes soften and become slightly saucy.",
+        instructionAf:
+          "Voeg die tamaties, swartpeper, paprika en enige knoffel, kerriepoeier, rissie of 'n eetlepel Worcestershire of blatjang by. Kook totdat die tamaties sag word en 'n bietjie sous vorm.",
+      },
+      {
+        order: 5,
+        timerMinutes: 1,
+        instructionEn: "Stir in the uncooked rice and coat it thoroughly in the tomato mixture for about 1 minute.",
+        instructionAf: "Roer die rou rys in en bedek dit deeglik met die tamatiemengsel vir ongeveer 1 minuut.",
+      },
+      {
+        order: 6,
+        timerMinutes: 2,
+        instructionEn:
+          "Add 2.5 cups water and a stock cube if available. Use closer to 3 cups if the rice normally needs a lot of water. Taste the liquid before adding salt — the bacon, boerewors, and stock may already be salty.",
+        instructionAf:
+          "Voeg 2.5 koppies water en 'n aftrekselblokkie by indien beskikbaar. Gebruik nader aan 3 koppies as die rys gewoonlik baie water nodig het. Proe die vloeistof voor sout — die spek, wors en aftreksel kan al sout wees.",
+      },
+      {
+        order: 7,
+        timerMinutes: 15,
+        instructionEn:
+          "Bring to a boil, cover, then reduce to low heat for 15 minutes. Do not keep stirring, because that can make the rice mushy.",
+        instructionAf:
+          "Bring tot kookpunt, sit die deksel op, en sit dan op lae hitte vir 15 minute. Moenie aanhou roer nie, anders word die rys pap.",
+      },
+      {
+        order: 8,
+        timerMinutes: 8,
+        instructionEn:
+          "Slice the browned boerewors into thick rounds and place them on top of the rice. Cover again and cook 5 to 8 minutes until the rice is tender and the boerewors is fully cooked. If the rice is still firm after the liquid is absorbed, add 1/4 cup hot water, cover, and cook another 5 minutes.",
+        instructionAf:
+          "Sny die gebraaide boerewors in dik skywe en sit dit bo-op die rys. Sit weer die deksel op en kook 5 tot 8 minute totdat die rys sag is en die wors gaar is. As die rys nog stewig is nadat die vloeistof opgetrek het, voeg 1/4 koppie warm water by, sit die deksel op, en kook nog 5 minute.",
+      },
+      {
+        order: 9,
+        timerMinutes: 5,
+        instructionEn: "Turn the heat off and leave the pot covered for 5 minutes, then gently fluff the rice.",
+        instructionAf: "Sit die hitte af en laat die pot 5 minute toegemaak staan. Pluis dan die rys sagkens.",
+      },
+    ],
+  },
+  {
+    status: "published",
+    audienceUserIds: ["hans", "irma"],
+    titleEn: "Loaded Bacon, Tomato and Cheddar Potato Bake",
+    summaryEn:
+      "Bacon as the meat, three salted tomatoes, green pepper, and cheddar layered with thin potatoes. Save the boerewors and sirloin.",
+    titleAf: "Gelaaide Spek-, Tamatie- en Cheddar-aartappelbraai",
+    summaryAf:
+      "Spek as die vleis, drie gesoute tamaties, groentepeper en cheddar in lae met dun aartappels. Hou die boerewors en sirloin.",
+    servings: 4,
+    prepMinutes: 25,
+    cookMinutes: 50,
+    cuisine: "Family",
+    category: "Main",
+    image: {
+      url: "https://upload.wikimedia.org/wikipedia/commons/4/40/Tartiflette_reblochon.jpg",
+      source: "Wikimedia Commons",
+      author: "Rémi Guillot",
+      license: "CC BY-SA 3.0",
+      attributionText: "Rémi Guillot, CC BY-SA 3.0, via Wikimedia Commons",
+      retrievedAt: "2026-08-14",
+    },
+    ingredients: [
+      { name: "Potatoes", quantity: "4-6", unit: "medium, sliced 3-4 mm thick" },
+      { name: "Bacon", quantity: "150-250", unit: "g, chopped" },
+      { name: "Ripe tomatoes", quantity: 3, unit: "sliced" },
+      { name: "Onion", quantity: 1, unit: "chopped" },
+      { name: "Green pepper", quantity: 1, unit: "sliced or chopped" },
+      { name: "Cheddar", quantity: "generous", unit: "grated" },
+      { name: "Water or stock", quantity: "2-3", unit: "tablespoons, only if the potatoes look dry" },
+      { name: "Salt", quantity: "light", unit: "the bacon and cheddar are salty" },
+      { name: "Black pepper", quantity: "to taste" },
+      { name: "Paprika, garlic, mixed herbs, or chilli", quantity: "optional" },
+    ],
+    steps: [
+      {
+        order: 1,
+        timerMinutes: 10,
+        instructionEn:
+          "Heat the oven to 190°C. Lightly salt the sliced tomatoes and leave them on a plate for 5 to 10 minutes. Pour off the excess liquid so the bake does not become watery.",
+        instructionAf:
+          "Verhit die oond tot 190°C. Sout die gesnyde tamaties liggies en laat 5 tot 10 minute op 'n bord. Gooi die oortollige vloeistof af sodat die bak nie waterig word nie.",
+      },
+      {
+        order: 2,
+        timerMinutes: 8,
+        instructionEn:
+          "Slice 4 to 6 medium potatoes into thin rounds, about 3 to 4 mm. Boil in salted water for 6 to 8 minutes until they begin to soften but do not fall apart. Drain well.",
+        instructionAf:
+          "Sny 4 tot 6 medium aartappels in dun skywe, ongeveer 3 tot 4 mm. Kook 6 tot 8 minute in gesoute water totdat hulle begin sag word maar nie uitmekaar val nie. Dreineer goed.",
+      },
+      {
+        order: 3,
+        timerMinutes: 10,
+        instructionEn:
+          "Fry the bacon over medium heat for 3 to 4 minutes. Add the onion and green pepper and cook another 5 to 6 minutes, until the onion softens and the bacon begins browning. Season with black pepper and optional paprika, garlic, mixed herbs, or a little chilli. Go lightly on salt.",
+        instructionAf:
+          "Braai die spek 3 tot 4 minute oor medium hitte. Voeg die ui en groentepeper by en kook nog 5 tot 6 minute totdat die ui sag is en die spek begin bruin. Geur met swartpeper en opsionele paprika, knoffel, gemengde kruie of 'n bietjie rissie. Wees spaarsamig met sout.",
+      },
+      {
+        order: 4,
+        instructionEn:
+          "In a greased oven dish, layer half the potatoes, half the bacon mixture, half the tomatoes, and a layer of grated cheddar. Repeat with the remaining potatoes, bacon mixture, tomatoes, and a generous final cheddar layer. Press down gently. Add only 2 to 3 tablespoons of water or stock around the edge if the potatoes look dry.",
+        instructionAf:
+          "In 'n gesmeerde oondskottel, laag helfte van die aartappels, helfte van die spekmengsel, helfte van die tamaties en 'n laag gerasperde cheddar. Herhaal met die res en eindig met 'n ruim cheddar-laag. Druk sag. Voeg net 2 tot 3 eetlepels water of aftreksel om die rand by as die aartappels droog lyk.",
+      },
+      {
+        order: 5,
+        timerMinutes: 30,
+        instructionEn: "Cover with foil or a lid. Bake at 190°C for 25 to 30 minutes.",
+        instructionAf: "Bedek met foelie of 'n deksel. Bak 25 tot 30 minute by 190°C.",
+      },
+      {
+        order: 6,
+        timerMinutes: 20,
+        instructionEn:
+          "Remove the cover and bake another 15 to 20 minutes, until the potatoes are tender and the cheddar is browned. Let it stand 5 to 10 minutes before serving so it firms up.",
+        instructionAf:
+          "Verwyder die deksel en bak nog 15 tot 20 minute totdat die aartappels sag is en die cheddar bruin is. Laat 5 tot 10 minute staan voor bediening sodat dit styf word.",
+      },
+    ],
+  },
+  {
+    status: "published",
+    audienceUserIds: ["hans", "irma"],
+    titleEn: "Cheesy Bacon, Tomato and Pepper Spaghetti",
+    summaryEn:
+      "The strongest cheddar combination: bacon for flavour, tomato for sauce, vegetables for bulk, and cheese stirred through off the boil.",
+    titleAf: "Kaasagtige Spek-, Tamatie- en Peper-spaghetti",
+    summaryAf:
+      "Die sterkste cheddar-kombinasie: spek vir geur, tamatie vir sous, groente vir volume, en kaas deurgeroer van die kook af.",
+    servings: 4,
+    prepMinutes: 15,
+    cookMinutes: 25,
+    cuisine: "Family",
+    category: "Main",
+    image: {
+      url: "https://upload.wikimedia.org/wikipedia/commons/7/7a/Bucatini_%28amatriciana_rossa%29.jpg",
+      source: "Wikimedia Commons",
+      author: "stu_spivack",
+      license: "CC BY-SA 2.0",
+      attributionText: "stu_spivack, CC BY-SA 2.0, via Wikimedia Commons",
+      retrievedAt: "2026-08-14",
+    },
+    ingredients: [
+      { name: "Spaghetti", quantity: "400", unit: "g" },
+      { name: "Bacon", quantity: "150-250", unit: "g, chopped" },
+      { name: "Ripe tomatoes", quantity: "2-3", unit: "chopped or grated" },
+      { name: "Onion", quantity: 1, unit: "chopped" },
+      { name: "Green pepper", quantity: 1, unit: "chopped" },
+      { name: "Carrot", quantity: 1, unit: "finely grated" },
+      { name: "Cheddar", quantity: "a generous handful", unit: "grated" },
+      { name: "Pasta water", quantity: "0.5", unit: "cup, reserved" },
+      { name: "Black pepper", quantity: "to taste" },
+      { name: "Paprika or mixed herbs", quantity: "optional" },
+    ],
+    steps: [
+      {
+        order: 1,
+        timerMinutes: 10,
+        instructionEn: "Boil the spaghetti until just tender. Reserve about 1/2 cup pasta water, then drain.",
+        instructionAf: "Kook die spaghetti tot net sag. Hou ongeveer 1/2 koppie pastawater, dreineer dan.",
+      },
+      {
+        order: 2,
+        timerMinutes: 5,
+        instructionEn: "Fry the chopped bacon until browned.",
+        instructionAf: "Braai die gekapte spek tot bruin.",
+      },
+      {
+        order: 3,
+        timerMinutes: 5,
+        instructionEn: "Add the chopped onion and green pepper. Fry for 5 minutes.",
+        instructionAf: "Voeg die gekapte ui en groentepeper by. Braai 5 minute.",
+      },
+      {
+        order: 4,
+        timerMinutes: 2,
+        instructionEn: "Add the grated carrot and cook for another 2 minutes.",
+        instructionAf: "Voeg die gerasperde wortel by en kook nog 2 minute.",
+      },
+      {
+        order: 5,
+        timerMinutes: 10,
+        instructionEn:
+          "Add the tomatoes, black pepper, and paprika or mixed herbs if available. Simmer 8 to 10 minutes until thick.",
+        instructionAf:
+          "Voeg die tamaties, swartpeper en paprika of gemengde kruie by indien beskikbaar. Prut 8 tot 10 minute tot dik.",
+      },
+      {
+        order: 6,
+        timerMinutes: 3,
+        instructionEn:
+          "Add the spaghetti and enough pasta water to loosen the sauce. Turn the heat low and stir through a generous handful of grated cheddar. Do not boil hard after adding the cheese, or it may turn oily.",
+        instructionAf:
+          "Voeg die spaghetti en genoeg pastawater by om die sous los te maak. Sit die hitte laag en roer 'n ruim handvol gerasperde cheddar deur. Moenie hard kook nadat die kaas by is nie, anders word dit olierig.",
+      },
+    ],
+  },
 ]
 
 export function normalizeRecipeTitleKey(title: string): string {

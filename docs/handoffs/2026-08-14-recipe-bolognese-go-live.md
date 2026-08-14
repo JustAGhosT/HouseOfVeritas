@@ -14,8 +14,11 @@ Add two published bilingual household recipes to the explicit catalog seed, and 
 
 1. **Spaghetti Bolognese (Savoury Mince)** — oil, 500 g mince, two onions, carrot, tomatoes, spice, spaghetti, leftover rice.
 2. **Bacon, Sausage and Sirloin Skillet** — one pan; bacon and sausage first, then potato and chopped onion/carrot/green pepper; three tomatoes only wet the pan; sirloin last.
+3. **Smoky Boerewors, Bacon and Tomato Rice Pot** — one pot; brown the coil whole; vegetables; rice; slice the wors back on top. Saves sirloin, potatoes, and spaghetti.
+4. **Loaded Bacon, Tomato and Cheddar Potato Bake** — salted tomatoes, layered potatoes, bacon, pepper, cheddar at 190°C.
+5. **Cheesy Bacon, Tomato and Pepper Spaghetti** — cheddar stirred through off the boil with pasta water.
 
-Both are audience `hans` + `irma`, with licensed Wikimedia image metadata.
+All are audience `hans` + `irma`, with licensed Wikimedia image metadata.
 
 ## Code
 

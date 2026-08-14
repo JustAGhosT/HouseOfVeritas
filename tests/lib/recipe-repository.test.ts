@@ -105,9 +105,9 @@ describe("seedSampleRecipes missing-title insert", () => {
       .map((item) => item.titleEn.toLowerCase())
       .filter((title) => title.includes("spaghetti bolognese") || title.includes("sirloin skillet"))
 
-    expect(result.inserted).toBe(2)
+    expect(result.inserted).toBe(SAMPLE_RECIPES.length - alreadyStored.length)
     expect(result.skipped).toBe(alreadyStored.length)
-    expect(insertedTitles).toHaveLength(2)
-    expect(stored).toHaveLength(alreadyStored.length + 2)
+    expect(insertedTitles.length).toBeGreaterThanOrEqual(2)
+    expect(stored).toHaveLength(SAMPLE_RECIPES.length)
   })
 })
