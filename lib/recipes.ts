@@ -355,4 +355,180 @@ export const SAMPLE_RECIPES: RecipeCreatePayload[] = [
       },
     ],
   },
+  {
+    status: "published",
+    audienceUserIds: ["hans", "irma"],
+    titleEn: "Spaghetti Bolognese (Savoury Mince)",
+    summaryEn:
+      "A weeknight mince sauce from oil, onions, carrot, tomatoes, and spice. Serve over spaghetti tonight, or over rice tomorrow.",
+    titleAf: "Spaghetti Bolognese (Smaaklike Mince)",
+    summaryAf:
+      "'n Weeksaand-mincesous van olie, uie, wortel, tamaties en speserye. Bedien vanand oor spaghetti, of more oor rys.",
+    servings: 4,
+    prepMinutes: 15,
+    cookMinutes: 35,
+    cuisine: "Family",
+    category: "Main",
+    image: {
+      url: "https://upload.wikimedia.org/wikipedia/commons/c/c3/Spaghetti_bolognese.jpg",
+      source: "Wikimedia Commons",
+      author: "Noblige",
+      license: "CC BY-SA 2.5",
+      attributionText: "Noblige, CC BY-SA 2.5, via Wikimedia Commons",
+      retrievedAt: "2026-08-14",
+    },
+    ingredients: [
+      { name: "Cooking oil", quantity: "2-3", unit: "tablespoons" },
+      { name: "Onions", quantity: "2", unit: "large, diced" },
+      { name: "Carrot", quantity: 1, unit: "grated or finely diced" },
+      { name: "Beef mince", quantity: "500", unit: "g" },
+      { name: "Ripe tomatoes", quantity: "3-4", unit: "chopped" },
+      { name: "Salt", quantity: "to taste" },
+      { name: "Black pepper", quantity: "to taste" },
+      { name: "Mixed herbs, paprika, or curry powder", quantity: "to taste" },
+      { name: "Spaghetti", quantity: "400", unit: "g" },
+      { name: "Uncooked rice", quantity: "optional", unit: "for leftover sauce" },
+      { name: "Garlic", quantity: "2", unit: "cloves, minced (optional)" },
+      { name: "Water or stock", quantity: "a splash", unit: "as needed" },
+    ],
+    steps: [
+      {
+        order: 1,
+        timerMinutes: 8,
+        instructionEn:
+          "Heat the oil in a wide pan over medium heat. Soften the diced onions for 5 to 8 minutes.",
+        instructionAf:
+          "Verhit die olie in 'n wye pan oor medium hitte. Braai die gekapte uie sag vir 5 tot 8 minute.",
+      },
+      {
+        order: 2,
+        timerMinutes: 3,
+        instructionEn:
+          "Add the carrot and optional garlic. Cook for 2 to 3 minutes until the carrot starts to soften.",
+        instructionAf:
+          "Voeg die wortel en opsionele knoffel by. Kook 2 tot 3 minute totdat die wortel begin sag word.",
+      },
+      {
+        order: 3,
+        timerMinutes: 8,
+        instructionEn:
+          "Add the mince. Break it up and brown it well so it catches a little colour.",
+        instructionAf:
+          "Voeg die mince by. Breek dit fyn en braai dit mooi bruin totdat dit 'n bietjie kleur vat.",
+      },
+      {
+        order: 4,
+        timerMinutes: 2,
+        instructionEn:
+          "Add the chopped tomatoes, salt, pepper, and spice. Add a splash of water or stock if the pan looks dry.",
+        instructionAf:
+          "Voeg die gekapte tamaties, sout, peper en speserye by. Voeg 'n slukkie water of aftreksel by as die pan droog lyk.",
+      },
+      {
+        order: 5,
+        timerMinutes: 25,
+        instructionEn:
+          "Simmer 20 to 30 minutes so the carrot melts into the sauce. Taste and adjust the seasoning.",
+        instructionAf:
+          "Laat 20 tot 30 minute prut sodat die wortel in die sous smelt. Proe en pas die geur aan.",
+      },
+      {
+        order: 6,
+        timerMinutes: 10,
+        instructionEn: "Boil the spaghetti in salted water until just tender. Drain.",
+        instructionAf: "Kook die spaghetti in gesoute water tot net sag. Dreineer.",
+      },
+      {
+        order: 7,
+        instructionEn:
+          "Serve the mince sauce over spaghetti. Keep leftover sauce for rice the next day.",
+        instructionAf:
+          "Bedien die mincesous oor spaghetti. Hou oorskiet sous vir rys die volgende dag.",
+      },
+    ],
+  },
+  {
+    status: "published",
+    audienceUserIds: ["hans", "irma"],
+    titleEn: "Bacon, Sausage and Sirloin Skillet",
+    summaryEn:
+      "One-pan supper: bacon and sausage first, then potato and the chopped veg. Three tomatoes only wet the pan. Sirloin goes in last.",
+    titleAf: "Spek-, Wors- en Sirloinpan",
+    summaryAf:
+      "Eenpan-aandete: eers spek en wors, dan aartappel en die gekapte groente. Drie tamaties maak die pan net nat. Sirloin gaan laaste in.",
+    servings: 3,
+    prepMinutes: 15,
+    cookMinutes: 25,
+    cuisine: "Family",
+    category: "Main",
+    image: {
+      url: "https://upload.wikimedia.org/wikipedia/commons/5/5b/Bacon%2C_sausage%2C_eggs_and_hash_browns.jpg",
+      source: "Wikimedia Commons",
+      author: "anokarina",
+      license: "CC BY-SA 2.0",
+      attributionText: "anokarina, CC BY-SA 2.0, via Wikimedia Commons",
+      retrievedAt: "2026-08-14",
+    },
+    ingredients: [
+      { name: "Bacon", quantity: "200", unit: "g" },
+      { name: "Sausage", quantity: "2-3", unit: "pieces" },
+      { name: "Sirloin", quantity: "300-400", unit: "g" },
+      { name: "Potatoes", quantity: "3-4", unit: "medium, diced" },
+      { name: "Onion", quantity: "1-2", unit: "diced" },
+      { name: "Carrot", quantity: 1, unit: "diced" },
+      { name: "Green pepper", quantity: 1, unit: "diced" },
+      { name: "Ripe tomatoes", quantity: 3, unit: "chopped" },
+      { name: "Salt", quantity: "to taste" },
+      { name: "Black pepper", quantity: "to taste" },
+      { name: "Mixed herbs or paprika", quantity: "to taste" },
+    ],
+    steps: [
+      {
+        order: 1,
+        timerMinutes: 8,
+        instructionEn: "Fry the bacon and sausage in a wide pan. Push them to one side.",
+        instructionAf: "Braai die spek en wors in 'n wye pan. Skuif hulle eenkant toe.",
+      },
+      {
+        order: 2,
+        timerMinutes: 10,
+        instructionEn: "Add the diced potatoes to the fat. Cook until they start to brown.",
+        instructionAf: "Voeg die blokkies aartappel in die vet. Braai totdat dit begin bruin word.",
+      },
+      {
+        order: 3,
+        timerMinutes: 8,
+        instructionEn:
+          "Add the onion, carrot, and green pepper. When they soften, add the three chopped tomatoes and spice. The tomatoes only wet the pan; they will not make a pot of sauce.",
+        instructionAf:
+          "Voeg die ui, wortel en groentepeper by. As dit sag is, voeg die drie gekapte tamaties en speserye by. Die tamaties maak die pan net nat; dit word nie 'n pot sous nie.",
+      },
+      {
+        order: 4,
+        timerMinutes: 6,
+        instructionEn:
+          "Make a gap and cook the sirloin for the last few minutes. Rest it briefly, then slice and serve from the pan.",
+        instructionAf:
+          "Maak spasie en kook die sirloin die laaste paar minute. Laat dit kort rus, sny dit dan en bedien uit die pan.",
+      },
+    ],
+  },
 ]
+
+export function normalizeRecipeTitleKey(title: string): string {
+  return title.trim().toLowerCase()
+}
+
+export function findMissingSampleRecipes(
+  existingRecipes: Array<{ titleEn?: string }>
+): RecipeCreatePayload[] {
+  const existingTitles = new Set(
+    existingRecipes
+      .map((recipe) => normalizeRecipeTitleKey(recipe.titleEn ?? ""))
+      .filter((title) => title.length > 0)
+  )
+
+  return SAMPLE_RECIPES.filter(
+    (recipe) => !existingTitles.has(normalizeRecipeTitleKey(recipe.titleEn))
+  )
+}
