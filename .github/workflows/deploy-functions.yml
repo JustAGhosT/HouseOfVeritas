@@ -27,6 +27,7 @@ jobs:
     concurrency:
       group: hov-production-functions
       cancel-in-progress: false
+      queue: max
 
     steps:
       - name: Checkout Repository

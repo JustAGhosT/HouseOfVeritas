@@ -9,7 +9,10 @@ on:
       - ".github/workflows/terraform-plan.yml"
 
 concurrency:
-  group: terraform-plan-${{ github.event.pull_request.number || github.ref }}
+  # Plans and mutations all acquire the same production backend lease.
+  group: hov-production-terraform-state
+  cancel-in-progress: false
+  queue: max
 
 permissions:
   contents: read

@@ -144,6 +144,7 @@ jobs:
     concurrency:
       group: hov-production-webapp
       cancel-in-progress: false
+      queue: max
 
     steps:
       - name: Download Build Artifact

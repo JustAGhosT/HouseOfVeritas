@@ -17,6 +17,12 @@ const terraformMutationWorkflows = [
   ],
 ] as const
 
+const targetMutationJobs = [
+  [".github/workflows/deploy-functions.yml", "deploy-functions", "hov-production-functions", false],
+  [".github/workflows/deploy.yml", "deploy-docuseal", "hov-production-docuseal", true],
+  [".github/workflows/deploy.yml", "deploy-baserow", "hov-production-baserow", true],
+] as const
+
 /**
  * Git hands these files back with CRLF on a Windows checkout, which the job
  * boundary pattern below would never match, leaving `deployJob` to swallow
@@ -26,11 +32,13 @@ function readWorkflow(workflowPath: string): string {
   return readFileSync(resolve(process.cwd(), workflowPath), "utf8").replace(/\r\n/g, "\n")
 }
 
+function extractJob(workflow: string, jobName: string): string {
+  return workflow.slice(workflow.indexOf(`  ${jobName}:`)).split(/\n  [a-z][a-z0-9-]+:\n/, 1)[0]
+}
+
 describe.each(productionWorkflows)("%s deployment identity contract", (workflowPath) => {
   const workflow = readWorkflow(workflowPath)
-  const deployJob = workflow
-    .slice(workflow.indexOf("  deploy-webapp:"))
-    .split(/\n  [a-z][a-z0-9-]+:\n/, 1)[0]
+  const deployJob = extractJob(workflow, "deploy-webapp")
 
   it("bakes the triggering commit into the application build", () => {
     expect(workflow).toContain("NEXT_PUBLIC_BUILD_COMMIT: ${{ github.sha }}")
@@ -52,14 +60,13 @@ describe("production mutation concurrency contracts", () => {
     "%s protects %s with the shared Terraform-state group",
     (workflowPath, jobName, confirmationGuard) => {
       const workflow = readWorkflow(workflowPath)
-      const job = workflow
-        .slice(workflow.indexOf(`  ${jobName}:`))
-        .split(/\n  [a-z][a-z0-9-]+:\n/, 1)[0]
+      const job = extractJob(workflow, jobName)
 
       expect(job).toContain("group: hov-production-terraform-state")
       expect(job).toContain("cancel-in-progress: false")
+      expect(job).toContain("queue: max")
       if (confirmationGuard) {
-        expect(job).toContain(confirmationGuard)
+        expect(job).toContain(`\n    ${confirmationGuard}\n`)
       }
     }
   )
@@ -68,12 +75,37 @@ describe("production mutation concurrency contracts", () => {
     "%s protects deploy-webapp with the shared web-app group",
     (workflowPath) => {
       const workflow = readWorkflow(workflowPath)
-      const job = workflow
-        .slice(workflow.indexOf("  deploy-webapp:"))
-        .split(/\n  [a-z][a-z0-9-]+:\n/, 1)[0]
+      const job = extractJob(workflow, "deploy-webapp")
 
-      expect(job).toContain("group: hov-production-webapp")
+      const expectedGroup = workflowPath.endsWith("deploy.yml")
+        ? "group: hov-${{ inputs.environment || 'production' }}-webapp"
+        : "group: hov-production-webapp"
+      expect(job).toContain(expectedGroup)
       expect(job).toContain("cancel-in-progress: false")
+      expect(job).toContain("queue: max")
     }
   )
+
+  it.each(targetMutationJobs)(
+    "%s protects %s with its target-specific group",
+    (workflowPath, jobName, group, productionOnly) => {
+      const job = extractJob(readWorkflow(workflowPath), jobName)
+
+      expect(job).toContain(`group: ${group}`)
+      expect(job).toContain("cancel-in-progress: false")
+      expect(job).toContain("queue: max")
+      if (productionOnly) {
+        expect(job).toContain("(inputs.environment || 'production') == 'production'")
+      }
+    }
+  )
+
+  it("queues Terraform plans with production state mutations", () => {
+    const workflow = readWorkflow(".github/workflows/terraform-plan.yml")
+    const workflowHeader = workflow.slice(0, workflow.indexOf("jobs:"))
+
+    expect(workflowHeader).toContain("group: hov-production-terraform-state")
+    expect(workflowHeader).toContain("cancel-in-progress: false")
+    expect(workflowHeader).toContain("queue: max")
+  })
 })
