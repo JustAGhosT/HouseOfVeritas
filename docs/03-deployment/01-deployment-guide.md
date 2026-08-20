@@ -4,6 +4,8 @@
 
 This guide covers end-to-end deployment of the House of Veritas platform on Azure, including infrastructure provisioning, DNS configuration, SSL certificates, CI/CD pipelines, and application integration.
 
+> **Current production topology (verified 2026-08-21):** the low-usage canonical stack keeps the optional Compute, Application Gateway, and DNS modules disabled. `sign.nexamesh.ai` is a CNAME to the independently deployed DocuSeal Azure Container App, while `docs.nexamesh.ai` serves the Docusaurus Static Web App. The full-stack steps below apply only when those optional modules are deliberately enabled; replacing the live `sign` CNAME with an Application Gateway A record requires a coordinated migration.
+
 ### Platform Components
 
 | Component             | Purpose                          | Azure Service      |
@@ -28,7 +30,7 @@ Internet → Application Gateway (WAF + SSL) → Container Instances → Postgre
                                               Cosmos DB (Mongo API)
 ```
 
-- **Domain:** nexamesh.ai (docs.nexamesh.ai, ops.nexamesh.ai)
+- **Domain:** nexamesh.ai (sign.nexamesh.ai, ops.nexamesh.ai)
 - **Region:** South Africa North
 - **Monthly cost:** ~R1100
 
@@ -240,7 +242,7 @@ Expected resources (~42):
 | Compute   | 2 container groups, 2 file shares, 2 KV policies  | 6     |
 | Gateway   | Application Gateway, public IP                    | 2     |
 | Cognitive | Document Intelligence account                     | 1     |
-| DNS       | 3 A records (docs, ops, root)                     | 3     |
+| DNS       | 3 A records (sign, ops, root)                     | 3     |
 | Other     | Random passwords                                  | 2     |
 
 ### Apply
@@ -264,14 +266,14 @@ DNS records are automatically created by the DNS Terraform module pointing to th
 
 | Record             | Type | Target                 |
 | ------------------ | ---- | ---------------------- |
-| `docs.nexamesh.ai` | A    | Application Gateway IP |
+| `sign.nexamesh.ai` | A    | Application Gateway IP |
 | `ops.nexamesh.ai`  | A    | Application Gateway IP |
 | `nexamesh.ai`      | A    | Application Gateway IP |
 
 ### Verify DNS Propagation
 
 ```powershell
-Resolve-DnsName docs.nexamesh.ai
+Resolve-DnsName sign.nexamesh.ai
 Resolve-DnsName ops.nexamesh.ai
 ```
 
@@ -555,9 +557,9 @@ gh workflow run deploy.yml `
 
 ## Step 9: Application Setup
 
-### 9.1 DocuSeal (docs.nexamesh.ai)
+### 9.1 DocuSeal (sign.nexamesh.ai)
 
-1. Navigate to `https://docs.nexamesh.ai` (or `http://` before SSL)
+1. Navigate to `https://sign.nexamesh.ai` (or `http://` before SSL)
 2. Create admin account (first user becomes admin)
 3. Configure email settings in Settings → Email
 4. Upload document templates via Templates → New Template
@@ -566,7 +568,7 @@ gh workflow run deploy.yml `
 
 ```powershell
 $DOCUSEAL_API_KEY = "your-api-key"
-$DOCUSEAL_URL = "https://docs.nexamesh.ai"
+$DOCUSEAL_URL = "https://sign.nexamesh.ai"
 
 $headers = @{
   "X-Auth-Token" = $DOCUSEAL_API_KEY
@@ -630,7 +632,7 @@ az network application-gateway show-backend-health `
   --name prod-appgw
 
 # Verify DNS resolution
-Resolve-DnsName docs.nexamesh.ai
+Resolve-DnsName sign.nexamesh.ai
 Resolve-DnsName ops.nexamesh.ai
 
 # Check database
@@ -684,7 +686,7 @@ az cognitiveservices account show `
 | `database_server_fqdn`           | PostgreSQL FQDN                            |
 | `cosmos_mongo_connection_string` | Cosmos Mongo connection string (sensitive) |
 | `cosmos_mongo_database_name`     | Cosmos Mongo database name                 |
-| `docuseal_url`                   | `https://docs.nexamesh.ai`                 |
+| `docuseal_url`                   | `https://sign.nexamesh.ai`                 |
 | `baserow_url`                    | `https://ops.nexamesh.ai`                  |
 
 ---

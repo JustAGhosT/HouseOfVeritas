@@ -195,7 +195,7 @@
 **Priority:** P0
 
 - [ ] **Story 2.5.1:** DNS configuration
-  - [ ] Create A records for docs.nexamesh.ai
+  - [ ] If enabling the optional Application Gateway, coordinate replacement of the live `sign.nexamesh.ai` Container App CNAME with an A record
   - [ ] Create A records for ops.nexamesh.ai
   - [ ] Point to Application Gateway IP
   - [ ] Verify DNS propagation

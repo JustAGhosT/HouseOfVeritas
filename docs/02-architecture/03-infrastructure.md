@@ -1,5 +1,7 @@
 # Infrastructure Architecture
 
+> **Scope:** this document describes the optional full-stack Terraform topology. In the low-usage production baseline verified on 2026-08-21, the Compute, Application Gateway, and DNS modules are disabled; `sign.nexamesh.ai` points directly to the separately deployed DocuSeal Azure Container App, and `docs.nexamesh.ai` points to the Docusaurus Static Web App.
+
 ## Azure Resource Map
 
 ```text
@@ -115,7 +117,7 @@ network ─────────────┬──────────
 
 | Record             | Type | Target                 | Zone                      |
 | ------------------ | ---- | ---------------------- | ------------------------- |
-| `docs.nexamesh.ai` | A    | Application Gateway IP | `mys-global-shared-rg` |
+| `sign.nexamesh.ai` | A    | Application Gateway IP | `mys-global-shared-rg` |
 | `ops.nexamesh.ai`  | A    | Application Gateway IP | `mys-global-shared-rg` |
 | `nexamesh.ai`      | A    | Application Gateway IP | `mys-global-shared-rg` |
 
@@ -125,7 +127,7 @@ network ─────────────┬──────────
 User Browser
   │
   ▼
-docs.nexamesh.ai / ops.nexamesh.ai  (Azure DNS)
+sign.nexamesh.ai / ops.nexamesh.ai  (Azure DNS)
   │
   ▼
 Application Gateway (WAF v2, SSL termination)

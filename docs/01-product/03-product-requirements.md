@@ -155,7 +155,7 @@ governance and estate management platform for an entity called "House of Veritas
 
 ```env
 # DocuSeal
-DOCUSEAL_API_URL=https://docs.nexamesh.ai/api
+DOCUSEAL_API_URL=https://sign.nexamesh.ai/api
 DOCUSEAL_API_KEY=your_api_key
 
 # Baserow

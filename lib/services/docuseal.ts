@@ -268,7 +268,7 @@ function getMockSubmissionStatus(submissionId: string): SignatureSubmission {
     status: isCompleted ? "completed" : "pending",
     createdAt: new Date(Date.now() - 86400000), // Yesterday
     completedAt: isCompleted ? new Date() : undefined,
-    documentUrl: isCompleted ? `https://docs.nexamesh.ai/documents/${submissionId}` : undefined,
+    documentUrl: isCompleted ? `https://sign.nexamesh.ai/documents/${submissionId}` : undefined,
   }
 }
 

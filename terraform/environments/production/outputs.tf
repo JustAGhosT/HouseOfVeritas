@@ -102,7 +102,7 @@ output "baserow_url" {
 output "dns_records_required" {
   description = "DNS records configured"
   value = {
-    docs = try(module.dns[0].docs_fqdn, null)
+    sign = try(module.dns[0].sign_fqdn, null)
     ops  = try(module.dns[0].ops_fqdn, null)
   }
 }

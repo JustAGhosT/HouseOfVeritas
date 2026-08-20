@@ -141,7 +141,7 @@ Action Required:
 Please review and renew this document before it expires.
 
 Access the document management system at:
-https://docs.nexamesh.ai
+https://sign.nexamesh.ai
 
 ---
 This is an automated alert from House of Veritas Document Management.
@@ -180,7 +180,7 @@ Total Documents Requiring Attention: {len(alerts)}
     content += """
 ---
 Access the document management system at:
-https://docs.nexamesh.ai
+https://sign.nexamesh.ai
 
 For operations dashboard:
 https://ops.nexamesh.ai
