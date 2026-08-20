@@ -91,7 +91,7 @@ output "application_gateway_public_ip" {
 
 output "docuseal_url" {
   description = "URL for DocuSeal"
-  value       = "https://docs.${var.domain_name}"
+  value       = "https://sign.${var.domain_name}"
 }
 
 output "baserow_url" {

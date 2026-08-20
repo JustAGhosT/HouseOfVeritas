@@ -51,7 +51,7 @@ resource "azurerm_linux_function_app" "main" {
 
     cors {
       allowed_origins = [
-        "https://docs.${var.domain_name}",
+        "https://sign.${var.domain_name}",
         "https://ops.${var.domain_name}",
         "https://${var.domain_name}",
       ]

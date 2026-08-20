@@ -85,7 +85,7 @@ resource "azurerm_application_gateway" "main" {
     name                = "docuseal-probe"
     protocol            = "Http"
     path                = "/"
-    host                = "docs.${var.domain_name}"
+    host                = "sign.${var.domain_name}"
     interval            = 30
     timeout             = 30
     unhealthy_threshold = 3
@@ -115,7 +115,7 @@ resource "azurerm_application_gateway" "main" {
     frontend_ip_configuration_name = "frontend-ip-config"
     frontend_port_name             = "http-port"
     protocol                       = "Http"
-    host_name                      = "docs.${var.domain_name}"
+    host_name                      = "sign.${var.domain_name}"
   }
 
   http_listener {
@@ -136,7 +136,7 @@ resource "azurerm_application_gateway" "main" {
       frontend_port_name             = "https-port"
       protocol                       = "Https"
       ssl_certificate_name           = "ssl-cert"
-      host_name                      = "docs.${var.domain_name}"
+      host_name                      = "sign.${var.domain_name}"
     }
   }
 
