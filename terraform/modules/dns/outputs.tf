@@ -1,6 +1,6 @@
-output "docs_fqdn" {
-  description = "FQDN of the docs subdomain"
-  value       = "${azurerm_dns_a_record.docs.name}.${data.azurerm_dns_zone.main.name}"
+output "sign_fqdn" {
+  description = "FQDN of the DocuSeal signing subdomain"
+  value       = "${azurerm_dns_a_record.sign.name}.${data.azurerm_dns_zone.main.name}"
 }
 
 output "ops_fqdn" {

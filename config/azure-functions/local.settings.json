@@ -16,7 +16,7 @@
     "TABLE_EXPENSES": "7",
     "TABLE_DOCUMENT_EXPIRY": "8",
 
-    "DOCUSEAL_URL": "https://docs.nexamesh.ai",
+    "DOCUSEAL_URL": "https://sign.nexamesh.ai",
     "DOCUSEAL_API_KEY": "",
     "DOCUSEAL_WEBHOOK_SECRET": "",
 

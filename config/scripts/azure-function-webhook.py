@@ -202,7 +202,7 @@ if __name__ == "__main__":
             "template": {"name": "Employment Contract - Charl"},
             "submitters": [{"email": "charl@nexamesh.ai"}],
             "completed_at": "2025-01-15T10:30:00Z",
-            "documents": [{"url": "https://docs.nexamesh.ai/docs/123.pdf"}]
+            "documents": [{"url": "https://sign.nexamesh.ai/docs/123.pdf"}]
         }
     }
     

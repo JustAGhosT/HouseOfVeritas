@@ -100,7 +100,7 @@ def send_individual_alerts(
                     "doc_type": alert["doc_type"],
                     "next_review": alert["next_review"],
                     "days": alert["days"],
-                    "docuseal_url": config.docuseal_url or "https://docs.nexamesh.ai"
+                    "docuseal_url": config.docuseal_url or "https://sign.nexamesh.ai"
                 }
             )
             if success:
@@ -147,7 +147,7 @@ def send_admin_summary(
             "urgent_section": urgent_section,
             "warning_section": warning_section,
             "notice_section": notice_section,
-            "docuseal_url": config.docuseal_url or "https://docs.nexamesh.ai",
+            "docuseal_url": config.docuseal_url or "https://sign.nexamesh.ai",
             "baserow_url": config.baserow_url or "https://ops.nexamesh.ai"
         }
     )

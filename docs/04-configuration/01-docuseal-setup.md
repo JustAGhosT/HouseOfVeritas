@@ -2,7 +2,7 @@
 
 ## Overview
 
-DocuSeal is the document signing platform for House of Veritas, accessible at `docs.nexamesh.ai`.
+DocuSeal is the document signing platform for House of Veritas, accessible at `sign.nexamesh.ai`.
 
 ## Initial Setup
 
@@ -48,7 +48,7 @@ Add to `.env.local` (create from `.env.example`):
 | `DOCUSEAL_API_KEY` | API key (X-Auth-Token); the token from Settings → API | _(your generated key)_     |
 
 - **DocuSeal Cloud:** Use `https://api.docuseal.com` as base URL; the API key is the token.
-- **Self-hosted:** Use `https://docs.nexamesh.ai/api` (or your instance URL + `/api`).
+- **Self-hosted:** Use `https://sign.nexamesh.ai/api` (or your instance URL + `/api`).
 
 ## Document Templates
 
@@ -98,7 +98,7 @@ Register webhook for integration with Baserow:
 
 ## API Endpoints
 
-Base URL: `https://docs.nexamesh.ai/api`
+Base URL: `https://sign.nexamesh.ai/api`
 
 | Endpoint               | Method | Description              |
 | ---------------------- | ------ | ------------------------ |

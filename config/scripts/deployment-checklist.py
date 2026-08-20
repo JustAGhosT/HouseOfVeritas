@@ -586,7 +586,7 @@ class DeploymentChecker:
     
     def check_dns(self) -> CheckResult:
         """Check DNS configuration (basic check)."""
-        domains = ["docs.nexamesh.ai", "ops.nexamesh.ai"]
+        domains = ["sign.nexamesh.ai", "ops.nexamesh.ai"]
         
         # This is a basic check - in reality you'd check Azure DNS or external DNS
         return CheckResult(
@@ -626,7 +626,7 @@ class DeploymentChecker:
                     status=Status.FAIL,
                     message="No SSL certificates found in Key Vault",
                     details="SSL certificates are required for HTTPS",
-                    fix_command="certbot certonly --standalone -d docs.nexamesh.ai -d ops.nexamesh.ai && az keyvault certificate import ...",
+                    fix_command="certbot certonly --standalone -d sign.nexamesh.ai -d ops.nexamesh.ai && az keyvault certificate import ...",
                     documentation="/app/docs/03-deployment/01-deployment-guide.md#ssl-setup"
                 )
             
@@ -984,7 +984,7 @@ class DeploymentChecker:
                 "name": "Configure DNS Records",
                 "complete": False,  # Manual step
                 "skipped": not self.enable_application_gateway,
-                "command": "Create A records for docs.nexamesh.ai and ops.nexamesh.ai"
+                "command": "Create A records for sign.nexamesh.ai and ops.nexamesh.ai"
             },
             {
                 "name": "Configure SSL Certificates",

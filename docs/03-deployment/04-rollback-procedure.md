@@ -182,7 +182,7 @@ If using migration tools (e.g. Flyway, Liquibase), run the corresponding down mi
 curl -s -o /dev/null -w "%{http_code}" https://<webapp>.azurewebsites.net
 
 # DocuSeal
-curl -s -o /dev/null -w "%{http_code}" https://docs.nexamesh.ai/health
+curl -s -o /dev/null -w "%{http_code}" https://sign.nexamesh.ai/health
 
 # Baserow
 curl -s -o /dev/null -w "%{http_code}" https://ops.nexamesh.ai

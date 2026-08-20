@@ -5,8 +5,8 @@ data "azurerm_dns_zone" "main" {
   resource_group_name = var.dns_zone_resource_group
 }
 
-resource "azurerm_dns_a_record" "docs" {
-  name                = "docs"
+resource "azurerm_dns_a_record" "sign" {
+  name                = "sign"
   zone_name           = data.azurerm_dns_zone.main.name
   resource_group_name = var.dns_zone_resource_group
   ttl                 = 300
