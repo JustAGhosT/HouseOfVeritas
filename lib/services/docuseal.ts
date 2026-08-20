@@ -48,7 +48,7 @@ interface CreateSubmissionRequest {
 
 // Default config - uses environment variables or fallback
 const getConfig = (): DocuSealConfig => ({
-  apiUrl: process.env.DOCUSEAL_API_URL || "https://docs.nexamesh.ai/api",
+  apiUrl: process.env.DOCUSEAL_API_URL || "https://sign.nexamesh.ai/api",
   apiKey: process.env.DOCUSEAL_API_KEY || "",
 })
 

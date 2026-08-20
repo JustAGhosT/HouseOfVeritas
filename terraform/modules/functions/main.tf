@@ -64,7 +64,7 @@ resource "azurerm_linux_function_app" "main" {
 
     BASEROW_URL             = "https://ops.${var.domain_name}"
     BASEROW_TOKEN           = var.baserow_api_token
-    DOCUSEAL_URL            = "https://docs.${var.domain_name}"
+    DOCUSEAL_URL            = "https://sign.${var.domain_name}"
     DOCUSEAL_API_KEY        = var.docuseal_api_key
     DOCUSEAL_WEBHOOK_SECRET = var.docuseal_webhook_secret
 
