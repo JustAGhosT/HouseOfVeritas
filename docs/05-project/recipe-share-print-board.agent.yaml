@@ -1,0 +1,13 @@
+schema: md-agent/v1
+source: docs/05-project/recipe-share-print-board.md
+title: "Recipe share/print board"
+purpose: "Visual contract for shared and printed recipes. The Vienna omelette poster is the target look."
+audience: [agent, human]
+facts:
+  - "Canonical reference image is docs/05-project/assets/recipe-board-loaded-vienna-omelette.jpg."
+  - "Share/print output is a composed board, not a single generated poster image."
+  - "HOV renders titles, quantities, timers, tips, and labels as real text from the recipe record."
+  - "Step and hero photos are approved licensed or uploaded assets; omit a photo rather than invent one."
+  - "Optional upgrades stay optional and must not look required."
+  - "Do not put private inventory counts or unreviewed model copy on the shared image."
+last_synced: "2026-08-14"

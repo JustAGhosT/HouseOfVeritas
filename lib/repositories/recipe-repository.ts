@@ -12,6 +12,7 @@ import {
   RecipeRatingSummary,
   RecipeStatus,
   SAMPLE_RECIPES,
+  findMissingSampleRecipes,
   type RecipeCreatePayload,
 } from "@/lib/recipes"
 
@@ -284,21 +285,24 @@ export async function seedSampleRecipes(
   const seededBy = (ownerUserId || "system").toLowerCase()
   const effectiveOwner = seededBy || "system"
 
-  const existingCount = await countRecipes()
-  if (existingCount > 0 && !force) {
+  const existing = await listRecipes()
+  const existingCount = existing.length
+  const recipesToInsert = force ? SAMPLE_RECIPES : findMissingSampleRecipes(existing)
+
+  if (recipesToInsert.length === 0) {
     return {
       inserted: 0,
       skipped: SAMPLE_RECIPES.length,
       existingCount,
       recipeIds: [],
-      forced: false,
+      forced: force,
     }
   }
 
   const now = new Date().toISOString()
   const recipeIds: string[] = []
 
-  for (const recipePayload of SAMPLE_RECIPES) {
+  for (const recipePayload of recipesToInsert) {
     const record = buildSeedRecipeRecord(recipePayload, effectiveOwner, now)
     if (record.audienceUserIds.length === 0) {
       record.audienceUserIds = [...DEFAULT_RECIPE_AUDIENCE_IDS]
@@ -310,7 +314,7 @@ export async function seedSampleRecipes(
 
   return {
     inserted: recipeIds.length,
-    skipped: 0,
+    skipped: SAMPLE_RECIPES.length - recipeIds.length,
     existingCount,
     recipeIds,
     forced: force,

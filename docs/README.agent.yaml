@@ -1,0 +1,13 @@
+schema: md-agent/v1
+source: docs/README.md
+title: "Documentation Index"
+purpose: "Index of House of Veritas docs. Use it to find the numbered product, architecture, deployment, configuration, project, spec, and handoff files; do not treat the index as the source of truth for a feature."
+audience: [agent, human]
+facts:
+  - "Docs live under docs/ in numbered folders: 01-product, 02-architecture, 03-deployment, 04-configuration, and 05-project, plus specs/ and handoffs/."
+  - "03-deployment/06 is reserved; there is no 06-*.md in that folder."
+  - "03-deployment/07-self-hosted-runner-setup.md is historical; workflows use ubuntu-latest."
+  - "specs/ holds per-feature specs, compliance boundaries, and content rubrics."
+  - "handoffs/ holds dated session continuity notes (root cause, files changed, verification, next-owner steps)."
+  - "This file is an index of links and one-line descriptions; open the linked document for the durable claim."
+last_synced: "2026-08-14"
