@@ -7,6 +7,16 @@ const productionWorkflows = [
   ".github/workflows/deploy.yml",
 ]
 
+const terraformMutationWorkflows = [
+  [".github/workflows/deploy.yml", "deploy-infrastructure", undefined],
+  [".github/workflows/terraform-apply.yml", "terraform-apply", "if: inputs.confirm == 'APPLY'"],
+  [
+    ".github/workflows/terraform-destroy.yml",
+    "terraform-destroy",
+    "if: inputs.confirm_destroy == 'DESTROY'",
+  ],
+] as const
+
 /**
  * Git hands these files back with CRLF on a Windows checkout, which the job
  * boundary pattern below would never match, leaving `deployJob` to swallow
@@ -35,4 +45,35 @@ describe.each(productionWorkflows)("%s deployment identity contract", (workflowP
     expect(workflow).toContain("cp scripts/verify-deployment-build.mjs .next/standalone/scripts/")
     expect(deployJob).not.toContain("actions/checkout")
   })
+})
+
+describe("production mutation concurrency contracts", () => {
+  it.each(terraformMutationWorkflows)(
+    "%s protects %s with the shared Terraform-state group",
+    (workflowPath, jobName, confirmationGuard) => {
+      const workflow = readWorkflow(workflowPath)
+      const job = workflow
+        .slice(workflow.indexOf(`  ${jobName}:`))
+        .split(/\n  [a-z][a-z0-9-]+:\n/, 1)[0]
+
+      expect(job).toContain("group: hov-production-terraform-state")
+      expect(job).toContain("cancel-in-progress: false")
+      if (confirmationGuard) {
+        expect(job).toContain(confirmationGuard)
+      }
+    }
+  )
+
+  it.each([".github/workflows/deploy.yml", ".github/workflows/deploy-on-merge.yml"])(
+    "%s protects deploy-webapp with the shared web-app group",
+    (workflowPath) => {
+      const workflow = readWorkflow(workflowPath)
+      const job = workflow
+        .slice(workflow.indexOf("  deploy-webapp:"))
+        .split(/\n  [a-z][a-z0-9-]+:\n/, 1)[0]
+
+      expect(job).toContain("group: hov-production-webapp")
+      expect(job).toContain("cancel-in-progress: false")
+    }
+  )
 })

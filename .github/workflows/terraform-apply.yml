@@ -16,9 +16,6 @@ on:
         required: true
         default: ""
 
-concurrency:
-  group: hov-terraform-production-state
-
 permissions:
   contents: write
 
@@ -32,6 +29,12 @@ jobs:
     timeout-minutes: 45
     environment: production
     if: inputs.confirm == 'APPLY'
+    # The confirmation guard is evaluated before this job joins the shared
+    # mutation group. GitHub keeps at most one pending job, so operators must
+    # verify that their requested run starts; running mutations are not cancelled.
+    concurrency:
+      group: hov-production-terraform-state
+      cancel-in-progress: false
 
     steps:
       - name: Checkout

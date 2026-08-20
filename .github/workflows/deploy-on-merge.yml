@@ -26,9 +26,6 @@ on:
       - "scripts/verify-deployment-build.mjs"
       - ".github/workflows/deploy-on-merge.yml"
 
-concurrency:
-  group: deploy-on-merge-${{ github.ref }}
-
 permissions:
   contents: read
   id-token: write
@@ -142,6 +139,11 @@ jobs:
     timeout-minutes: 15
     needs: [quality-checks, build]
     environment: production
+    # Shared with the manual deployment workflow so only one web app mutation
+    # can run at a time. Running deployments are never cancelled.
+    concurrency:
+      group: hov-production-webapp
+      cancel-in-progress: false
 
     steps:
       - name: Download Build Artifact

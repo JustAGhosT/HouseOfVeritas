@@ -7,9 +7,6 @@ on:
         description: "Type DESTROY to confirm"
         required: true
 
-concurrency:
-  group: hov-terraform-production-state
-
 env:
   WORKING_DIR: "./terraform/environments/production"
 
@@ -18,6 +15,12 @@ jobs:
     name: "Terraform Destroy"
     runs-on: ubuntu-latest
     environment: production
+    if: inputs.confirm_destroy == 'DESTROY'
+    # Keep invalid dispatches out of the shared mutation group. This is mutual
+    # exclusion, not FIFO: a newer confirmed pending job may supersede an older one.
+    concurrency:
+      group: hov-production-terraform-state
+      cancel-in-progress: false
 
     steps:
       - name: Validate Confirmation

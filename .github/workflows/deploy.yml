@@ -30,9 +30,6 @@ on:
   release:
     types: [published]
 
-concurrency:
-  group: deploy-${{ github.ref }}
-
 permissions:
   contents: read
   id-token: write
@@ -218,6 +215,11 @@ jobs:
     needs: [build]
     if: ${{ inputs.deploy_infrastructure && (inputs.environment || 'production') == 'production' }}
     environment: ${{ inputs.environment || 'production' }}
+    # Mutual exclusion only: GitHub retains at most one pending job per group,
+    # so a newer confirmed request may supersede an older pending request.
+    concurrency:
+      group: hov-production-terraform-state
+      cancel-in-progress: false
 
     steps:
       - name: Checkout Repository
@@ -308,6 +310,9 @@ jobs:
     needs: [build, deploy-infrastructure]
     if: always() && needs.build.result == 'success' && (needs.deploy-infrastructure.result == 'success' || needs.deploy-infrastructure.result == 'skipped')
     environment: ${{ inputs.environment || 'production' }}
+    concurrency:
+      group: hov-production-webapp
+      cancel-in-progress: false
 
     steps:
       - name: Download Build Artifact
@@ -392,6 +397,9 @@ jobs:
     needs: [deploy-infrastructure]
     if: ${{ vars.ENABLE_OPERATIONAL_SERVICES == 'true' }}
     environment: ${{ inputs.environment || 'production' }}
+    concurrency:
+      group: hov-production-docuseal
+      cancel-in-progress: false
 
     steps:
       - name: Checkout Repository
@@ -452,6 +460,9 @@ jobs:
     needs: [deploy-infrastructure]
     if: ${{ vars.ENABLE_OPERATIONAL_SERVICES == 'true' }}
     environment: ${{ inputs.environment || 'production' }}
+    concurrency:
+      group: hov-production-baserow
+      cancel-in-progress: false
 
     steps:
       - name: Checkout Repository
