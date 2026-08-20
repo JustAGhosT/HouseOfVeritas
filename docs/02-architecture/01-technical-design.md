@@ -269,7 +269,7 @@ User Browser → Application Gateway (SSL/WAF)
 
 ### DocuSeal API
 
-- **Base URL:** `https://docs.nexamesh.ai/api`
+- **Base URL:** `https://sign.nexamesh.ai/api`
 - **Authentication:** API key (stored in Key Vault)
 - **Key Endpoints:**
   - `POST /api/templates` - Upload document template
@@ -379,11 +379,13 @@ VNet: 10.0.0.0/16
 
 ### Application Gateway
 
+The routing below is the optional full-stack design. Current low-usage production routes `sign.nexamesh.ai` directly to the separately deployed DocuSeal Azure Container App and does not deploy this gateway module.
+
 - **Public IP:** Only entry point
 - **SSL Termination:** TLS 1.2+
 - **WAF:** OWASP Top 10 protection
 - **Path-Based Routing:**
-  - `docs.nexamesh.ai` → DocuSeal container
+  - `sign.nexamesh.ai` → DocuSeal container
   - `ops.nexamesh.ai` → Baserow container
 - **Health Probes:** 30s interval
 
@@ -778,7 +780,7 @@ terraform apply tfplan
 
 #### Step 5: Configure DNS
 
-- Create A records for `docs.nexamesh.ai` and `ops.nexamesh.ai`
+- Create A records for `sign.nexamesh.ai` and `ops.nexamesh.ai`
 - Point to Application Gateway public IP
 
 #### Step 6: Generate SSL Certificates

@@ -82,6 +82,7 @@ _Note: 06 reserved for future deployment documentation._
 | [2026-08-01-investor-pitch-deck.md](05-project/2026-08-01-investor-pitch-deck.md) | Evidence-disciplined investor deck source and forward-looking pilot targets |
 | [2026-08-01-investor-video-plan.md](05-project/2026-08-01-investor-video-plan.md) | Scene-by-scene investor film production, rights, and claims-safety plan     |
 | [recipe-guidance-document-plan.md](05-project/recipe-guidance-document-plan.md)   | Section-by-section bilingual recipe guidance and Sluice-routed image plan   |
+| [recipe-share-print-board.md](05-project/recipe-share-print-board.md)             | Share/print board layout contract; Vienna omelette poster is the visual target |
 | [onboarding-flow.md](05-project/onboarding-flow.md)                               | User onboarding steps, invite flow, guided tour                             |
 | [employees-vs-users.md](05-project/employees-vs-users.md)                         | Users (auth) vs Employees (Baserow), Team page consolidation                |
 
@@ -123,3 +124,4 @@ Dated session continuity notes (root cause, files changed, verification, next-ow
 | [2026-08-03-hov-mystira-oidc-secret-drift.md](handoffs/2026-08-03-hov-mystira-oidc-secret-drift.md)                             | Production OIDC client-secret drift repair and deployment reconciliation guard                   |
 | [2026-08-06-governance-503-observability-evidence-gates.md](handoffs/2026-08-06-governance-503-observability-evidence-gates.md) | Gate governance 500→503 fix, Azure Monitor log bridge, and the blocked evidence gates            |
 | [2026-08-07-knowledge-publication-safeguards.md](handoffs/2026-08-07-knowledge-publication-safeguards.md)                       | Knowledge-base publication safeguards — rubric, admin control plane, enforcement at load and use |
+| [2026-08-14-recipe-bolognese-go-live.md](handoffs/2026-08-14-recipe-bolognese-go-live.md)                                       | Household catalog recipes (bolognese, skillet, rice pot, bakes, pasta, rice bowls)                |

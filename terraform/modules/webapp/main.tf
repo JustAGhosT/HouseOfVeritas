@@ -66,7 +66,7 @@ resource "azurerm_linux_web_app" "main" {
     cors {
       allowed_origins = [
         local.app_base_url,
-        "https://docs.${var.domain_name}",
+        "https://sign.${var.domain_name}",
         "https://ops.${var.domain_name}",
       ]
     }
@@ -105,11 +105,11 @@ resource "azurerm_linux_web_app" "main" {
     BASEROW_TABLE_DEAL_RADAR_LISTINGS  = var.baserow_table_deal_radar_listings
     RADAR_ENABLED                      = tostring(var.radar_enabled)
 
-    DOCUSEAL_URL             = "https://docs.${var.domain_name}"
+    DOCUSEAL_URL             = "https://sign.${var.domain_name}"
     DOCUSEAL_KEY             = var.docuseal_api_key
-    DOCUSEAL_API_URL         = "https://docs.${var.domain_name}/api"
+    DOCUSEAL_API_URL         = "https://sign.${var.domain_name}/api"
     DOCUSEAL_API_KEY         = var.docuseal_api_key
-    NEXT_PUBLIC_DOCUSEAL_URL = "https://docs.${var.domain_name}"
+    NEXT_PUBLIC_DOCUSEAL_URL = "https://sign.${var.domain_name}"
 
     # AUTH_SECRET encrypts the Auth.js session JWT. MYSTIRA_OIDC_* / AUTH_URL /
     # AUTH_TRUST_HOST are injected via local.auth_app_settings below.

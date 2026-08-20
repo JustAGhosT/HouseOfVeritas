@@ -27,7 +27,7 @@ resource "azurerm_container_group" "docuseal" {
       SMTP_HOST     = var.smtp_host
       SMTP_PORT     = var.smtp_port
       SMTP_USERNAME = var.smtp_username
-      BASE_URL      = "https://docs.${var.domain_name}"
+      BASE_URL      = "https://sign.${var.domain_name}"
     }
 
     secure_environment_variables = {

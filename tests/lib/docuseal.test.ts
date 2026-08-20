@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest"
+import { describe, it, expect, beforeEach, vi } from "vitest"
 import {
   isDocuSealConfigured,
   getTemplates,
@@ -50,6 +50,21 @@ describe("docuseal service", () => {
       delete process.env.DOCUSEAL_API_KEY
       const status = await getSubmissionStatus("sub_123")
       expect(status).toBeNull()
+    })
+
+    it("uses the signing host for completed demo submission documents", async () => {
+      process.env.ALLOW_DEMO_DATA = "true"
+      delete process.env.DOCUSEAL_API_KEY
+      vi.resetModules()
+
+      const { getSubmissionStatus: getDemoSubmissionStatus } = await import(
+        "@/lib/services/docuseal"
+      )
+      const status = await getDemoSubmissionStatus("sub_completed_123")
+
+      expect(status?.documentUrl).toBe(
+        "https://sign.nexamesh.ai/documents/sub_completed_123"
+      )
     })
   })
 })

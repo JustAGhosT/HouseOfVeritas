@@ -24,7 +24,9 @@ brief for each visual section, routes approved generation requests through Sluic
 outputs in HOV-managed storage, and publishes only after a human has reviewed the text, images,
 attribution, allergens, and safety guidance.
 
-The final visual can resemble the supplied “Loaded Vienna, Potato & Onion Omelette” board, but it
+The final visual can resemble the supplied “Loaded Vienna, Potato & Onion Omelette” board
+([preserved screenshot](assets/recipe-board-loaded-vienna-omelette.jpg); layout contract in
+[recipe-share-print-board.md](recipe-share-print-board.md)), but it
 must be composed by a deterministic layout renderer from approved content blocks. Sluice generates
 the photographic panels, not the complete poster. Titles, ingredient quantities, temperatures,
 timers, prices, warnings, icons, and labels remain real text rendered by HOV so they are accurate,

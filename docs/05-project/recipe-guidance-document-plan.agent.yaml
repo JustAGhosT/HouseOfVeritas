@@ -1,0 +1,14 @@
+schema: md-agent/v1
+source: docs/05-project/recipe-guidance-document-plan.md
+title: "Recipe Guidance Document Plan"
+purpose: "Canonical plan for bilingual recipe guidance documents. The share/print board is a composed view of approved blocks, not a generated poster."
+audience: [agent, human]
+facts:
+  - "Hans authors and reviews; Irma reads and cooks on a phone."
+  - "The recipe record is the source of truth for ingredients, steps, times, and audience."
+  - "HOV renders titles, quantities, timers, and labels as real text."
+  - "Sluice may generate photographic panels only after capability proof; it must not draw the full poster."
+  - "Share/print visual target is the Loaded Vienna omelette board in docs/05-project/assets/recipe-board-loaded-vienna-omelette.jpg."
+  - "Layout contract lives in docs/05-project/recipe-share-print-board.md."
+  - "Demo recipes stay off by default."
+last_synced: "2026-08-14"
