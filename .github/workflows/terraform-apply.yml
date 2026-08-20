@@ -29,6 +29,11 @@ jobs:
     timeout-minutes: 45
     environment: production
     if: inputs.confirm == 'APPLY'
+    # The confirmation guard is evaluated before this job joins the shared queue.
+    concurrency:
+      group: hov-production-terraform-state
+      cancel-in-progress: false
+      queue: max
 
     steps:
       - name: Checkout

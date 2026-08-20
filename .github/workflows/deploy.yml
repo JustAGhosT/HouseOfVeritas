@@ -215,6 +215,11 @@ jobs:
     needs: [build]
     if: ${{ inputs.deploy_infrastructure && (inputs.environment || 'production') == 'production' }}
     environment: ${{ inputs.environment || 'production' }}
+    # Queue production state mutations in dispatch order and never interrupt one.
+    concurrency:
+      group: hov-production-terraform-state
+      cancel-in-progress: false
+      queue: max
 
     steps:
       - name: Checkout Repository
@@ -305,6 +310,10 @@ jobs:
     needs: [build, deploy-infrastructure]
     if: always() && needs.build.result == 'success' && (needs.deploy-infrastructure.result == 'success' || needs.deploy-infrastructure.result == 'skipped')
     environment: ${{ inputs.environment || 'production' }}
+    concurrency:
+      group: hov-${{ inputs.environment || 'production' }}-webapp
+      cancel-in-progress: false
+      queue: max
 
     steps:
       - name: Download Build Artifact
@@ -387,8 +396,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [deploy-infrastructure]
-    if: ${{ vars.ENABLE_OPERATIONAL_SERVICES == 'true' }}
+    # These legacy ACI jobs use the fixed production resource group and names.
+    if: ${{ vars.ENABLE_OPERATIONAL_SERVICES == 'true' && (inputs.environment || 'production') == 'production' }}
     environment: ${{ inputs.environment || 'production' }}
+    concurrency:
+      group: hov-production-docuseal
+      cancel-in-progress: false
+      queue: max
 
     steps:
       - name: Checkout Repository
@@ -447,8 +461,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [deploy-infrastructure]
-    if: ${{ vars.ENABLE_OPERATIONAL_SERVICES == 'true' }}
+    # These legacy ACI jobs use the fixed production resource group and names.
+    if: ${{ vars.ENABLE_OPERATIONAL_SERVICES == 'true' && (inputs.environment || 'production') == 'production' }}
     environment: ${{ inputs.environment || 'production' }}
+    concurrency:
+      group: hov-production-baserow
+      cancel-in-progress: false
+      queue: max
 
     steps:
       - name: Checkout Repository

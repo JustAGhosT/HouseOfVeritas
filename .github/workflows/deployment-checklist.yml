@@ -13,6 +13,10 @@ on:
     # Run daily at 6am UTC to catch infrastructure drift
     - cron: "0 6 * * *"
 
+concurrency:
+  group: deployment-checklist-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
   pull-requests: write

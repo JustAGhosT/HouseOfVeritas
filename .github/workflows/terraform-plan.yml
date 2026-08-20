@@ -8,6 +8,12 @@ on:
       - "terraform/**"
       - ".github/workflows/terraform-plan.yml"
 
+concurrency:
+  # Plans and mutations all acquire the same production backend lease.
+  group: hov-production-terraform-state
+  cancel-in-progress: false
+  queue: max
+
 permissions:
   contents: read
   pull-requests: write

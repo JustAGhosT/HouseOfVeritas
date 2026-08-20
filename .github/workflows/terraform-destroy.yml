@@ -15,6 +15,12 @@ jobs:
     name: "Terraform Destroy"
     runs-on: ubuntu-latest
     environment: production
+    if: inputs.confirm_destroy == 'DESTROY'
+    # Keep invalid dispatches out of the shared production-state queue.
+    concurrency:
+      group: hov-production-terraform-state
+      cancel-in-progress: false
+      queue: max
 
     steps:
       - name: Validate Confirmation

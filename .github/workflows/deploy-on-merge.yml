@@ -139,6 +139,12 @@ jobs:
     timeout-minutes: 15
     needs: [quality-checks, build]
     environment: production
+    # Shared with the manual deployment workflow so only one web app mutation
+    # can run at a time. Running deployments are never cancelled.
+    concurrency:
+      group: hov-production-webapp
+      cancel-in-progress: false
+      queue: max
 
     steps:
       - name: Download Build Artifact
