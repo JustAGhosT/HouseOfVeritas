@@ -12,12 +12,18 @@ House of Veritas currently uses several in-memory stores that are volatile and l
 
 The following list recorded the intended supporting topology when this ADR was accepted, not the verified production runtime. ADR-013 partially supersedes this current-state assumption: it records a shared HOV PostgreSQL database, role, and schema, but the canonical HOV app was not connected to them at its last verification. Re-inventory live configuration before migration.
 
-The intended supporting stores were:
+The accepted target assignments were:
 
-- **PostgreSQL** (Azure Flexible): DocuSeal, Baserow databases
-- **MongoDB** (optional): Kiosk requests, audit log dual-write
-- **Redis** (Docker Compose): Baserow caching
-- **Azure Blob Storage**: Documents, backups
+- **PostgreSQL**: authoritative users and audit records; time-clock and
+  biometric records in dedicated tables or the PostgreSQL-backed Baserow model;
+  DocuSeal and Baserow backing databases
+- **Redis**: authoritative production rate-limit windows when `REDIS_URL` is
+  configured; Baserow caching
+- **In-memory event store**: authoritative short-lived SSE buffer, with an
+  optional PostgreSQL archive for replay
+- **MongoDB** (optional): kiosk requests and audit-log dual-write, not the
+  authoritative audit store
+- **Azure Blob Storage**: documents and backups
 
 ### Current In-Memory Stores
 
