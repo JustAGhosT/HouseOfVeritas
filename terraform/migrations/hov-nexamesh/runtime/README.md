@@ -18,9 +18,13 @@ object ID. No static or server-administrator DSN is accepted.
 
 `identity_cutover_approved` defaults to `false`, so Mystira issuer, client,
 client-secret reference and `AUTH_URL` settings are absent while the target is
-built and rehearsed. The migration workflow does not expose a switch to enable
-them. Perform identity and callback changes only as an atomic cutover with the
-edge operator steps and a newly reviewed exact plan.
+built and rehearsed. The migration workflow exposes the switch only for the
+`runtime` root and requires the complete reviewed values from
+`HOV_MYSTIRA_OIDC_ISSUER`, `HOV_MYSTIRA_OIDC_CLIENT_ID`,
+`HOV_MYSTIRA_OIDC_CLIENT_SECRET_NAME`, and `HOV_AUTH_URL`. Its plan policy
+permits only the in-place App Service update for that phase. Perform identity
+and callback changes only as an atomic cutover with the edge operator steps and
+a newly reviewed exact plan.
 
 Initialize this root only against the target backend key
 `hov/prod/runtime.tfstate`. Do not run ad-hoc apply commands; use the sealed

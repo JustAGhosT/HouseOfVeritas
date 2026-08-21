@@ -35,6 +35,11 @@ on:
         required: false
         type: boolean
         default: false
+      identity_cutover_approved:
+        description: "Runtime only: atomically enable the reviewed Mystira OIDC settings"
+        required: false
+        type: boolean
+        default: false
       plan_run_id:
         description: "Apply only: workflow run ID that produced the approved plan"
         required: false
@@ -106,6 +111,11 @@ jobs:
       TF_VAR_postgres_entra_admin_principal_type: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_PRINCIPAL_TYPE }}
       TF_VAR_hostname_binding_approved: ${{ inputs.hostname_binding_approved }}
       TF_VAR_external_oidc_cutover_complete: ${{ inputs.hostname_binding_approved }}
+      TF_VAR_identity_cutover_approved: ${{ inputs.identity_cutover_approved }}
+      TF_VAR_mystira_oidc_issuer: ${{ vars.HOV_MYSTIRA_OIDC_ISSUER }}
+      TF_VAR_mystira_oidc_client_id: ${{ vars.HOV_MYSTIRA_OIDC_CLIENT_ID }}
+      TF_VAR_mystira_oidc_client_secret_name: ${{ vars.HOV_MYSTIRA_OIDC_CLIENT_SECRET_NAME }}
+      TF_VAR_auth_url: ${{ vars.HOV_AUTH_URL }}
 
     steps:
       - name: Checkout exact planning commit
@@ -156,6 +166,14 @@ jobs:
             test -n "${TF_VAR_postgres_entra_admin_object_id:-}"
             test -n "${TF_VAR_postgres_entra_admin_principal_name:-}"
             test -n "${TF_VAR_postgres_entra_admin_principal_type:-}"
+          fi
+
+          if [ '${{ inputs.identity_cutover_approved }}' = true ]; then
+            test "${{ inputs.root }}" = runtime
+            [[ '${{ vars.HOV_MYSTIRA_OIDC_ISSUER }}' =~ ^https:// ]]
+            test -n '${{ vars.HOV_MYSTIRA_OIDC_CLIENT_ID }}'
+            test -n '${{ vars.HOV_MYSTIRA_OIDC_CLIENT_SECRET_NAME }}'
+            [[ '${{ vars.HOV_AUTH_URL }}' =~ ^https:// ]]
           fi
 
       - name: Reject source coupling and imports
@@ -219,11 +237,24 @@ jobs:
           cd "$WORKING_DIR"
           terraform show -json tfplan > tfplan.json
 
-          jq -e '
-            [.resource_changes[]?.change.actions] |
-            all(. == ["create"] or . == ["no-op"] or . == ["read"])
+          jq -e \
+            --arg root '${{ inputs.root }}' \
+            --argjson identity_cutover_approved '${{ inputs.identity_cutover_approved }}' '
+            [.resource_changes[]? | {
+              address: .address,
+              actions: .change.actions
+            }] |
+            all(
+              .actions == ["create"] or
+              .actions == ["no-op"] or
+              .actions == ["read"] or
+              ($root == "runtime" and
+               $identity_cutover_approved == true and
+               .address == "azurerm_linux_web_app.runtime" and
+               .actions == ["update"])
+            )
           ' tfplan.json >/dev/null || {
-            echo '::error::Plan contains an update, delete, replace, forget, or other non-create action.'
+            echo '::error::Plan contains an update outside the approved runtime OIDC cutover, or a delete, replace, forget, or other forbidden action.'
             exit 1
           }
 
@@ -262,7 +293,8 @@ jobs:
             --arg subscription_id "$TARGET_SUBSCRIPTION_ID" \
             --arg run_id "$GITHUB_RUN_ID" \
             --argjson hostname_binding_approved '${{ inputs.hostname_binding_approved }}' \
-            '{schema_version:1,root:$root,commit_sha:$commit_sha,plan_sha256:$plan_sha256,artifact_name:$artifact_name,tenant_id:$tenant_id,subscription_id:$subscription_id,run_id:$run_id,hostname_binding_approved:$hostname_binding_approved}' \
+            --argjson identity_cutover_approved '${{ inputs.identity_cutover_approved }}' \
+            '{schema_version:1,root:$root,commit_sha:$commit_sha,plan_sha256:$plan_sha256,artifact_name:$artifact_name,tenant_id:$tenant_id,subscription_id:$subscription_id,run_id:$run_id,hostname_binding_approved:$hostname_binding_approved,identity_cutover_approved:$identity_cutover_approved}' \
             > plan-manifest.json
 
           echo "artifact_name=$artifact_name" >> "$GITHUB_OUTPUT"
@@ -397,6 +429,7 @@ jobs:
           test "$(jq -r .plan_sha256 "$manifest")" = '${{ inputs.plan_sha256 }}'
           test "$(jq -r .tenant_id "$manifest")" = "$TARGET_TENANT_ID"
           test "$(jq -r .subscription_id "$manifest")" = "$TARGET_SUBSCRIPTION_ID"
+          test "$(jq -r .identity_cutover_approved "$manifest")" = '${{ inputs.identity_cutover_approved }}'
           test "$(git rev-parse HEAD)" = '${{ inputs.plan_commit_sha }}'
           test "$(sha256sum "$plan" | cut -d' ' -f1)" = '${{ inputs.plan_sha256 }}'
 

@@ -27,11 +27,12 @@ locals {
   tags = merge(var.tags, local.mandatory_tags)
 
   key_vault_app_settings = {
-    AUTH_SECRET                    = "@Microsoft.KeyVault(SecretUri=${local.key_vault_secret_base}/${var.auth_secret_name})"
-    JWT_SECRET                     = "@Microsoft.KeyVault(SecretUri=${local.key_vault_secret_base}/${var.auth_secret_name})"
-    COSMOS_MONGO_CONNECTION_STRING = "@Microsoft.KeyVault(SecretUri=${local.key_vault_secret_base}/${local.foundation.cosmos_runtime_connection_secret_name})"
-    BASEROW_API_TOKEN              = "@Microsoft.KeyVault(SecretUri=${local.key_vault_secret_base}/${var.baserow_api_token_secret_name})"
-    DOCUSEAL_API_KEY               = "@Microsoft.KeyVault(SecretUri=${local.key_vault_secret_base}/${var.docuseal_api_key_secret_name})"
+    AUTH_SECRET       = "@Microsoft.KeyVault(SecretUri=${local.key_vault_secret_base}/${var.auth_secret_name})"
+    JWT_SECRET        = "@Microsoft.KeyVault(SecretUri=${local.key_vault_secret_base}/${var.auth_secret_name})"
+    MONGODB_URI       = "@Microsoft.KeyVault(SecretUri=${local.key_vault_secret_base}/${local.foundation.cosmos_runtime_connection_secret_name})"
+    DB_NAME           = local.foundation.cosmos_mongo_database_name
+    BASEROW_API_TOKEN = "@Microsoft.KeyVault(SecretUri=${local.key_vault_secret_base}/${var.baserow_api_token_secret_name})"
+    DOCUSEAL_API_KEY  = "@Microsoft.KeyVault(SecretUri=${local.key_vault_secret_base}/${var.docuseal_api_key_secret_name})"
   }
 
   identity_cutover_app_settings = var.identity_cutover_approved ? {

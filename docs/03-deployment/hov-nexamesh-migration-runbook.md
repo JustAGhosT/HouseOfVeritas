@@ -498,10 +498,16 @@ Treat OIDC as one coordinated change across HOV and Mystira Identity:
    expose it to Terraform output, logs, or App Service plaintext settings.
 3. Confirm the target App Service managed identity resolves the Key Vault
    reference.
-4. Change issuer, client registration/secret reference, authorization endpoint,
+4. Generate a new sealed `runtime` plan with
+   `identity_cutover_approved=true` and the four reviewed `HOV_MYSTIRA_*` /
+   `HOV_AUTH_URL` environment variables. Reject it unless the only mutation is
+   an in-place update of `azurerm_linux_web_app.runtime`, then bind approval to
+   its exact artifact hash.
+5. Apply that exact runtime plan while changing issuer, client
+   registration/secret reference, authorization endpoint,
    end-session endpoint, `AUTH_URL`, callbacks and post-logout allowlists in the
    same maintenance window.
-5. Verify discovery/JWKS/token issuer, PKCE/state, login and logout before
+6. Verify discovery/JWKS/token issuer, PKCE/state, login and logout before
    removing any old redirect URI or secret.
 
 Changing the issuer or secret alone is prohibited. `login.hov.neuralliquid.ai`
