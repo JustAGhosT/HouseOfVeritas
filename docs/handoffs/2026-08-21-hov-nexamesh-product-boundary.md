@@ -15,6 +15,7 @@ Earlier portfolio and migration material provisionally placed HOV under NeuralLi
 - `CLAUDE.md`
 - `README.md`
 - `docs/01-product/01-platform-specification.md`
+- `docs/02-architecture/05-persistence-strategy-adr.md`
 - `docs/02-architecture/14-nexamesh-product-boundary-adr.md`
 - `docs/README.md`
 - This handoff

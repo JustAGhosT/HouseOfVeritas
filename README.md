@@ -49,18 +49,18 @@ dependency. See
 
 ## Tech Stack
 
-| Category  | Technology                                        |
-| --------- | ------------------------------------------------- |
-| Framework | Next.js 16 (App Router)                           |
-| Language  | TypeScript 5                                      |
-| Styling   | Tailwind CSS 4 + Shadcn/UI                        |
-| Backend   | Next.js API routes; DocuSeal and Baserow optional |
-| Database  | Empty/local mode by default; PostgreSQL optional  |
-| Storage   | Azure Blob Storage (LRS baseline)                 |
-| OCR       | Azure Document Intelligence optional              |
-| IaC       | Terraform 1.5+                                    |
-| CI/CD     | GitHub Actions                                    |
-| Cloud     | Azure (South Africa North)                        |
+| Category  | Technology                                                                                                             |
+| --------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Framework | Next.js 16 (App Router)                                                                                                |
+| Language  | TypeScript 5                                                                                                           |
+| Styling   | Tailwind CSS 4 + Shadcn/UI                                                                                             |
+| Backend   | Next.js API routes; DocuSeal and Baserow optional                                                                      |
+| Database  | Canonical app documented in empty mode; shared HOV PostgreSQL destination exists but activation must be re-inventoried |
+| Storage   | Azure Blob Storage (LRS baseline)                                                                                      |
+| OCR       | Azure Document Intelligence optional                                                                                   |
+| IaC       | Terraform 1.5+                                                                                                         |
+| CI/CD     | GitHub Actions                                                                                                         |
+| Cloud     | Azure (South Africa North)                                                                                             |
 
 ---
 
@@ -77,10 +77,13 @@ See [Local Development Guide](docs/03-deployment/02-local-development.md) for Do
 
 ### Azure Deployment
 
-Production currently uses the low-cost canonical baseline: App Service,
-Storage, Key Vault, and VNet. Optional services such as Baserow, DocuSeal,
-PostgreSQL, Cosmos DB, Functions, Document Intelligence, monitoring, and
-Application Gateway are disabled until explicitly justified.
+The last verified canonical app baseline uses App Service, Storage, Key Vault,
+and VNet in empty data mode. ADR-013 records that the HOV database, role, and
+schema exist on `nl-prod-shared-pg`, but that the canonical app was not connected
+to them at verification time. Re-inventory the live app configuration and shared
+services before migration; do not infer an active dependency from provisioned
+resources. Optional services such as Baserow, DocuSeal, Cosmos DB, Functions,
+Document Intelligence, monitoring, and Application Gateway remain conditional.
 
 ```powershell
 cd terraform\environments\production

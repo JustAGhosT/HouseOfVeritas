@@ -53,6 +53,13 @@ add subscription-level isolation, remains a future option if privacy,
 regulatory, restore, commercial, or blast-radius requirements outgrow the
 resource-group boundary.
 
+The resource group is an operational boundary, not subscription-level privacy
+isolation: subscription-scope Azure RBAC inheritance still applies. The target
+must use HOV-specific role assignments plus service-specific data-plane access
+controls for PostgreSQL, Storage, and Key Vault. If inherited subscription
+administration is unacceptable, `hov-sub` is required rather than describing
+`nex-prod-hov-rg` as sufficient isolation.
+
 ## Ownership boundary
 
 | HOV owns                                                                                                           | NexaMesh owns                                                                                                                      | Contracted intelligence providers provide                                              |

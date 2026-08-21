@@ -8,7 +8,11 @@
 
 ## Context
 
-House of Veritas currently uses several in-memory stores that are volatile and lost on restart. Production requires persistent storage for users, audit logs, rate limiting, real-time events, and time-clock records. The platform already uses:
+House of Veritas currently uses several in-memory stores that are volatile and lost on restart. Production requires persistent storage for users, audit logs, rate limiting, real-time events, and time-clock records.
+
+The following list recorded the intended supporting topology when this ADR was accepted, not the verified production runtime. ADR-013 partially supersedes this current-state assumption: it records a shared HOV PostgreSQL database, role, and schema, but the canonical HOV app was not connected to them at its last verification. Re-inventory live configuration before migration.
+
+The intended supporting stores were:
 
 - **PostgreSQL** (Azure Flexible): DocuSeal, Baserow databases
 - **MongoDB** (optional): Kiosk requests, audit log dual-write
