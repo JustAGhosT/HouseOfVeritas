@@ -85,6 +85,12 @@ services before migration; do not infer an active dependency from provisioned
 resources. Optional services such as Baserow, DocuSeal, Cosmos DB, Functions,
 Document Intelligence, monitoring, and Application Gateway remain conditional.
 
+> **Migration safety:** Do not apply the current production Terraform against
+> `nexamesh-sub`. Its backend, state, and import IDs describe the source-bound
+> deployment. Re-inventory the live estate and create a migration-specific
+> configuration with separate state before any separately authorized plan or
+> apply.
+
 ```powershell
 cd terraform\environments\production
 terraform init -backend-config="backend.hcl"

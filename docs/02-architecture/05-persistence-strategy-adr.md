@@ -29,6 +29,13 @@ The intended supporting stores were:
 | Event store          | `lib/realtime/event-store.ts` | SSE events (last 100)             | Real-time feed lost               |
 | Biometric/time clock | `app/api/biometric/route.ts`  | Clock records, enrolled employees | Time tracking lost                |
 
+In the last verified canonical runtime, no persistent store was authoritative
+for these five record classes: users remained the static seed, while audit,
+rate-limit, event, and time-clock state remained process-local and reset on
+restart. ADR-013's provisioned database did not change that runtime fact because
+the canonical app was not connected to it. Persistent ownership and retention
+for these records therefore remain an implementation gap, not a deployed claim.
+
 ---
 
 ## Decision Drivers
