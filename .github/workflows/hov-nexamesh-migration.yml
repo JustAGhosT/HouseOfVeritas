@@ -1,0 +1,709 @@
+name: HOV NexaMesh target migration
+
+# Operational prerequisite: register a target-only self-hosted Linux/x64 runner
+# with a static egress CIDR allowed by the target Terraform backend and access
+# to the private target endpoints. HOV_MIGRATION_RUNNER_LABELS must be a JSON
+# label array such as ["self-hosted","linux","x64","hov-nexamesh-target"]. It
+# must also provide Docker, Node build prerequisites, zip, curl and jq. The
+# hov-nexamesh-target-production environment must also contain a target-tenant
+# OIDC federated identity. GitHub-hosted runners and source credentials are
+# intentionally unsupported.
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "Create a plan, apply an exact plan, or deploy an exact runtime build"
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+          - deploy-runtime
+      root:
+        description: "Isolated target Terraform root"
+        required: true
+        type: choice
+        options:
+          - bootstrap
+          - foundation-data
+          - migration-runner
+          - runtime
+          - edge
+      hostname_binding_approved:
+        description: "Edge only: DNS ownership and external OIDC transaction are complete"
+        required: false
+        type: boolean
+        default: false
+      identity_cutover_approved:
+        description: "Runtime only: atomically enable the reviewed Mystira OIDC settings"
+        required: false
+        type: boolean
+        default: false
+      plan_run_id:
+        description: "Apply only: workflow run ID that produced the approved plan"
+        required: false
+        type: string
+      plan_artifact_name:
+        description: "Apply only: exact plan artifact name from the approved run"
+        required: false
+        type: string
+      plan_commit_sha:
+        description: "Apply only: exact 40-character commit SHA recorded in the plan manifest"
+        required: false
+        type: string
+      plan_sha256:
+        description: "Apply only: exact lowercase SHA-256 recorded in the plan manifest"
+        required: false
+        type: string
+      runtime_commit_sha:
+        description: "Deploy-runtime only: exact 40-character HOV commit to build and deploy"
+        required: false
+        type: string
+      runtime_data_gates_approved:
+        description: "Deploy-runtime only: runtime Terraform, restore and data controls passed"
+        required: false
+        type: boolean
+        default: false
+      runtime_data_gate_evidence:
+        description: "Deploy-runtime only: non-secret run, artifact or Baton evidence reference"
+        required: false
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+  id-token: write
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  TERRAFORM_VERSION: "1.9.0"
+  TARGET_TENANT_ID: "5384ef74-e517-4b22-9472-df990f61e8b5"
+  TARGET_SUBSCRIPTION_ID: "8a5dc70a-bafa-4a04-a281-9b4862a70810"
+  TARGET_STATE_RESOURCE_GROUP: "nex-prod-hov-tfstate-rg"
+  TARGET_STATE_STORAGE_ACCOUNT: "nexprodhovtfstate"
+  TARGET_STATE_CONTAINER: "tfstate"
+  TARGET_RESOURCE_GROUP: "nex-prod-hov-rg"
+  TARGET_WEB_APP_NAME: "nex-prod-hov-app"
+
+jobs:
+  plan:
+    name: Plan target ${{ inputs.root }}
+    if: inputs.operation == 'plan'
+    runs-on: ${{ fromJSON(vars.HOV_MIGRATION_RUNNER_LABELS) }}
+    timeout-minutes: 45
+    environment: hov-nexamesh-target-production
+    concurrency:
+      group: hov-nexamesh-target-${{ inputs.root }}
+      cancel-in-progress: false
+    env:
+      ARM_USE_OIDC: "true"
+      ARM_USE_AZUREAD: "true"
+      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: "5384ef74-e517-4b22-9472-df990f61e8b5"
+      ARM_SUBSCRIPTION_ID: "8a5dc70a-bafa-4a04-a281-9b4862a70810"
+      TF_VAR_target_tenant_id: "5384ef74-e517-4b22-9472-df990f61e8b5"
+      TF_VAR_target_subscription_id: "8a5dc70a-bafa-4a04-a281-9b4862a70810"
+      TF_VAR_backend_allowed_ip_cidrs: ${{ vars.HOV_TFSTATE_ALLOWED_IP_CIDRS }}
+      TF_VAR_postgres_entra_admin_object_id: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_OBJECT_ID }}
+      TF_VAR_postgres_entra_admin_principal_name: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_PRINCIPAL_NAME }}
+      TF_VAR_postgres_entra_admin_principal_type: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_PRINCIPAL_TYPE }}
+      INPUT_ROOT: ${{ inputs.root }}
+      INPUT_HOSTNAME_BINDING_APPROVED: ${{ inputs.hostname_binding_approved }}
+      INPUT_IDENTITY_CUTOVER_APPROVED: ${{ inputs.identity_cutover_approved }}
+      TF_VAR_hostname_binding_approved: ${{ inputs.hostname_binding_approved }}
+      TF_VAR_external_oidc_cutover_complete: ${{ inputs.hostname_binding_approved }}
+      TF_VAR_identity_cutover_approved: ${{ inputs.identity_cutover_approved }}
+      TF_VAR_mystira_oidc_issuer: ${{ vars.HOV_MYSTIRA_OIDC_ISSUER }}
+      TF_VAR_mystira_oidc_client_id: ${{ vars.HOV_MYSTIRA_OIDC_CLIENT_ID }}
+      TF_VAR_mystira_oidc_client_secret_name: ${{ vars.HOV_MYSTIRA_OIDC_CLIENT_SECRET_NAME }}
+      TF_VAR_auth_url: ${{ vars.HOV_AUTH_URL }}
+
+    steps:
+      - name: Checkout exact planning commit
+        uses: actions/checkout@v6
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Login to the exact target with OIDC
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Assert target context and inputs
+        shell: bash
+        env:
+          APPROVED_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          CONFIGURED_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          CONFIGURED_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_backend_allowed_ip_cidrs: ${{ vars.HOV_TFSTATE_ALLOWED_IP_CIDRS }}
+          TF_VAR_postgres_entra_admin_object_id: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_OBJECT_ID }}
+          TF_VAR_postgres_entra_admin_principal_name: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_PRINCIPAL_NAME }}
+          TF_VAR_postgres_entra_admin_principal_type: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_PRINCIPAL_TYPE }}
+        run: |
+          set -euo pipefail
+          test -n "$APPROVED_CLIENT_ID"
+          test "$CONFIGURED_TENANT_ID" = "$TARGET_TENANT_ID"
+          test "$CONFIGURED_SUBSCRIPTION_ID" = "$TARGET_SUBSCRIPTION_ID"
+
+          read -r actual_tenant actual_subscription < <(
+            az account show --query '[tenantId,id]' --output tsv --only-show-errors
+          )
+          test "$actual_tenant" = "$TARGET_TENANT_ID"
+          test "$actual_subscription" = "$TARGET_SUBSCRIPTION_ID"
+
+          if [ "$INPUT_ROOT" = bootstrap ]; then
+            test -n "${TF_VAR_backend_allowed_ip_cidrs:-}"
+            jq -e 'type == "array" and length > 0 and all(.[]; . != "0.0.0.0/0" and . != "::/0")' \
+              <<<"$TF_VAR_backend_allowed_ip_cidrs" >/dev/null
+          fi
+
+          if [ "$INPUT_ROOT" = foundation-data ]; then
+            test -n "${TF_VAR_postgres_entra_admin_object_id:-}"
+            test -n "${TF_VAR_postgres_entra_admin_principal_name:-}"
+            test -n "${TF_VAR_postgres_entra_admin_principal_type:-}"
+          fi
+
+          if [ "$INPUT_IDENTITY_CUTOVER_APPROVED" = true ]; then
+            test "$INPUT_ROOT" = runtime
+            [[ "$TF_VAR_mystira_oidc_issuer" =~ ^https:// ]]
+            test -n "$TF_VAR_mystira_oidc_client_id"
+            test -n "$TF_VAR_mystira_oidc_client_secret_name"
+            [[ "$TF_VAR_auth_url" =~ ^https:// ]]
+          fi
+
+      - name: Reject source coupling and imports
+        shell: bash
+        env:
+          WORKING_DIR: terraform/migrations/hov-nexamesh/${{ inputs.root }}
+        run: |
+          set -euo pipefail
+          if grep -RInE '^[[:space:]]*import[[:space:]]*\{' "$WORKING_DIR"; then
+            echo '::error::Migration roots must not contain Terraform import blocks.'
+            exit 1
+          fi
+          if grep -RInE 'production-canonical\.terraform\.tfstate' "$WORKING_DIR"; then
+            echo '::error::Migration root contains the source production state key.'
+            exit 1
+          fi
+
+      - name: Initialize isolated target root
+        shell: bash
+        env:
+          WORKING_DIR: terraform/migrations/hov-nexamesh/${{ inputs.root }}
+        run: |
+          set -euo pipefail
+          cd "$WORKING_DIR"
+          if [ "$INPUT_ROOT" = bootstrap ]; then
+            terraform init -backend=false
+          else
+            case "$INPUT_ROOT" in
+              foundation-data) state_key='hov/prod/foundation-data.tfstate' ;;
+              migration-runner) state_key='hov/prod/migration-runner.tfstate' ;;
+              runtime) state_key='hov/prod/runtime.tfstate' ;;
+              edge) state_key='hov/prod/edge.tfstate' ;;
+              *) echo '::error::Unsupported target root'; exit 1 ;;
+            esac
+            terraform init -reconfigure \
+              -backend-config="resource_group_name=$TARGET_STATE_RESOURCE_GROUP" \
+              -backend-config="storage_account_name=$TARGET_STATE_STORAGE_ACCOUNT" \
+              -backend-config="container_name=$TARGET_STATE_CONTAINER" \
+              -backend-config="key=$state_key" \
+              -backend-config='use_azuread_auth=true' \
+              -backend-config="tenant_id=$TARGET_TENANT_ID" \
+              -backend-config="subscription_id=$TARGET_SUBSCRIPTION_ID"
+          fi
+
+      - name: Validate and format-check target root
+        working-directory: terraform/migrations/hov-nexamesh/${{ inputs.root }}
+        run: |
+          terraform fmt -check -recursive
+          terraform validate
+
+      - name: Create saved plan
+        working-directory: terraform/migrations/hov-nexamesh/${{ inputs.root }}
+        run: terraform plan -input=false -lock-timeout=5m -out=tfplan
+
+      - name: Enforce create-only target policy
+        shell: bash
+        env:
+          WORKING_DIR: terraform/migrations/hov-nexamesh/${{ inputs.root }}
+        run: |
+          set -euo pipefail
+          cd "$WORKING_DIR"
+          terraform show -json tfplan > tfplan.json
+
+          jq -e \
+            --arg root "$INPUT_ROOT" \
+            --argjson identity_cutover_approved "$INPUT_IDENTITY_CUTOVER_APPROVED" '
+            [.resource_changes[]? | {
+              address: .address,
+              actions: .change.actions
+            }] |
+            all(
+              .actions == ["create"] or
+              .actions == ["no-op"] or
+              .actions == ["read"] or
+              ($root == "runtime" and
+               $identity_cutover_approved == true and
+               .address == "azurerm_linux_web_app.runtime" and
+               .actions == ["update"])
+            )
+          ' tfplan.json >/dev/null || {
+            echo '::error::Plan contains an update outside the approved runtime OIDC cutover, or a delete, replace, forget, or other forbidden action.'
+            exit 1
+          }
+
+          jq -r '.. | strings' tfplan.json > planned-strings.txt
+          if grep -iE 'bb4e3882-2079-4bab-8974-611bc0b8bb58|9530cd32-9e33-47f0-9247-ed964730b580|production-canonical\.terraform\.tfstate|(^|[^a-z])nl-prod-' planned-strings.txt; then
+            echo '::error::Planned values contain a NeuralLiquid source boundary reference.'
+            exit 1
+          fi
+
+          managed_count=$(jq '[.resource_changes[]? | select(.mode == "managed")] | length' tfplan.json)
+          if [ "$INPUT_ROOT" != edge ] || [ "$INPUT_HOSTNAME_BINDING_APPROVED" = true ]; then
+            test "$managed_count" -gt 0 || {
+              echo '::error::Expected at least one managed target resource in this migration plan.'
+              exit 1
+            }
+          fi
+
+      - name: Seal plan manifest
+        id: seal
+        shell: bash
+        env:
+          WORKING_DIR: terraform/migrations/hov-nexamesh/${{ inputs.root }}
+        run: |
+          set -euo pipefail
+          cd "$WORKING_DIR"
+          plan_sha=$(sha256sum tfplan | cut -d' ' -f1)
+          commit_sha=$(git rev-parse HEAD)
+          artifact_name="hov-nexamesh-${INPUT_ROOT}-plan-${GITHUB_RUN_ID}"
+
+          jq -n \
+            --arg root "$INPUT_ROOT" \
+            --arg commit_sha "$commit_sha" \
+            --arg plan_sha256 "$plan_sha" \
+            --arg artifact_name "$artifact_name" \
+            --arg tenant_id "$TARGET_TENANT_ID" \
+            --arg subscription_id "$TARGET_SUBSCRIPTION_ID" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --argjson hostname_binding_approved "$INPUT_HOSTNAME_BINDING_APPROVED" \
+            --argjson identity_cutover_approved "$INPUT_IDENTITY_CUTOVER_APPROVED" \
+            '{schema_version:1,root:$root,commit_sha:$commit_sha,plan_sha256:$plan_sha256,artifact_name:$artifact_name,tenant_id:$tenant_id,subscription_id:$subscription_id,run_id:$run_id,hostname_binding_approved:$hostname_binding_approved,identity_cutover_approved:$identity_cutover_approved}' \
+            > plan-manifest.json
+
+          echo "artifact_name=$artifact_name" >> "$GITHUB_OUTPUT"
+          echo "plan_sha256=$plan_sha" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=$commit_sha" >> "$GITHUB_OUTPUT"
+          {
+            echo '### Sealed HOV target plan'
+            printf -- '- Root: `%s`\n' "$INPUT_ROOT"
+            printf -- '- Commit: `%s`\n' "$commit_sha"
+            printf -- '- Artifact: `%s`\n' "$artifact_name"
+            printf -- '- SHA-256: `%s`\n' "$plan_sha"
+            echo '- Apply requires the exact run, artifact, commit, and hash after environment approval.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload sealed plan artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.seal.outputs.artifact_name }}
+          path: |
+            terraform/migrations/hov-nexamesh/${{ inputs.root }}/tfplan
+            terraform/migrations/hov-nexamesh/${{ inputs.root }}/plan-manifest.json
+          if-no-files-found: error
+          retention-days: 14
+
+  apply:
+    name: Apply approved target ${{ inputs.root }} plan
+    if: inputs.operation == 'apply'
+    runs-on: ${{ fromJSON(vars.HOV_MIGRATION_RUNNER_LABELS) }}
+    timeout-minutes: 60
+    environment: hov-nexamesh-target-production
+    concurrency:
+      group: hov-nexamesh-target-${{ inputs.root }}
+      cancel-in-progress: false
+    env:
+      ARM_USE_OIDC: "true"
+      ARM_USE_AZUREAD: "true"
+      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: "5384ef74-e517-4b22-9472-df990f61e8b5"
+      ARM_SUBSCRIPTION_ID: "8a5dc70a-bafa-4a04-a281-9b4862a70810"
+      TF_VAR_target_tenant_id: "5384ef74-e517-4b22-9472-df990f61e8b5"
+      TF_VAR_target_subscription_id: "8a5dc70a-bafa-4a04-a281-9b4862a70810"
+      TF_VAR_backend_allowed_ip_cidrs: ${{ vars.HOV_TFSTATE_ALLOWED_IP_CIDRS }}
+      TF_VAR_postgres_entra_admin_object_id: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_OBJECT_ID }}
+      TF_VAR_postgres_entra_admin_principal_name: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_PRINCIPAL_NAME }}
+      TF_VAR_postgres_entra_admin_principal_type: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_PRINCIPAL_TYPE }}
+      INPUT_ROOT: ${{ inputs.root }}
+      INPUT_IDENTITY_CUTOVER_APPROVED: ${{ inputs.identity_cutover_approved }}
+      PLAN_RUN_ID: ${{ inputs.plan_run_id }}
+      PLAN_ARTIFACT_NAME: ${{ inputs.plan_artifact_name }}
+      PLAN_COMMIT_SHA: ${{ inputs.plan_commit_sha }}
+      PLAN_SHA256: ${{ inputs.plan_sha256 }}
+      CONFIGURED_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      CONFIGURED_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+    steps:
+      - name: Validate exact-plan approval inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$PLAN_RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$PLAN_ARTIFACT_NAME" =~ ^hov-nexamesh-${INPUT_ROOT}-plan-[0-9]+$ ]]
+          [[ "$PLAN_COMMIT_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$PLAN_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          test "$PLAN_ARTIFACT_NAME" = "hov-nexamesh-${INPUT_ROOT}-plan-${PLAN_RUN_ID}"
+
+      - name: Verify source workflow run provenance
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run_json=$(curl --fail --silent --show-error \
+            -H 'Accept: application/vnd.github+json' \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$PLAN_RUN_ID")
+
+          jq -e \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg commit "$PLAN_COMMIT_SHA" \
+            '.repository.full_name == $repository and
+             .event == "workflow_dispatch" and
+             .conclusion == "success" and
+             .head_sha == $commit and
+             .path == ".github/workflows/hov-nexamesh-migration.yml"' \
+            <<<"$run_json" >/dev/null
+
+      - name: Checkout exact approved commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.plan_commit_sha }}
+          persist-credentials: false
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Login to the exact target with OIDC
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Assert exact target context
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$CONFIGURED_TENANT_ID" = "$TARGET_TENANT_ID"
+          test "$CONFIGURED_SUBSCRIPTION_ID" = "$TARGET_SUBSCRIPTION_ID"
+          read -r actual_tenant actual_subscription < <(
+            az account show --query '[tenantId,id]' --output tsv --only-show-errors
+          )
+          test "$actual_tenant" = "$TARGET_TENANT_ID"
+          test "$actual_subscription" = "$TARGET_SUBSCRIPTION_ID"
+
+      - name: Download exact approved plan artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: ${{ inputs.plan_artifact_name }}
+          path: approved-plan
+          run-id: ${{ inputs.plan_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Verify manifest, commit and plan hash
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest='approved-plan/plan-manifest.json'
+          plan='approved-plan/tfplan'
+          test -f "$manifest"
+          test -f "$plan"
+
+          test "$(jq -r .root "$manifest")" = "$INPUT_ROOT"
+          test "$(jq -r .run_id "$manifest")" = "$PLAN_RUN_ID"
+          test "$(jq -r .artifact_name "$manifest")" = "$PLAN_ARTIFACT_NAME"
+          test "$(jq -r .commit_sha "$manifest")" = "$PLAN_COMMIT_SHA"
+          test "$(jq -r .plan_sha256 "$manifest")" = "$PLAN_SHA256"
+          test "$(jq -r .tenant_id "$manifest")" = "$TARGET_TENANT_ID"
+          test "$(jq -r .subscription_id "$manifest")" = "$TARGET_SUBSCRIPTION_ID"
+          test "$(jq -r .identity_cutover_approved "$manifest")" = "$INPUT_IDENTITY_CUTOVER_APPROVED"
+          test "$(git rev-parse HEAD)" = "$PLAN_COMMIT_SHA"
+          test "$(sha256sum "$plan" | cut -d' ' -f1)" = "$PLAN_SHA256"
+
+      - name: Initialize exact target state
+        shell: bash
+        env:
+          WORKING_DIR: terraform/migrations/hov-nexamesh/${{ inputs.root }}
+        run: |
+          set -euo pipefail
+          cd "$WORKING_DIR"
+          if [ "$INPUT_ROOT" = bootstrap ]; then
+            terraform init -backend=false
+          else
+            case "$INPUT_ROOT" in
+              foundation-data) state_key='hov/prod/foundation-data.tfstate' ;;
+              migration-runner) state_key='hov/prod/migration-runner.tfstate' ;;
+              runtime) state_key='hov/prod/runtime.tfstate' ;;
+              edge) state_key='hov/prod/edge.tfstate' ;;
+              *) echo '::error::Unsupported target root'; exit 1 ;;
+            esac
+            terraform init -reconfigure \
+              -backend-config="resource_group_name=$TARGET_STATE_RESOURCE_GROUP" \
+              -backend-config="storage_account_name=$TARGET_STATE_STORAGE_ACCOUNT" \
+              -backend-config="container_name=$TARGET_STATE_CONTAINER" \
+              -backend-config="key=$state_key" \
+              -backend-config='use_azuread_auth=true' \
+              -backend-config="tenant_id=$TARGET_TENANT_ID" \
+              -backend-config="subscription_id=$TARGET_SUBSCRIPTION_ID"
+          fi
+
+      - name: Apply exact approved artifact
+        shell: bash
+        env:
+          WORKING_DIR: terraform/migrations/hov-nexamesh/${{ inputs.root }}
+        run: |
+          set -euo pipefail
+          terraform -chdir="$WORKING_DIR" apply -input=false -auto-approve "$GITHUB_WORKSPACE/approved-plan/tfplan"
+
+      - name: Migrate bootstrap state immediately to the new target backend
+        if: inputs.root == 'bootstrap'
+        shell: bash
+        working-directory: terraform/migrations/hov-nexamesh/bootstrap
+        run: |
+          set -euo pipefail
+          test -s terraform.tfstate
+          terraform init -migrate-state -force-copy \
+            -backend-config="resource_group_name=$TARGET_STATE_RESOURCE_GROUP" \
+            -backend-config="storage_account_name=$TARGET_STATE_STORAGE_ACCOUNT" \
+            -backend-config="container_name=$TARGET_STATE_CONTAINER" \
+            -backend-config='key=hov/prod/bootstrap.tfstate' \
+            -backend-config='use_azuread_auth=true' \
+            -backend-config="tenant_id=$TARGET_TENANT_ID" \
+            -backend-config="subscription_id=$TARGET_SUBSCRIPTION_ID"
+          terraform state pull >/dev/null
+
+      - name: Record exact-plan application evidence
+        shell: bash
+        env:
+          APPROVED_ROOT: ${{ inputs.root }}
+          APPROVED_COMMIT_SHA: ${{ inputs.plan_commit_sha }}
+          APPROVED_RUN_ID: ${{ inputs.plan_run_id }}
+          APPROVED_ARTIFACT_NAME: ${{ inputs.plan_artifact_name }}
+          APPROVED_PLAN_SHA256: ${{ inputs.plan_sha256 }}
+        run: |
+          {
+            echo '### Applied exact approved HOV target plan'
+            printf -- '- Root: `%s`\n' "$APPROVED_ROOT"
+            printf -- '- Commit: `%s`\n' "$APPROVED_COMMIT_SHA"
+            printf -- '- Source run: `%s`\n' "$APPROVED_RUN_ID"
+            printf -- '- Artifact: `%s`\n' "$APPROVED_ARTIFACT_NAME"
+            printf -- '- SHA-256: `%s`\n' "$APPROVED_PLAN_SHA256"
+            echo '- No source retirement, Cloudflare DNS mutation, or external OIDC mutation is performed by this workflow.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-runtime:
+    name: Deploy exact HOV runtime build
+    if: inputs.operation == 'deploy-runtime'
+    runs-on: ${{ fromJSON(vars.HOV_MIGRATION_RUNNER_LABELS) }}
+    timeout-minutes: 60
+    environment: hov-nexamesh-target-production
+    concurrency:
+      group: hov-nexamesh-target-runtime-deploy
+      cancel-in-progress: false
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      MONGODB_URI: mongodb://localhost:27017/house_of_veritas_test
+      SELECTED_ROOT: ${{ inputs.root }}
+      RUNTIME_COMMIT_SHA: ${{ inputs.runtime_commit_sha }}
+      NEXT_PUBLIC_BUILD_COMMIT: ${{ inputs.runtime_commit_sha }}
+      RUNTIME_DATA_GATES_APPROVED: ${{ inputs.runtime_data_gates_approved }}
+      RUNTIME_DATA_GATE_EVIDENCE: ${{ inputs.runtime_data_gate_evidence }}
+      CONFIGURED_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      CONFIGURED_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+    steps:
+      - name: Validate runtime deployment approval inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$SELECTED_ROOT" = runtime
+          test "$RUNTIME_DATA_GATES_APPROVED" = true
+          [[ "$RUNTIME_COMMIT_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test -n "$RUNTIME_DATA_GATE_EVIDENCE"
+
+      - name: Checkout exact approved runtime commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.runtime_commit_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$RUNTIME_COMMIT_SHA"
+          git merge-base --is-ancestor "$RUNTIME_COMMIT_SHA" refs/remotes/origin/main
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.30.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Run unit tests
+        run: pnpm test
+
+      - name: Build exact standalone application
+        run: pnpm build
+
+      - name: Prepare standalone deployment package
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d .next/standalone
+          test -f .next/standalone/.next/BUILD_ID
+          cp -r .next/static .next/standalone/.next/static
+          cp -r public .next/standalone/public
+          mkdir -p .next/standalone/scripts
+          cp scripts/verify-deployment-build.mjs .next/standalone/scripts/
+          jq '.scripts = ((.scripts // {}) + {"start": "node server.js"})' \
+            .next/standalone/package.json > .next/standalone/package.json.tmp
+          mv .next/standalone/package.json.tmp .next/standalone/package.json
+          find .next/standalone -type f -name '*:*' -print -delete
+          cd .next/standalone
+          zip -q -r "$GITHUB_WORKSPACE/deploy.zip" . -x '*.git*'
+
+      - name: Seal runtime build manifest
+        id: runtime-build
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_sha=$(sha256sum deploy.zip | cut -d' ' -f1)
+          jq -n \
+            --arg commit_sha "$RUNTIME_COMMIT_SHA" \
+            --arg package_sha256 "$package_sha" \
+            --arg tenant_id "$TARGET_TENANT_ID" \
+            --arg subscription_id "$TARGET_SUBSCRIPTION_ID" \
+            --arg resource_group "$TARGET_RESOURCE_GROUP" \
+            --arg web_app "$TARGET_WEB_APP_NAME" \
+            --arg data_gate_evidence "$RUNTIME_DATA_GATE_EVIDENCE" \
+            '{schema_version:1,commit_sha:$commit_sha,package_sha256:$package_sha256,tenant_id:$tenant_id,subscription_id:$subscription_id,resource_group:$resource_group,web_app:$web_app,data_gate_evidence:$data_gate_evidence}' \
+            > runtime-deployment-manifest.json
+          echo "package_sha256=$package_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Login to the exact target with OIDC
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Assert exact target App Service
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$CONFIGURED_TENANT_ID" = "$TARGET_TENANT_ID"
+          test "$CONFIGURED_SUBSCRIPTION_ID" = "$TARGET_SUBSCRIPTION_ID"
+          read -r actual_tenant actual_subscription < <(
+            az account show --query '[tenantId,id]' --output tsv --only-show-errors
+          )
+          test "$actual_tenant" = "$TARGET_TENANT_ID"
+          test "$actual_subscription" = "$TARGET_SUBSCRIPTION_ID"
+
+          read -r actual_name actual_group actual_hostname < <(
+            az webapp show \
+              --resource-group "$TARGET_RESOURCE_GROUP" \
+              --name "$TARGET_WEB_APP_NAME" \
+              --query '[name,resourceGroup,defaultHostName]' \
+              --output tsv \
+              --only-show-errors
+          )
+          test "$actual_name" = "$TARGET_WEB_APP_NAME"
+          test "$actual_group" = "$TARGET_RESOURCE_GROUP"
+          test "$actual_hostname" = "$TARGET_WEB_APP_NAME.azurewebsites.net"
+
+      - name: Deploy exact package to target App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: nex-prod-hov-app
+          package: deploy.zip
+
+      - name: Verify exact Azure-hostname build and live health
+        shell: bash
+        run: |
+          set -euo pipefail
+          health_url="https://$TARGET_WEB_APP_NAME.azurewebsites.net/api/health"
+          node scripts/verify-deployment-build.mjs \
+            --url "$health_url" \
+            --expected "$RUNTIME_COMMIT_SHA"
+
+          curl --fail --silent --show-error \
+            --header 'Cache-Control: no-cache, no-store, max-age=0' \
+            "$health_url?expected_commit=$RUNTIME_COMMIT_SHA&evidence_run=$GITHUB_RUN_ID" \
+            > target-health.json
+          jq -e \
+            --arg commit "$RUNTIME_COMMIT_SHA" \
+            '.status == "healthy" and
+             .build.commit == $commit and
+             .backend == "postgres" and
+             .dataMode == "live" and
+             any(.services[]; .name == "postgres" and .status == "up")' \
+            target-health.json >/dev/null
+
+      - name: Upload non-secret runtime deployment evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: hov-nexamesh-runtime-deployment-${{ github.run_id }}
+          path: |
+            runtime-deployment-manifest.json
+            target-health.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Record runtime deployment evidence
+        shell: bash
+        run: |
+          {
+            echo '### HOV target runtime deployment'
+            printf -- '- Commit: `%s`\n' "$RUNTIME_COMMIT_SHA"
+            printf -- '- Package SHA-256: `%s`\n' '${{ steps.runtime-build.outputs.package_sha256 }}'
+            printf -- '- App Service: `%s/%s`\n' "$TARGET_RESOURCE_GROUP" "$TARGET_WEB_APP_NAME"
+            printf -- '- Health URL: `https://%s.azurewebsites.net/api/health`\n' "$TARGET_WEB_APP_NAME"
+            printf -- '- Runtime/data gate evidence: `%s`\n' "$RUNTIME_DATA_GATE_EVIDENCE"
+            echo '- Cloudflare DNS, Mystira OIDC settings and source resources were not changed.'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,7 @@
+resource_group_name  = "nex-prod-hov-tfstate-rg"
+storage_account_name = "nexprodhovtfstate"
+container_name       = "tfstate"
+key                  = "hov/prod/foundation-data.tfstate"
+tenant_id            = "5384ef74-e517-4b22-9472-df990f61e8b5"
+subscription_id      = "8a5dc70a-bafa-4a04-a281-9b4862a70810"
+use_azuread_auth     = true

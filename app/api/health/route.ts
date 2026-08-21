@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server"
 import { getEstateRepository } from "@/lib/repositories/estate-repository"
 import { isDocuSealConfigured } from "@/lib/services/docuseal"
+import { query } from "@/lib/db/postgres"
 
 export const dynamic = "force-dynamic"
 
 const buildCommit = process.env.NEXT_PUBLIC_BUILD_COMMIT ?? "development"
+const processStartedAtUtc = new Date().toISOString()
 
 async function checkService(
   name: string,
@@ -29,6 +31,24 @@ function serviceBaseUrl(url: string | undefined): string | undefined {
   return url?.replace(/\/api\/?$/, "").replace(/\/$/, "")
 }
 
+async function checkPostgres(
+  inUse: boolean
+): Promise<{ name: string; status: "up" | "down" | "unconfigured"; latencyMs: number | null }> {
+  if (!inUse) return { name: "postgres", status: "unconfigured", latencyMs: null }
+
+  const start = Date.now()
+  try {
+    const result = await query<{ health: number }>("SELECT 1 AS health")
+    return {
+      name: "postgres",
+      status: result.rows[0]?.health === 1 ? "up" : "down",
+      latencyMs: Date.now() - start,
+    }
+  } catch {
+    return { name: "postgres", status: "down", latencyMs: Date.now() - start }
+  }
+}
+
 export async function GET() {
   const estate = getEstateRepository()
 
@@ -41,6 +61,7 @@ export async function GET() {
   const baserowInUse = estate.backend === "baserow" && estate.isConfigured()
 
   const checks = await Promise.all([
+    checkPostgres(estate.backend === "postgres"),
     checkService(
       "baserow",
       baserowInUse
@@ -63,6 +84,7 @@ export async function GET() {
     {
       status: overall ? "healthy" : "degraded",
       build: { commit: buildCommit },
+      runtime: { processStartedAtUtc },
       // Which store is actually backing estate data. Reported because "is this
       // deployment on Postgres yet?" was previously only answerable by reading
       // app settings, and dataMode alone cannot distinguish the backends.
