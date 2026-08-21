@@ -83,18 +83,18 @@ Each root must pin and assert:
 
 ### 5.2 Target service mapping
 
-| Component           | Azure service                                          | Planned configuration                                                                                                                                                     |
-| ------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Web/API             | Linux App Service                                      | B1, Node.js 22, system-assigned identity, TLS 1.2+, FTPS disabled, VNet integration                                                                                       |
-| Estate data         | PostgreSQL Flexible Server                             | PostgreSQL 16, `Standard_B2s`, 32 GiB, private delegated subnet, 14-day PITR, geo-backup, deletion protection                                                             |
-| Database access     | PostgreSQL roles                                       | Separate server administrator, HOV schema owner, and least-privilege runtime role; application never uses server-admin DSN                                                |
-| Kiosk data          | Cosmos DB Mongo API                                    | 400 RU/s, private endpoint, public access disabled; migrate only verified active collections                                                                              |
-| Files               | StorageV2                                              | Standard ZRS where available, public blob access and shared-key runtime use disabled, private endpoint, versioning and soft delete                                        |
-| Secrets             | Key Vault                                              | RBAC authorization, purge protection, private endpoint, target-tenant identities only, Key Vault references in App Service                                                |
-| Monitoring          | Application Insights + Log Analytics                   | Workspace-based APM, target-specific role name, deployment and data-migration telemetry                                                                                   |
-| Identity            | App managed identity + external OIDC registration      | Target-tenant principal with minimal Key Vault/Blob rights; issuer, registration, redirect URIs and secret rotated atomically                                             |
-| Migration execution | Temporary Linux VM + Managed Run Command               | No public IP or inbound access; system identity has bounded HOV Blob/Key Vault rights; secrets enter only as protected parameters and are never stored in Terraform state |
-| DNS/TLS             | App Service managed certificate plus Cloudflare record | Bind and validate target before changing `hov.neuralliquid.ai`; retain source rollback until observation completes                                                        |
+| Component           | Azure service                                          | Planned configuration                                                                                                                                                                               |
+| ------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Web/API             | Linux App Service                                      | B1, Node.js 22, system-assigned identity, TLS 1.2+, FTPS disabled, VNet integration                                                                                                                 |
+| Estate data         | PostgreSQL Flexible Server                             | PostgreSQL 16, `Standard_B2s`, 32 GiB, private delegated subnet, 14-day PITR, geo-backup, deletion protection                                                                                       |
+| Database access     | PostgreSQL roles                                       | Separate server administrator, HOV schema owner, and least-privilege runtime role; application never uses server-admin DSN                                                                          |
+| Kiosk data          | Cosmos DB Mongo API                                    | 400 RU/s, private endpoint, public access disabled; migrate only verified active collections                                                                                                        |
+| Files               | StorageV2                                              | Standard ZRS where available, public blob access and shared-key runtime use disabled, private endpoint, versioning and soft delete                                                                  |
+| Secrets             | Key Vault                                              | RBAC authorization, purge protection, private endpoint, target-tenant identities only, Key Vault references in App Service                                                                          |
+| Monitoring          | Application Insights + Log Analytics                   | Workspace-based APM, target-specific role name, deployment and data-migration telemetry                                                                                                             |
+| Identity            | App managed identity + external OIDC registration      | Target-tenant principal with minimal Key Vault/Blob rights; issuer, registration, redirect URIs and secret rotated atomically                                                                       |
+| Migration execution | Temporary Linux VM + Managed Run Command               | No public IP or inbound access; system identity has bounded HOV Blob/Key Vault rights; secrets enter only as protected parameters and are never stored in Terraform state                           |
+| DNS/TLS             | App Service managed certificate plus Cloudflare record | Publish ownership proof first; during the approved cutover move the CNAME directly to the target, then issue/bind the managed certificate; retain the captured source record for immediate rollback |
 
 ### 5.3 Data migration
 
@@ -175,7 +175,7 @@ Region evidence: [Azure regions list](https://learn.microsoft.com/azure/reliabil
 - [ ] Deploy exact application build to target Azure hostname without DNS cutover.
 - [ ] Restore and validate data, managed identity and service data-plane denials.
 - [ ] Coordinate OIDC registration, secret, issuer and callback changes atomically.
-- [ ] Bind hostname/TLS, then change DNS only after target acceptance.
+- [ ] Publish ownership proof, atomically move the CNAME to the target, then issue/bind TLS and run target acceptance; revert DNS immediately if issuance or acceptance fails.
 - [ ] Verify authenticated admin and non-admin flows, durable writes across restart, real SQL positive control, Blob/Cosmos access and observability.
 - [ ] Observe target before separately planning source retirement.
 

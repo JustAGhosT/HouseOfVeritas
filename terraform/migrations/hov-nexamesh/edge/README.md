@@ -13,10 +13,14 @@ operator enables it, all of the following must be completed and evidenced:
 2. Verify the target Azure hostname, data plane and restart persistence.
 3. Coordinate the Mystira relying-party registration, redirect URI, issuer and
    client-secret rotation as one external transaction.
-4. Generate and approve a new sealed edge plan with both external preconditions
-   attested.
-5. Change Cloudflare routing only after the target certificate and authentic
-   acceptance pass. Keep the source route available for rollback.
+4. Lower TTL and capture the exact source CNAME rollback value, then generate
+   and approve a sealed edge plan with both external preconditions attested.
+5. In the maintenance window, move the CNAME directly to the target App Service
+   before applying the edge plan. App Service managed-certificate issuance and
+   renewal require that direct mapping.
+6. Apply the exact edge plan, verify certificate issuance/SNI and complete
+   authentic acceptance. Restore the captured source CNAME immediately if
+   issuance or acceptance fails.
 
 Source retirement is not represented in this root. A DNS rollback does not
 require destroying the target hostname or certificate resources.

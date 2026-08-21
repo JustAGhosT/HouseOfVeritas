@@ -44,9 +44,29 @@ if ($BlobMappings.Count -gt 0) {
       )
       if ([int](($existing -join "").Trim()) -ne 0) { throw "Target Blob container '$container' is not empty." }
       if ($PSCmdlet.ShouldProcess("$StorageAccountName/$container", "Import reviewed Blob export from protected migration storage")) {
+        $sourceTree = Get-DirectoryTreeDigest -Path $directory
         & azcopy copy (Join-Path $directory "*") "https://$StorageAccountName.blob.core.windows.net/$container" --recursive=true --from-to=LocalBlob 1>$null 2>$null
         if ($LASTEXITCODE -ne 0) { throw "AzCopy target import failed; detailed output was suppressed to protect object names." }
-        $results += [pscustomobject]@{ kind = "blob-import"; container = $container; status = "completed" }
+        $verificationDirectory = New-SafeDirectory -Path (Join-Path ([IO.Path]::GetTempPath()) "hov-blob-verify-$([guid]::NewGuid().ToString('N'))")
+        try {
+          & azcopy copy "https://$StorageAccountName.blob.core.windows.net/$container" $verificationDirectory --recursive=true --from-to=BlobLocal 1>$null 2>$null
+          if ($LASTEXITCODE -ne 0) { throw "AzCopy target verification download failed; detailed output was suppressed to protect object names." }
+          $downloadRoot = Join-Path $verificationDirectory $container
+          if (-not (Test-Path -LiteralPath $downloadRoot)) { $downloadRoot = $verificationDirectory }
+          $targetTree = Get-DirectoryTreeDigest -Path $downloadRoot
+          if ($targetTree.fileCount -ne $sourceTree.fileCount -or
+            $targetTree.totalBytes -ne $sourceTree.totalBytes -or
+            $targetTree.aggregateDigest -cne $sourceTree.aggregateDigest) {
+            throw "Target Blob content verification did not match the reviewed source export."
+          }
+          $results += [pscustomobject]@{
+            kind = "blob-import"; container = $container; status = "completed-and-verified"
+            fileCount = $targetTree.fileCount; totalBytes = $targetTree.totalBytes
+            aggregateDigest = $targetTree.aggregateDigest
+          }
+        } finally {
+          Remove-Item -LiteralPath $verificationDirectory -Recurse -Force -ErrorAction SilentlyContinue
+        }
       }
     }
   } finally {
@@ -67,22 +87,26 @@ if ($MongoMappings.Count -gt 0) {
   if (($cosmosId -join "") -notmatch "/resourceGroups/$([regex]::Escape($ResourceGroup))/") { throw "Target Cosmos account boundary mismatch." }
   $mongoUri = Get-RequiredEnvironmentValue -Name $MongoUriEnvironmentVariable
   if (([uri]$mongoUri).Host -cne "$CosmosAccountName.mongo.cosmos.azure.com") { throw "Target Mongo URI boundary mismatch." }
-  foreach ($mapping in $MongoMappings) {
-    $parts = $mapping -split "=", 2
-    if ($parts.Count -ne 2 -or $parts[0] -notmatch '^[A-Za-z0-9_.-]+$') { throw "Mongo mappings must be database=archive." }
-    $database = $parts[0]
-    $archive = (Resolve-Path -LiteralPath $parts[1]).Path
-    $countJson = & mongosh $mongoUri --quiet --eval "JSON.stringify(db.getSiblingDB('$database').getCollectionNames().map(n => ({name:n,count:db.getSiblingDB('$database').getCollection(n).countDocuments({})})))" 2>$null
-    if ($LASTEXITCODE -ne 0) { throw "Target Cosmos emptiness check failed; details were suppressed." }
-    $counts = ($countJson -join "") | ConvertFrom-Json
-    if (@($counts | Where-Object { $_.count -ne 0 }).Count -gt 0) { throw "Target Cosmos database '$database' is not empty." }
-    if ($PSCmdlet.ShouldProcess("$CosmosAccountName/$database", "Import reviewed Cosmos Mongo archive without dropping existing data")) {
-      & mongorestore --quiet --uri $mongoUri --gzip "--archive=$archive" --stopOnError --nsInclude "$database.*" 1>$null 2>$null
-      if ($LASTEXITCODE -ne 0) { throw "Target Cosmos Mongo restore failed; details were suppressed." }
-      $results += [pscustomobject]@{ kind = "cosmos-mongo-import"; database = $database; status = "completed"; archiveSha256 = Get-Sha256 -Path $archive }
+  try {
+    foreach ($mapping in $MongoMappings) {
+      $parts = $mapping -split "=", 2
+      if ($parts.Count -ne 2 -or $parts[0] -notmatch '^[A-Za-z0-9_.-]+$') { throw "Mongo mappings must be database=archive." }
+      $database = $parts[0]
+      $archive = (Resolve-Path -LiteralPath $parts[1]).Path
+      $countJson = & mongosh $mongoUri --quiet --eval "JSON.stringify(db.getSiblingDB('$database').getCollectionNames().map(n => ({name:n,count:db.getSiblingDB('$database').getCollection(n).countDocuments({})})))" 2>$null
+      if ($LASTEXITCODE -ne 0) { throw "Target Cosmos emptiness check failed; details were suppressed." }
+      $counts = ($countJson -join "") | ConvertFrom-Json
+      if (@($counts | Where-Object { $_.count -ne 0 }).Count -gt 0) { throw "Target Cosmos database '$database' is not empty." }
+      if ($PSCmdlet.ShouldProcess("$CosmosAccountName/$database", "Import reviewed Cosmos Mongo archive without dropping existing data")) {
+        & mongorestore --quiet --uri $mongoUri --gzip "--archive=$archive" --stopOnError --nsInclude "$database.*" 1>$null 2>$null
+        if ($LASTEXITCODE -ne 0) { throw "Target Cosmos Mongo restore failed; details were suppressed." }
+        $results += [pscustomobject]@{ kind = "cosmos-mongo-import"; database = $database; status = "completed"; archiveSha256 = Get-Sha256 -Path $archive }
+      }
     }
+  } finally {
+    $mongoUri = $null
+    [Environment]::SetEnvironmentVariable($MongoUriEnvironmentVariable, $null, "Process")
   }
-  [Environment]::SetEnvironmentVariable($MongoUriEnvironmentVariable, $null, "Process")
 }
 
 Write-SafeJson -InputObject ([ordered]@{

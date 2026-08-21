@@ -63,13 +63,18 @@ if ($negativeDatabase -ceq $ExpectedDatabase) {
 $previousDatabase = [Environment]::GetEnvironmentVariable("HOV_TARGET_PGDATABASE", "Process")
 try {
   [Environment]::SetEnvironmentVariable("HOV_TARGET_PGDATABASE", $negativeDatabase, "Process")
-  $negativeAllowed = $false
+  $negativeOutput = @()
+  $negativeExitCode = 0
   Invoke-WithPostgresEnvironment -Prefix HOV_TARGET -ScriptBlock {
-    & psql --no-psqlrc --quiet --tuples-only --no-align --set ON_ERROR_STOP=1 --command "SELECT 1;" 1>$null 2>$null
-    $script:negativeAllowed = ($LASTEXITCODE -eq 0)
+    $script:negativeOutput = @(& psql --no-psqlrc --quiet --tuples-only --no-align --set ON_ERROR_STOP=1 --command "SELECT 1;" 2>&1)
+    $script:negativeExitCode = $LASTEXITCODE
   } | Out-Null
-  if ($negativeAllowed) {
+  if ($negativeExitCode -eq 0) {
     throw "Negative control failed: runtime role connected to the prohibited database '$negativeDatabase'."
+  }
+  $denialText = ($negativeOutput | ForEach-Object { [string]$_ }) -join "`n"
+  if ($denialText -notmatch '(?i)permission denied for database') {
+    throw "Negative control was inconclusive: the connection failed without the expected database-permission denial."
   }
 } finally {
   [Environment]::SetEnvironmentVariable("HOV_TARGET_PGDATABASE", $previousDatabase, "Process")

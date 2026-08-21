@@ -158,7 +158,7 @@ resource "azurerm_linux_virtual_machine" "migration" {
     publisher = "Canonical"
     offer     = "ubuntu-24_04-lts"
     sku       = "server"
-    version   = "latest"
+    version   = "24.04.202608070"
   }
 
   boot_diagnostics {}

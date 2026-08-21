@@ -86,7 +86,7 @@ try {
 $vmJson = Invoke-NativeCommand -FilePath "az" -ArgumentList @(
   "vm", "show", "--name", $VmName, "--resource-group", $ResourceGroup,
   "--subscription", $context.subscriptionId, "--show-details",
-  "--query", "{id:id,location:location,powerState:powerState,publicIps:publicIps,osType:storageProfile.osDisk.osType,imagePublisher:storageProfile.imageReference.publisher,imageOffer:storageProfile.imageReference.offer,imageSku:storageProfile.imageReference.sku,imageVersion:storageProfile.imageReference.version,identityType:identity.type,principalId:identity.principalId}",
+  "--query", "{id:id,location:location,powerState:powerState,publicIps:publicIps,osType:storageProfile.osDisk.osType,imagePublisher:storageProfile.imageReference.publisher,imageOffer:storageProfile.imageReference.offer,imageSku:storageProfile.imageReference.sku,imageVersion:storageProfile.imageReference.exactVersion,identityType:identity.type,principalId:identity.principalId}",
   "--output", "json", "--only-show-errors"
 )
 $vm = ($vmJson -join [Environment]::NewLine) | ConvertFrom-Json
@@ -285,6 +285,18 @@ try {
       -ContentType "application/json" -Body $body -TimeoutSec ($TimeoutSeconds + 60)
   } catch {
     throw "Managed Run Command failed; response details were suppressed because protected operations must not enter general logs."
+  }
+  $pollDeadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds + 60)
+  while ($response.properties.provisioningState -notin @("Succeeded", "Failed", "Canceled")) {
+    if ([DateTime]::UtcNow -ge $pollDeadline) {
+      throw "Managed Run Command did not reach a terminal state before the approved timeout."
+    }
+    Start-Sleep -Seconds 5
+    try {
+      $response = Invoke-RestMethod -Method Get -Uri $uri -Headers @{ Authorization = "Bearer $token" } -TimeoutSec 30
+    } catch {
+      throw "Managed Run Command status polling failed; response details were suppressed because protected operations must not enter general logs."
+    }
   }
   if ($response.properties.provisioningState -cne "Succeeded") {
     throw "Managed Run Command did not reach Succeeded state."

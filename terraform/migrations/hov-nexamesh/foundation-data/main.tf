@@ -11,7 +11,7 @@ locals {
     data_class  = "popia-sensitive"
   }
 
-  tags = merge(local.required_tags, var.tags)
+  tags = merge(var.tags, local.required_tags)
 }
 
 resource "terraform_data" "target_guard" {
@@ -82,6 +82,18 @@ resource "azurerm_network_security_group" "postgres" {
     source_port_range          = "*"
     destination_port_range     = "5432"
     source_address_prefixes    = var.migration_runner_subnet_prefixes
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "deny-other-postgres-inbound"
+    priority                   = 120
+    direction                  = "Inbound"
+    access                     = "Deny"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "5432"
+    source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
 }

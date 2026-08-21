@@ -150,9 +150,12 @@ function Invoke-WithPostgresEnvironment {
   }
   $previous = @{}
   $previousConnectTimeout = [Environment]::GetEnvironmentVariable("PGCONNECT_TIMEOUT", "Process")
+  $previousOptions = [Environment]::GetEnvironmentVariable("PGOPTIONS", "Process")
   try {
     foreach ($entry in $mapping.GetEnumerator()) {
       $previous[$entry.Key] = [Environment]::GetEnvironmentVariable($entry.Key, "Process")
+    }
+    foreach ($entry in $mapping.GetEnumerator()) {
       $value = if ($entry.Key -eq "PGPORT") {
         [Environment]::GetEnvironmentVariable($entry.Value, "Process") ?? "5432"
       } elseif ($entry.Key -eq "PGSSLMODE") {
@@ -162,19 +165,49 @@ function Invoke-WithPostgresEnvironment {
         }
         $sslMode
       } elseif ($entry.Key -eq "PGSSLROOTCERT") {
-        [Environment]::GetEnvironmentVariable($entry.Value, "Process") ?? "system"
+        $rootCertificate = [Environment]::GetEnvironmentVariable($entry.Value, "Process") ?? "system"
+        if ($rootCertificate -cne "system") {
+          throw "PostgreSQL migration connections require PGSSLROOTCERT=system until an immutable CA-bundle approval contract exists."
+        }
+        $rootCertificate
       } else {
         Get-RequiredEnvironmentValue -Name $entry.Value
       }
       [Environment]::SetEnvironmentVariable($entry.Key, $value, "Process")
     }
     [Environment]::SetEnvironmentVariable("PGCONNECT_TIMEOUT", "10", "Process")
+    [Environment]::SetEnvironmentVariable("PGOPTIONS", "-c TimeZone=UTC -c DateStyle=ISO,YMD", "Process")
     return & $ScriptBlock
   } finally {
     foreach ($name in $mapping.Keys) {
       [Environment]::SetEnvironmentVariable($name, $previous[$name], "Process")
     }
     [Environment]::SetEnvironmentVariable("PGCONNECT_TIMEOUT", $previousConnectTimeout, "Process")
+    [Environment]::SetEnvironmentVariable("PGOPTIONS", $previousOptions, "Process")
+  }
+}
+
+function Get-DirectoryTreeDigest {
+  [CmdletBinding()]
+  param([Parameter(Mandatory)][string]$Path)
+
+  $root = (Resolve-Path -LiteralPath $Path).Path
+  $files = @(Get-ChildItem -LiteralPath $root -Recurse -File)
+  $digestLines = foreach ($file in $files) {
+    $relativePath = [IO.Path]::GetRelativePath($root, $file.FullName).Replace('\', '/')
+    "$relativePath|$($file.Length)|$(Get-Sha256 -Path $file.FullName)"
+  }
+  $joined = (@($digestLines) | Sort-Object) -join "`n"
+  $bytes = [Text.Encoding]::UTF8.GetBytes($joined)
+  try {
+    $aggregate = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
+  } finally {
+    [Array]::Clear($bytes, 0, $bytes.Length)
+  }
+  return [pscustomobject]@{
+    fileCount       = $files.Count
+    totalBytes      = [long](($files | Measure-Object -Property Length -Sum).Sum ?? 0)
+    aggregateDigest = $aggregate
   }
 }
 
@@ -216,7 +249,12 @@ function Assert-PrivateEndpointReachability {
     $client = [Net.Sockets.TcpClient]::new()
     try {
       $connect = $client.ConnectAsync($address, $Port)
-      if (-not $connect.Wait([TimeSpan]::FromSeconds($TimeoutSeconds)) -or -not $client.Connected) {
+      try {
+        $completed = $connect.Wait([TimeSpan]::FromSeconds($TimeoutSeconds))
+      } catch {
+        throw "Private-network gate failed: the validated private endpoint was not reachable from this execution host."
+      }
+      if (-not $completed -or -not $client.Connected) {
         throw "Private-network gate failed: validated address '$address`:$Port' is not reachable from this execution host."
       }
       $remoteAddress = ([Net.IPEndPoint]$client.Client.RemoteEndPoint).Address

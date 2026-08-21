@@ -46,7 +46,7 @@ try {
   $body = @{ value = $secretValue; attributes = @{ enabled = $true } } | ConvertTo-Json -Compress
   try {
     Invoke-RestMethod -Method Put -Uri "$($vault.uri)secrets/$SecretName`?api-version=7.4" `
-      -Headers $headers -ContentType "application/json" -Body $body | Out-Null
+      -Headers $headers -ContentType "application/json" -Body $body -TimeoutSec 20 | Out-Null
     $versions = Invoke-RestMethod -Method Get -Uri "$($vault.uri)secrets/$SecretName/versions?api-version=7.4" `
       -Headers $headers -TimeoutSec 20
     if (@($versions.value).Count -lt 1) { throw "metadata verification failed" }
@@ -68,14 +68,12 @@ if ($WebAppName) {
     "rest", "--method", "post", "--uri", "https://management.azure.com$appId/config/configreferences/appsettings/refresh?api-version=2022-03-01",
     "--output", "none", "--only-show-errors"
   )
-  $referencesJson = Invoke-NativeCommand -FilePath "az" -ArgumentList @(
-    "rest", "--method", "post", "--uri", "https://management.azure.com$appId/config/configreferences/appsettings/list?api-version=2022-03-01",
+  $referenceJson = Invoke-NativeCommand -FilePath "az" -ArgumentList @(
+    "rest", "--method", "get", "--uri", "https://management.azure.com$appId/config/configreferences/appsettings/$AppSettingName`?api-version=2022-03-01",
     "--output", "json", "--only-show-errors"
   )
-  $references = ($referencesJson -join [Environment]::NewLine) | ConvertFrom-Json
-  $referenceProperty = $references.properties.PSObject.Properties[$AppSettingName]
-  $reference = if ($null -eq $referenceProperty) { $null } else { $referenceProperty.Value }
-  if ($null -eq $reference -or $reference.status -cne "Resolved") {
+  $reference = ($referenceJson -join [Environment]::NewLine) | ConvertFrom-Json
+  if ($reference.properties.status -cne "Resolved") {
     throw "Target App Service Key Vault reference is not resolved."
   }
 }

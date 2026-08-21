@@ -54,9 +54,13 @@ try {
 if (
   parsedConnection.hostname !== SOURCE_POSTGRES_HOST ||
   decodeURIComponent(parsedConnection.username) !== expectedRole ||
-  decodeURIComponent(parsedConnection.pathname.replace(/^\//, "")) !== expectedDatabase
+  decodeURIComponent(parsedConnection.pathname.replace(/^\//, "")) !== expectedDatabase ||
+  parsedConnection.searchParams.get("sslmode") !== "verify-full" ||
+  parsedConnection.searchParams.get("sslrootcert") !== "system"
 ) {
-  fail("PostgreSQL URL does not match the exact approved source host, database and role.")
+  fail(
+    "PostgreSQL URL does not match the exact approved source host, database, role and system-trust TLS policy."
+  )
 }
 
 const account = azJson(["account", "show"])

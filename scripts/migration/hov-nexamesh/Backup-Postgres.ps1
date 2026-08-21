@@ -22,6 +22,9 @@ if ($CrossBoundaryMigrationRunner) {
 Assert-CommandAvailable -Name "psql"
 Assert-CommandAvailable -Name "pg_dump"
 $output = New-SafeDirectory -Path $OutputDirectory
+if (-not $IsWindows) {
+  $null = Invoke-NativeCommand -FilePath "chmod" -ArgumentList @("700", "--", $output)
+}
 $stamp = (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ")
 $dumpPath = Join-Path $output "hov-postgres-$($SnapshotKind.ToLowerInvariant())-$stamp.dump"
 $metadataPath = Join-Path $output "hov-postgres-$($SnapshotKind.ToLowerInvariant())-$stamp.json"

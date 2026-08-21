@@ -126,11 +126,10 @@ imports, or private-endpoint validation.
 - Supply PostgreSQL values through process-only `HOV_SOURCE_PG*` or
   `HOV_TARGET_PG*` variables. Required suffixes are `PGHOST`, `PGDATABASE`,
   `PGUSER`, and `PGPASSWORD`; `PGPORT` defaults to `5432`. Connections require
-  `PGSSLMODE=verify-full`. `PGSSLROOTCERT` defaults to `system`, which uses the
-  runner's pinned Ubuntu trust store; set the corresponding
-  `HOV_SOURCE_PGSSLROOTCERT` or `HOV_TARGET_PGSSLROOTCERT` only to a separately
-  reviewed CA bundle path when the system store cannot validate the exact
-  server hostname. Never weaken certificate or hostname verification.
+  `PGSSLMODE=verify-full` and `PGSSLROOTCERT=system`, which uses the runner's
+  pinned Ubuntu trust store. Custom trust roots are rejected until an immutable
+  CA-bundle path and digest contract is separately approved. Never weaken
+  certificate or hostname verification.
 - Supply the source Cosmos Mongo URI through process-only
   `HOV_SOURCE_MONGODB_URI`. Never put it in a command transcript, `.env`,
   checked-in file, evidence manifest, or PR attachment.
@@ -522,12 +521,15 @@ module or replace their records as a side effect.
 Order is mandatory:
 
 1. Add App Service hostname-verification records.
-2. Bind the approved hostname to the target.
-3. Issue and validate the managed certificate and SNI binding.
-4. Verify HTTPS, certificate chain, exact build, OIDC callbacks and logout using
-   pre-cutover routing/host-header methods.
-5. Lower TTL in advance, capture source DNS and TLS rollback state, then change
-   only the approved HOV record.
+2. Lower TTL in advance and capture the exact source CNAME/TLS rollback state.
+3. In the approved maintenance window, change only the HOV CNAME and point it
+   directly at the target App Service. Managed-certificate issuance and renewal
+   require the production hostname to resolve directly to the target.
+4. Apply the exact sealed edge plan to bind the hostname, issue the managed
+   certificate and enable SNI.
+5. Verify HTTPS, certificate chain, exact build, OIDC callbacks and logout, then
+   complete authentic Gate 0. If certificate issuance or acceptance fails,
+   restore the captured source CNAME immediately.
 6. Verify public resolution from independent resolvers and the target runtime.
 
 Run authentic Gate 0 with legitimate short-lived admin and non-admin sessions:

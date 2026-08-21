@@ -69,7 +69,7 @@ async function uploadToAzure(
   filename: string,
   contentType: string,
   container: string
-): Promise<{ url: string; blobName: string }> {
+): Promise<{ url: string; blobName: string; container: string }> {
   const blobServiceClient = createAzureBlobServiceClient(AZURE_CONFIG)
 
   const containerClient = blobServiceClient.getContainerClient(container)
@@ -88,8 +88,9 @@ async function uploadToAzure(
   })
 
   return {
-    url: blockBlobClient.url,
+    url: `/api/files/serve?storage=azure&container=${encodeURIComponent(container)}&blobName=${encodeURIComponent(blobName)}`,
     blobName,
+    container,
   }
 }
 
@@ -137,7 +138,13 @@ export const POST = withAuth(async (request) => {
     const buffer = Buffer.from(await file.arrayBuffer())
     const uniqueFilename = generateUniqueFilename(file.name)
 
-    let uploadResult: { url: string; storage: string; blobName?: string; path?: string }
+    let uploadResult: {
+      url: string
+      storage: string
+      blobName?: string
+      container?: string
+      path?: string
+    }
 
     if (isAzureConfigured()) {
       // Upload to Azure Blob Storage
@@ -153,6 +160,7 @@ export const POST = withAuth(async (request) => {
         url: result.url,
         storage: "azure",
         blobName: result.blobName,
+        container: result.container,
       }
     } else {
       // Fallback to local storage
@@ -177,6 +185,7 @@ export const POST = withAuth(async (request) => {
       userId,
       storage: uploadResult.storage,
       blobName: uploadResult.blobName,
+      container: uploadResult.container,
       uploadedAt: new Date().toISOString(),
     }
 
@@ -216,8 +225,15 @@ export const DELETE = withAuth(async (request) => {
 
   try {
     if (storage === "azure" && blobName && isAzureConfigured()) {
+      const container = searchParams.get("container")
+      if (!container || container !== normalizeStorageSegment(container, "")) {
+        return NextResponse.json(
+          { success: false, error: "Valid container required for Azure delete" },
+          { status: 400 }
+        )
+      }
       const blobServiceClient = createAzureBlobServiceClient(AZURE_CONFIG)
-      const containerClient = blobServiceClient.getContainerClient(AZURE_CONFIG.containerName)
+      const containerClient = blobServiceClient.getContainerClient(container)
       const blobClient = containerClient.getBlobClient(blobName)
       await blobClient.deleteIfExists()
     } else if (storage === "local") {

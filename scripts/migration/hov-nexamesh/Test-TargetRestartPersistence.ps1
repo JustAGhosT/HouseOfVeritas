@@ -39,6 +39,10 @@ function Assert-ExactHealth([string]$Uri, [string]$Commit) {
   if ($health.backend -cne "postgres" -or $health.dataMode -cne "live") {
     throw "Target health did not report the intended PostgreSQL live-mode selection."
   }
+  if (-not $health.runtime.processStartedAtUtc) {
+    throw "Target health did not report the required process-start discriminator."
+  }
+  return $health
 }
 
 $identity = Invoke-WithPostgresEnvironment -Prefix HOV_TARGET -ScriptBlock {
@@ -52,7 +56,8 @@ if ($parts.Count -ne 2 -or $parts[0] -cne $ExpectedDatabase -or $parts[1] -cne $
   throw "Persistence probe is not connected as the exact target runtime database identity."
 }
 
-Assert-ExactHealth -Uri $healthUri -Commit $ExpectedCommit
+$beforeRestartHealth = Assert-ExactHealth -Uri $healthUri -Commit $ExpectedCommit
+$beforeRestartProcessStartedAtUtc = [string]$beforeRestartHealth.runtime.processStartedAtUtc
 if (-not $PSCmdlet.ShouldProcess("$ResourceGroup/$WebAppName", "Write a synthetic database marker, restart target App Service, verify persistence, then remove the marker")) {
   return
 }
@@ -83,11 +88,16 @@ try {
 
   $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
   $healthy = $false
+  $afterRestartProcessStartedAtUtc = $null
   do {
     Start-Sleep -Seconds 10
     try {
-      Assert-ExactHealth -Uri $healthUri -Commit $ExpectedCommit
-      $healthy = $true
+      $afterRestartHealth = Assert-ExactHealth -Uri $healthUri -Commit $ExpectedCommit
+      $afterRestartProcessStartedAtUtc = [string]$afterRestartHealth.runtime.processStartedAtUtc
+      $healthy = $afterRestartProcessStartedAtUtc -cne $beforeRestartProcessStartedAtUtc
+      if (-not $healthy -and (Get-Date) -ge $deadline) {
+        throw "Target remained on the pre-restart process discriminator until the timeout."
+      }
     } catch {
       if ((Get-Date) -ge $deadline) { throw }
     }
@@ -120,6 +130,8 @@ Write-SafeJson -InputObject ([ordered]@{
     webAppName             = $WebAppName
     defaultHostname        = $defaultHostname
     expectedCommit         = $ExpectedCommit
+    beforeProcessStartedAtUtc = $beforeRestartProcessStartedAtUtc
+    afterProcessStartedAtUtc  = $afterRestartProcessStartedAtUtc
     postgresBackend        = "verified"
     markerSurvivedRestart  = $true
     syntheticTableRemoved  = $true

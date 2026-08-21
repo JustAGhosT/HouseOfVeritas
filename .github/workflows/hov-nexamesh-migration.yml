@@ -109,6 +109,9 @@ jobs:
       TF_VAR_postgres_entra_admin_object_id: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_OBJECT_ID }}
       TF_VAR_postgres_entra_admin_principal_name: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_PRINCIPAL_NAME }}
       TF_VAR_postgres_entra_admin_principal_type: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_PRINCIPAL_TYPE }}
+      INPUT_ROOT: ${{ inputs.root }}
+      INPUT_HOSTNAME_BINDING_APPROVED: ${{ inputs.hostname_binding_approved }}
+      INPUT_IDENTITY_CUTOVER_APPROVED: ${{ inputs.identity_cutover_approved }}
       TF_VAR_hostname_binding_approved: ${{ inputs.hostname_binding_approved }}
       TF_VAR_external_oidc_cutover_complete: ${{ inputs.hostname_binding_approved }}
       TF_VAR_identity_cutover_approved: ${{ inputs.identity_cutover_approved }}
@@ -156,24 +159,24 @@ jobs:
           test "$actual_tenant" = "$TARGET_TENANT_ID"
           test "$actual_subscription" = "$TARGET_SUBSCRIPTION_ID"
 
-          if [ "${{ inputs.root }}" = bootstrap ]; then
+          if [ "$INPUT_ROOT" = bootstrap ]; then
             test -n "${TF_VAR_backend_allowed_ip_cidrs:-}"
             jq -e 'type == "array" and length > 0 and all(.[]; . != "0.0.0.0/0" and . != "::/0")' \
               <<<"$TF_VAR_backend_allowed_ip_cidrs" >/dev/null
           fi
 
-          if [ "${{ inputs.root }}" = foundation-data ]; then
+          if [ "$INPUT_ROOT" = foundation-data ]; then
             test -n "${TF_VAR_postgres_entra_admin_object_id:-}"
             test -n "${TF_VAR_postgres_entra_admin_principal_name:-}"
             test -n "${TF_VAR_postgres_entra_admin_principal_type:-}"
           fi
 
-          if [ '${{ inputs.identity_cutover_approved }}' = true ]; then
-            test "${{ inputs.root }}" = runtime
-            [[ '${{ vars.HOV_MYSTIRA_OIDC_ISSUER }}' =~ ^https:// ]]
-            test -n '${{ vars.HOV_MYSTIRA_OIDC_CLIENT_ID }}'
-            test -n '${{ vars.HOV_MYSTIRA_OIDC_CLIENT_SECRET_NAME }}'
-            [[ '${{ vars.HOV_AUTH_URL }}' =~ ^https:// ]]
+          if [ "$INPUT_IDENTITY_CUTOVER_APPROVED" = true ]; then
+            test "$INPUT_ROOT" = runtime
+            [[ "$TF_VAR_mystira_oidc_issuer" =~ ^https:// ]]
+            test -n "$TF_VAR_mystira_oidc_client_id"
+            test -n "$TF_VAR_mystira_oidc_client_secret_name"
+            [[ "$TF_VAR_auth_url" =~ ^https:// ]]
           fi
 
       - name: Reject source coupling and imports
@@ -198,10 +201,10 @@ jobs:
         run: |
           set -euo pipefail
           cd "$WORKING_DIR"
-          if [ "${{ inputs.root }}" = bootstrap ]; then
+          if [ "$INPUT_ROOT" = bootstrap ]; then
             terraform init -backend=false
           else
-            case "${{ inputs.root }}" in
+            case "$INPUT_ROOT" in
               foundation-data) state_key='hov/prod/foundation-data.tfstate' ;;
               migration-runner) state_key='hov/prod/migration-runner.tfstate' ;;
               runtime) state_key='hov/prod/runtime.tfstate' ;;
@@ -238,8 +241,8 @@ jobs:
           terraform show -json tfplan > tfplan.json
 
           jq -e \
-            --arg root '${{ inputs.root }}' \
-            --argjson identity_cutover_approved '${{ inputs.identity_cutover_approved }}' '
+            --arg root "$INPUT_ROOT" \
+            --argjson identity_cutover_approved "$INPUT_IDENTITY_CUTOVER_APPROVED" '
             [.resource_changes[]? | {
               address: .address,
               actions: .change.actions
@@ -265,7 +268,7 @@ jobs:
           fi
 
           managed_count=$(jq '[.resource_changes[]? | select(.mode == "managed")] | length' tfplan.json)
-          if [ "${{ inputs.root }}" != edge ] || [ '${{ inputs.hostname_binding_approved }}' = true ]; then
+          if [ "$INPUT_ROOT" != edge ] || [ "$INPUT_HOSTNAME_BINDING_APPROVED" = true ]; then
             test "$managed_count" -gt 0 || {
               echo '::error::Expected at least one managed target resource in this migration plan.'
               exit 1
@@ -282,18 +285,18 @@ jobs:
           cd "$WORKING_DIR"
           plan_sha=$(sha256sum tfplan | cut -d' ' -f1)
           commit_sha=$(git rev-parse HEAD)
-          artifact_name="hov-nexamesh-${{ inputs.root }}-plan-${GITHUB_RUN_ID}"
+          artifact_name="hov-nexamesh-${INPUT_ROOT}-plan-${GITHUB_RUN_ID}"
 
           jq -n \
-            --arg root '${{ inputs.root }}' \
+            --arg root "$INPUT_ROOT" \
             --arg commit_sha "$commit_sha" \
             --arg plan_sha256 "$plan_sha" \
             --arg artifact_name "$artifact_name" \
             --arg tenant_id "$TARGET_TENANT_ID" \
             --arg subscription_id "$TARGET_SUBSCRIPTION_ID" \
             --arg run_id "$GITHUB_RUN_ID" \
-            --argjson hostname_binding_approved '${{ inputs.hostname_binding_approved }}' \
-            --argjson identity_cutover_approved '${{ inputs.identity_cutover_approved }}' \
+            --argjson hostname_binding_approved "$INPUT_HOSTNAME_BINDING_APPROVED" \
+            --argjson identity_cutover_approved "$INPUT_IDENTITY_CUTOVER_APPROVED" \
             '{schema_version:1,root:$root,commit_sha:$commit_sha,plan_sha256:$plan_sha256,artifact_name:$artifact_name,tenant_id:$tenant_id,subscription_id:$subscription_id,run_id:$run_id,hostname_binding_approved:$hostname_binding_approved,identity_cutover_approved:$identity_cutover_approved}' \
             > plan-manifest.json
 
@@ -302,7 +305,7 @@ jobs:
           echo "commit_sha=$commit_sha" >> "$GITHUB_OUTPUT"
           {
             echo '### Sealed HOV target plan'
-            printf -- '- Root: `%s`\n' '${{ inputs.root }}'
+            printf -- '- Root: `%s`\n' "$INPUT_ROOT"
             printf -- '- Commit: `%s`\n' "$commit_sha"
             printf -- '- Artifact: `%s`\n' "$artifact_name"
             printf -- '- SHA-256: `%s`\n' "$plan_sha"
@@ -340,17 +343,25 @@ jobs:
       TF_VAR_postgres_entra_admin_object_id: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_OBJECT_ID }}
       TF_VAR_postgres_entra_admin_principal_name: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_PRINCIPAL_NAME }}
       TF_VAR_postgres_entra_admin_principal_type: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_PRINCIPAL_TYPE }}
+      INPUT_ROOT: ${{ inputs.root }}
+      INPUT_IDENTITY_CUTOVER_APPROVED: ${{ inputs.identity_cutover_approved }}
+      PLAN_RUN_ID: ${{ inputs.plan_run_id }}
+      PLAN_ARTIFACT_NAME: ${{ inputs.plan_artifact_name }}
+      PLAN_COMMIT_SHA: ${{ inputs.plan_commit_sha }}
+      PLAN_SHA256: ${{ inputs.plan_sha256 }}
+      CONFIGURED_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      CONFIGURED_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
     steps:
       - name: Validate exact-plan approval inputs
         shell: bash
         run: |
           set -euo pipefail
-          [[ '${{ inputs.plan_run_id }}' =~ ^[0-9]+$ ]]
-          [[ '${{ inputs.plan_artifact_name }}' =~ ^hov-nexamesh-${{ inputs.root }}-plan-[0-9]+$ ]]
-          [[ '${{ inputs.plan_commit_sha }}' =~ ^[0-9a-f]{40}$ ]]
-          [[ '${{ inputs.plan_sha256 }}' =~ ^[0-9a-f]{64}$ ]]
-          test '${{ inputs.plan_artifact_name }}' = 'hov-nexamesh-${{ inputs.root }}-plan-${{ inputs.plan_run_id }}'
+          [[ "$PLAN_RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$PLAN_ARTIFACT_NAME" =~ ^hov-nexamesh-${INPUT_ROOT}-plan-[0-9]+$ ]]
+          [[ "$PLAN_COMMIT_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$PLAN_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          test "$PLAN_ARTIFACT_NAME" = "hov-nexamesh-${INPUT_ROOT}-plan-${PLAN_RUN_ID}"
 
       - name: Verify source workflow run provenance
         shell: bash
@@ -362,11 +373,11 @@ jobs:
             -H 'Accept: application/vnd.github+json' \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/${{ inputs.plan_run_id }}")
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$PLAN_RUN_ID")
 
           jq -e \
             --arg repository "$GITHUB_REPOSITORY" \
-            --arg commit '${{ inputs.plan_commit_sha }}' \
+            --arg commit "$PLAN_COMMIT_SHA" \
             '.repository.full_name == $repository and
              .event == "workflow_dispatch" and
              .conclusion == "success" and
@@ -397,8 +408,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test '${{ vars.AZURE_TENANT_ID }}' = "$TARGET_TENANT_ID"
-          test '${{ vars.AZURE_SUBSCRIPTION_ID }}' = "$TARGET_SUBSCRIPTION_ID"
+          test "$CONFIGURED_TENANT_ID" = "$TARGET_TENANT_ID"
+          test "$CONFIGURED_SUBSCRIPTION_ID" = "$TARGET_SUBSCRIPTION_ID"
           read -r actual_tenant actual_subscription < <(
             az account show --query '[tenantId,id]' --output tsv --only-show-errors
           )
@@ -422,16 +433,16 @@ jobs:
           test -f "$manifest"
           test -f "$plan"
 
-          test "$(jq -r .root "$manifest")" = '${{ inputs.root }}'
-          test "$(jq -r .run_id "$manifest")" = '${{ inputs.plan_run_id }}'
-          test "$(jq -r .artifact_name "$manifest")" = '${{ inputs.plan_artifact_name }}'
-          test "$(jq -r .commit_sha "$manifest")" = '${{ inputs.plan_commit_sha }}'
-          test "$(jq -r .plan_sha256 "$manifest")" = '${{ inputs.plan_sha256 }}'
+          test "$(jq -r .root "$manifest")" = "$INPUT_ROOT"
+          test "$(jq -r .run_id "$manifest")" = "$PLAN_RUN_ID"
+          test "$(jq -r .artifact_name "$manifest")" = "$PLAN_ARTIFACT_NAME"
+          test "$(jq -r .commit_sha "$manifest")" = "$PLAN_COMMIT_SHA"
+          test "$(jq -r .plan_sha256 "$manifest")" = "$PLAN_SHA256"
           test "$(jq -r .tenant_id "$manifest")" = "$TARGET_TENANT_ID"
           test "$(jq -r .subscription_id "$manifest")" = "$TARGET_SUBSCRIPTION_ID"
-          test "$(jq -r .identity_cutover_approved "$manifest")" = '${{ inputs.identity_cutover_approved }}'
-          test "$(git rev-parse HEAD)" = '${{ inputs.plan_commit_sha }}'
-          test "$(sha256sum "$plan" | cut -d' ' -f1)" = '${{ inputs.plan_sha256 }}'
+          test "$(jq -r .identity_cutover_approved "$manifest")" = "$INPUT_IDENTITY_CUTOVER_APPROVED"
+          test "$(git rev-parse HEAD)" = "$PLAN_COMMIT_SHA"
+          test "$(sha256sum "$plan" | cut -d' ' -f1)" = "$PLAN_SHA256"
 
       - name: Initialize exact target state
         shell: bash
@@ -440,10 +451,10 @@ jobs:
         run: |
           set -euo pipefail
           cd "$WORKING_DIR"
-          if [ "${{ inputs.root }}" = bootstrap ]; then
+          if [ "$INPUT_ROOT" = bootstrap ]; then
             terraform init -backend=false
           else
-            case "${{ inputs.root }}" in
+            case "$INPUT_ROOT" in
               foundation-data) state_key='hov/prod/foundation-data.tfstate' ;;
               migration-runner) state_key='hov/prod/migration-runner.tfstate' ;;
               runtime) state_key='hov/prod/runtime.tfstate' ;;
@@ -530,6 +541,8 @@ jobs:
       NEXT_PUBLIC_BUILD_COMMIT: ${{ inputs.runtime_commit_sha }}
       RUNTIME_DATA_GATES_APPROVED: ${{ inputs.runtime_data_gates_approved }}
       RUNTIME_DATA_GATE_EVIDENCE: ${{ inputs.runtime_data_gate_evidence }}
+      CONFIGURED_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      CONFIGURED_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
     steps:
       - name: Validate runtime deployment approval inputs
@@ -624,8 +637,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test '${{ vars.AZURE_TENANT_ID }}' = "$TARGET_TENANT_ID"
-          test '${{ vars.AZURE_SUBSCRIPTION_ID }}' = "$TARGET_SUBSCRIPTION_ID"
+          test "$CONFIGURED_TENANT_ID" = "$TARGET_TENANT_ID"
+          test "$CONFIGURED_SUBSCRIPTION_ID" = "$TARGET_SUBSCRIPTION_ID"
           read -r actual_tenant actual_subscription < <(
             az account show --query '[tenantId,id]' --output tsv --only-show-errors
           )

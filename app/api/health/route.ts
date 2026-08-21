@@ -6,6 +6,7 @@ import { query } from "@/lib/db/postgres"
 export const dynamic = "force-dynamic"
 
 const buildCommit = process.env.NEXT_PUBLIC_BUILD_COMMIT ?? "development"
+const processStartedAtUtc = new Date().toISOString()
 
 async function checkService(
   name: string,
@@ -83,6 +84,7 @@ export async function GET() {
     {
       status: overall ? "healthy" : "degraded",
       build: { commit: buildCommit },
+      runtime: { processStartedAtUtc },
       // Which store is actually backing estate data. Reported because "is this
       // deployment on Postgres yet?" was previously only answerable by reading
       // app settings, and dataMode alone cannot distinguish the backends.

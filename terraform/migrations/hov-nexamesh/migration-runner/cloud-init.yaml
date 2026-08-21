@@ -130,8 +130,26 @@ write_files:
       chmod 0640 /var/lib/hov-migration/tooling-ready.json.tmp
       mv /var/lib/hov-migration/tooling-ready.json.tmp /var/lib/hov-migration/tooling-ready.json
 
+  - path: /etc/systemd/system/hov-verify-migration-tools.service
+    owner: root:root
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=Verify HOV migration tooling for the current boot
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/sbin/hov-verify-migration-tools
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+
 runcmd:
   - [bash, -lc, /usr/local/sbin/hov-install-migration-tools]
-  - [bash, -lc, /usr/local/sbin/hov-verify-migration-tools]
+  - [systemctl, daemon-reload]
+  - [systemctl, enable, --now, hov-verify-migration-tools.service]
 
 final_message: "HOV migration runner cloud-init completed after $UPTIME seconds."

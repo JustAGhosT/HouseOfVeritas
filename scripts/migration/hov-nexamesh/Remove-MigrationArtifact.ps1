@@ -12,7 +12,7 @@ $root = (Resolve-Path -LiteralPath $ArtifactRoot).Path.TrimEnd([IO.Path]::Direct
 $artifact = Get-Item -LiteralPath $ArtifactPath
 if ($artifact.PSIsContainer) { throw "Artifact cleanup accepts a single file only." }
 $relative = [IO.Path]::GetRelativePath($root, $artifact.FullName)
-if ($relative -eq ".." -or $relative.StartsWith("..$([IO.Path]::DirectorySeparatorChar)")) {
+if ([IO.Path]::IsPathFullyQualified($relative) -or $relative -eq ".." -or $relative.StartsWith("..$([IO.Path]::DirectorySeparatorChar)")) {
   throw "Artifact is outside the exact restricted migration root."
 }
 if ($artifact.Extension -notin @(".dump", ".gz", ".archive")) {

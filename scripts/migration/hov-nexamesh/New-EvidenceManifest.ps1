@@ -10,7 +10,7 @@ param(
 $root = (Resolve-Path -LiteralPath $EvidenceRoot).Path.TrimEnd([IO.Path]::DirectorySeparatorChar)
 $manifestPath = [IO.Path]::GetFullPath($OutputPath)
 $manifestRelativePath = [IO.Path]::GetRelativePath($root, $manifestPath)
-if ($manifestRelativePath -eq ".." -or $manifestRelativePath.StartsWith("..$([IO.Path]::DirectorySeparatorChar)")) {
+if ([IO.Path]::IsPathFullyQualified($manifestRelativePath) -or $manifestRelativePath -eq ".." -or $manifestRelativePath.StartsWith("..$([IO.Path]::DirectorySeparatorChar)")) {
   throw "Evidence manifest output must remain inside the declared evidence root."
 }
 $entries = @()
@@ -19,7 +19,7 @@ foreach ($artifactPath in $ArtifactPaths) {
   if ($artifact.PSIsContainer) { throw "Evidence manifests accept files only: '$artifactPath'." }
   $fullPath = $artifact.FullName
   $relativePath = [IO.Path]::GetRelativePath($root, $fullPath)
-  if ($relativePath -eq ".." -or $relativePath.StartsWith("..$([IO.Path]::DirectorySeparatorChar)")) {
+  if ([IO.Path]::IsPathFullyQualified($relativePath) -or $relativePath -eq ".." -or $relativePath.StartsWith("..$([IO.Path]::DirectorySeparatorChar)")) {
     throw "Artifact '$fullPath' is outside the declared evidence root."
   }
   if ($fullPath -ceq $manifestPath) { throw "The manifest cannot hash itself." }

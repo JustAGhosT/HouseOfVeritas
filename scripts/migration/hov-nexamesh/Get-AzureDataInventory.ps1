@@ -36,18 +36,19 @@ $containers = Invoke-NativeCommand -FilePath "az" -ArgumentList @(
 )
 $containerInventory = @()
 foreach ($container in @($containers | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })) {
-  $blobs = Invoke-NativeCommand -FilePath "az" -ArgumentList @(
+  $blobJson = Invoke-NativeCommand -FilePath "az" -ArgumentList @(
     "storage", "blob", "list", "--account-name", $StorageAccountName,
     "--container-name", $container, "--auth-mode", "login", "--subscription", $context.subscriptionId,
     "--num-results", "*", "--query", "[].{name:name,size:properties.contentLength,etag:properties.etag,md5:properties.contentSettings.contentMd5}",
     "--output", "json", "--only-show-errors"
-  ) | Out-String | ConvertFrom-Json
-  $digestLines = foreach ($blob in @($blobs)) {
-    "$($blob.name)|$($blob.size)|$($blob.etag)|$($blob.md5)"
+  ) | Out-String
+  $blobs = @(($blobJson | ConvertFrom-Json) | Where-Object { $null -ne $_ })
+  $digestLines = foreach ($blob in $blobs) {
+    "$($blob.name)|$($blob.size)|$($blob.md5)"
   }
   $containerInventory += [pscustomobject]@{
     name              = $container
-    objectCount       = @($blobs).Count
+    objectCount       = $blobs.Count
     totalBytes        = [long](($blobs | Measure-Object -Property size -Sum).Sum ?? 0)
     metadataDigest    = Get-StringDigest -Lines @($digestLines)
     objectNamesStored = $false
