@@ -5,7 +5,12 @@ import { existsSync } from "fs"
 import path from "path"
 import crypto from "crypto"
 import { withAuth } from "@/lib/auth/rbac"
-import { createAzureBlobServiceClient, isAzureBlobConfigured } from "@/lib/storage/azure-blob"
+import {
+  createAzureBlobServiceClient,
+  hashAzureFileOwner,
+  isAzureBlobConfigured,
+  resolveAzureFileById,
+} from "@/lib/storage/azure-blob"
 
 // Configuration
 const UPLOAD_CONFIG = {
@@ -68,7 +73,9 @@ async function uploadToAzure(
   buffer: Buffer,
   filename: string,
   contentType: string,
-  container: string
+  container: string,
+  fileId: string,
+  ownerIdHash: string
 ): Promise<{ url: string; blobName: string; container: string }> {
   const blobServiceClient = createAzureBlobServiceClient(AZURE_CONFIG)
 
@@ -85,10 +92,12 @@ async function uploadToAzure(
     blobHTTPHeaders: {
       blobContentType: contentType,
     },
+    metadata: { hovowneridhash: ownerIdHash },
+    tags: { hovFileId: fileId },
   })
 
   return {
-    url: `/api/files/serve?storage=azure&container=${encodeURIComponent(container)}&blobName=${encodeURIComponent(blobName)}`,
+    url: `/api/files/serve?id=${encodeURIComponent(fileId)}`,
     blobName,
     container,
   }
@@ -117,13 +126,13 @@ async function uploadToLocal(
   }
 }
 
-export const POST = withAuth(async (request) => {
+export const POST = withAuth(async (request, context) => {
   try {
     const formData = await request.formData()
     const file = formData.get("file") as File
     const category = normalizeStorageSegment(formData.get("category") as string | null, "general")
     const assetId = formData.get("assetId") as string
-    const userId = formData.get("userId") as string
+    const userId = context.userId
 
     if (!file) {
       return NextResponse.json({ success: false, error: "No file provided" }, { status: 400 })
@@ -137,6 +146,7 @@ export const POST = withAuth(async (request) => {
 
     const buffer = Buffer.from(await file.arrayBuffer())
     const uniqueFilename = generateUniqueFilename(file.name)
+    const fileId = crypto.randomUUID()
 
     let uploadResult: {
       url: string
@@ -155,7 +165,14 @@ export const POST = withAuth(async (request) => {
             ? "invoice-scans"
             : AZURE_CONFIG.containerName
 
-      const result = await uploadToAzure(buffer, uniqueFilename, file.type, containerName)
+      const result = await uploadToAzure(
+        buffer,
+        uniqueFilename,
+        file.type,
+        containerName,
+        fileId,
+        hashAzureFileOwner(context.userId)
+      )
       uploadResult = {
         url: result.url,
         storage: "azure",
@@ -174,7 +191,7 @@ export const POST = withAuth(async (request) => {
 
     // Create file metadata
     const fileMetadata = {
-      id: crypto.randomUUID(),
+      id: fileId,
       originalName: file.name,
       filename: uniqueFilename,
       url: uploadResult.url,
@@ -212,10 +229,9 @@ export const GET = withAuth(async () => {
   })
 })
 
-export const DELETE = withAuth(async (request) => {
+export const DELETE = withAuth(async (request, context) => {
   const { searchParams } = new URL(request.url)
   const fileId = searchParams.get("id")
-  const blobName = searchParams.get("blobName")
   const storage = searchParams.get("storage")
   const localPath = searchParams.get("path")
 
@@ -224,18 +240,29 @@ export const DELETE = withAuth(async (request) => {
   }
 
   try {
-    if (storage === "azure" && blobName && isAzureConfigured()) {
-      const container = searchParams.get("container")
-      if (!container || container !== normalizeStorageSegment(container, "")) {
+    if (storage === "azure") {
+      if (!isAzureConfigured()) {
         return NextResponse.json(
-          { success: false, error: "Valid container required for Azure delete" },
-          { status: 400 }
+          { success: false, error: "Azure storage is not configured" },
+          { status: 503 }
         )
       }
       const blobServiceClient = createAzureBlobServiceClient(AZURE_CONFIG)
-      const containerClient = blobServiceClient.getContainerClient(container)
-      const blobClient = containerClient.getBlobClient(blobName)
-      await blobClient.deleteIfExists()
+      const resolved = await resolveAzureFileById(blobServiceClient, fileId)
+      if (!resolved) {
+        return NextResponse.json({ success: false, error: "File not found" }, { status: 404 })
+      }
+      const canDelete =
+        context.role === "admin" ||
+        context.role === "operator" ||
+        resolved.ownerIdHash === hashAzureFileOwner(context.userId)
+      if (!canDelete) {
+        return NextResponse.json(
+          { success: false, error: "Insufficient permissions" },
+          { status: 403 }
+        )
+      }
+      await resolved.blobClient.deleteIfExists()
     } else if (storage === "local") {
       // Reconstruct path server-side to prevent path traversal
       const category = searchParams.get("category")

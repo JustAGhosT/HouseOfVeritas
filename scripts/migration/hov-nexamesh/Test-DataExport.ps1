@@ -9,6 +9,9 @@ param(
 
 $results = @()
 foreach ($directory in $BlobExportDirectories) {
+  if (-not (Test-Path -LiteralPath $directory -PathType Container)) {
+    throw "Blob export '$directory' must be a directory."
+  }
   $resolved = (Resolve-Path -LiteralPath $directory).Path
   $tree = Get-DirectoryTreeDigest -Path $resolved
   if ($tree.fileCount -eq 0) { throw "Blob export '$resolved' contains no files." }

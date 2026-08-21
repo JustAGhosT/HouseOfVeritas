@@ -15,12 +15,16 @@ operator enables it, all of the following must be completed and evidenced:
    client-secret rotation as one external transaction.
 4. Lower TTL and capture the exact source CNAME rollback value, then generate
    and approve a sealed edge plan with both external preconditions attested.
-5. In the maintenance window, move the CNAME directly to the target App Service
+5. Approve a maximum ten-minute TLS interruption window, identify the rollback
+   operator, and continuously monitor public DNS plus both Azure hostnames. Use
+   an existing valid certificate path instead when one is available and approved.
+6. In the maintenance window, move the CNAME directly to the target App Service
    before applying the edge plan. App Service managed-certificate issuance and
-   renewal require that direct mapping.
-6. Apply the exact edge plan, verify certificate issuance/SNI and complete
+   renewal require that direct mapping; start the interruption timer here.
+7. Apply the exact edge plan, verify certificate issuance/SNI and complete
    authentic acceptance. Restore the captured source CNAME immediately if
-   issuance or acceptance fails.
+   issuance or acceptance fails or the interruption deadline is reached, then
+   verify source TLS before ending the incident watch.
 
 Source retirement is not represented in this root. A DNS rollback does not
 require destroying the target hostname or certificate resources.

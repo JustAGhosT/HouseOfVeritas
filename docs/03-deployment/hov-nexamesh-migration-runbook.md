@@ -522,15 +522,21 @@ Order is mandatory:
 
 1. Add App Service hostname-verification records.
 2. Lower TTL in advance and capture the exact source CNAME/TLS rollback state.
-3. In the approved maintenance window, change only the HOV CNAME and point it
+3. Record explicit approval for a maximum ten-minute TLS interruption window,
+   name the rollback operator, and continuously monitor the public CNAME plus
+   both the source and target Azure hostnames. If an existing valid certificate
+   and termination path is available, prefer it and record that evidence.
+4. In the approved maintenance window, change only the HOV CNAME and point it
    directly at the target App Service. Managed-certificate issuance and renewal
-   require the production hostname to resolve directly to the target.
-4. Apply the exact sealed edge plan to bind the hostname, issue the managed
+   require the production hostname to resolve directly to the target. Start the
+   approved interruption timer at the DNS mutation.
+5. Apply the exact sealed edge plan to bind the hostname, issue the managed
    certificate and enable SNI.
-5. Verify HTTPS, certificate chain, exact build, OIDC callbacks and logout, then
-   complete authentic Gate 0. If certificate issuance or acceptance fails,
-   restore the captured source CNAME immediately.
-6. Verify public resolution from independent resolvers and the target runtime.
+6. Verify HTTPS, certificate chain, exact build, OIDC callbacks and logout, then
+   complete authentic Gate 0. If certificate issuance or acceptance fails, or
+   the approved interruption deadline is reached, restore the captured source
+   CNAME immediately and verify source TLS before ending the incident watch.
+7. Verify public resolution from independent resolvers and the target runtime.
 
 Run authentic Gate 0 with legitimate short-lived admin and non-admin sessions:
 

@@ -3,7 +3,12 @@ import { readFile } from "fs/promises"
 import { existsSync } from "fs"
 import path from "path"
 import { withAuth } from "@/lib/auth/rbac"
-import { createAzureBlobServiceClient, isAzureBlobConfigured } from "@/lib/storage/azure-blob"
+import {
+  createAzureBlobServiceClient,
+  hashAzureFileOwner,
+  isAzureBlobConfigured,
+  resolveAzureFileById,
+} from "@/lib/storage/azure-blob"
 
 const UPLOAD_DIR = "/tmp/uploads"
 const ALLOWED_CATEGORIES = ["asset-photos", "invoice-scans", "invoices", "documents", "general"]
@@ -13,37 +18,30 @@ const AZURE_CONFIG = {
   accountKey: process.env.AZURE_STORAGE_ACCOUNT_KEY,
 }
 
-export const GET = withAuth(async (request) => {
+export const GET = withAuth(async (request, context) => {
   const { searchParams } = new URL(request.url)
   const category = searchParams.get("category")
   const filename = searchParams.get("filename")
-  const storage = searchParams.get("storage")
+  const fileId = searchParams.get("id")
 
-  if (storage === "azure") {
-    const container = searchParams.get("container")
-    const blobName = searchParams.get("blobName")
-    if (
-      !container ||
-      !blobName ||
-      !/^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])?$/.test(container) ||
-      !/^[A-Za-z0-9._/-]+$/.test(blobName) ||
-      blobName.startsWith("/") ||
-      blobName.split("/").some((segment) => !segment || segment === "." || segment === "..")
-    ) {
-      return NextResponse.json({ error: "Valid container and blobName required" }, { status: 400 })
-    }
+  if (fileId) {
     if (!isAzureBlobConfigured(AZURE_CONFIG)) {
       return NextResponse.json({ error: "Azure storage is not configured" }, { status: 503 })
     }
-    const blobClient = createAzureBlobServiceClient(AZURE_CONFIG)
-      .getContainerClient(container)
-      .getBlobClient(blobName)
-    if (!(await blobClient.exists())) {
+    const resolved = await resolveAzureFileById(createAzureBlobServiceClient(AZURE_CONFIG), fileId)
+    if (!resolved) {
       return NextResponse.json({ error: "File not found" }, { status: 404 })
     }
+    const canRead =
+      context.role === "admin" ||
+      context.role === "operator" ||
+      resolved.ownerIdHash === hashAzureFileOwner(context.userId)
+    if (!canRead) {
+      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 })
+    }
     const [buffer, properties] = await Promise.all([
-      blobClient.downloadToBuffer(),
-      blobClient.getProperties(),
+      resolved.blobClient.downloadToBuffer(),
+      resolved.blobClient.getProperties(),
     ])
     return new NextResponse(Uint8Array.from(buffer), {
       headers: {

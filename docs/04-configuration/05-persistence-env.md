@@ -65,9 +65,9 @@ Time-clock records are persisted to Baserow when `BASEROW_API_URL`, `BASEROW_TOK
 
 ## File/Image Uploads
 
-| API            | Storage                                                               | Metadata                                                                    |
-| -------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `/api/files`   | Azure Blob (asset-photos, invoice-scans, documents) or `/tmp/uploads` | Returned in response only                                                   |
-| `/api/uploads` | `/home/hov-uploads` in production; `/tmp/hov-uploads` locally/tests   | PostgreSQL `file_uploads` when `DATABASE_URL` set; else sidecar + in-memory |
+| API            | Storage                                                               | Metadata                                                                                              |
+| -------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `/api/files`   | Azure Blob (asset-photos, invoice-scans, documents) or `/tmp/uploads` | Opaque file ID and owner authorization metadata in Blob tags/properties; local fallback returned only |
+| `/api/uploads` | `/home/hov-uploads` in production; `/tmp/hov-uploads` locally/tests   | PostgreSQL `file_uploads` when `DATABASE_URL` set; else sidecar + in-memory                           |
 
-**Serving:** Files uploaded via `/api/uploads` are served at `GET /api/uploads/{fileId}`. Files in `/tmp/uploads` (from `/api/files` when Azure not configured) are served at `GET /api/files/serve?category=...&filename=...`.
+**Serving:** Files uploaded via `/api/uploads` are served at `GET /api/uploads/{fileId}`. Azure files from `/api/files` are resolved server-side from their opaque ID and checked against persisted owner metadata. Files in `/tmp/uploads` (when Azure is not configured) are served at `GET /api/files/serve?category=...&filename=...`.
