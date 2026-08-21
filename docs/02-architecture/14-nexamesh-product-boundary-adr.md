@@ -143,3 +143,4 @@ other NexaMesh products.
 - [NexaMesh product-boundary decision in neuralliquid-org](https://github.com/neuralliquid/neuralliquid-org/blob/main/docs/adr/0004-hov-nexamesh-product-boundary.md)
 - [HOV to NexaMesh migration addendum](https://github.com/neuralliquid/neuralliquid-org/blob/main/docs/plans/hov-nexamesh-migration-addendum.md)
 - [ADR-013: Database Hosting and Estate Backend Consolidation](./13-database-hosting-adr.md)
+- [2026-08-21 HOV and NexaMesh product-boundary handoff](../handoffs/2026-08-21-hov-nexamesh-product-boundary.md)
