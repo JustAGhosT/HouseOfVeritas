@@ -2,17 +2,18 @@
 
 ## Module/Feature Name
 
-House of Veritas Document Management & Operational Governance Platform
+House of Veritas Intelligent Physical-Estate Operating System
 
 ## Marketing Name
 
-House of Veritas Digital Governance Suite
+House of Veritas — Intelligent Estate by NexaMesh
 
 ## Platform/Mesh Layer(s)
 
-- **Application Layer:** DocuSeal (document workflows, e-signature)
-- **Data Layer:** Baserow (registries, operational tracking)
-- **Infrastructure Layer:** Azure (container orchestration, databases, blob storage, gateway)
+- **Estate Control Layer:** HOV (people, policy, work, assets, incidents, finance, and decisions)
+- **Physical Platform Layer:** NexaMesh (trusted observations, device identity, edge execution, mesh transport, and evidence contracts)
+- **Service Layer:** DocuSeal and Baserow where explicitly enabled
+- **Infrastructure Layer:** Azure (application hosting, databases, storage, identity integration, and monitoring)
 
 ## Primary Personas
 
@@ -24,7 +25,9 @@ House of Veritas Digital Governance Suite
 
 ## Core Value Proposition
 
-A secure, enforceable, and user-friendly governance platform for House of Veritas, automating document signing, operational records, and compliance for a multi-role estate environment.
+An intelligent physical-estate operating system that joins human authority,
+trusted observations, operational records, and AI-assisted decisions without
+ceding control of the estate to an autonomous model or shared platform.
 
 ## Priority
 
@@ -44,6 +47,8 @@ Draft
 - Accurate, current digital employee, asset, and incident registries
 - Zero missed annual reviews or document expiries
 - Improved auditability and reduced operational ambiguity
+- A governed path from authenticated physical observations to accountable
+  incidents, work, expenditure, and retained outcomes
 
 ## Integration Points
 
@@ -51,10 +56,17 @@ Draft
 - Azure Blob Storage for document archival
 - Azure Active Directory or local user management for authentication
 - Notification engines for reminders and expiry alerts
+- Versioned NexaMesh event contracts for future sensors and edge agents; no
+  production device integration is implied by the current specification
 
 ## TL;DR
 
-Deploy an Azure-hosted platform using DocuSeal and Baserow to digitalize, automate, and securely manage all legal/operational documents, tasks, and compliance functions for House of Veritas. This enables seamless signing, live registries, annual review automation, and granular access control across all users and governance documents.
+Operate the estate through an Azure-hosted HOV control plane that governs
+people, spaces, assets, work, documents, incidents, finance, and decisions.
+NexaMesh supplies the future physical-world substrate for trusted observation
+and local execution; HOV remains the system of record and human authority.
+Today's production capability is the digital operating foundation, not a claim
+that the full sensor and edge architecture is already deployed.
 
 ## Problem Statement
 

@@ -4,7 +4,11 @@ Project context for Claude Code / Cursor AI sessions.
 
 ## Project
 
-**House of Veritas** — Estate management platform for residential property operations. Built with Next.js 16, deployed to Azure.
+**House of Veritas** — Intelligent physical-estate operating system governed by
+AI and the first vertical product built on NexaMesh. The current production
+system is the human-facing estate control plane; sensor, mesh, and edge-agent
+capabilities remain roadmap work until implementation and acceptance evidence
+exist. Built with Next.js 16 and deployed to Azure.
 
 - **Repository:** `C:\Users\smitj\repos\house-of-veritas`
 - **Baton project:** `house-of-veritas` (`da62c803-1a03-45a4-9ce1-b6e86dd8d23d`)
@@ -18,6 +22,9 @@ Project context for Claude Code / Cursor AI sessions.
 - **Database:** Baserow (operational), PostgreSQL (DocuSeal/Baserow backend), MongoDB (kiosk)
 - **Infrastructure:** Terraform (Azure), Docker, GitHub Actions CI/CD
 - **Integrations:** DocuSeal (e-signatures), Baserow (data), Azure Communication Services (email), Twilio (SMS)
+- **Product boundary:** HOV owns estate state and decisions; NexaMesh supplies
+  physical-world platform contracts. Shared services never receive implicit
+  access to household, employee, biometric, legal, or financial records.
 
 ## Key Commands
 
