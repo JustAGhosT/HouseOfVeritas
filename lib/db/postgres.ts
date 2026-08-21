@@ -29,40 +29,46 @@ export function isPostgresConfigured(): boolean {
 }
 
 function getPoolConfiguration(): PoolConfig {
+  if (AZURE_POSTGRES_AUTH_MODE === "entra-only" && DATABASE_URL) {
+    throw new Error(
+      "DATABASE_URL/POSTGRES_URL must be absent when AZURE_POSTGRES_AUTH_MODE=entra-only"
+    )
+  }
+
+  if (AZURE_POSTGRES_AUTH_MODE === "entra-only") {
+    if (!AZURE_POSTGRES_HOST || !AZURE_POSTGRES_DATABASE || !AZURE_POSTGRES_USER) {
+      throw new Error(
+        "AZURE_POSTGRES_HOST, AZURE_POSTGRES_DATABASE and AZURE_POSTGRES_USER are required for Entra-only PostgreSQL"
+      )
+    }
+
+    if (!AZURE_POSTGRES_HOST.endsWith(".postgres.database.azure.com")) {
+      throw new Error("AZURE_POSTGRES_HOST must be an Azure PostgreSQL hostname")
+    }
+
+    managedIdentityCredential ??= new ManagedIdentityCredential()
+
+    return {
+      host: AZURE_POSTGRES_HOST,
+      port: 5432,
+      database: AZURE_POSTGRES_DATABASE,
+      user: AZURE_POSTGRES_USER,
+      ssl: { rejectUnauthorized: true },
+      password: async () => {
+        const accessToken = await managedIdentityCredential!.getToken(POSTGRES_TOKEN_SCOPE)
+        if (!accessToken?.token) {
+          throw new Error("Managed identity did not return a PostgreSQL access token")
+        }
+        return accessToken.token
+      },
+    }
+  }
+
   if (DATABASE_URL) {
     return { connectionString: DATABASE_URL }
   }
 
-  if (AZURE_POSTGRES_AUTH_MODE !== "entra-only") {
-    throw new Error("DATABASE_URL/POSTGRES_URL or AZURE_POSTGRES_AUTH_MODE=entra-only is required")
-  }
-
-  if (!AZURE_POSTGRES_HOST || !AZURE_POSTGRES_DATABASE || !AZURE_POSTGRES_USER) {
-    throw new Error(
-      "AZURE_POSTGRES_HOST, AZURE_POSTGRES_DATABASE and AZURE_POSTGRES_USER are required for Entra-only PostgreSQL"
-    )
-  }
-
-  if (!AZURE_POSTGRES_HOST.endsWith(".postgres.database.azure.com")) {
-    throw new Error("AZURE_POSTGRES_HOST must be an Azure PostgreSQL hostname")
-  }
-
-  managedIdentityCredential ??= new ManagedIdentityCredential()
-
-  return {
-    host: AZURE_POSTGRES_HOST,
-    port: 5432,
-    database: AZURE_POSTGRES_DATABASE,
-    user: AZURE_POSTGRES_USER,
-    ssl: { rejectUnauthorized: true },
-    password: async () => {
-      const accessToken = await managedIdentityCredential!.getToken(POSTGRES_TOKEN_SCOPE)
-      if (!accessToken?.token) {
-        throw new Error("Managed identity did not return a PostgreSQL access token")
-      }
-      return accessToken.token
-    },
-  }
+  throw new Error("DATABASE_URL/POSTGRES_URL or AZURE_POSTGRES_AUTH_MODE=entra-only is required")
 }
 
 export async function getPool(): Promise<Pool> {

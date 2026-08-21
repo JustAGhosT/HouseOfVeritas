@@ -82,6 +82,19 @@ describe("PostgreSQL managed identity", () => {
     expect(postgresMocks.pool).not.toHaveBeenCalled()
   })
 
+  it("rejects a legacy DSN when Entra-only mode is declared", async () => {
+    process.env.AZURE_POSTGRES_AUTH_MODE = "entra-only"
+    process.env.AZURE_POSTGRES_HOST = "nex-prod-hov-pg.postgres.database.azure.com"
+    process.env.AZURE_POSTGRES_DATABASE = "houseofveritas"
+    process.env.AZURE_POSTGRES_USER = "nex-prod-hov-app"
+    process.env.DATABASE_URL = "postgresql://legacy.invalid/houseofveritas"
+
+    const postgres = await import("@/lib/db/postgres")
+
+    await expect(postgres.getPool()).rejects.toThrow("must be absent")
+    expect(postgresMocks.pool).not.toHaveBeenCalled()
+  })
+
   it("preserves source DSN compatibility for rollback", async () => {
     process.env.DATABASE_URL = "postgresql://rollback.invalid/houseofveritas"
 

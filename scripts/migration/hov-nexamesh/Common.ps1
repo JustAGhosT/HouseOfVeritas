@@ -146,6 +146,7 @@ function Invoke-WithPostgresEnvironment {
     PGUSER     = "${Prefix}_PGUSER"
     PGPASSWORD = "${Prefix}_PGPASSWORD"
     PGSSLMODE  = "${Prefix}_PGSSLMODE"
+    PGSSLROOTCERT = "${Prefix}_PGSSLROOTCERT"
   }
   $previous = @{}
   $previousConnectTimeout = [Environment]::GetEnvironmentVariable("PGCONNECT_TIMEOUT", "Process")
@@ -155,7 +156,13 @@ function Invoke-WithPostgresEnvironment {
       $value = if ($entry.Key -eq "PGPORT") {
         [Environment]::GetEnvironmentVariable($entry.Value, "Process") ?? "5432"
       } elseif ($entry.Key -eq "PGSSLMODE") {
-        [Environment]::GetEnvironmentVariable($entry.Value, "Process") ?? "require"
+        $sslMode = [Environment]::GetEnvironmentVariable($entry.Value, "Process") ?? "verify-full"
+        if ($sslMode -cne "verify-full") {
+          throw "PostgreSQL migration connections require PGSSLMODE=verify-full."
+        }
+        $sslMode
+      } elseif ($entry.Key -eq "PGSSLROOTCERT") {
+        [Environment]::GetEnvironmentVariable($entry.Value, "Process") ?? "system"
       } else {
         Get-RequiredEnvironmentValue -Name $entry.Value
       }
@@ -201,17 +208,23 @@ function Assert-PrivateEndpointReachability {
 
   $addresses = @([Net.Dns]::GetHostAddresses($HostName))
   $privateAddresses = @($addresses | Where-Object { Test-PrivateIpAddress -Address $_ })
-  if ($privateAddresses.Count -eq 0) {
-    throw "Private-network gate failed: '$HostName' did not resolve to an RFC1918 IPv4 address. Run this operation from the approved VNet migration runner or use a separately approved temporary-access plan."
+  if ($privateAddresses.Count -eq 0 -or $privateAddresses.Count -ne $addresses.Count) {
+    throw "Private-network gate failed: '$HostName' must resolve exclusively to RFC1918 IPv4 addresses. Run this operation from the approved VNet migration runner or use a separately approved temporary-access plan."
   }
 
-  $client = [Net.Sockets.TcpClient]::new()
-  try {
-    $connect = $client.ConnectAsync($HostName, $Port)
-    if (-not $connect.Wait([TimeSpan]::FromSeconds($TimeoutSeconds)) -or -not $client.Connected) {
-      throw "Private-network gate failed: '$HostName`:$Port' is not reachable from this execution host."
+  foreach ($address in $privateAddresses) {
+    $client = [Net.Sockets.TcpClient]::new()
+    try {
+      $connect = $client.ConnectAsync($address, $Port)
+      if (-not $connect.Wait([TimeSpan]::FromSeconds($TimeoutSeconds)) -or -not $client.Connected) {
+        throw "Private-network gate failed: validated address '$address`:$Port' is not reachable from this execution host."
+      }
+      $remoteAddress = ([Net.IPEndPoint]$client.Client.RemoteEndPoint).Address
+      if (-not $remoteAddress.Equals($address) -or -not (Test-PrivateIpAddress -Address $remoteAddress)) {
+        throw "Private-network gate failed: the connected remote endpoint was not the validated private address."
+      }
+    } finally {
+      $client.Dispose()
     }
-  } finally {
-    $client.Dispose()
   }
 }

@@ -125,8 +125,12 @@ imports, or private-endpoint validation.
 
 - Supply PostgreSQL values through process-only `HOV_SOURCE_PG*` or
   `HOV_TARGET_PG*` variables. Required suffixes are `PGHOST`, `PGDATABASE`,
-  `PGUSER`, and `PGPASSWORD`; `PGPORT` defaults to `5432` and `PGSSLMODE` to
-  `require`.
+  `PGUSER`, and `PGPASSWORD`; `PGPORT` defaults to `5432`. Connections require
+  `PGSSLMODE=verify-full`. `PGSSLROOTCERT` defaults to `system`, which uses the
+  runner's pinned Ubuntu trust store; set the corresponding
+  `HOV_SOURCE_PGSSLROOTCERT` or `HOV_TARGET_PGSSLROOTCERT` only to a separately
+  reviewed CA bundle path when the system store cannot validate the exact
+  server hostname. Never weaken certificate or hostname verification.
 - Supply the source Cosmos Mongo URI through process-only
   `HOV_SOURCE_MONGODB_URI`. Never put it in a command transcript, `.env`,
   checked-in file, evidence manifest, or PR attachment.
