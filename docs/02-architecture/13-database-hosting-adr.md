@@ -53,10 +53,10 @@ A dedicated server, `nl-prod-shared-pg` (resource group `nl-prod-shared-rg`, Sou
 
 **Current tenants**
 
-| Database         | Owner role       | Migrated                                          |
-| ---------------- | ---------------- | ------------------------------------------------- |
-| `houseofveritas` | `houseofveritas` | 2026-08-06 — schema self-creates; no data to move |
-| `convolens`      | `convolens`      | 2026-08-06 — 6 tables, 26 rows                    |
+| Database         | Owner role       | Migrated                                                                         |
+| ---------------- | ---------------- | -------------------------------------------------------------------------------- |
+| `houseofveritas` | `houseofveritas` | 2026-08-06 — role and schema provisioned; production app cutover remains pending |
+| `convolens`      | `convolens`      | 2026-08-06 — 6 tables, 26 rows                                                   |
 
 **How this was reached.** HOV was first placed on the existing `nl-prod-convolens-pg` server, on the reasoning that cost was the binding constraint and a second B1ms was unjustified. That was correct about cost and wrong about structure: it made HOV a guest on another application's production instance, with a shared administrative credential and coupled backup/restore. Moving _both_ applications onto a neutral server keeps the server count — and therefore the cost — unchanged, while removing the guest relationship entirely.
 

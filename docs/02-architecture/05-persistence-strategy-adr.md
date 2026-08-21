@@ -8,7 +8,7 @@
 
 ## Context
 
-House of Veritas currently uses several in-memory stores that are volatile and lost on restart. Production requires persistent storage for users, audit logs, rate limiting, real-time events, and time-clock records.
+House of Veritas currently uses several in-memory stores that are volatile and lost on restart. Production requires persistent storage for users, audit logs, rate limiting, and time-clock records. Real-time SSE events are explicitly ephemeral under this ADR and are excluded from that persistence requirement unless a retained replay capability is separately approved.
 
 The following list recorded the intended supporting topology when this ADR was accepted, not the verified production runtime. ADR-013 partially supersedes this current-state assumption: it records a shared HOV PostgreSQL database, role, and schema, but the canonical HOV app was not connected to them at its last verification. Re-inventory live configuration before migration.
 
@@ -17,12 +17,16 @@ The accepted target assignments were:
 - **PostgreSQL**: authoritative users and audit records; time-clock and
   biometric records in dedicated tables or the PostgreSQL-backed Baserow model;
   DocuSeal and Baserow backing databases
-- **Redis**: authoritative production rate-limit windows when `REDIS_URL` is
-  configured; Baserow caching
-- **In-memory event store**: authoritative short-lived SSE buffer, with an
-  optional PostgreSQL archive for replay
-- **MongoDB** (optional): kiosk requests and audit-log dual-write, not the
-  authoritative audit store
+- **Redis**: authoritative production rate-limit windows; `REDIS_URL` is a
+  production-readiness requirement, while the in-memory fallback is only for
+  local development or an explicitly recorded degraded state
+- **In-memory event store**: ephemeral short-lived SSE buffer, not a retained
+  system of record; a PostgreSQL replay archive requires a separate retention
+  decision
+- **MongoDB** (optional): kiosk requests and best-effort audit-log dual-write;
+  audit reads use it only when PostgreSQL is unconfigured, not as automatic
+  failover when a configured PostgreSQL service fails, and no reconciliation or
+  recovery guarantee exists
 - **Azure Blob Storage**: documents and backups
 
 ### Current In-Memory Stores

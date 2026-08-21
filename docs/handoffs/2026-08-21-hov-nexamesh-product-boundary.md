@@ -18,6 +18,7 @@ Earlier portfolio and migration material provisionally placed HOV under NeuralLi
 - `docs/02-architecture/05-persistence-strategy-adr.md`
 - `docs/02-architecture/13-database-hosting-adr.md`
 - `docs/02-architecture/14-nexamesh-product-boundary-adr.md`
+- `docs/03-deployment/06-mvp-launch-checklist.md`
 - `docs/README.md`
 - This handoff
 
