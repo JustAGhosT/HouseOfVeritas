@@ -5,6 +5,7 @@ import { existsSync } from "fs"
 import path from "path"
 import crypto from "crypto"
 import { withAuth } from "@/lib/auth/rbac"
+import { createAzureBlobServiceClient, isAzureBlobConfigured } from "@/lib/storage/azure-blob"
 
 // Configuration
 const UPLOAD_CONFIG = {
@@ -25,7 +26,7 @@ const AZURE_CONFIG = {
 
 // Check if Azure is configured
 function isAzureConfigured(): boolean {
-  return !!(AZURE_CONFIG.connectionString || (AZURE_CONFIG.accountName && AZURE_CONFIG.accountKey))
+  return isAzureBlobConfigured(AZURE_CONFIG)
 }
 
 // Generate unique filename
@@ -69,28 +70,13 @@ async function uploadToAzure(
   contentType: string,
   container: string
 ): Promise<{ url: string; blobName: string }> {
-  // Dynamic import to avoid errors when Azure SDK not installed
-  const { BlobServiceClient, StorageSharedKeyCredential } = await import("@azure/storage-blob")
-
-  let blobServiceClient: any
-
-  if (AZURE_CONFIG.connectionString) {
-    blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_CONFIG.connectionString)
-  } else if (AZURE_CONFIG.accountName && AZURE_CONFIG.accountKey) {
-    const sharedKeyCredential = new StorageSharedKeyCredential(
-      AZURE_CONFIG.accountName,
-      AZURE_CONFIG.accountKey
-    )
-    blobServiceClient = new BlobServiceClient(
-      `https://${AZURE_CONFIG.accountName}.blob.core.windows.net`,
-      sharedKeyCredential
-    )
-  }
+  const blobServiceClient = createAzureBlobServiceClient(AZURE_CONFIG)
 
   const containerClient = blobServiceClient.getContainerClient(container)
 
-  // Create container if it doesn't exist
-  await containerClient.createIfNotExists({ access: "blob" })
+  // The target storage account prohibits public blob access. Omitting an access
+  // option creates a private container.
+  await containerClient.createIfNotExists()
 
   const blobName = `${Date.now()}/${filename}`
   const blockBlobClient = containerClient.getBlockBlobClient(blobName)
@@ -230,21 +216,7 @@ export const DELETE = withAuth(async (request) => {
 
   try {
     if (storage === "azure" && blobName && isAzureConfigured()) {
-      // Delete from Azure - mirrors upload auth logic for both connection string and shared key
-      const { BlobServiceClient, StorageSharedKeyCredential } = await import("@azure/storage-blob")
-      let blobServiceClient: InstanceType<typeof BlobServiceClient>
-      if (AZURE_CONFIG.connectionString) {
-        blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_CONFIG.connectionString)
-      } else {
-        const cred = new StorageSharedKeyCredential(
-          AZURE_CONFIG.accountName!,
-          AZURE_CONFIG.accountKey!
-        )
-        blobServiceClient = new BlobServiceClient(
-          `https://${AZURE_CONFIG.accountName}.blob.core.windows.net`,
-          cred
-        )
-      }
+      const blobServiceClient = createAzureBlobServiceClient(AZURE_CONFIG)
       const containerClient = blobServiceClient.getContainerClient(AZURE_CONFIG.containerName)
       const blobClient = containerClient.getBlobClient(blobName)
       await blobClient.deleteIfExists()

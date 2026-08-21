@@ -1,4 +1,6 @@
 import { Pool, PoolClient, types } from "pg"
+import type { PoolConfig } from "pg"
+import { ManagedIdentityCredential } from "@azure/identity"
 import { logger } from "@/lib/logger"
 
 // DATE (oid 1082) must stay a plain "YYYY-MM-DD" string.
@@ -13,20 +15,63 @@ import { logger } from "@/lib/logger"
 types.setTypeParser(1082, (value) => value)
 
 const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL
+const AZURE_POSTGRES_AUTH_MODE = process.env.AZURE_POSTGRES_AUTH_MODE
+const AZURE_POSTGRES_HOST = process.env.AZURE_POSTGRES_HOST
+const AZURE_POSTGRES_DATABASE = process.env.AZURE_POSTGRES_DATABASE
+const AZURE_POSTGRES_USER = process.env.AZURE_POSTGRES_USER
+const POSTGRES_TOKEN_SCOPE = "https://ossrdbms-aad.database.windows.net/.default"
 
 let pool: Pool | null = null
+let managedIdentityCredential: ManagedIdentityCredential | null = null
 
 export function isPostgresConfigured(): boolean {
-  return !!DATABASE_URL
+  return Boolean(DATABASE_URL || AZURE_POSTGRES_AUTH_MODE)
+}
+
+function getPoolConfiguration(): PoolConfig {
+  if (DATABASE_URL) {
+    return { connectionString: DATABASE_URL }
+  }
+
+  if (AZURE_POSTGRES_AUTH_MODE !== "entra-only") {
+    throw new Error("DATABASE_URL/POSTGRES_URL or AZURE_POSTGRES_AUTH_MODE=entra-only is required")
+  }
+
+  if (!AZURE_POSTGRES_HOST || !AZURE_POSTGRES_DATABASE || !AZURE_POSTGRES_USER) {
+    throw new Error(
+      "AZURE_POSTGRES_HOST, AZURE_POSTGRES_DATABASE and AZURE_POSTGRES_USER are required for Entra-only PostgreSQL"
+    )
+  }
+
+  if (!AZURE_POSTGRES_HOST.endsWith(".postgres.database.azure.com")) {
+    throw new Error("AZURE_POSTGRES_HOST must be an Azure PostgreSQL hostname")
+  }
+
+  managedIdentityCredential ??= new ManagedIdentityCredential()
+
+  return {
+    host: AZURE_POSTGRES_HOST,
+    port: 5432,
+    database: AZURE_POSTGRES_DATABASE,
+    user: AZURE_POSTGRES_USER,
+    ssl: { rejectUnauthorized: true },
+    password: async () => {
+      const accessToken = await managedIdentityCredential!.getToken(POSTGRES_TOKEN_SCOPE)
+      if (!accessToken?.token) {
+        throw new Error("Managed identity did not return a PostgreSQL access token")
+      }
+      return accessToken.token
+    },
+  }
 }
 
 export async function getPool(): Promise<Pool> {
-  if (!DATABASE_URL) {
-    throw new Error("DATABASE_URL or POSTGRES_URL is not configured")
+  if (!isPostgresConfigured()) {
+    throw new Error("PostgreSQL is not configured")
   }
   if (!pool) {
     pool = new Pool({
-      connectionString: DATABASE_URL,
+      ...getPoolConfiguration(),
       max: 10,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
@@ -149,6 +194,7 @@ export async function closePool(): Promise<void> {
   if (pool) {
     await pool.end()
     pool = null
+    managedIdentityCredential = null
     logger.info("PostgreSQL pool closed")
   }
 }

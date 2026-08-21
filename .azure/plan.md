@@ -1,401 +1,222 @@
-# Azure Deployment Plan
-
-> **Status:** Validated
-
-Generated: 2026-07-17
-
----
-
-## 1. Project Overview
-
-**Goal:** Prepare Radar 6 monitoring for the Property Deal Radar MVP: ingestion health telemetry, zero-row/quarantine/source-shape alert rules, enable-flag governance for private MVP validation, and Docket-aligned evidence capture.
-
-**Path:** Add Components
-
----
-
-## 2. Requirements
-
-| Attribute        | Value                                                                                                                                                                                                                                                                                                                        |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Classification   | Production MVP, private/single-user validation                                                                                                                                                                                                                                                                               |
-| Scale            | Small                                                                                                                                                                                                                                                                                                                        |
-| Budget           | Cost-Optimized                                                                                                                                                                                                                                                                                                               |
-| Subscription     | Existing HOV Azure subscription already used by Terraform                                                                                                                                                                                                                                                                    |
-| Location         | southafricanorth                                                                                                                                                                                                                                                                                                             |
-| Compliance       | MVP sign-off only for Jurie/private use; broader public usage requires renewed legal/compliance sign-off                                                                                                                                                                                                                     |
-| Docket Alignment | `https://docket.phoenixvc.tech` is the canonical Docket host for operational evidence. Live discovery on 2026-07-18 found OpenAPI at `/openapi.json`, Swagger UI at `/docs`, and health at `/health`. There is no assumed separate `DOCKET_BASE_URL` or ticket API in HOV until an authenticated write contract is selected. |
-
----
-
-## 3. Components Detected
-
-| Component      | Type                         | Technology                    | Path                            |
-| -------------- | ---------------------------- | ----------------------------- | ------------------------------- |
-| web            | SSR Web App/API              | Next.js 16 / TypeScript       | `app/`, `lib/`                  |
-| functions      | Scheduled worker             | Python Azure Functions        | `config/azure-functions/`       |
-| infrastructure | IaC                          | Terraform                     | `terraform/`                    |
-| monitoring     | Existing module              | Azure Monitor / Log Analytics | `terraform/modules/monitoring/` |
-| docket         | External evidence/ops system | FastAPI / Uvicorn             | `https://docket.phoenixvc.tech` |
-
----
-
-## 4. Recipe Selection
-
-**Selected:** Terraform
-
-**Rationale:** The repository already owns Azure production resources through Terraform modules and environment files. Radar 6 should extend the existing monitoring module rather than introduce a new deployment system.
-
----
-
-## 5. Architecture
-
-**Stack:** Serverless + App Service + Azure Monitor
-
-### Service Mapping
-
-| Component                  | Azure Service                       | SKU                              |
-| -------------------------- | ----------------------------------- | -------------------------------- |
-| DealRadarRefresh telemetry | Azure Functions logs / traces       | Existing Function App            |
-| Radar API telemetry        | App Service logs / traces           | Existing Web App                 |
-| Radar alert rules          | Azure Monitor scheduled query rules | Existing Log Analytics workspace |
-| Alert delivery             | Azure Monitor action group          | Existing monitoring action group |
-| MVP evidence record        | Docket action/operations surface    | Existing Docket host             |
-
-### Supporting Services
-
-| Service              | Purpose                                                  |
-| -------------------- | -------------------------------------------------------- |
-| Log Analytics        | Centralized function/web logs queried by scheduled rules |
-| Application Insights | Runtime telemetry source for traces and exceptions       |
-| Key Vault            | Existing secret governance for runtime config            |
-| Managed Identity     | Existing service-to-service auth posture                 |
-
-### Docket Contract
-
-Live Docket API discovery:
-
-| Endpoint                                       | Purpose                  | Notes                                                                                |
-| ---------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------ |
-| `GET /health`                                  | Runtime health           | Public JSON: `{"status":"ok","backend":"table"}`                                     |
-| `GET /openapi.json`                            | API contract             | Public OpenAPI document titled `Cost Centre Adoption API`                            |
-| `GET /docs`                                    | Swagger UI               | Public API explorer                                                                  |
-| `GET /action-log`                              | Unified action log       | Authenticated; candidate read path for Radar monitoring/enable evidence              |
-| `GET /resource-actions/pending`                | Pending resource actions | Authenticated; candidate governance queue                                            |
-| `POST /resource-actions/approve` and `/reject` | Decision recording       | Authenticated; only suitable if Radar enablement is represented as a resource action |
-| `POST /api/azure-ops/workflows/run`            | Run predefined workflow  | Authenticated, dry-run default; do not call for Radar until a named workflow exists  |
-
-Radar 6 will align with Docket by documenting Radar enable/monitoring evidence in Docket-compatible terms and leaving a small adapter seam for the verified host. It will not invent or populate stale `DOCKET_BASE_URL` values, and it will not call destructive Docket resource-action endpoints in this PR.
-
----
-
-## 6. Provisioning Limit Checklist
-
-This slice adds lightweight Azure Monitor alert-rule definitions only. It does not add compute, networking, storage, databases, public IPs, or container capacity.
-
-| Resource Type                            | Number to Deploy | Total After Deployment | Limit/Quota                                                | Notes                                                  |
-| ---------------------------------------- | ---------------- | ---------------------- | ---------------------------------------------------------- | ------------------------------------------------------ |
-| Microsoft.Insights/scheduledQueryRules   | 4                | Existing + 4           | Azure Monitor rule limit, no regional compute quota impact | Uses existing Log Analytics workspace and action group |
-| Microsoft.Insights/actionGroups          | 0                | Existing               | No change                                                  | Reuse existing module action group                     |
-| Microsoft.OperationalInsights/workspaces | 0                | Existing               | No change                                                  | Reuse existing workspace                               |
-
-**Status:** All planned changes have no compute/network/storage quota impact.
-
----
-
-## 7. Execution Checklist
-
-### Phase 1: Planning
-
-- [x] Analyze workspace
-- [x] Gather requirements from current Radar MVP decision
-- [x] Confirm subscription and location from existing production Terraform context
-- [x] Prepare resource inventory
-- [x] Confirm no compute/network/storage quota impact
-- [x] Scan codebase
-- [x] Select recipe
-- [x] Plan architecture
-- [x] User approved this plan with "lets go for 6"
-
-### Phase 2: Execution
-
-- [x] Add Radar ingestion telemetry contract
-- [x] Add Radar monitoring Terraform variables/resources
-- [x] Add enable-governance documentation/config checks aligned with Docket evidence/decision terminology
-- [x] Add Docket host/API discovery notes and adapter guardrails without requiring runtime Docket writes
-- [x] Add focused tests
-- [x] Update plan status to "Ready for Validation"
-
-### Phase 3: Validation
-
-- [ ] Validate Terraform formatting/config
-- [ ] Run relevant Python and TypeScript tests
-- [ ] Run lint/build where affected
-
-### Phase 4: Deployment
-
-- [ ] Not in scope for this PR
-
----
-
-## 8. Validation Proof
-
-| Check   | Command Run | Result  | Timestamp |
-| ------- | ----------- | ------- | --------- |
-| Pending | Pending     | Pending | Pending   |
-
----
-
-## 9. Files to Generate
-
-| File                                                      | Purpose                                                             | Status   |
-| --------------------------------------------------------- | ------------------------------------------------------------------- | -------- |
-| `.azure/plan.md`                                          | Radar 6 Azure preparation plan                                      | Complete |
-| `config/azure-functions/shared/radar_ingestion.py`        | Radar telemetry emission                                            | Planned  |
-| `terraform/modules/monitoring/*`                          | Radar alert rules                                                   | Planned  |
-| `terraform/environments/production/*`                     | Monitoring module wiring                                            | Planned  |
-| `docs/03-deployment/08-property-deal-radar-monitoring.md` | Enablement/monitoring runbook updates                               | Added    |
-| Docket alignment note/runbook section                     | Evidence and decision handoff via verified Docket host/API contract | Added    |
-
----
-
-## 10. Next Steps
-
-Current: execution after approval.
-
-1. Inspect current function logging and Terraform monitoring module.
-2. Add deterministic Radar telemetry events and scheduled query alert definitions.
-3. Add Docket-aligned evidence/runbook notes using `https://docket.phoenixvc.tech` and the verified `/openapi.json` surface.
-4. Validate locally without deployment.
-
----
-
-## 11. Production Remediation: Web Telemetry, Project Persistence, Clean Defaults
+# HOV to NexaMesh Azure Migration Plan
 
 > **Status:** Ready for Validation
 
-Added: 2026-07-20
+Generated: 2026-08-21
 
-### Goal
+## 1. Project overview
 
-Fix three production gaps verified after the OIDC Terraform apply:
+**Goal:** Move House of Veritas from the NeuralLiquid-hosted source boundary into an independently operated NexaMesh production boundary without reusing or repointing source Terraform state.
 
-- HOV web app has no Application Insights resource or App Insights app setting.
-- Project APIs write to `data/projects.json` inside the deployed app package, so project creation is not durable in Azure App Service.
-- Visible project/task defaults still include sample values even when `ALLOW_DEMO_DATA` is not enabled.
+**Path:** Modify and migrate an existing production Azure application.
 
-### Scope
+**Source boundary:**
 
-| Area                 | Decision                                                                                                                                                 |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Web telemetry        | Add Terraform-managed Application Insights for `nl-prod-hov-app` and wire `APPLICATIONINSIGHTS_CONNECTION_STRING` / role name into App Service settings. |
-| Node instrumentation | Initialize Azure Monitor from `instrumentation.ts` when the connection string exists.                                                                    |
-| Project persistence  | Use the existing production `AZURE_STORAGE_CONNECTION_STRING` to store project JSON in Blob Storage, with local file fallback for dev/tests.             |
-| Dummy data           | Remove visible project/task seed defaults from production paths; keep explicit demo data behind `ALLOW_DEMO_DATA=true`.                                  |
-| Deployment           | Prepare and validate in PR first; production apply/deploy remains a separate controlled action after merge.                                              |
+- Tenant: `9530cd32-9e33-47f0-9247-ed964730b580`
+- Subscription: `Azure subscription 1` (`bb4e3882-2079-4bab-8974-611bc0b8bb58`)
+- Resource group: `nl-prod-hov-rg`
+- Region: `southafricanorth`
+- Shared datastore dependency: `nl-prod-shared-pg` in `nl-prod-shared-rg`
 
-### Validation
+**Target boundary:**
 
-- Run `pnpm run lint`.
-- Run focused API tests for projects/tasks.
-- Run `pnpm run build`.
-- Run `terraform fmt -recursive` and `terraform -chdir=terraform/environments/production validate`.
+- Tenant: Celladore Systems (`5384ef74-e517-4b22-9472-df990f61e8b5`)
+- Subscription: `nexamesh-sub` (`8a5dc70a-bafa-4a04-a281-9b4862a70810`)
+- Resource group: `nex-prod-hov-rg`
+- Region: `southafricanorth`
+- Terraform backend: new target-only backend; never copied or migrated from `production-canonical.terraform.tfstate`
 
----
+## 2. Requirements
 
-## 12. O6 restricted evidence store before live PIRB integration
+| Attribute              | Value                                                                                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Classification         | Production, private-preview estate system                                                                                                                          |
+| Scale                  | Small, with room to scale vertically                                                                                                                               |
+| Budget                 | Balanced; retain modest runtime SKUs while adding independent restore and private-network controls                                                                 |
+| Data residency         | South Africa geography; primary resources in `southafricanorth`                                                                                                    |
+| Compliance posture     | POPIA-sensitive household, employee, identity, document, and estate data; controls support compliance but are not a legal-compliance claim                         |
+| Availability           | Preserve current service while target is built and verified; no destructive source retirement in the target plan                                                   |
+| Compatibility hostname | Preserve `hov.neuralliquid.ai` until target TLS, identity callbacks, data, runtime, and authentic acceptance pass                                                  |
+| External services      | NeuralLiquid remains an external intelligence-services provider; NexaMesh shared Baserow/DocuSeal services remain external dependencies unless separately migrated |
 
-> **Status:** Ready for Validation - deployment remains prohibited
+## 3. Components detected
 
-Added: 2026-07-26
+| Component                     | Type                                                     | Technology                            | Path or live resource                               |
+| ----------------------------- | -------------------------------------------------------- | ------------------------------------- | --------------------------------------------------- |
+| Web/API                       | SSR web application                                      | Next.js 16, Node.js 22, TypeScript    | `app/`, `lib/`; source `nl-prod-hov-app`            |
+| Scheduled automation          | Worker code, not currently provisioned as a Function App | Python Azure Functions                | `config/azure-functions/`                           |
+| Estate datastore              | Relational database                                      | PostgreSQL 16 on shared source server | `nl-prod-shared-pg/houseofveritas`                  |
+| Kiosk datastore               | Document database                                        | Cosmos DB Mongo API                   | `nlprodhovcosmos`                                   |
+| Object storage                | Blob storage                                             | Azure Storage                         | `nlprodhovst`                                       |
+| Secrets and identity settings | Secret store                                             | Azure Key Vault                       | `nl-prod-hov-kv`                                    |
+| Monitoring                    | APM                                                      | Application Insights                  | `nl-prod-hov-app-insights`                          |
+| Infrastructure                | IaC                                                      | Terraform AzureRM/AzAPI               | `terraform/`                                        |
+| Identity provider             | External relying-party registration                      | Mystira OIDC                          | `neuralliquid-hov-web`; coordinated external change |
+| DNS                           | Compatibility routing                                    | Cloudflare-managed `neuralliquid.ai`  | `hov.neuralliquid.ai`; separate edge cutover        |
 
-### 12.1 Project overview
+Azure Functions, Radar activation, Application Gateway, operational Baserow/DocuSeal containers, Document Intelligence, and restricted O6 evidence storage are excluded from the initial target because they are not active source-runtime requirements or remain separately approval-gated.
 
-**Goal:** Prepare, but do not deploy, a dedicated Azure Blob restricted store
-for later O6-approved reviewer identity, credential, consent, contract, and
-verification evidence. The store must remain disconnected from the HOV general
-application datastore and unavailable until named human owners and authorized
-researcher Microsoft Entra object IDs are supplied.
+## 4. Recipe selection
 
-**Path:** Add components to the existing production Terraform stack (MODIFY).
+**Selected:** Existing pure Terraform workflow, split into new target-only roots and state backends.
 
-**Non-goals:** Terraform apply, Azure resource creation, candidate collection,
-PIRB registry calls, public access, shared-key access, application runtime
-access, O5/O6 activation, or Gate progression.
+**Rationale:** The repository already uses Terraform, but its production root, backend, imports, identity defaults, and workflows are explicitly source-bound. Adding AZD or reconfiguring that state would create a second authority or risk cross-subscription mutation. The migration therefore uses fresh Terraform roots with provider assertions for the exact target tenant and subscription.
 
-### 12.2 Requirements
+## 5. Architecture and sequencing
 
-| Attribute           | Value                                                                                                                                                                                               |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Classification      | Production security/privacy prerequisite; no live data during preparation                                                                                                                           |
-| Scale               | Small: one restricted container and a small named research group                                                                                                                                    |
-| Budget              | Cost-optimized without weakening encryption, audit, deletion, or private networking                                                                                                                 |
-| Subscription        | Confirmed: `Azure subscription 1` (`bb4e3882-2079-4bab-8974-611bc0b8bb58`)                                                                                                                          |
-| Location            | Confirmed: `southafricanorth`, matching the canonical HOV stack                                                                                                                                     |
-| Data residency      | South Africa North unless the privacy reviewer approves a different location                                                                                                                        |
-| Compliance boundary | POPIA-oriented operating controls, not a claim of legal compliance                                                                                                                                  |
-| Activation inputs   | Responsible-party ID, privacy-reviewer ID, research-owner ID, authorized-researcher Entra object IDs, deletion/correction-owner ID, incident-owner ID, retention deadline, and approved access path |
+### 5.1 State boundaries
 
-### 12.3 Components detected
+1. **Bootstrap:** `nex-prod-hov-tfstate-rg`, target-only StorageV2 account, private container, versioning and soft deletion. State key: `hov/prod/bootstrap.tfstate`.
+2. **Foundation and data:** `nex-prod-hov-rg`, VNet, private DNS, storage, Key Vault, dedicated PostgreSQL 16 and Cosmos DB. State key: `hov/prod/foundation-data.tfstate`.
+3. **Runtime:** Linux App Service plan/app, managed identity, RBAC/data-plane grants, App Insights and Log Analytics. State key: `hov/prod/runtime.tfstate`.
+4. **Migration runner:** temporary no-public-IP Linux VM in a dedicated subnet, controlled through Azure Managed Run Command with protected parameters. State key: `hov/prod/migration-runner.tfstate`.
+5. **Edge cutover:** custom hostname/TLS and coordinated OIDC/DNS updates. State key: `hov/prod/edge.tfstate`.
+6. **Runner teardown and source retirement:** separate future plans only after migration evidence, the observation window and restore proof. They are absent from all initial target plans.
 
-| Component                  | Type                                 | Technology                                          | Path                                    |
-| -------------------------- | ------------------------------------ | --------------------------------------------------- | --------------------------------------- |
-| Web/API                    | SSR application                      | Next.js 16 / TypeScript                             | `app/`, `lib/`                          |
-| Production infrastructure  | IaC                                  | Terraform / AzureRM 4.x                             | `terraform/environments/production/`    |
-| Shared application storage | Existing Azure Blob module           | Terraform                                           | `terraform/modules/storage/`            |
-| Restricted store           | New opt-in module                    | Azure Blob, Private Link, Entra RBAC, Azure Monitor | `terraform/modules/restricted-storage/` |
-| Privacy operations         | Activation/deletion/incident runbook | Markdown                                            | `docs/03-deployment/`                   |
+Each root must pin and assert:
 
-Live inspection found only `nlprodhovst` in the HOV resource group. It has
-public networking enabled, firewall default `Allow`, blob public access
-allowed, and shared-key access allowed, so it is not eligible for O6 restricted
-evidence and will not be repurposed by this plan.
+- tenant `5384ef74-e517-4b22-9472-df990f61e8b5`;
+- subscription `8a5dc70a-bafa-4a04-a281-9b4862a70810`;
+- resource group prefix `nex-prod-hov`;
+- region `southafricanorth`;
+- no source subscription IDs, `nl-prod-*` target names, source imports, destroys, replacements, or cross-product role assignments.
 
-### 12.4 Recipe selection
+### 5.2 Target service mapping
 
-**Selected:** Existing pure Terraform workflow.
+| Component           | Azure service                                          | Planned configuration                                                                                                                                                     |
+| ------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Web/API             | Linux App Service                                      | B1, Node.js 22, system-assigned identity, TLS 1.2+, FTPS disabled, VNet integration                                                                                       |
+| Estate data         | PostgreSQL Flexible Server                             | PostgreSQL 16, `Standard_B2s`, 32 GiB, private delegated subnet, 14-day PITR, geo-backup, deletion protection                                                             |
+| Database access     | PostgreSQL roles                                       | Separate server administrator, HOV schema owner, and least-privilege runtime role; application never uses server-admin DSN                                                |
+| Kiosk data          | Cosmos DB Mongo API                                    | 400 RU/s, private endpoint, public access disabled; migrate only verified active collections                                                                              |
+| Files               | StorageV2                                              | Standard ZRS where available, public blob access and shared-key runtime use disabled, private endpoint, versioning and soft delete                                        |
+| Secrets             | Key Vault                                              | RBAC authorization, purge protection, private endpoint, target-tenant identities only, Key Vault references in App Service                                                |
+| Monitoring          | Application Insights + Log Analytics                   | Workspace-based APM, target-specific role name, deployment and data-migration telemetry                                                                                   |
+| Identity            | App managed identity + external OIDC registration      | Target-tenant principal with minimal Key Vault/Blob rights; issuer, registration, redirect URIs and secret rotated atomically                                             |
+| Migration execution | Temporary Linux VM + Managed Run Command               | No public IP or inbound access; system identity has bounded HOV Blob/Key Vault rights; secrets enter only as protected parameters and are never stored in Terraform state |
+| DNS/TLS             | App Service managed certificate plus Cloudflare record | Bind and validate target before changing `hov.neuralliquid.ai`; retain source rollback until observation completes                                                        |
 
-**Rationale:** The repository already owns its production Azure topology through
-Terraform modules and a remote AzureRM backend. Introducing AZD or an imperative
-deployment path would create a second authority. This change adds one isolated,
-disabled-by-default module to the existing stack.
+### 5.3 Data migration
 
-### 12.5 Architecture
+1. Inventory live PostgreSQL schemas, owners, extensions, tables, row counts, indexes and identity mappings without logging credentials or row contents.
+2. Inventory Cosmos databases/collections and Blob containers/object counts; identify whether Baserow remains an active application dependency.
+3. Take a source-consistent PostgreSQL backup and independent Blob/Cosmos export appropriate to each active dataset.
+4. Execute private data-plane work from the temporary target migration runner. The source PostgreSQL firewall currently allows Azure-service traffic but rejected the operator workstation; source/target credentials are passed only as Managed Run Command protected parameters.
+5. Restore PostgreSQL into a disposable target server first. Verify ownership, DATE fidelity, indexes, checksums/counts and application DDL using only the scoped runtime role.
+6. Restore the approved target data, deploy runtime on the Azure hostname, and run positive and negative data-plane controls.
+7. Establish a write freeze or deterministic delta-reconciliation window for final sync.
+8. Preserve source database, runtime and DNS until target restart persistence, authentic acceptance and restore rehearsal pass. Teardown of the migration runner is a separate saved-plan action after its evidence is exported and temporary data is erased.
 
-| Component                     | Azure service / SKU                                           | Planned control                                                                                            |
-| ----------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Restricted evidence account   | StorageV2 Standard LRS                                        | HTTPS/TLS 1.2, infrastructure encryption, blob public access disabled, shared keys disabled, OAuth default |
-| Restricted evidence container | Private Blob container                                        | No anonymous or organization-wide access; no application connection string                                 |
-| Network boundary              | Private Endpoint in existing private-endpoint subnet          | Public network access disabled; Blob private DNS linked to the existing VNet                               |
-| Human access                  | Azure RBAC                                                    | `Storage Blob Data Contributor` only for explicitly supplied authorized-researcher Entra object IDs        |
-| Retention                     | Blob lifecycle plus versioning and short soft-delete recovery | Owner-approved bounded retention; deletion remains possible and auditable                                  |
-| Audit                         | Azure Monitor diagnostic setting                              | Blob read, write, delete, and all-metrics events sent to a dedicated low-volume Log Analytics workspace    |
-| Evidence reference            | HOV governance datastore                                      | Pseudonymous candidate ID and minimized evidence reference only; no restricted record content              |
+## 6. Provisioning limit checklist
 
-The module will be gated by `enable_restricted_evidence_store = false` by
-default. Enabling it without authorized researcher object IDs or a valid bounded
-retention period must fail Terraform validation/preconditions. No HOV App
-Service or Function managed identity receives data-plane access.
+Live checks were run on 2026-08-21 against `nexamesh-sub` in `southafricanorth`. Required providers are registered. The target currently has no resources in South Africa North.
 
-### 12.6 Provisioning limit checklist
+| Resource type                               |      Deploy |         Total after | Limit or availability                                                                     | Evidence                                                                       |
+| ------------------------------------------- | ----------: | ------------------: | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Resource groups                             |           2 | 4 subscription-wide | 980 per subscription                                                                      | Target currently has 2 RGs; Azure Resource Manager service limit               |
+| `Microsoft.Storage/storageAccounts`         |           2 |          2 regional | 250; usage 0                                                                              | Live `az quota show/usage show`                                                |
+| `Microsoft.Network/virtualNetworks`         |           1 |          1 regional | 1,000; usage 0                                                                            | Live `az quota show/usage show`                                                |
+| `Microsoft.Network/networkSecurityGroups`   |           4 |          4 regional | 5,000; usage 0                                                                            | Live `az quota show/usage show`                                                |
+| `Microsoft.Network/privateEndpoints`        |           3 |          3 regional | 65,536; usage 0                                                                           | Live `az quota show/usage show`                                                |
+| `Microsoft.Web/serverFarms`                 |           1 |          1 regional | B1 Linux available                                                                        | Live `az appservice list-locations` returned South Africa North                |
+| `Microsoft.Web/sites`                       |           1 |          1 regional | Available with selected plan                                                              | Same live App Service availability query                                       |
+| `Microsoft.DBforPostgreSQL/flexibleServers` |           1 |          1 regional | PostgreSQL 16 and `Standard_B2s` available                                                | Live `az postgres flexible-server list-skus`; zone HA and geo-backup supported |
+| `Microsoft.DocumentDB/databaseAccounts`     |           1 |          1 regional | Region available; default account limit 50                                                | Live `az cosmosdb locations list`; Microsoft service limit                     |
+| `Microsoft.KeyVault/vaults`                 |           1 |          1 regional | Region available                                                                          | Live provider-location query returned true                                     |
+| `Microsoft.Insights/components`             |           1 |          1 regional | Region available                                                                          | Live provider-location query returned true                                     |
+| `Microsoft.OperationalInsights/workspaces`  |           1 |          1 regional | Region available                                                                          | Provider registered; no target regional usage                                  |
+| `Microsoft.Compute/virtualMachines`         | 1 temporary |          1 regional | `Standard_B2s` listed in South Africa North; regional usage API returned no quota records | Live `az vm list-sizes`; exact plan remains gated on successful allocation     |
+| Private DNS zones and links                 |           4 | 4 subscription-wide | Control-plane service limits; no regional capacity allocation                             | Required for PostgreSQL, Blob, Key Vault and Cosmos private endpoints          |
 
-Capacity was checked against the detected subscription and proposed region on
-2026-07-26. No cells are pending.
+**Capacity status:** All planned resource families and selected SKUs are available with ample quota in South Africa North.
 
-| Resource type                                 | Number to deploy               | Total after deployment             | Limit/quota                                    | Evidence                                                                                                   |
-| --------------------------------------------- | ------------------------------ | ---------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `Microsoft.Storage/storageAccounts`           | 1                              | 16                                 | 250 per region                                 | `az quota list` and `az quota usage list` for Microsoft.Storage in South Africa North: usage 15, limit 250 |
-| `Microsoft.Network/privateEndpoints`          | 1                              | 2                                  | 65,536 regional quota                          | `az quota list` and `az quota usage list` for Microsoft.Network: usage 1, limit 65,536                     |
-| `Microsoft.Network/privateDnsZones`           | 1                              | 2 in HOV RG                        | Service limit, no regional capacity allocation | Live lookup found one HOV private DNS zone; the Blob zone is a lightweight control-plane resource          |
-| `Microsoft.OperationalInsights/workspaces`    | 1                              | 1 in HOV RG                        | Service limit, no compute quota allocation     | Live lookup found zero HOV Log Analytics workspaces                                                        |
-| Blob container, diagnostic setting, VNet link | 1 each                         | 1 each for this module             | Child/control-plane resources                  | No independent regional compute quota                                                                      |
-| Blob data-contributor role assignments        | One per supplied researcher ID | Determined by approved named users | Azure RBAC assignment service limit            | Empty until the owner supplies non-secret Entra object IDs                                                 |
+Region evidence: [Azure regions list](https://learn.microsoft.com/azure/reliability/regions-list), [Azure PostgreSQL availability](https://learn.microsoft.com/azure/postgresql/overview), and live subscription/SKU/quota queries recorded above.
 
-**Capacity status:** All quota-governed resources are comfortably within limits.
-The storage account name `nlprodhovrestricted` was available when checked on
-2026-07-26; availability must be rechecked immediately before any apply.
+## 7. Execution checklist
 
-### 12.7 Execution checklist
+### Phase 1 - planning
 
-#### Phase 1 - planning
+- [x] Reverify PRs #199, #201 and #202, current checks and review threads.
+- [x] Confirm source and target tenant/subscription/resource-group boundaries.
+- [x] Select `southafricanorth` for South African data residency.
+- [x] Register required target resource providers.
+- [x] Validate service/SKU availability and regional quotas.
+- [x] Scan application, Terraform, data, identity, DNS and workflow coupling.
+- [x] Select fresh target-only Terraform roots and state boundaries.
+- [x] User approved this exact plan and rollback boundary on 2026-08-21; Codex using the current authenticated Azure Owner session is the deployment operator.
 
-- [x] Analyze existing Azure/Terraform workspace in MODIFY mode.
-- [x] Gather requirements from the merged O6 and PIRB provider-boundary docs.
-- [x] Scan live Azure storage, networking, DNS, and Log Analytics state.
-- [x] Select the existing Terraform recipe.
-- [x] Plan the isolated restricted-store architecture.
-- [x] Validate proposed-region storage and private-endpoint capacity.
-- [x] User confirms subscription `bb4e3882-2079-4bab-8974-611bc0b8bb58`.
-- [x] User confirms location `southafricanorth`.
-- [x] User approves this plan with `proceed` on 2026-07-26.
+### Phase 2 - preparation
 
-#### Phase 2 - execution after approval
+- [x] Create target-only backend/bootstrap Terraform.
+- [x] Create foundation/data, runtime and edge roots with target assertions.
+- [x] Create the temporary private migration-runner root and a separately gated teardown path.
+- [x] Remove source imports and source defaults from every target root.
+- [x] Add scoped PostgreSQL owner/runtime role creation and Key Vault reference wiring.
+- [x] Add migration inventory, backup, restore, checksum and rollback scripts that never print secrets.
+- [x] Add target-only GitHub environment/OIDC workflow; disable pre-plan secret mutation.
+- [x] Add exact-plan policy tests rejecting source IDs/imports/destroys/replacements.
+- [x] Write and review migration/cutover/rollback runbook.
+- [x] Set plan status to `Ready for Validation` only after all preparation is complete.
 
-- [x] Load Azure Storage and monitoring implementation references.
-- [x] Add `terraform/modules/restricted-storage/{main,variables,outputs}.tf`.
-- [x] Wire disabled-by-default production variables, module, outputs, and example values.
-- [x] Add deterministic Terraform contract tests/policy checks where supported.
-- [x] Add the O6 restricted-store activation, access-review, correction/deletion, and incident runbook.
-- [x] Keep human role IDs and live values out of Git and Baton.
-- [x] Set this plan status to `Ready for Validation` before invoking `azure-validate`.
+### Phase 3 - validation
 
-#### Phase 3 - validation
+- [x] Invoke `azure-validate` for repository readiness and target-boundary checks.
+- [ ] Run Terraform formatting, initialization against the new backend, validation and create-only plan.
+- [ ] Confirm exact plan contains no source imports, changes, destroys or replacements.
+- [x] Build, lint and test the application and migration tooling.
+- [ ] Rehearse independent restore into disposable target infrastructure.
+- [ ] Record commands, plan hashes, artifact hashes, row/object counts and rollback proof in Section 8.
+- [ ] Set status to `Validated` only after every gate passes.
 
-- [x] Invoke `azure-validate` after preparation status is `Ready for Validation`.
-- [x] Run `terraform fmt -recursive -check`.
-- [x] Run Terraform initialization/validation without applying changes.
-- [x] Prove disabled-default plan shape has no new resources.
-- [x] Prove enabled fixture fails without named researchers and bounded retention.
-- [x] Run repository lint/tests required by touched files.
-- [x] Record validation proof in this plan and the O6 runbook.
+### Phase 4 - deployment
 
-#### Phase 4 - deployment
+- [ ] Invoke `azure-deploy`; do not run ad-hoc `terraform apply`.
+- [ ] Provision bootstrap, foundation/data, runtime and the temporary migration runner in order.
+- [ ] Deploy exact application build to target Azure hostname without DNS cutover.
+- [ ] Restore and validate data, managed identity and service data-plane denials.
+- [ ] Coordinate OIDC registration, secret, issuer and callback changes atomically.
+- [ ] Bind hostname/TLS, then change DNS only after target acceptance.
+- [ ] Verify authenticated admin and non-admin flows, durable writes across restart, real SQL positive control, Blob/Cosmos access and observability.
+- [ ] Observe target before separately planning source retirement.
 
-- [ ] Out of scope for this plan and PR.
-- [ ] Requires a separate user-approved `azure-deploy` workflow after privacy,
-      owner, identity, access-path, cost, and Terraform plan review.
+## 8. Validation proof
 
-### 12.8 Files to generate
+Repository validation is complete, but infrastructure plan and restore evidence remain pending while status is `Ready for Validation`. Do not change status to `Validated` until exact saved-plan hashes and restore-rehearsal results are recorded.
 
-| File                                                    | Purpose                                                                         | Status   |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------- | -------- |
-| `.azure/plan.md`                                        | Current preparation authority and approval gate                                 | Complete |
-| `terraform/modules/restricted-storage/main.tf`          | Fail-closed storage, network, retention, RBAC, and diagnostics                  | Complete |
-| `terraform/modules/restricted-storage/variables.tf`     | Typed activation, identity, retention, network, and tag inputs                  | Complete |
-| `terraform/modules/restricted-storage/outputs.tf`       | Non-secret resource IDs/endpoints only                                          | Complete |
-| `terraform/modules/restricted-storage/versions.tf`      | Explicit AzureRM and AzAPI provider sources                                     | Complete |
-| `terraform/environments/production/main.tf`             | Opt-in module wiring                                                            | Complete |
-| `terraform/environments/production/variables.tf`        | Disabled-by-default production inputs                                           | Complete |
-| `terraform/environments/production/outputs.tf`          | Optional non-sensitive outputs                                                  | Complete |
-| `terraform/environments/production/*.tfvars.example`    | Safe placeholder examples only                                                  | Complete |
-| `docs/03-deployment/09-o6-restricted-evidence-store.md` | Human activation, access, retention, deletion, correction, and incident runbook | Complete |
+| Check                                            | Command or artifact                                                                   | Result                                                     | Timestamp  |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ---------- |
+| Frozen dependency install                        | `pnpm install --frozen-lockfile`                                                      | Passed                                                     | 2026-08-21 |
+| Application lint                                 | `pnpm run lint`                                                                       | Passed                                                     | 2026-08-21 |
+| TypeScript                                       | `pnpm exec tsc --noEmit`                                                              | Passed                                                     | 2026-08-21 |
+| Application tests                                | `pnpm test`                                                                           | 121 files passed, 1 skipped; 1,135 tests passed, 5 skipped | 2026-08-21 |
+| Application build                                | `pnpm run build`                                                                      | Passed; 137 pages generated                                | 2026-08-21 |
+| Terraform formatting                             | `terraform fmt -check -recursive terraform/migrations/hov-nexamesh`                   | Passed                                                     | 2026-08-21 |
+| Terraform static validation                      | `terraform validate -no-color` in all five migration roots                            | Passed                                                     | 2026-08-21 |
+| Workflow validation                              | `actionlint .github/workflows/hov-nexamesh-migration.yml`                             | Passed                                                     | 2026-08-21 |
+| Migration script parsing                         | PowerShell AST for all `.ps1`; `node --check` for `.mjs`; embedded Bash syntax checks | Passed                                                     | 2026-08-21 |
+| Whitespace integrity                             | `git diff --check`                                                                    | Passed                                                     | 2026-08-21 |
+| Exact infrastructure plans and restore rehearsal | Saved plans, hashes and disposable restore evidence                                   | Pending                                                    | 2026-08-21 |
 
-### 12.9 Approval boundary
+## 9. Files to generate
 
-Approval of this preparation plan authorizes repository changes and validation
-only. It does not authorize Terraform apply, Azure RBAC changes, candidate data,
-PIRB calls, reviewer outreach, O5/O6 activation, or Gate progression.
+| File or directory                                      | Purpose                                                                | Status   |
+| ------------------------------------------------------ | ---------------------------------------------------------------------- | -------- |
+| `.azure/plan.md`                                       | Current migration authority and gate record                            | Complete |
+| `terraform/migrations/hov-nexamesh/bootstrap/`         | Target-only state backend                                              | Complete |
+| `terraform/migrations/hov-nexamesh/foundation-data/`   | Target network, secrets and datastores                                 | Complete |
+| `terraform/migrations/hov-nexamesh/runtime/`           | Target App Service, identity and telemetry                             | Complete |
+| `terraform/migrations/hov-nexamesh/migration-runner/`  | Temporary private execution environment for data and secret operations | Complete |
+| `terraform/migrations/hov-nexamesh/edge/`              | Hostname/TLS/DNS/OIDC cutover                                          | Complete |
+| `scripts/migration/hov-nexamesh/`                      | Inventory, backup, restore and verification tooling                    | Complete |
+| `docs/03-deployment/hov-nexamesh-migration-runbook.md` | Operator sequencing, rollback and evidence                             | Complete |
+| `.github/workflows/hov-nexamesh-migration.yml`         | Target-only plan/apply workflow with environment approval              | Complete |
 
-### 12.10 Research summary
+## 10. Approval boundary
 
-- AzureRM 4.x supports the required account controls: public networking and
-  nested public access disabled, shared keys disabled, OAuth as the default,
-  and infrastructure encryption enabled.
-- AzureRM normally uses Storage data-plane authorization to provision a Blob
-  container. The restricted container will instead use the AzAPI ARM
-  control-plane resource so deployment never needs a shared key and does not
-  require changing the existing provider's storage authentication behavior.
-- The container ARM contract supports explicit `publicAccess = "None"` and
-  encryption-scope override denial.
-- RBAC assignments will use the built-in `Storage Blob Data Contributor` role
-  at the restricted account scope only. Application identities are not inputs.
-- Blob diagnostics will use explicit `StorageRead`, `StorageWrite`, and
-  `StorageDelete` categories plus `AllMetrics`, sent to the module's dedicated
-  Log Analytics workspace.
-- Lifecycle deletion will use days since creation, including base blobs,
-  versions, and snapshots, so modification cannot silently extend retention.
+The user approved this exact written plan on 2026-08-21 and designated Codex using the current authenticated Azure Owner session as deployment operator. Approval authorizes preparation and validation, followed by deployment only through the exact saved-plan gate in this document. It does not authorize source deletion; source retirement remains a later exact-plan decision after the observation window.
 
-### 12.11 Validation evidence
+## 11. Next steps
 
-Validated on 2026-07-26 without applying or changing any Azure resource:
-
-- `terraform init -backend=false -upgrade`: passed; locked AzAPI `2.11.0`.
-- `terraform init -reconfigure -backend-config=backend.hcl`: passed for
-  read-only production-state plan inspection.
-- `terraform fmt -recursive -check`: passed.
-- `terraform validate`: passed without warnings.
-- Disabled-default plan: `0` restricted-store resource changes. The broader
-  production baseline was `0 to add, 9 to change, 0 to destroy`; those
-  unrelated in-place changes must be reconciled before any future apply.
-- Enabled synthetic targeted plan: `9 to add, 1 to change, 0 to destroy`; the
-  single VNet change is an existing provider/state normalization outside this
-  module, so the saved plan is evidence only and must not be applied.
-- Empty researcher set: plan rejected with the named-researcher precondition.
-- Retention and soft-delete both set to 30 days: plan rejected because soft
-  delete must be shorter than evidence retention.
-- Restricted-storage contract test: `4 passed`.
-- `pnpm run lint`: passed.
-- Focused Prettier check: passed.
-- Full `pnpm test`: `398 passed`, with two pre-existing Windows CRLF failures
-  in `tests/lib/deployment-workflow-contract.test.ts`; this change does not
-  touch deployment workflows or that test.
+1. Review and land the isolated target Terraform roots, application support and migration tooling.
+2. Generate and review create-only exact plans from the merged commit.
+3. Bind production authorization to the saved plan hashes and execute through `azure-deploy`.
