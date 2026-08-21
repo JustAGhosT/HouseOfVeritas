@@ -8,12 +8,26 @@
 
 ## Context
 
-House of Veritas currently uses several in-memory stores that are volatile and lost on restart. Production requires persistent storage for users, audit logs, rate limiting, real-time events, and time-clock records. The platform already uses:
+House of Veritas currently uses several in-memory stores that are volatile and lost on restart. Production requires persistent storage for users, audit logs, rate limiting, and time-clock records. Real-time SSE events are explicitly ephemeral under this ADR and are excluded from that persistence requirement unless a retained replay capability is separately approved.
 
-- **PostgreSQL** (Azure Flexible): DocuSeal, Baserow databases
-- **MongoDB** (optional): Kiosk requests, audit log dual-write
-- **Redis** (Docker Compose): Baserow caching
-- **Azure Blob Storage**: Documents, backups
+The following list recorded the intended supporting topology when this ADR was accepted, not the verified production runtime. ADR-013 partially supersedes this current-state assumption: it records a shared HOV PostgreSQL database, role, and schema, but the canonical HOV app was not connected to them at its last verification. Re-inventory live configuration before migration.
+
+The accepted target assignments were:
+
+- **PostgreSQL**: authoritative users and audit records; time-clock and
+  biometric records in dedicated tables or the PostgreSQL-backed Baserow model;
+  DocuSeal and Baserow backing databases
+- **Redis**: authoritative production rate-limit windows; `REDIS_URL` is a
+  production-readiness requirement, while the in-memory fallback is only for
+  local development or an explicitly recorded degraded state
+- **In-memory event store**: ephemeral short-lived SSE buffer, not a retained
+  system of record; a PostgreSQL replay archive requires a separate retention
+  decision
+- **MongoDB** (optional): kiosk requests and best-effort audit-log dual-write;
+  audit reads use it only when PostgreSQL is unconfigured, not as automatic
+  failover when a configured PostgreSQL service fails, and no reconciliation or
+  recovery guarantee exists
+- **Azure Blob Storage**: documents and backups
 
 ### Current In-Memory Stores
 
@@ -24,6 +38,13 @@ House of Veritas currently uses several in-memory stores that are volatile and l
 | Rate limiter         | `lib/auth/rate-limit.ts`      | Per-key request counts            | Rate limits reset; abuse possible |
 | Event store          | `lib/realtime/event-store.ts` | SSE events (last 100)             | Real-time feed lost               |
 | Biometric/time clock | `app/api/biometric/route.ts`  | Clock records, enrolled employees | Time tracking lost                |
+
+In the last verified canonical runtime, no persistent store was authoritative
+for these five record classes: users remained the static seed, while audit,
+rate-limit, event, and time-clock state remained process-local and reset on
+restart. ADR-013's provisioned database did not change that runtime fact because
+the canonical app was not connected to it. Persistent ownership and retention
+for these records therefore remain an implementation gap, not a deployed claim.
 
 ---
 

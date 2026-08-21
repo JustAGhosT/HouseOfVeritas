@@ -4,23 +4,30 @@
 **Date:** 2026-08-06
 **Deciders:** Jurie (owner)
 **Supersedes in part:** [ADR-005](./05-persistence-strategy-adr.md) — which assumed a dedicated HOV PostgreSQL Flexible Server that was specified but never provisioned.
+**Superseded in part by:** [ADR-014](./14-nexamesh-product-boundary-adr.md) — the later NexaMesh product-boundary decision reopens the target hosting topology and requires HOV to leave the shared NeuralLiquid server with an independently restorable datastore.
 
 ---
 
 ## Context
 
+ADR-013 remains the authoritative record of the last verified source state and
+the 2026-08-06 consolidation. It is no longer the target-state authority for an
+HOV migration: ADR-014 supersedes Decision 2 for that future cutover. Retaining
+`houseofveritas` on `nl-prod-shared-pg` is therefore a source compatibility
+condition, not the approved NexaMesh destination.
+
 ADR-005 chose PostgreSQL as the primary store. Terraform defines the module, but a 2026-08-06 audit found that `enable_database` defaults to `false` and **no PostgreSQL server has ever existed in `nl-prod-hov-rg`**. The consequence was a data layer spread across three-and-a-half stores, none of them actually serving operational data:
 
-| Store | Intended role | Actual state (2026-08-06) |
-| --- | --- | --- |
-| Baserow | 15 operational tables, 103 code files | **Unconfigured** — `/api/health` reported `dataMode: empty`; never held a row |
-| PostgreSQL | users, audit, uploads, dashboard config | **Never provisioned** |
-| Cosmos (Mongo API) | kiosk, tasks | Provisioned (`nlprodhovcosmos`) |
-| PostgreSQL (embedded) | DocuSeal / Baserow backing databases | Defined, gated off with the above |
+| Store                 | Intended role                           | Actual state (2026-08-06)                                                     |
+| --------------------- | --------------------------------------- | ----------------------------------------------------------------------------- |
+| Baserow               | 15 operational tables, 103 code files   | **Unconfigured** — `/api/health` reported `dataMode: empty`; never held a row |
+| PostgreSQL            | users, audit, uploads, dashboard config | **Never provisioned**                                                         |
+| Cosmos (Mongo API)    | kiosk, tasks                            | Provisioned (`nlprodhovcosmos`)                                               |
+| PostgreSQL (embedded) | DocuSeal / Baserow backing databases    | Defined, gated off with the above                                             |
 
 Because Baserow had never been configured, there was **no data to migrate** — making this the cheapest possible moment to consolidate.
 
-Two decisions follow: *what* backs estate data, and *where* that database lives.
+Two decisions follow: _what_ backs estate data, and _where_ that database lives.
 
 ---
 
@@ -46,12 +53,12 @@ A dedicated server, `nl-prod-shared-pg` (resource group `nl-prod-shared-rg`, Sou
 
 **Current tenants**
 
-| Database | Owner role | Migrated |
-| --- | --- | --- |
-| `houseofveritas` | `houseofveritas` | 2026-08-06 — schema self-creates; no data to move |
-| `convolens` | `convolens` | 2026-08-06 — 6 tables, 26 rows |
+| Database         | Owner role       | Migrated                                                                         |
+| ---------------- | ---------------- | -------------------------------------------------------------------------------- |
+| `houseofveritas` | `houseofveritas` | 2026-08-06 — role and schema provisioned; production app cutover remains pending |
+| `convolens`      | `convolens`      | 2026-08-06 — 6 tables, 26 rows                                                   |
 
-**How this was reached.** HOV was first placed on the existing `nl-prod-convolens-pg` server, on the reasoning that cost was the binding constraint and a second B1ms was unjustified. That was correct about cost and wrong about structure: it made HOV a guest on another application's production instance, with a shared administrative credential and coupled backup/restore. Moving *both* applications onto a neutral server keeps the server count — and therefore the cost — unchanged, while removing the guest relationship entirely.
+**How this was reached.** HOV was first placed on the existing `nl-prod-convolens-pg` server, on the reasoning that cost was the binding constraint and a second B1ms was unjustified. That was correct about cost and wrong about structure: it made HOV a guest on another application's production instance, with a shared administrative credential and coupled backup/restore. Moving _both_ applications onto a neutral server keeps the server count — and therefore the cost — unchanged, while removing the guest relationship entirely.
 
 **Rationale**
 
@@ -70,13 +77,13 @@ A dedicated server, `nl-prod-shared-pg` (resource group `nl-prod-shared-rg`, Sou
 
 ## Alternatives considered
 
-| Option | Verdict |
-| --- | --- |
+| Option                                                     | Verdict                                                                                                       |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | Dedicated `nl-prod-hov-pg` (flip `enable_database = true`) | Cleanest isolation and the ADR-005 assumption. Rejected on cost: it adds a server rather than relocating one. |
-| **Shared `nl-prod-*` org server, database-per-app** | **Adopted 2026-08-06.** See Decision 2. |
-| Host HOV on `nl-prod-convolens-pg` | Adopted briefly, then superseded the same day — see Decision 2. |
-| Graft onto `nl-dev-omnipost-*` | Rejected: North Europe / Sweden Central. |
-| Cosmos (Mongo API) as primary estate store | Rejected — see Decision 1. |
+| **Shared `nl-prod-*` org server, database-per-app**        | **Adopted 2026-08-06.** See Decision 2.                                                                       |
+| Host HOV on `nl-prod-convolens-pg`                         | Adopted briefly, then superseded the same day — see Decision 2.                                               |
+| Graft onto `nl-dev-omnipost-*`                             | Rejected: North Europe / Sweden Central.                                                                      |
+| Cosmos (Mongo API) as primary estate store                 | Rejected — see Decision 1.                                                                                    |
 
 ---
 

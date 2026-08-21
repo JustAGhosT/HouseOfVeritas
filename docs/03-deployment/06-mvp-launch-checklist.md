@@ -32,44 +32,44 @@ All four should succeed cleanly. Fix anything red before promoting to CI.
 
 ## 4. GitHub Actions secrets
 
-| Secret | Purpose |
-| --- | --- |
-| `AZURE_CREDENTIALS` | SP JSON for `azure/login@v2` |
-| `TF_STATE_RESOURCE_GROUP` | `hov-shared-tfstate-rg` |
-| `TF_STATE_STORAGE_ACCOUNT` | `hovsharedtfstatesa` |
-| `TF_STATE_CONTAINER` | `tfstate` |
-| `TF_STATE_KEY` | `production.terraform.tfstate` |
-| `DB_ADMIN_PASSWORD` | PostgreSQL admin password |
-| `ACS_CONNECTION_STRING` | Azure Communication Services Email connection string (Functions + Next.js) |
-| `SMTP_USERNAME` / `SMTP_PASSWORD` | DocuSeal SMTP relay — point at ACS at `smtp.azurecomm.net:587` |
-| `SSL_CERTIFICATE_DATA` | base64-encoded PFX |
-| `SSL_CERTIFICATE_PASSWORD` | PFX password |
-| `DOCUSEAL_URL` / `BASEROW_URL` | post-deploy health checks |
-| `BASEROW_TOKEN` | for seed scripts |
+| Secret                            | Purpose                                                                    |
+| --------------------------------- | -------------------------------------------------------------------------- |
+| `AZURE_CREDENTIALS`               | SP JSON for `azure/login@v2`                                               |
+| `TF_STATE_RESOURCE_GROUP`         | `hov-shared-tfstate-rg`                                                    |
+| `TF_STATE_STORAGE_ACCOUNT`        | `hovsharedtfstatesa`                                                       |
+| `TF_STATE_CONTAINER`              | `tfstate`                                                                  |
+| `TF_STATE_KEY`                    | `production.terraform.tfstate`                                             |
+| `DB_ADMIN_PASSWORD`               | PostgreSQL admin password                                                  |
+| `ACS_CONNECTION_STRING`           | Azure Communication Services Email connection string (Functions + Next.js) |
+| `SMTP_USERNAME` / `SMTP_PASSWORD` | DocuSeal SMTP relay — point at ACS at `smtp.azurecomm.net:587`             |
+| `SSL_CERTIFICATE_DATA`            | base64-encoded PFX                                                         |
+| `SSL_CERTIFICATE_PASSWORD`        | PFX password                                                               |
+| `DOCUSEAL_URL` / `BASEROW_URL`    | post-deploy health checks                                                  |
+| `BASEROW_TOKEN`                   | for seed scripts                                                           |
 
 ## 5. GitHub Actions vars
 
-| Var | Default if unset |
-| --- | --- |
+| Var           | Default if unset      |
+| ------------- | --------------------- |
 | `WEBAPP_NAME` | `nl-prod-hov-app-san` |
-| `DOMAIN_NAME` | `nexamesh.ai` |
+| `DOMAIN_NAME` | `nexamesh.ai`         |
 
 ## 6. App Service / Function App settings
 
 These are the runtime env vars the Next.js app reads. Set in Azure App Service → Configuration (or via Key Vault references).
 
-| Group | Vars |
-| --- | --- |
-| Auth | `JWT_SECRET`, `INVITE_JWT_SECRET` |
-| Baserow | `BASEROW_API_URL`, `BASEROW_API_TOKEN`, `BASEROW_DATABASE_ID`, all `BASEROW_TABLE_*` IDs |
-| DocuSeal | `DOCUSEAL_API_URL`, `DOCUSEAL_API_TOKEN`, `DOCUSEAL_WEBHOOK_SECRET` |
-| Email | `ACS_CONNECTION_STRING` (Azure Communication Services), `EMAIL_FROM` |
-| Twilio | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` |
-| Storage | `AZURE_STORAGE_ACCOUNT_NAME`, `AZURE_STORAGE_ACCOUNT_KEY`, `AZURE_STORAGE_CONTAINER_DOCUMENTS`, `AZURE_STORAGE_CONTAINER_UPLOADS` |
-| OCR | `AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT`, `AZURE_DOCUMENT_INTELLIGENCE_KEY` |
-| Mongo | `MONGODB_URI` (kiosk + audit-log fallback) |
-| Postgres | `POSTGRES_URL` (audit-log primary) |
-| Redis | `REDIS_URL` (optional — rate-limit persistence) |
+| Group    | Vars                                                                                                                                       |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Auth     | `JWT_SECRET`, `INVITE_JWT_SECRET`                                                                                                          |
+| Baserow  | `BASEROW_API_URL`, `BASEROW_API_TOKEN`, `BASEROW_DATABASE_ID`, all `BASEROW_TABLE_*` IDs                                                   |
+| DocuSeal | `DOCUSEAL_API_URL`, `DOCUSEAL_API_TOKEN`, `DOCUSEAL_WEBHOOK_SECRET`                                                                        |
+| Email    | `ACS_CONNECTION_STRING` (Azure Communication Services), `EMAIL_FROM`                                                                       |
+| Twilio   | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`                                                                           |
+| Storage  | `AZURE_STORAGE_ACCOUNT_NAME`, `AZURE_STORAGE_ACCOUNT_KEY`, `AZURE_STORAGE_CONTAINER_DOCUMENTS`, `AZURE_STORAGE_CONTAINER_UPLOADS`          |
+| OCR      | `AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT`, `AZURE_DOCUMENT_INTELLIGENCE_KEY`                                                                  |
+| Mongo    | `MONGODB_URI` (kiosk + best-effort audit compatibility reads when PostgreSQL is unconfigured; not automatic failover or a recovery source) |
+| Postgres | `POSTGRES_URL` (audit-log primary)                                                                                                         |
+| Redis    | `REDIS_URL` (required for production-ready persistent rate limiting; in-memory fallback is non-production/degraded only)                   |
 
 Critical secrets must come from Key Vault references, not literal app settings.
 

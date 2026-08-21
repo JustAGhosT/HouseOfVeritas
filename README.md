@@ -1,13 +1,33 @@
-# House of Veritas -- Digital Governance Platform
+# House of Veritas -- Intelligent Physical Estate
 
-A comprehensive estate and asset management platform for private households and small estates, featuring secure document signing, operational tracking, inventory management, and AI-powered automation.
+House of Veritas is an intelligent physical-estate operating system governed by
+AI and the first vertical product built on NexaMesh. It joins estate governance,
+people, spaces, assets, vehicles, work, money, documents, incidents, and
+accountable decisions in one human-controlled operating layer.
+
+The current production system is the digital control-plane foundation. Trusted
+sensor events, device twins, local edge agents, mesh transport, and automated
+physical responses are roadmap capabilities and are not represented as live.
 
 **App URL:** [nl-prod-hov-app.azurewebsites.net](https://nl-prod-hov-app.azurewebsites.net) | **Region:** South Africa North | **Status:** Canonical production live
 
-`nexamesh.ai` currently serves the shared Neualliquid/Nexamesh portfolio surface
-for House of Veritas, Cog-Mesh, Omnipost, and Convolens. It is not bound
-directly to the House of Veritas App Service unless a custom-domain cutover is
-performed.
+HOV is now architecturally part of the NexaMesh product family, while its
+current repository, source-subscription resource footprint, and
+`hov.neuralliquid.ai` compatibility hostname remain unchanged pending a
+separately reviewed migration. The source inventory must verify which shared
+data services are active; their presence is not evidence of a live runtime
+dependency. See
+[ADR-014](docs/02-architecture/14-nexamesh-product-boundary-adr.md).
+
+## Product boundary
+
+- **HOV owns estate truth:** people, policy, assets, work, incidents, finance,
+  documents, decisions, and retained domain evidence.
+- **NexaMesh owns the physical-world substrate:** device identity, trusted
+  observations, edge execution, mesh transport, device health, and provenance
+  primitives.
+- **AI providers remain contracted dependencies:** reasoning and analysis do
+  not receive implicit ownership of estate records.
 
 ---
 
@@ -21,23 +41,26 @@ performed.
 - **Marketplace** -- Multi-platform listing with AI-generated descriptions
 - **OCR Scanner** -- Invoice and receipt processing via Azure Document Intelligence
 - **Compliance** -- POPIA, BCEA, ECT Act compliant with full audit logging
+- **Physical-estate foundation** -- Assets, locations, incidents, maintenance,
+  vehicles, and operational workflows ready for future authenticated NexaMesh
+  observations
 
 ---
 
 ## Tech Stack
 
-| Category  | Technology                         |
-| --------- | ---------------------------------- |
-| Framework | Next.js 16 (App Router)            |
-| Language  | TypeScript 5                       |
-| Styling   | Tailwind CSS 4 + Shadcn/UI         |
-| Backend   | Next.js API routes; DocuSeal and Baserow optional |
-| Database  | Empty/local mode by default; PostgreSQL optional |
-| Storage   | Azure Blob Storage (LRS baseline)  |
-| OCR       | Azure Document Intelligence optional |
-| IaC       | Terraform 1.5+                     |
-| CI/CD     | GitHub Actions                     |
-| Cloud     | Azure (South Africa North)         |
+| Category  | Technology                                                                                                             |
+| --------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Framework | Next.js 16 (App Router)                                                                                                |
+| Language  | TypeScript 5                                                                                                           |
+| Styling   | Tailwind CSS 4 + Shadcn/UI                                                                                             |
+| Backend   | Next.js API routes; DocuSeal and Baserow optional                                                                      |
+| Database  | Canonical app documented in empty mode; shared HOV PostgreSQL destination exists but activation must be re-inventoried |
+| Storage   | Azure Blob Storage (LRS baseline)                                                                                      |
+| OCR       | Azure Document Intelligence optional                                                                                   |
+| IaC       | Terraform 1.5+                                                                                                         |
+| CI/CD     | GitHub Actions                                                                                                         |
+| Cloud     | Azure (South Africa North)                                                                                             |
 
 ---
 
@@ -54,10 +77,19 @@ See [Local Development Guide](docs/03-deployment/02-local-development.md) for Do
 
 ### Azure Deployment
 
-Production currently uses the low-cost canonical baseline: App Service,
-Storage, Key Vault, and VNet. Optional services such as Baserow, DocuSeal,
-PostgreSQL, Cosmos DB, Functions, Document Intelligence, monitoring, and
-Application Gateway are disabled until explicitly justified.
+The last verified canonical app baseline uses App Service, Storage, Key Vault,
+and VNet in empty data mode. ADR-013 records that the HOV database, role, and
+schema exist on `nl-prod-shared-pg`, but that the canonical app was not connected
+to them at verification time. Re-inventory the live app configuration and shared
+services before migration; do not infer an active dependency from provisioned
+resources. Optional services such as Baserow, DocuSeal, Cosmos DB, Functions,
+Document Intelligence, monitoring, and Application Gateway remain conditional.
+
+> **Migration safety:** Do not apply the current production Terraform against
+> `nexamesh-sub`. Its backend, state, and import IDs describe the source-bound
+> deployment. Re-inventory the live estate and create a migration-specific
+> configuration with separate state before any separately authorized plan or
+> apply.
 
 ```powershell
 cd terraform\environments\production
