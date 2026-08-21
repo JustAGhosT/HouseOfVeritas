@@ -12,9 +12,11 @@ physical responses are roadmap capabilities and are not represented as live.
 **App URL:** [nl-prod-hov-app.azurewebsites.net](https://nl-prod-hov-app.azurewebsites.net) | **Region:** South Africa North | **Status:** Canonical production live
 
 HOV is now architecturally part of the NexaMesh product family, while its
-current repository, runtime, shared data dependency, and
+current repository, source-subscription resource footprint, and
 `hov.neuralliquid.ai` compatibility hostname remain unchanged pending a
-separately reviewed migration. See
+separately reviewed migration. The source inventory must verify which shared
+data services are active; their presence is not evidence of a live runtime
+dependency. See
 [ADR-014](docs/02-architecture/14-nexamesh-product-boundary-adr.md).
 
 ## Product boundary

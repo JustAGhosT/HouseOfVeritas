@@ -44,6 +44,8 @@
 | [09-workflow-orchestration-adr.md](02-architecture/09-workflow-orchestration-adr.md)             | ADR: Workflow orchestration — Inngest, workflow layer, n8n roadmap, weighted decision matrix     |
 | [10-workflow-specifications.md](02-architecture/10-workflow-specifications.md)                   | Full workflow catalog — employee, asset, incident, safety, payroll, n8n rules                    |
 | [11-operations-swimlane-process-maps.md](02-architecture/11-operations-swimlane-process-maps.md) | Operations swimlane process maps — onboarding, daily ops, assets, incidents, financial workflows |
+| [12-operations-implementation-review.md](02-architecture/12-operations-implementation-review.md) | Operations implementation review and architecture recommendations                                |
+| [13-database-hosting-adr.md](02-architecture/13-database-hosting-adr.md)                         | ADR: PostgreSQL hosting consolidation and database isolation                                     |
 | [14-nexamesh-product-boundary-adr.md](02-architecture/14-nexamesh-product-boundary-adr.md)       | ADR: HOV as the NexaMesh intelligent physical-estate product and isolated data boundary          |
 
 ## 03-deployment/ -- Deployment and Operations

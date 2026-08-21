@@ -33,7 +33,7 @@ physical responses are not yet production capabilities.
 | Option                      | Benefits                                                                                  | Costs and risks                                                                                        |
 | --------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | Keep HOV in NeuralLiquid    | Matches the current repository and hostname; minimal portfolio change                     | Treats the physical-estate thesis as incidental and makes NexaMesh a peripheral integration            |
-| Make HOV a NexaMesh product | Aligns the product with physical-world AI and gives NexaMesh a concrete civilian vertical | Requires coordinated story, infrastructure, data, DNS, and repository transition work                  |
+| Make HOV a NexaMesh product | Aligns the product with physical-world AI and gives NexaMesh a concrete civilian vertical | Requires coordination across product story, infrastructure, data, DNS, and repository transition work  |
 | Make HOV fully standalone   | Strongest brand and compliance isolation                                                  | Adds another control plane before scale justifies it; loses the explicit platform/product relationship |
 
 ## Decision
@@ -47,14 +47,15 @@ criteria. NexaMesh provides reusable platform contracts and infrastructure.
 NeuralLiquid services may continue to provide reasoning, model routing,
 document intelligence, or analytics through explicit external contracts.
 
-The intended Azure destination is an isolated `nex-prod-hov-rg` boundary in
-`nexamesh-sub`. A dedicated `hov-sub` remains a future option if privacy,
-regulatory, restore, commercial, or blast-radius requirements outgrow
-subscription-level isolation.
+The intended Azure destination is an isolated `nex-prod-hov-rg` resource-group
+boundary inside the shared `nexamesh-sub`. A dedicated `hov-sub`, which would
+add subscription-level isolation, remains a future option if privacy,
+regulatory, restore, commercial, or blast-radius requirements outgrow the
+resource-group boundary.
 
 ## Ownership boundary
 
-| HOV owns                                                                                                           | NexaMesh owns                                                                                                                      | External intelligence providers own                                                    |
+| HOV owns                                                                                                           | NexaMesh owns                                                                                                                      | Contracted intelligence providers provide                                              |
 | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | Estate people, roles, policy, work, assets, incidents, documents, finance, decisions, and retained domain evidence | Device identity, trusted observations, edge execution, mesh transport, device health, generic telemetry, and provenance primitives | Model execution, document analysis, or other narrowly contracted intelligence services |
 
@@ -65,16 +66,19 @@ incident or task, and preserves the decision and outcome.
 Shared platform services receive only the minimum data required by their
 contract. Co-location in `nexamesh-sub` does not grant access to household,
 employee, biometric, legal, financial, or identity records.
+HOV retains ownership of estate inputs and provider-generated outputs.
 
 ## Current-to-future capability statement
 
-### Live foundation
+### Implemented digital foundation
 
-- Role-aware estate dashboards and operational workflows
-- Documents and signing integration
-- Tasks, time, expenses, assets, inventory, vehicles, maintenance, and incidents
+- Role-aware estate dashboards and operational workflow surfaces
+- Optional document-signing and external-service integration points
+- Application surfaces for tasks, time, expenses, assets, inventory, vehicles,
+  maintenance, and incidents; live data depends on configured integrations
 - Audit, governance, and AI-assisted guidance surfaces
-- Azure-hosted application, storage, Key Vault, monitoring, and external services
+- Azure App Service, Storage, Key Vault, and VNet baseline; monitoring and other
+  optional services remain conditional until explicitly enabled and accepted
 
 ### Next architecture
 
