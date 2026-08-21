@@ -23,6 +23,7 @@ import {
   hashAzureFileOwner,
   isAzureBlobConfigured,
   resolveAzureFileById,
+  resolveAzureFileByLocation,
 } from "@/lib/storage/azure-blob"
 
 describe("Azure Blob authentication", () => {
@@ -79,7 +80,44 @@ describe("Azure Blob authentication", () => {
     await expect(resolveAzureFileById(serviceClient as never, "not-a-uuid")).resolves.toBeNull()
     await expect(
       resolveAzureFileById(serviceClient as never, "82e54ed5-200d-4ce0-86f4-ff1f27689031")
-    ).rejects.toThrow("Azure file metadata is ambiguous")
+    ).resolves.toBeNull()
+  })
+
+  it("uses authoritative metadata before the secondary tag index", async () => {
+    const blobClient = {
+      getProperties: vi.fn().mockResolvedValue({ metadata: { hovowneridhash: "b".repeat(64) } }),
+    }
+    const serviceClient = {
+      findBlobsByTags: vi.fn(),
+      getContainerClient: vi.fn(() => ({ getBlobClient: vi.fn(() => blobClient) })),
+    }
+
+    const resolved = await resolveAzureFileByLocation(
+      serviceClient as never,
+      "82e54ed5-200d-4ce0-86f4-ff1f27689031",
+      {
+        containerName: "documents",
+        blobName: "path/document.pdf",
+        ownerIdHash: "b".repeat(64),
+      }
+    )
+
+    expect(serviceClient.findBlobsByTags).not.toHaveBeenCalled()
+    expect(resolved).toEqual({ blobClient, ownerIdHash: "b".repeat(64) })
+  })
+
+  it("treats missing or mismatched owner metadata as inaccessible", async () => {
+    const blobClient = { getProperties: vi.fn().mockResolvedValue({ metadata: {} }) }
+    const serviceClient = {
+      findBlobsByTags: vi.fn(async function* () {
+        yield { containerName: "documents", name: "legacy.pdf" }
+      }),
+      getContainerClient: vi.fn(() => ({ getBlobClient: vi.fn(() => blobClient) })),
+    }
+
+    await expect(
+      resolveAzureFileById(serviceClient as never, "82e54ed5-200d-4ce0-86f4-ff1f27689031")
+    ).resolves.toBeNull()
   })
 
   it("hashes owner identifiers without persisting the identifier itself", () => {

@@ -194,9 +194,30 @@ resource "azurerm_role_assignment" "key_vault_secrets_user" {
   skip_service_principal_aad_check = true
 }
 
-resource "azurerm_role_assignment" "blob_data_contributor" {
+resource "azurerm_role_definition" "runtime_blob_data_with_tags" {
+  name        = "HOV Runtime Blob Data With Tags"
+  scope       = local.foundation.resource_group_id
+  description = "Least-privilege HOV runtime Blob data access including index-tag lookup."
+
+  permissions {
+    data_actions = [
+      "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/add/action",
+      "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/delete",
+      "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/filter/action",
+      "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/move/action",
+      "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read",
+      "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/tags/read",
+      "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/tags/write",
+      "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/write",
+    ]
+  }
+
+  assignable_scopes = [local.foundation.resource_group_id]
+}
+
+resource "azurerm_role_assignment" "runtime_blob_data_with_tags" {
   scope                            = local.foundation.app_storage_account_id
-  role_definition_id               = "/subscriptions/${var.target_subscription_id}/providers/Microsoft.Authorization/roleDefinitions/ba92f5b4-2d11-453d-a403-e96b0029c9fe"
+  role_definition_id               = azurerm_role_definition.runtime_blob_data_with_tags.role_definition_resource_id
   principal_id                     = azurerm_linux_web_app.runtime.identity[0].principal_id
   principal_type                   = "ServicePrincipal"
   skip_service_principal_aad_check = true

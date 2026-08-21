@@ -8,6 +8,12 @@ export interface AzureBlobConfiguration {
   accountKey?: string
 }
 
+export interface AzureFileLocation {
+  containerName: string
+  blobName: string
+  ownerIdHash: string
+}
+
 const FILE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 export function hashAzureFileOwner(userId: string): string {
@@ -17,12 +23,29 @@ export function hashAzureFileOwner(userId: string): string {
 export async function resolveAzureFileById(serviceClient: BlobServiceClient, fileId: string) {
   if (!FILE_ID_PATTERN.test(fileId)) return null
 
+  return resolveAzureFileByLocation(serviceClient, fileId)
+}
+
+export async function resolveAzureFileByLocation(
+  serviceClient: BlobServiceClient,
+  fileId: string,
+  location?: AzureFileLocation
+) {
+  if (!FILE_ID_PATTERN.test(fileId)) return null
+
+  if (location) {
+    const blobClient = serviceClient
+      .getContainerClient(location.containerName)
+      .getBlobClient(location.blobName)
+    const properties = await blobClient.getProperties()
+    if (properties.metadata?.hovowneridhash !== location.ownerIdHash) return null
+    return { blobClient, ownerIdHash: location.ownerIdHash }
+  }
+
   const matches = []
   for await (const item of serviceClient.findBlobsByTags(`hovFileId='${fileId}'`)) {
     matches.push(item)
-    if (matches.length > 1) {
-      throw new Error("Azure file metadata is ambiguous")
-    }
+    if (matches.length > 1) return null
   }
   if (matches.length === 0) return null
 
@@ -31,7 +54,7 @@ export async function resolveAzureFileById(serviceClient: BlobServiceClient, fil
   const properties = await blobClient.getProperties()
   const ownerIdHash = properties.metadata?.hovowneridhash
   if (!ownerIdHash || !/^[a-f0-9]{64}$/.test(ownerIdHash)) {
-    throw new Error("Azure file owner metadata is missing or invalid")
+    return null
   }
 
   return { blobClient, ownerIdHash }

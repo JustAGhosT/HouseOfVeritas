@@ -9,8 +9,14 @@ import {
   createAzureBlobServiceClient,
   hashAzureFileOwner,
   isAzureBlobConfigured,
-  resolveAzureFileById,
+  resolveAzureFileByLocation,
 } from "@/lib/storage/azure-blob"
+import {
+  deleteAzureFileMetadata,
+  getAzureFileMetadata,
+  persistAzureFileMetadata,
+} from "@/lib/storage/azure-file-metadata"
+import { isPostgresConfigured } from "@/lib/db/postgres"
 
 // Configuration
 const UPLOAD_CONFIG = {
@@ -80,10 +86,6 @@ async function uploadToAzure(
   const blobServiceClient = createAzureBlobServiceClient(AZURE_CONFIG)
 
   const containerClient = blobServiceClient.getContainerClient(container)
-
-  // The target storage account prohibits public blob access. Omitting an access
-  // option creates a private container.
-  await containerClient.createIfNotExists()
 
   const blobName = `${Date.now()}/${filename}`
   const blockBlobClient = containerClient.getBlockBlobClient(blobName)
@@ -157,6 +159,12 @@ export const POST = withAuth(async (request, context) => {
     }
 
     if (isAzureConfigured()) {
+      if (!isPostgresConfigured()) {
+        return NextResponse.json(
+          { success: false, error: "PostgreSQL is required for Azure file metadata" },
+          { status: 503 }
+        )
+      }
       // Upload to Azure Blob Storage
       const containerName =
         category === "asset-photos"
@@ -206,6 +214,33 @@ export const POST = withAuth(async (request, context) => {
       uploadedAt: new Date().toISOString(),
     }
 
+    if (uploadResult.storage === "azure") {
+      try {
+        await persistAzureFileMetadata({
+          id: fileId,
+          originalName: file.name,
+          storedName: uniqueFilename,
+          mimeType: file.type,
+          size: file.size,
+          uploadedBy: context.userId,
+          category,
+          assetId: assetId || undefined,
+          containerName: uploadResult.container!,
+          blobName: uploadResult.blobName!,
+          ownerIdHash: hashAzureFileOwner(context.userId),
+          url: uploadResult.url,
+        })
+      } catch {
+        const blobServiceClient = createAzureBlobServiceClient(AZURE_CONFIG)
+        await blobServiceClient
+          .getContainerClient(uploadResult.container!)
+          .getBlobClient(uploadResult.blobName!)
+          .deleteIfExists()
+          .catch(() => {})
+        throw new Error("Azure file metadata could not be persisted")
+      }
+    }
+
     return NextResponse.json({
       success: true,
       file: fileMetadata,
@@ -240,7 +275,8 @@ export const DELETE = withAuth(async (request, context) => {
   }
 
   try {
-    if (storage === "azure") {
+    const authoritativeMetadata = await getAzureFileMetadata(fileId)
+    if (authoritativeMetadata || storage === "azure") {
       if (!isAzureConfigured()) {
         return NextResponse.json(
           { success: false, error: "Azure storage is not configured" },
@@ -248,7 +284,11 @@ export const DELETE = withAuth(async (request, context) => {
         )
       }
       const blobServiceClient = createAzureBlobServiceClient(AZURE_CONFIG)
-      const resolved = await resolveAzureFileById(blobServiceClient, fileId)
+      const resolved = await resolveAzureFileByLocation(
+        blobServiceClient,
+        fileId,
+        authoritativeMetadata ?? undefined
+      )
       if (!resolved) {
         return NextResponse.json({ success: false, error: "File not found" }, { status: 404 })
       }
@@ -263,6 +303,7 @@ export const DELETE = withAuth(async (request, context) => {
         )
       }
       await resolved.blobClient.deleteIfExists()
+      if (authoritativeMetadata) await deleteAzureFileMetadata(fileId)
     } else if (storage === "local") {
       // Reconstruct path server-side to prevent path traversal
       const category = searchParams.get("category")

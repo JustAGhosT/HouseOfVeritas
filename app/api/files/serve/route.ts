@@ -7,8 +7,9 @@ import {
   createAzureBlobServiceClient,
   hashAzureFileOwner,
   isAzureBlobConfigured,
-  resolveAzureFileById,
+  resolveAzureFileByLocation,
 } from "@/lib/storage/azure-blob"
+import { getAzureFileMetadata } from "@/lib/storage/azure-file-metadata"
 
 const UPLOAD_DIR = "/tmp/uploads"
 const ALLOWED_CATEGORIES = ["asset-photos", "invoice-scans", "invoices", "documents", "general"]
@@ -28,7 +29,12 @@ export const GET = withAuth(async (request, context) => {
     if (!isAzureBlobConfigured(AZURE_CONFIG)) {
       return NextResponse.json({ error: "Azure storage is not configured" }, { status: 503 })
     }
-    const resolved = await resolveAzureFileById(createAzureBlobServiceClient(AZURE_CONFIG), fileId)
+    const authoritativeMetadata = await getAzureFileMetadata(fileId)
+    const resolved = await resolveAzureFileByLocation(
+      createAzureBlobServiceClient(AZURE_CONFIG),
+      fileId,
+      authoritativeMetadata ?? undefined
+    )
     if (!resolved) {
       return NextResponse.json({ error: "File not found" }, { status: 404 })
     }

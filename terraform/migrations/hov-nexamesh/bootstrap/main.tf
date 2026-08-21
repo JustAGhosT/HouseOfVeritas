@@ -11,7 +11,7 @@ locals {
     data_class  = "terraform-state"
   }
 
-  tags = merge(local.required_tags, var.tags)
+  tags = merge(var.tags, local.required_tags)
 }
 
 resource "terraform_data" "target_guard" {

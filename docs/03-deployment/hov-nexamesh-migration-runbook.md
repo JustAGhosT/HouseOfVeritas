@@ -524,12 +524,14 @@ Order is mandatory:
 2. Lower TTL in advance and capture the exact source CNAME/TLS rollback state.
 3. Record explicit approval for a maximum ten-minute TLS interruption window,
    name the rollback operator, and continuously monitor the public CNAME plus
-   both the source and target Azure hostnames. If an existing valid certificate
-   and termination path is available, prefer it and record that evidence.
+   both the source and target Azure hostnames. This edge root supports only the
+   App Service managed-certificate path.
 4. In the approved maintenance window, change only the HOV CNAME and point it
-   directly at the target App Service. Managed-certificate issuance and renewal
-   require the production hostname to resolve directly to the target. Start the
-   approved interruption timer at the DNS mutation.
+   directly at the target App Service in Cloudflare DNS-only mode with CNAME
+   flattening disabled. Start the approved interruption timer at this mutation.
+   Verify from independent public resolvers that the answer exposes the target
+   `azurewebsites.net` CNAME directly before applying the edge plan, and retain
+   DNS-only/unflattened mode for managed-certificate renewal.
 5. Apply the exact sealed edge plan to bind the hostname, issue the managed
    certificate and enable SNI.
 6. Verify HTTPS, certificate chain, exact build, OIDC callbacks and logout, then

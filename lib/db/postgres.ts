@@ -179,9 +179,13 @@ export async function ensureSchema(): Promise<void> {
           storage TEXT NOT NULL DEFAULT 'local',
           storage_path TEXT,
           blob_name TEXT,
+          container_name TEXT,
+          owner_id_hash TEXT,
           url TEXT,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
+        ALTER TABLE file_uploads ADD COLUMN IF NOT EXISTS container_name TEXT;
+        ALTER TABLE file_uploads ADD COLUMN IF NOT EXISTS owner_id_hash TEXT;
         CREATE INDEX IF NOT EXISTS idx_file_uploads_uploaded_by ON file_uploads(uploaded_by);
         CREATE INDEX IF NOT EXISTS idx_file_uploads_category ON file_uploads(category);
         CREATE INDEX IF NOT EXISTS idx_file_uploads_resource ON file_uploads(resource_type, resource_id);

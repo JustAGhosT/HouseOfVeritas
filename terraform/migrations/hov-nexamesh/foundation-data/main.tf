@@ -291,7 +291,7 @@ resource "azurerm_storage_account" "app" {
 }
 
 resource "azapi_resource" "app_containers" {
-  for_each = toset(["asset-uploads", "documents", "migration-staging"])
+  for_each = toset(["asset-photos", "asset-uploads", "documents", "invoice-scans", "migration-staging"])
 
   type      = "Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01"
   name      = each.value
