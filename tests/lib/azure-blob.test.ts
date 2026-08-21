@@ -24,6 +24,7 @@ import {
   isAzureBlobConfigured,
   resolveAzureFileById,
   resolveAzureFileByLocation,
+  selectAzureUploadContainer,
 } from "@/lib/storage/azure-blob"
 
 describe("Azure Blob authentication", () => {
@@ -123,5 +124,15 @@ describe("Azure Blob authentication", () => {
   it("hashes owner identifiers without persisting the identifier itself", () => {
     expect(hashAzureFileOwner("resident-1")).toMatch(/^[a-f0-9]{64}$/)
     expect(hashAzureFileOwner("resident-1")).not.toContain("resident-1")
+  })
+
+  it.each([
+    ["asset-photos", "asset-photos"],
+    ["invoices", "invoice-scans"],
+    ["invoice-scans", "invoice-scans"],
+    ["documents", "documents"],
+    ["general", "documents"],
+  ])("maps the %s category to the provisioned %s container", (category, container) => {
+    expect(selectAzureUploadContainer(category)).toBe(container)
   })
 })

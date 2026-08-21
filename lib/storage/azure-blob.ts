@@ -20,6 +20,18 @@ export function hashAzureFileOwner(userId: string): string {
   return createHash("sha256").update(userId, "utf8").digest("hex")
 }
 
+export function selectAzureUploadContainer(category: string): string {
+  switch (category) {
+    case "asset-photos":
+      return "asset-photos"
+    case "invoices":
+    case "invoice-scans":
+      return "invoice-scans"
+    default:
+      return "documents"
+  }
+}
+
 export async function resolveAzureFileById(serviceClient: BlobServiceClient, fileId: string) {
   if (!FILE_ID_PATTERN.test(fileId)) return null
 

@@ -10,6 +10,7 @@ import {
   hashAzureFileOwner,
   isAzureBlobConfigured,
   resolveAzureFileByLocation,
+  selectAzureUploadContainer,
 } from "@/lib/storage/azure-blob"
 import {
   deleteAzureFileMetadata,
@@ -32,7 +33,6 @@ const AZURE_CONFIG = {
   connectionString: process.env.AZURE_STORAGE_CONNECTION_STRING,
   accountName: process.env.AZURE_STORAGE_ACCOUNT_NAME,
   accountKey: process.env.AZURE_STORAGE_ACCOUNT_KEY,
-  containerName: process.env.AZURE_STORAGE_CONTAINER || "house-of-veritas",
 }
 
 // Check if Azure is configured
@@ -166,12 +166,7 @@ export const POST = withAuth(async (request, context) => {
         )
       }
       // Upload to Azure Blob Storage
-      const containerName =
-        category === "asset-photos"
-          ? "asset-photos"
-          : category === "invoices"
-            ? "invoice-scans"
-            : AZURE_CONFIG.containerName
+      const containerName = selectAzureUploadContainer(category)
 
       const result = await uploadToAzure(
         buffer,
