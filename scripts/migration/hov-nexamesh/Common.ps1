@@ -73,7 +73,13 @@ function Assert-AzureBoundary {
   $accountJson = Invoke-NativeCommand -FilePath "az" -ArgumentList @(
     "account", "show", "--output", "json", "--only-show-errors"
   )
-  $account = ($accountJson -join [Environment]::NewLine) | ConvertFrom-Json
+  $rawText = ($accountJson -join [Environment]::NewLine)
+  $firstBrace = $rawText.IndexOf('{')
+  $lastBrace = $rawText.LastIndexOf('}')
+  if ($firstBrace -ge 0 -and $lastBrace -gt $firstBrace) {
+    $rawText = $rawText.Substring($firstBrace, $lastBrace - $firstBrace + 1)
+  }
+  $account = $rawText | ConvertFrom-Json
   if ($account.tenantId -cne $expectedTenant -or $account.id -cne $expectedSubscription) {
     throw "Refusing operation: Azure context does not match the exact $Boundary tenant and subscription."
   }

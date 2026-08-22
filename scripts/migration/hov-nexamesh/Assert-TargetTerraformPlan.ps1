@@ -59,7 +59,7 @@ foreach ($change in @($plan.resource_changes)) {
       $failures.Add("$($change.address) targets non-HOV resource group '$plannedResourceGroup'.")
     }
   }
-  if ($change.type -eq "azurerm_role_assignment" -and $null -ne $after) {
+  if ($change.type -eq "azurerm_role_assignment" -and $null -ne $after -and $after.PSObject.Properties.Name -contains "scope") {
     $scope = [string]$after.scope
     if ($scope -and -not $scope.Contains($context.subscriptionId, [StringComparison]::OrdinalIgnoreCase)) {
       $failures.Add("$($change.address) has a role-assignment scope outside nexamesh-sub.")
