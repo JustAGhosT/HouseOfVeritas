@@ -96,13 +96,13 @@ Register webhook for integration with Baserow:
 
 Base URL: `https://sign.nexamesh.ai/api`
 
-| Endpoint               | Method | Description              |
-| ---------------------- | ------ | ------------------------ |
-| `/api/templates`       | GET    | List all templates       |
-| `/api/templates`       | POST   | Create template          |
-| `/api/submissions`     | POST   | Create signature request |
-| `/api/submissions/:id` | GET    | Get submission status    |
-| `/api/webhooks`        | POST   | Register webhook         |
+| Endpoint           | Method | Description              |
+| ------------------ | ------ | ------------------------ |
+| `/templates`       | GET    | List all templates       |
+| `/templates`       | POST   | Create template          |
+| `/submissions`     | POST   | Create signature request |
+| `/submissions/:id` | GET    | Get submission status    |
+| `/webhooks`        | POST   | Register webhook         |
 
 ## Testing Checklist
 

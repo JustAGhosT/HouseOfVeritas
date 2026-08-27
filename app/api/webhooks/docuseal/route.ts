@@ -32,6 +32,21 @@ function validateSignature(body: string, signature: string, secret: string): boo
   }
 }
 
+function validatedProduct(metadata: unknown): string | undefined {
+  if (metadata === undefined) return undefined
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    throw new Error("Invalid product metadata")
+  }
+
+  const product = (metadata as Record<string, unknown>).product
+  if (product === undefined) return undefined
+  if (typeof product !== "string" || !/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/.test(product)) {
+    throw new Error("Invalid product metadata")
+  }
+
+  return product
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.text()
@@ -53,6 +68,7 @@ export async function POST(request: Request) {
         submitters?: Array<{ email?: string }>
         documents?: Array<{ url?: string }>
         completed_at?: string
+        metadata?: unknown
       }
     }
 
@@ -65,6 +81,7 @@ export async function POST(request: Request) {
       const documentUrl = documents[0]?.url || ""
       const submitters = data.submitters || []
       const submitterEmails = submitters.map((s) => s.email || "").filter(Boolean)
+      const product = validatedProduct(data.metadata)
 
       await routeToInngest({
         name: "house-of-veritas/docuseal.submission.completed",
@@ -74,6 +91,7 @@ export async function POST(request: Request) {
           documentUrl,
           completedAt: data.completed_at || new Date().toISOString(),
           submitterEmails,
+          product,
         },
       })
     }
