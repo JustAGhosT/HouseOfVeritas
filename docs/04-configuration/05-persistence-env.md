@@ -2,6 +2,8 @@
 
 When configured, House of Veritas uses PostgreSQL for audit logs, users, and file upload metadata; Redis for rate limiting; MongoDB for kiosk requests and audit-log fallback; Baserow for time-clock records; and Azure Blob Storage or local disk for uploaded files.
 
+HOV's current source-compatible database is `houseofveritas` on the NeuralLiquid-owned `nl-prod-shared-pg` server. The approved NexaMesh migration provisions a dedicated HOV server, `nex-prod-hov-pg`, so HOV has an independent restore and credential path. Do not place HOV in a CoilTrace database or reuse another product's role, schema, credentials, or migrations.
+
 ## PostgreSQL (audit_logs, users)
 
 | Variable       | Description                                                  | Example                                                             |
@@ -9,7 +11,7 @@ When configured, House of Veritas uses PostgreSQL for audit logs, users, and fil
 | `DATABASE_URL` | PostgreSQL connection string for House of Veritas app tables | `postgresql://user:pass@host:5432/house_of_veritas?sslmode=require` |
 | `POSTGRES_URL` | Alternative to DATABASE_URL                                  | Same format                                                         |
 
-The `house_of_veritas` database is created automatically when using Docker Compose (see `config/docker-compose.yml`). For production, add this database to your Terraform PostgreSQL module.
+The `house_of_veritas` database is created automatically when using Docker Compose (see `config/docker-compose.yml`). The NexaMesh migration stack provisions the production `houseofveritas` database on HOV's dedicated PostgreSQL server; bootstrap a least-privilege HOV role after the runtime identity exists. Migration execution and source retirement remain separately approval-gated.
 
 ## Redis (rate limiting)
 

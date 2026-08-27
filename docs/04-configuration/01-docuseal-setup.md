@@ -2,17 +2,13 @@
 
 ## Overview
 
-DocuSeal is the document signing platform for House of Veritas, accessible at `sign.nexamesh.ai`.
+DocuSeal at `sign.nexamesh.ai` is deployed independently of HOV. CoilTrace has implemented an integration with this endpoint but remains pre-launch, and HOV is a separate prospective consumer. [ADR-014](../02-architecture/14-nexamesh-product-boundary-adr.md) leaves final shared-service ownership unresolved, so HOV must not treat the instance, global administrator, or instance-level branding as HOV-owned.
 
 ## Initial Setup
 
 ### 1. First Login
 
-After deployment, access DocuSeal at your configured URL and create the admin account:
-
-- **Email:** <hans@nexamesh.ai>
-- **Name:** Hans (Owner)
-- **Role:** Admin
+Initial `/setup` creates the instance's global administrator. The service owner, once confirmed, must control that identity and its recovery material. HOV product participants should receive only the least privilege needed for HOV templates and submissions, not the global administrator login.
 
 ### 2. SMTP Configuration
 
@@ -28,11 +24,11 @@ From: noreply@nexamesh.ai
 
 ### 3. Branding
 
-Upload the House of Veritas logo and configure colors:
+Do not change instance-level branding on HOV's behalf while service ownership remains unresolved. Keep product identity in each template:
 
-- **Primary Color:** #1E40AF (Blue)
-- **Secondary Color:** #059669 (Green)
-- **Logo:** Use `/public/hv-logo.svg`
+- CoilTrace certificate templates use CoilTrace identity.
+- HOV governance templates use HOV identity.
+- New product integrations should include a lowercase `product` key in submission metadata so shared-service routing can remain product-scoped. CoilTrace already sends this key; HOV must add and test it before relying on metadata-based routing.
 
 ### 4. API Key Generation
 
@@ -48,7 +44,7 @@ Add to `.env.local` (create from `.env.example`):
 | `DOCUSEAL_API_KEY` | API key (X-Auth-Token); the token from Settings → API | _(your generated key)_     |
 
 - **DocuSeal Cloud:** Use `https://api.docuseal.com` as base URL; the API key is the token.
-- **Self-hosted:** Use `https://sign.nexamesh.ai/api` (or your instance URL + `/api`).
+- **Self-hosted:** Use `https://sign.nexamesh.ai/api`. The confirmed service owner must provision a separate, least-privilege credential per product and environment before HOV is enabled.
 
 ## Document Templates
 
@@ -79,7 +75,7 @@ Upload the 18 governance documents as templates. See `/config/templates/` for th
 
 ## User Accounts
 
-Create the following user accounts:
+These are HOV product participants, not shared-service administrators. Prefer DocuSeal submitter identities unless a user genuinely needs HOV template-management access:
 
 | User  | Email               | Role     |
 | ----- | ------------------- | -------- |
