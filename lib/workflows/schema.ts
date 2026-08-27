@@ -91,6 +91,7 @@ export interface DocuSealSubmissionPayload {
   documentUrl: string
   completedAt: string
   submitterEmails: string[]
+  product?: string
 }
 
 export interface InventoryLowStockPayload {
