@@ -77,12 +77,12 @@ Upload the 18 governance documents as templates. See `/config/templates/` for th
 
 These are HOV product participants, not shared-service administrators. Prefer DocuSeal submitter identities unless a user genuinely needs HOV template-management access:
 
-| User  | Email               | Role     |
-| ----- | ------------------- | -------- |
-| Hans  | <hans@nexamesh.ai>  | Admin    |
-| Charl | <charl@nexamesh.ai> | Employee |
-| Lucky | <lucky@nexamesh.ai> | Employee |
-| Irma  | <irma@nexamesh.ai>  | Resident |
+| User  | Email               | DocuSeal access                                      |
+| ----- | ------------------- | ---------------------------------------------------- |
+| Hans  | <hans@nexamesh.ai>  | HOV template manager, only if operationally required |
+| Charl | <charl@nexamesh.ai> | Submission recipient                                 |
+| Lucky | <lucky@nexamesh.ai> | Submission recipient                                 |
+| Irma  | <irma@nexamesh.ai>  | Submission recipient                                 |
 
 ## Webhook Configuration
 
@@ -106,10 +106,10 @@ Base URL: `https://sign.nexamesh.ai/api`
 
 ## Testing Checklist
 
-- [ ] Admin can log in
+- [ ] Required HOV template manager can log in, if configured
 - [ ] SMTP sends test email
 - [ ] All 18 templates uploaded
-- [ ] All 4 users can log in
+- [ ] Submission recipients can complete the signing workflow
 - [ ] Signature workflow works end-to-end
 - [ ] Webhook triggers Azure Function
 - [ ] API key works for programmatic access
