@@ -81,7 +81,13 @@ export async function POST(request: Request) {
       const documentUrl = documents[0]?.url || ""
       const submitters = data.submitters || []
       const submitterEmails = submitters.map((s) => s.email || "").filter(Boolean)
-      const product = validatedProduct(data.metadata)
+      let product: string | undefined
+      try {
+        product = validatedProduct(data.metadata)
+      } catch {
+        logger.warn("DocuSeal webhook: invalid product metadata")
+        return NextResponse.json({ error: "Invalid product metadata" }, { status: 400 })
+      }
 
       await routeToInngest({
         name: "house-of-veritas/docuseal.submission.completed",

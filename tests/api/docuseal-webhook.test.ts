@@ -13,8 +13,7 @@ import { POST } from "@/app/api/webhooks/docuseal/route"
 
 const secret = "docuseal-webhook-test-secret"
 
-function signedRequest(payload: unknown) {
-  const body = JSON.stringify(payload)
+function signedBodyRequest(body: string) {
   const signature = createHmac("sha256", secret).update(body).digest("hex")
 
   return new Request("http://localhost/api/webhooks/docuseal", {
@@ -25,6 +24,10 @@ function signedRequest(payload: unknown) {
     },
     body,
   })
+}
+
+function signedRequest(payload: unknown) {
+  return signedBodyRequest(JSON.stringify(payload))
 }
 
 beforeEach(() => {
@@ -69,6 +72,15 @@ describe("POST /api/webhooks/docuseal", () => {
     )
 
     expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({ error: "Invalid product metadata" })
+    expect(inngestEvents).toHaveLength(0)
+  })
+
+  it("preserves the invalid JSON response for malformed payloads", async () => {
+    const response = await POST(signedBodyRequest("{"))
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({ error: "Invalid JSON" })
     expect(inngestEvents).toHaveLength(0)
   })
 })
