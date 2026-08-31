@@ -455,6 +455,14 @@ class DeploymentChecker:
         if success:
             try:
                 secrets = json.loads(output)
+                if not isinstance(secrets, list) or not all(isinstance(s, dict) for s in secrets):
+                    return CheckResult(
+                        name="Key Vault",
+                        status=Status.FAIL,
+                        message=f"Key Vault '{kv_name}' exists but secret list returned unexpected output",
+                        details=f"Expected a JSON array of secret objects from 'az keyvault secret list': {output.strip()[:200]}",
+                        fix_command=f"az keyvault secret list --vault-name {kv_name} -o json"
+                    )
                 existing_secrets = [s.get("name", "") for s in secrets]
                 missing_secrets = [s for s in required_secrets if s not in existing_secrets]
                 
@@ -854,9 +862,9 @@ class DeploymentChecker:
                 if self.verbose and check.details:
                     print(f"      📋 Details: {check.details}")
                 
-                if check.status == Status.FAIL and check.fix_command:
+                if check.status in (Status.FAIL, Status.WARN) and check.fix_command:
                     print(f"      🔧 Fix: {check.fix_command}")
-                
+
                 if check.status == Status.FAIL and check.documentation:
                     print(f"      📚 Docs: {check.documentation}")
             
