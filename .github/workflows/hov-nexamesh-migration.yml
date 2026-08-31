@@ -252,14 +252,26 @@ jobs:
               edge) state_key='hov/prod/edge.tfstate' ;;
               *) echo '::error::Unsupported target root'; exit 1 ;;
             esac
-            terraform init -reconfigure \
-              -backend-config="resource_group_name=$TARGET_STATE_RESOURCE_GROUP" \
-              -backend-config="storage_account_name=$TARGET_STATE_STORAGE_ACCOUNT" \
-              -backend-config="container_name=$TARGET_STATE_CONTAINER" \
-              -backend-config="key=$state_key" \
-              -backend-config='use_azuread_auth=true' \
-              -backend-config="tenant_id=$TARGET_TENANT_ID" \
-              -backend-config="subscription_id=$TARGET_SUBSCRIPTION_ID"
+            state_init_ok=0
+            for attempt in 1 2 3 4 5; do
+              if terraform init -reconfigure \
+                -backend-config="resource_group_name=$TARGET_STATE_RESOURCE_GROUP" \
+                -backend-config="storage_account_name=$TARGET_STATE_STORAGE_ACCOUNT" \
+                -backend-config="container_name=$TARGET_STATE_CONTAINER" \
+                -backend-config="key=$state_key" \
+                -backend-config='use_azuread_auth=true' \
+                -backend-config="tenant_id=$TARGET_TENANT_ID" \
+                -backend-config="subscription_id=$TARGET_SUBSCRIPTION_ID"; then
+                state_init_ok=1
+                break
+              fi
+              echo "::warning::terraform init attempt $attempt/5 failed loading state from $TARGET_STATE_STORAGE_ACCOUNT — likely a storage network-ACL propagation race right after the runner IP was allow-listed; retrying in 10s."
+              sleep 10
+            done
+            if [ "$state_init_ok" != "1" ]; then
+              echo "::error::terraform init could not load state from $TARGET_STATE_STORAGE_ACCOUNT after 5 attempts; see the last error above."
+              exit 1
+            fi
           fi
 
       - name: Validate and format-check target root
@@ -566,14 +578,26 @@ jobs:
               edge) state_key='hov/prod/edge.tfstate' ;;
               *) echo '::error::Unsupported target root'; exit 1 ;;
             esac
-            terraform init -reconfigure \
-              -backend-config="resource_group_name=$TARGET_STATE_RESOURCE_GROUP" \
-              -backend-config="storage_account_name=$TARGET_STATE_STORAGE_ACCOUNT" \
-              -backend-config="container_name=$TARGET_STATE_CONTAINER" \
-              -backend-config="key=$state_key" \
-              -backend-config='use_azuread_auth=true' \
-              -backend-config="tenant_id=$TARGET_TENANT_ID" \
-              -backend-config="subscription_id=$TARGET_SUBSCRIPTION_ID"
+            state_init_ok=0
+            for attempt in 1 2 3 4 5; do
+              if terraform init -reconfigure \
+                -backend-config="resource_group_name=$TARGET_STATE_RESOURCE_GROUP" \
+                -backend-config="storage_account_name=$TARGET_STATE_STORAGE_ACCOUNT" \
+                -backend-config="container_name=$TARGET_STATE_CONTAINER" \
+                -backend-config="key=$state_key" \
+                -backend-config='use_azuread_auth=true' \
+                -backend-config="tenant_id=$TARGET_TENANT_ID" \
+                -backend-config="subscription_id=$TARGET_SUBSCRIPTION_ID"; then
+                state_init_ok=1
+                break
+              fi
+              echo "::warning::terraform init attempt $attempt/5 failed loading state from $TARGET_STATE_STORAGE_ACCOUNT — likely a storage network-ACL propagation race right after the runner IP was allow-listed; retrying in 10s."
+              sleep 10
+            done
+            if [ "$state_init_ok" != "1" ]; then
+              echo "::error::terraform init could not load state from $TARGET_STATE_STORAGE_ACCOUNT after 5 attempts; see the last error above."
+              exit 1
+            fi
           fi
 
       - name: Apply exact approved artifact
@@ -619,14 +643,26 @@ jobs:
         run: |
           set -euo pipefail
           test -s terraform.tfstate
-          terraform init -migrate-state -force-copy \
-            -backend-config="resource_group_name=$TARGET_STATE_RESOURCE_GROUP" \
-            -backend-config="storage_account_name=$TARGET_STATE_STORAGE_ACCOUNT" \
-            -backend-config="container_name=$TARGET_STATE_CONTAINER" \
-            -backend-config='key=hov/prod/bootstrap.tfstate' \
-            -backend-config='use_azuread_auth=true' \
-            -backend-config="tenant_id=$TARGET_TENANT_ID" \
-            -backend-config="subscription_id=$TARGET_SUBSCRIPTION_ID"
+          state_init_ok=0
+          for attempt in 1 2 3 4 5; do
+            if terraform init -migrate-state -force-copy \
+              -backend-config="resource_group_name=$TARGET_STATE_RESOURCE_GROUP" \
+              -backend-config="storage_account_name=$TARGET_STATE_STORAGE_ACCOUNT" \
+              -backend-config="container_name=$TARGET_STATE_CONTAINER" \
+              -backend-config='key=hov/prod/bootstrap.tfstate' \
+              -backend-config='use_azuread_auth=true' \
+              -backend-config="tenant_id=$TARGET_TENANT_ID" \
+              -backend-config="subscription_id=$TARGET_SUBSCRIPTION_ID"; then
+              state_init_ok=1
+              break
+            fi
+            echo "::warning::terraform init -migrate-state attempt $attempt/5 failed against $TARGET_STATE_STORAGE_ACCOUNT — likely a storage network-ACL propagation race right after the runner IP was allow-listed; retrying in 10s."
+            sleep 10
+          done
+          if [ "$state_init_ok" != "1" ]; then
+            echo "::error::terraform init -migrate-state could not reach $TARGET_STATE_STORAGE_ACCOUNT after 5 attempts; see the last error above."
+            exit 1
+          fi
           terraform state pull >/dev/null
 
       - name: Remove this runner from the tfstate storage account (bootstrap only)
