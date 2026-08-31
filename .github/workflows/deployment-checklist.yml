@@ -48,6 +48,7 @@ jobs:
       passed: ${{ steps.checklist.outputs.passed }}
       failed: ${{ steps.checklist.outputs.failed }}
       warnings: ${{ steps.checklist.outputs.warnings }}
+      skipped: ${{ steps.checklist.outputs.skipped }}
       json_report: ${{ steps.checklist.outputs.json_report }}
 
     steps:
@@ -95,10 +96,12 @@ jobs:
           PASSED=$(grep -oP '✅ Passed:\s+\K\d+' checklist_output.txt || echo "0")
           FAILED=$(grep -oP '❌ Failed:\s+\K\d+' checklist_output.txt || echo "0")
           WARNINGS=$(grep -oP '⚠️  Warnings:\s+\K\d+' checklist_output.txt || echo "0")
+          SKIPPED=$(grep -oP '⏭️  Skipped:\s+\K\d+' checklist_output.txt || echo "0")
 
           echo "passed=$PASSED" >> $GITHUB_OUTPUT
           echo "failed=$FAILED" >> $GITHUB_OUTPUT
           echo "warnings=$WARNINGS" >> $GITHUB_OUTPUT
+          echo "skipped=$SKIPPED" >> $GITHUB_OUTPUT
 
           # Store JSON report (base64 encoded for multi-line)
           JSON_REPORT=$(cat checklist_report.json | base64 -w 0)
@@ -126,12 +129,16 @@ jobs:
             const passed = '${{ steps.checklist.outputs.passed }}';
             const failed = '${{ steps.checklist.outputs.failed }}';
             const warnings = '${{ steps.checklist.outputs.warnings }}';
+            const skipped = '${{ steps.checklist.outputs.skipped }}';
 
             let status = '🎉 All checks passed!';
             let statusIcon = '✅';
             if (parseInt(failed) > 0) {
               status = `❌ ${failed} critical issue(s) detected`;
               statusIcon = '❌';
+            } else if (parseInt(skipped) > 0) {
+              status = `⏭️ ${skipped} check(s) could not be verified from this environment`;
+              statusIcon = '⏭️';
             } else if (parseInt(warnings) > 0) {
               status = `⚠️ ${warnings} warning(s) detected`;
               statusIcon = '⚠️';
@@ -144,6 +151,7 @@ jobs:
             | ✅ Passed | ${passed} |
             | ❌ Failed | ${failed} |
             | ⚠️ Warnings | ${warnings} |
+            | ⏭️ Skipped | ${skipped} |
 
             **Status:** ${status}
 
