@@ -195,7 +195,7 @@ jobs:
           test "$CONFIGURED_SUBSCRIPTION_ID" = "$TARGET_SUBSCRIPTION_ID"
 
           read -r actual_tenant actual_subscription < <(
-            az account show --query '[tenantId,id]' --output tsv --only-show-errors
+            az account show --query '[[tenantId,id]]' --output tsv --only-show-errors
           )
           test "$actual_tenant" = "$TARGET_TENANT_ID"
           test "$actual_subscription" = "$TARGET_SUBSCRIPTION_ID"
@@ -516,7 +516,7 @@ jobs:
           test "$CONFIGURED_TENANT_ID" = "$TARGET_TENANT_ID"
           test "$CONFIGURED_SUBSCRIPTION_ID" = "$TARGET_SUBSCRIPTION_ID"
           read -r actual_tenant actual_subscription < <(
-            az account show --query '[tenantId,id]' --output tsv --only-show-errors
+            az account show --query '[[tenantId,id]]' --output tsv --only-show-errors
           )
           test "$actual_tenant" = "$TARGET_TENANT_ID"
           test "$actual_subscription" = "$TARGET_SUBSCRIPTION_ID"
@@ -827,7 +827,7 @@ jobs:
           test "$CONFIGURED_TENANT_ID" = "$TARGET_TENANT_ID"
           test "$CONFIGURED_SUBSCRIPTION_ID" = "$TARGET_SUBSCRIPTION_ID"
           read -r actual_tenant actual_subscription < <(
-            az account show --query '[tenantId,id]' --output tsv --only-show-errors
+            az account show --query '[[tenantId,id]]' --output tsv --only-show-errors
           )
           test "$actual_tenant" = "$TARGET_TENANT_ID"
           test "$actual_subscription" = "$TARGET_SUBSCRIPTION_ID"
