@@ -1,13 +1,17 @@
 name: HOV NexaMesh target migration
 
-# Operational prerequisite: register a target-only self-hosted Linux/x64 runner
-# with a static egress CIDR allowed by the target Terraform backend and access
-# to the private target endpoints. HOV_MIGRATION_RUNNER_LABELS must be a JSON
-# label array such as ["self-hosted","linux","x64","hov-nexamesh-target"]. It
-# must also provide Docker, Node build prerequisites, zip, curl and jq. The
-# hov-nexamesh-target-production environment must also contain a target-tenant
-# OIDC federated identity. GitHub-hosted runners and source credentials are
-# intentionally unsupported.
+# Runs on GitHub-hosted ubuntu-latest runners, matching deploy.yml. Every
+# resource these jobs manage (Key Vault, Storage, Postgres, Cosmos Mongo) is
+# provisioned through the ARM control plane only in this migration design
+# (RBAC role assignments instead of Key Vault access policies, azapi_resource
+# instead of azurerm_storage_container, no shared storage keys) so plan/apply
+# never needs network reachability into the private target endpoints. The one
+# genuine data-plane dependency is the Terraform state backend itself
+# (nexprodhovtfstate), which enforces a Deny-by-default IP allowlist; the
+# runner's egress IP (or a covering CIDR) must be present in
+# HOV_TFSTATE_ALLOWED_IP_CIDRS, matching the deployer_ip/fallback-CIDR pattern
+# in terraform/environments/production. The hov-nexamesh-target-production
+# environment must also contain a target-tenant OIDC federated identity.
 
 on:
   workflow_dispatch:
@@ -91,7 +95,7 @@ jobs:
   plan:
     name: Plan target ${{ inputs.root }}
     if: inputs.operation == 'plan'
-    runs-on: ${{ fromJSON(vars.HOV_MIGRATION_RUNNER_LABELS) }}
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     environment: hov-nexamesh-target-production
     concurrency:
@@ -325,7 +329,7 @@ jobs:
   apply:
     name: Apply approved target ${{ inputs.root }} plan
     if: inputs.operation == 'apply'
-    runs-on: ${{ fromJSON(vars.HOV_MIGRATION_RUNNER_LABELS) }}
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: hov-nexamesh-target-production
     concurrency:
@@ -518,7 +522,7 @@ jobs:
   deploy-runtime:
     name: Deploy exact HOV runtime build
     if: inputs.operation == 'deploy-runtime'
-    runs-on: ${{ fromJSON(vars.HOV_MIGRATION_RUNNER_LABELS) }}
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: hov-nexamesh-target-production
     concurrency:
