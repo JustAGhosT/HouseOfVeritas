@@ -39,6 +39,11 @@ on:
         required: false
         type: boolean
         default: false
+      brand_hostname_binding_approved:
+        description: "Edge only: hov.nexamesh.ai DNS ownership and external OIDC transaction are complete"
+        required: false
+        type: boolean
+        default: false
       identity_cutover_approved:
         description: "Runtime only: atomically enable the reviewed Mystira OIDC settings"
         required: false
@@ -115,9 +120,11 @@ jobs:
       TF_VAR_postgres_entra_admin_principal_type: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_PRINCIPAL_TYPE }}
       INPUT_ROOT: ${{ inputs.root }}
       INPUT_HOSTNAME_BINDING_APPROVED: ${{ inputs.hostname_binding_approved }}
+      INPUT_BRAND_HOSTNAME_BINDING_APPROVED: ${{ inputs.brand_hostname_binding_approved }}
       INPUT_IDENTITY_CUTOVER_APPROVED: ${{ inputs.identity_cutover_approved }}
       TF_VAR_hostname_binding_approved: ${{ inputs.hostname_binding_approved }}
-      TF_VAR_external_oidc_cutover_complete: ${{ inputs.hostname_binding_approved }}
+      TF_VAR_brand_hostname_binding_approved: ${{ inputs.brand_hostname_binding_approved }}
+      TF_VAR_external_oidc_cutover_complete: ${{ inputs.hostname_binding_approved || inputs.brand_hostname_binding_approved }}
       TF_VAR_identity_cutover_approved: ${{ inputs.identity_cutover_approved }}
       TF_VAR_mystira_oidc_issuer: ${{ vars.HOV_MYSTIRA_OIDC_ISSUER }}
       TF_VAR_mystira_oidc_client_id: ${{ vars.HOV_MYSTIRA_OIDC_CLIENT_ID }}
@@ -321,7 +328,7 @@ jobs:
           fi
 
           managed_count=$(jq '[.resource_changes[]? | select(.mode == "managed")] | length' tfplan.json)
-          if [ "$INPUT_ROOT" != edge ] || [ "$INPUT_HOSTNAME_BINDING_APPROVED" = true ]; then
+          if [ "$INPUT_ROOT" != edge ] || [ "$INPUT_HOSTNAME_BINDING_APPROVED" = true ] || [ "$INPUT_BRAND_HOSTNAME_BINDING_APPROVED" = true ]; then
             test "$managed_count" -gt 0 || {
               echo '::error::Expected at least one managed target resource in this migration plan.'
               exit 1
@@ -349,8 +356,9 @@ jobs:
             --arg subscription_id "$TARGET_SUBSCRIPTION_ID" \
             --arg run_id "$GITHUB_RUN_ID" \
             --argjson hostname_binding_approved "$INPUT_HOSTNAME_BINDING_APPROVED" \
+            --argjson brand_hostname_binding_approved "$INPUT_BRAND_HOSTNAME_BINDING_APPROVED" \
             --argjson identity_cutover_approved "$INPUT_IDENTITY_CUTOVER_APPROVED" \
-            '{schema_version:1,root:$root,commit_sha:$commit_sha,plan_sha256:$plan_sha256,artifact_name:$artifact_name,tenant_id:$tenant_id,subscription_id:$subscription_id,run_id:$run_id,hostname_binding_approved:$hostname_binding_approved,identity_cutover_approved:$identity_cutover_approved}' \
+            '{schema_version:1,root:$root,commit_sha:$commit_sha,plan_sha256:$plan_sha256,artifact_name:$artifact_name,tenant_id:$tenant_id,subscription_id:$subscription_id,run_id:$run_id,hostname_binding_approved:$hostname_binding_approved,brand_hostname_binding_approved:$brand_hostname_binding_approved,identity_cutover_approved:$identity_cutover_approved}' \
             > plan-manifest.json
 
           echo "artifact_name=$artifact_name" >> "$GITHUB_OUTPUT"
