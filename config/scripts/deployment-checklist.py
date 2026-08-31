@@ -72,6 +72,10 @@ class CheckCategory:
     def warnings(self) -> int:
         return sum(1 for c in self.checks if c.status == Status.WARN)
 
+    @property
+    def skipped(self) -> int:
+        return sum(1 for c in self.checks if c.status == Status.SKIP)
+
 
 class DeploymentChecker:
     """Azure deployment verification checker."""
@@ -83,10 +87,15 @@ class DeploymentChecker:
         
         # Configuration
         self.subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID", "")
-        self.resource_group = os.environ.get("AZURE_RESOURCE_GROUP", "nex-prod-hov-rg")
         self.location = os.environ.get("AZURE_LOCATION", "southafricanorth")
         self.env = os.environ.get("AZURE_ENV", "prod")
         self.name_prefix = os.environ.get("AZURE_NAME_PREFIX", "nex")
+        # Fallback derives from name_prefix/env so an override of either without an
+        # explicit AZURE_RESOURCE_GROUP can't silently point the checker at the wrong RG.
+        self.resource_group = os.environ.get(
+            "AZURE_RESOURCE_GROUP",
+            f"{self.name_prefix}-{self.env}-hov-rg",
+        )
         self.enable_operational_services = os.environ.get("ENABLE_OPERATIONAL_SERVICES", "false").lower() == "true"
         self.enable_application_gateway = os.environ.get("ENABLE_APPLICATION_GATEWAY", "false").lower() == "true"
         self.is_ci = (
@@ -849,7 +858,8 @@ class DeploymentChecker:
         total_passed = 0
         total_failed = 0
         total_warnings = 0
-        
+        total_skipped = 0
+
         for category in self.categories:
             print(f"\n📦 {category.name}")
             print(f"   {category.description}")
@@ -871,9 +881,10 @@ class DeploymentChecker:
             total_passed += category.passed
             total_failed += category.failed
             total_warnings += category.warnings
-            
+            total_skipped += category.skipped
+
             print(f"\n   Summary: {category.passed} passed, {category.failed} failed, {category.warnings} warnings")
-        
+
         # Overall summary
         print("\n" + "=" * 70)
         print("📊 OVERALL DEPLOYMENT STATUS")
@@ -881,9 +892,13 @@ class DeploymentChecker:
         print(f"  ✅ Passed:   {total_passed}")
         print(f"  ❌ Failed:   {total_failed}")
         print(f"  ⚠️  Warnings: {total_warnings}")
-        
-        if total_failed == 0 and total_warnings == 0:
+        print(f"  ⏭️  Skipped:  {total_skipped}")
+
+        if total_failed == 0 and total_warnings == 0 and total_skipped == 0:
             print("\n🎉 All checks passed! Infrastructure is ready for deployment.")
+        elif total_failed == 0 and total_skipped > 0:
+            print(f"\n⏭️  {total_skipped} check(s) could not be verified from this environment "
+                  "-- review before relying on this report.")
         elif total_failed == 0:
             print("\n⚠️  Some warnings detected. Review and address if needed.")
         else:
