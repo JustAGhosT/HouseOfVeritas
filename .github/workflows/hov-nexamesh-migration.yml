@@ -160,17 +160,21 @@ jobs:
             --resource-group "$TARGET_STATE_RESOURCE_GROUP" \
             --ip-address "${{ steps.runner-ip.outputs.ip }}" \
             --only-show-errors
+          accessible=0
           for _ in $(seq 1 10); do
-            present=$(az storage account show \
-              --name "$TARGET_STATE_STORAGE_ACCOUNT" \
-              --resource-group "$TARGET_STATE_RESOURCE_GROUP" \
-              --query "length(networkRuleSet.ipRules[?ipAddressOrRange=='${{ steps.runner-ip.outputs.ip }}'])" \
-              -o tsv)
-            [ "$present" = "1" ] && break
+            if az storage container exists \
+              --account-name "$TARGET_STATE_STORAGE_ACCOUNT" \
+              --name "$TARGET_STATE_CONTAINER" \
+              --auth-mode login \
+              --only-show-errors \
+              -o json 2>/dev/null | jq -e '.exists == true' >/dev/null; then
+              accessible=1
+              break
+            fi
             sleep 3
           done
-          if [ "$present" != "1" ]; then
-            echo "::error::Runner IP ${{ steps.runner-ip.outputs.ip }} was not observed in $TARGET_STATE_STORAGE_ACCOUNT's network rules after polling; refusing to continue to terraform init."
+          if [ "$accessible" != "1" ]; then
+            echo "::error::Runner IP ${{ steps.runner-ip.outputs.ip }} was added to $TARGET_STATE_STORAGE_ACCOUNT's network rules but the $TARGET_STATE_CONTAINER container was not reachable over the blob data plane after polling; refusing to continue to terraform init."
             exit 1
           fi
 
@@ -487,17 +491,21 @@ jobs:
             --resource-group "$TARGET_STATE_RESOURCE_GROUP" \
             --ip-address "${{ steps.runner-ip.outputs.ip }}" \
             --only-show-errors
+          accessible=0
           for _ in $(seq 1 10); do
-            present=$(az storage account show \
-              --name "$TARGET_STATE_STORAGE_ACCOUNT" \
-              --resource-group "$TARGET_STATE_RESOURCE_GROUP" \
-              --query "length(networkRuleSet.ipRules[?ipAddressOrRange=='${{ steps.runner-ip.outputs.ip }}'])" \
-              -o tsv)
-            [ "$present" = "1" ] && break
+            if az storage container exists \
+              --account-name "$TARGET_STATE_STORAGE_ACCOUNT" \
+              --name "$TARGET_STATE_CONTAINER" \
+              --auth-mode login \
+              --only-show-errors \
+              -o json 2>/dev/null | jq -e '.exists == true' >/dev/null; then
+              accessible=1
+              break
+            fi
             sleep 3
           done
-          if [ "$present" != "1" ]; then
-            echo "::error::Runner IP ${{ steps.runner-ip.outputs.ip }} was not observed in $TARGET_STATE_STORAGE_ACCOUNT's network rules after polling; refusing to continue to terraform init."
+          if [ "$accessible" != "1" ]; then
+            echo "::error::Runner IP ${{ steps.runner-ip.outputs.ip }} was added to $TARGET_STATE_STORAGE_ACCOUNT's network rules but the $TARGET_STATE_CONTAINER container was not reachable over the blob data plane after polling; refusing to continue to terraform init."
             exit 1
           fi
 
@@ -586,17 +594,21 @@ jobs:
             --resource-group "$TARGET_STATE_RESOURCE_GROUP" \
             --ip-address "${{ steps.runner-ip.outputs.ip }}" \
             --only-show-errors
+          accessible=0
           for _ in $(seq 1 10); do
-            present=$(az storage account show \
-              --name "$TARGET_STATE_STORAGE_ACCOUNT" \
-              --resource-group "$TARGET_STATE_RESOURCE_GROUP" \
-              --query "length(networkRuleSet.ipRules[?ipAddressOrRange=='${{ steps.runner-ip.outputs.ip }}'])" \
-              -o tsv)
-            [ "$present" = "1" ] && break
+            if az storage container exists \
+              --account-name "$TARGET_STATE_STORAGE_ACCOUNT" \
+              --name "$TARGET_STATE_CONTAINER" \
+              --auth-mode login \
+              --only-show-errors \
+              -o json 2>/dev/null | jq -e '.exists == true' >/dev/null; then
+              accessible=1
+              break
+            fi
             sleep 3
           done
-          if [ "$present" != "1" ]; then
-            echo "::error::Runner IP ${{ steps.runner-ip.outputs.ip }} was not observed in $TARGET_STATE_STORAGE_ACCOUNT's network rules after polling; refusing to continue to terraform init -migrate-state."
+          if [ "$accessible" != "1" ]; then
+            echo "::error::Runner IP ${{ steps.runner-ip.outputs.ip }} was added to $TARGET_STATE_STORAGE_ACCOUNT's network rules but the $TARGET_STATE_CONTAINER container was not reachable over the blob data plane after polling; refusing to continue to terraform init -migrate-state."
             exit 1
           fi
 
