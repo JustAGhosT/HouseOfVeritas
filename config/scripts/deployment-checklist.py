@@ -482,6 +482,27 @@ class DeploymentChecker:
                     fix_command=f"az keyvault secret list --vault-name {kv_name} -o json"
                 )
 
+        # The vault is deliberately deny-by-default (public_network_access_enabled = false,
+        # private-endpoint-only) with no IP-allowlist mechanism -- see
+        # terraform/migrations/hov-nexamesh/foundation-data/main.tf. A GitHub-hosted runner
+        # is public internet and can never reach the data plane here, no matter which RBAC
+        # role the checklist identity holds. That's expected, not drift -- don't FAIL on it.
+        # Any other failure (RBAC denial, invalid JSON, timeout, etc.) still FAILs below.
+        network_denied = error and (
+            "Public network access is disabled" in error
+            and "not from a trusted service" in error
+        )
+        if network_denied:
+            return CheckResult(
+                name="Key Vault",
+                status=Status.SKIP,
+                message=f"Key Vault '{kv_name}' secrets could not be verified from this network",
+                details="Vault is private-endpoint-only by design (network_acls.default_action = Deny); "
+                         "a GitHub-hosted runner cannot reach its data plane. Verify secrets from a host "
+                         "with private network access (e.g. az keyvault secret list from within the VNet "
+                         "or via a self-hosted runner/bastion).",
+            )
+
         return CheckResult(
             name="Key Vault",
             status=Status.FAIL,
