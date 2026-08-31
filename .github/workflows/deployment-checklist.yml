@@ -23,9 +23,10 @@ permissions:
   issues: write
 
 env:
-  AZURE_RESOURCE_GROUP: "nl-prod-hov-rg"
+  AZURE_RESOURCE_GROUP: "nex-prod-hov-rg"
   AZURE_LOCATION: "southafricanorth"
   AZURE_ENV: "prod"
+  AZURE_NAME_PREFIX: "nex"
 
 jobs:
   # ============================================
@@ -33,11 +34,16 @@ jobs:
   # ============================================
   deployment-checklist:
     name: "Infrastructure Verification"
-    # Dependency automation PRs run without repo secrets, so fromJSON(secrets.AZURE_CREDENTIALS)
-    # fails at template-parse time. Skip infra checks for them; Build/Test/E2E still run.
+    # Dependency automation PRs run without a usable OIDC identity/vars for this job.
+    # Skip infra checks for them; Build/Test/E2E still run.
     if: github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
     outputs:
       passed: ${{ steps.checklist.outputs.passed }}
       failed: ${{ steps.checklist.outputs.failed }}
@@ -66,18 +72,17 @@ jobs:
       - name: Azure Login
         uses: azure/login@v3
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Set Azure Subscription
-        run: |
-          az account set --subscription "${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}"
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - name: Run Deployment Checklist
         id: checklist
         env:
-          AZURE_SUBSCRIPTION_ID: ${{ fromJSON(secrets.AZURE_CREDENTIALS).subscriptionId }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
           AZURE_RESOURCE_GROUP: ${{ env.AZURE_RESOURCE_GROUP }}
           AZURE_LOCATION: ${{ env.AZURE_LOCATION }}
+          AZURE_NAME_PREFIX: ${{ env.AZURE_NAME_PREFIX }}
         run: |
           # Run checklist and capture output
           python3 config/scripts/deployment-checklist.py --verbose > checklist_output.txt 2>&1

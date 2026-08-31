@@ -83,9 +83,10 @@ class DeploymentChecker:
         
         # Configuration
         self.subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID", "")
-        self.resource_group = os.environ.get("AZURE_RESOURCE_GROUP", "nl-prod-hov-rg")
+        self.resource_group = os.environ.get("AZURE_RESOURCE_GROUP", "nex-prod-hov-rg")
         self.location = os.environ.get("AZURE_LOCATION", "southafricanorth")
         self.env = os.environ.get("AZURE_ENV", "prod")
+        self.name_prefix = os.environ.get("AZURE_NAME_PREFIX", "nex")
         self.enable_operational_services = os.environ.get("ENABLE_OPERATIONAL_SERVICES", "false").lower() == "true"
         self.enable_application_gateway = os.environ.get("ENABLE_APPLICATION_GATEWAY", "false").lower() == "true"
         self.is_ci = (
@@ -93,16 +94,16 @@ class DeploymentChecker:
             or os.environ.get("GITHUB_ACTIONS") == "true"
         )
 
-        # Naming convention: nl-{env}-hov-{resourcetype}
+        # Naming convention: {prefix}-{env}-hov-{resourcetype}
         self.expected_resources = {
-            "vnet": f"nl-{self.env}-hov-vnet",
-            "postgres": f"nl-{self.env}-hov-pg",
-            "storage": f"nl{self.env}hovst",  # Storage accounts can't have hyphens
-            "keyvault": f"nl-{self.env}-hov-kv",
-            "appgateway": f"nl-{self.env}-hov-agw",
+            "vnet": f"{self.name_prefix}-{self.env}-hov-vnet",
+            "postgres": f"{self.name_prefix}-{self.env}-hov-pg",
+            "storage": f"{self.name_prefix}{self.env}hovst",  # Storage accounts can't have hyphens
+            "keyvault": f"{self.name_prefix}-{self.env}-hov-kv",
+            "appgateway": f"{self.name_prefix}-{self.env}-hov-agw",
             "docuseal": f"{self.env}-docuseal",
             "baserow": f"{self.env}-baserow",
-            "functionapp": f"nl-{self.env}-hov-func",
+            "functionapp": f"{self.name_prefix}-{self.env}-hov-func",
         }
     
     def run_command(self, command: List[str], capture_output: bool = True) -> tuple:
