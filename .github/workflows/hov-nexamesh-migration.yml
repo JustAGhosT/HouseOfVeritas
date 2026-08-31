@@ -150,17 +150,6 @@ jobs:
           [[ "$ip" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]
           echo "ip=$ip" >> "$GITHUB_OUTPUT"
 
-      - name: Narrow tfstate allowlist to this runner (bootstrap only)
-        if: inputs.root == 'bootstrap'
-        shell: bash
-        env:
-          BASELINE_CIDRS: ${{ vars.HOV_TFSTATE_ALLOWED_IP_CIDRS }}
-        run: |
-          set -euo pipefail
-          merged=$(jq -c --arg ip "${{ steps.runner-ip.outputs.ip }}/32" \
-            '(. // []) + [$ip] | unique' <<<"${BASELINE_CIDRS:-[]}")
-          echo "TF_VAR_backend_allowed_ip_cidrs=$merged" >> "$GITHUB_ENV"
-
       - name: Allow this runner on the tfstate storage account (non-bootstrap roots)
         if: inputs.root != 'bootstrap'
         shell: bash
@@ -180,6 +169,10 @@ jobs:
             [ "$present" = "1" ] && break
             sleep 3
           done
+          if [ "$present" != "1" ]; then
+            echo "::error::Runner IP ${{ steps.runner-ip.outputs.ip }} was not observed in $TARGET_STATE_STORAGE_ACCOUNT's network rules after polling; refusing to continue to terraform init."
+            exit 1
+          fi
 
       - name: Assert target context and inputs
         shell: bash
@@ -370,11 +363,28 @@ jobs:
         if: always() && inputs.root != 'bootstrap' && steps.runner-ip.outputs.ip != ''
         shell: bash
         run: |
-          az storage account network-rule remove \
-            --account-name "$TARGET_STATE_STORAGE_ACCOUNT" \
-            --resource-group "$TARGET_STATE_RESOURCE_GROUP" \
-            --ip-address "${{ steps.runner-ip.outputs.ip }}" \
-            --only-show-errors || true
+          set -uo pipefail
+          for _ in $(seq 1 5); do
+            az storage account network-rule remove \
+              --account-name "$TARGET_STATE_STORAGE_ACCOUNT" \
+              --resource-group "$TARGET_STATE_RESOURCE_GROUP" \
+              --ip-address "${{ steps.runner-ip.outputs.ip }}" \
+              --only-show-errors && break
+            sleep 3
+          done
+          for _ in $(seq 1 10); do
+            present=$(az storage account show \
+              --name "$TARGET_STATE_STORAGE_ACCOUNT" \
+              --resource-group "$TARGET_STATE_RESOURCE_GROUP" \
+              --query "length(networkRuleSet.ipRules[?ipAddressOrRange=='${{ steps.runner-ip.outputs.ip }}'])" \
+              -o tsv)
+            [ "$present" = "0" ] && break
+            sleep 3
+          done
+          if [ "$present" != "0" ]; then
+            echo "::error::Runner IP ${{ steps.runner-ip.outputs.ip }} is still present in $TARGET_STATE_STORAGE_ACCOUNT's network rules after cleanup retries; remove it manually."
+            exit 1
+          fi
 
   apply:
     name: Apply approved target ${{ inputs.root }} plan
@@ -467,17 +477,6 @@ jobs:
           [[ "$ip" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]
           echo "ip=$ip" >> "$GITHUB_OUTPUT"
 
-      - name: Narrow tfstate allowlist to this runner (bootstrap only)
-        if: inputs.root == 'bootstrap'
-        shell: bash
-        env:
-          BASELINE_CIDRS: ${{ vars.HOV_TFSTATE_ALLOWED_IP_CIDRS }}
-        run: |
-          set -euo pipefail
-          merged=$(jq -c --arg ip "${{ steps.runner-ip.outputs.ip }}/32" \
-            '(. // []) + [$ip] | unique' <<<"${BASELINE_CIDRS:-[]}")
-          echo "TF_VAR_backend_allowed_ip_cidrs=$merged" >> "$GITHUB_ENV"
-
       - name: Allow this runner on the tfstate storage account (non-bootstrap roots)
         if: inputs.root != 'bootstrap'
         shell: bash
@@ -497,6 +496,10 @@ jobs:
             [ "$present" = "1" ] && break
             sleep 3
           done
+          if [ "$present" != "1" ]; then
+            echo "::error::Runner IP ${{ steps.runner-ip.outputs.ip }} was not observed in $TARGET_STATE_STORAGE_ACCOUNT's network rules after polling; refusing to continue to terraform init."
+            exit 1
+          fi
 
       - name: Assert exact target context
         shell: bash
@@ -573,6 +576,30 @@ jobs:
           set -euo pipefail
           terraform -chdir="$WORKING_DIR" apply -input=false -auto-approve "$GITHUB_WORKSPACE/approved-plan/tfplan"
 
+      - name: Allow this runner on the newly created tfstate storage account (bootstrap only)
+        if: inputs.root == 'bootstrap'
+        shell: bash
+        run: |
+          set -euo pipefail
+          az storage account network-rule add \
+            --account-name "$TARGET_STATE_STORAGE_ACCOUNT" \
+            --resource-group "$TARGET_STATE_RESOURCE_GROUP" \
+            --ip-address "${{ steps.runner-ip.outputs.ip }}" \
+            --only-show-errors
+          for _ in $(seq 1 10); do
+            present=$(az storage account show \
+              --name "$TARGET_STATE_STORAGE_ACCOUNT" \
+              --resource-group "$TARGET_STATE_RESOURCE_GROUP" \
+              --query "length(networkRuleSet.ipRules[?ipAddressOrRange=='${{ steps.runner-ip.outputs.ip }}'])" \
+              -o tsv)
+            [ "$present" = "1" ] && break
+            sleep 3
+          done
+          if [ "$present" != "1" ]; then
+            echo "::error::Runner IP ${{ steps.runner-ip.outputs.ip }} was not observed in $TARGET_STATE_STORAGE_ACCOUNT's network rules after polling; refusing to continue to terraform init -migrate-state."
+            exit 1
+          fi
+
       - name: Migrate bootstrap state immediately to the new target backend
         if: inputs.root == 'bootstrap'
         shell: bash
@@ -589,6 +616,33 @@ jobs:
             -backend-config="tenant_id=$TARGET_TENANT_ID" \
             -backend-config="subscription_id=$TARGET_SUBSCRIPTION_ID"
           terraform state pull >/dev/null
+
+      - name: Remove this runner from the tfstate storage account (bootstrap only)
+        if: always() && inputs.root == 'bootstrap' && steps.runner-ip.outputs.ip != ''
+        shell: bash
+        run: |
+          set -uo pipefail
+          for _ in $(seq 1 5); do
+            az storage account network-rule remove \
+              --account-name "$TARGET_STATE_STORAGE_ACCOUNT" \
+              --resource-group "$TARGET_STATE_RESOURCE_GROUP" \
+              --ip-address "${{ steps.runner-ip.outputs.ip }}" \
+              --only-show-errors && break
+            sleep 3
+          done
+          for _ in $(seq 1 10); do
+            present=$(az storage account show \
+              --name "$TARGET_STATE_STORAGE_ACCOUNT" \
+              --resource-group "$TARGET_STATE_RESOURCE_GROUP" \
+              --query "length(networkRuleSet.ipRules[?ipAddressOrRange=='${{ steps.runner-ip.outputs.ip }}'])" \
+              -o tsv)
+            [ "$present" = "0" ] && break
+            sleep 3
+          done
+          if [ "$present" != "0" ]; then
+            echo "::error::Runner IP ${{ steps.runner-ip.outputs.ip }} is still present in $TARGET_STATE_STORAGE_ACCOUNT's network rules after cleanup retries; remove it manually."
+            exit 1
+          fi
 
       - name: Record exact-plan application evidence
         shell: bash
@@ -613,11 +667,28 @@ jobs:
         if: always() && inputs.root != 'bootstrap' && steps.runner-ip.outputs.ip != ''
         shell: bash
         run: |
-          az storage account network-rule remove \
-            --account-name "$TARGET_STATE_STORAGE_ACCOUNT" \
-            --resource-group "$TARGET_STATE_RESOURCE_GROUP" \
-            --ip-address "${{ steps.runner-ip.outputs.ip }}" \
-            --only-show-errors || true
+          set -uo pipefail
+          for _ in $(seq 1 5); do
+            az storage account network-rule remove \
+              --account-name "$TARGET_STATE_STORAGE_ACCOUNT" \
+              --resource-group "$TARGET_STATE_RESOURCE_GROUP" \
+              --ip-address "${{ steps.runner-ip.outputs.ip }}" \
+              --only-show-errors && break
+            sleep 3
+          done
+          for _ in $(seq 1 10); do
+            present=$(az storage account show \
+              --name "$TARGET_STATE_STORAGE_ACCOUNT" \
+              --resource-group "$TARGET_STATE_RESOURCE_GROUP" \
+              --query "length(networkRuleSet.ipRules[?ipAddressOrRange=='${{ steps.runner-ip.outputs.ip }}'])" \
+              -o tsv)
+            [ "$present" = "0" ] && break
+            sleep 3
+          done
+          if [ "$present" != "0" ]; then
+            echo "::error::Runner IP ${{ steps.runner-ip.outputs.ip }} is still present in $TARGET_STATE_STORAGE_ACCOUNT's network rules after cleanup retries; remove it manually."
+            exit 1
+          fi
 
   deploy-runtime:
     name: Deploy exact HOV runtime build
