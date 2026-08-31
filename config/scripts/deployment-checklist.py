@@ -476,7 +476,7 @@ class DeploymentChecker:
             except json.JSONDecodeError:
                 return CheckResult(
                     name="Key Vault",
-                    status=Status.WARN,
+                    status=Status.FAIL,
                     message=f"Key Vault '{kv_name}' exists but secret list returned invalid JSON",
                     details=f"Could not parse 'az keyvault secret list' output: {output.strip()[:200]}",
                     fix_command=f"az keyvault secret list --vault-name {kv_name} -o json"
@@ -484,11 +484,11 @@ class DeploymentChecker:
 
         return CheckResult(
             name="Key Vault",
-            status=Status.WARN,
+            status=Status.FAIL,
             message=f"Key Vault '{kv_name}' exists but secrets could not be verified",
             details=f"'az keyvault secret list' failed: {error.strip()[:200] if error else 'unknown error'} "
-                    "(the checklist identity may lack a Key Vault data-plane role such as 'Key Vault Reader')",
-            fix_command=f"az role assignment create --assignee <checklist-identity-object-id> "
+                    "(the checklist identity should hold the 'Key Vault Reader' data-plane role on this vault)",
+            fix_command=f"az role assignment create --assignee <checklist-identity-appId> "
                         f"--role \"Key Vault Reader\" --scope $(az keyvault show --name {kv_name} "
                         f"--resource-group {self.resource_group} --query id -o tsv)"
         )
