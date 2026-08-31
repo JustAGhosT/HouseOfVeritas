@@ -77,6 +77,23 @@ variable "hostname_binding_approved" {
   default     = false
 }
 
+variable "brand_hostname" {
+  description = "Brand hostname to bind after external DNS ownership verification. Bound in addition to, not instead of, the compatibility hostname."
+  type        = string
+  default     = "hov.nexamesh.ai"
+
+  validation {
+    condition     = var.brand_hostname == "hov.nexamesh.ai"
+    error_message = "This edge root is isolated to the approved HOV brand hostname."
+  }
+}
+
+variable "brand_hostname_binding_approved" {
+  description = "Explicit gate set only after Cloudflare TXT verification and operator review, for the brand hostname."
+  type        = bool
+  default     = false
+}
+
 variable "external_oidc_cutover_complete" {
   description = "Operator attestation that the separately managed OIDC registration/callback transaction is complete."
   type        = bool

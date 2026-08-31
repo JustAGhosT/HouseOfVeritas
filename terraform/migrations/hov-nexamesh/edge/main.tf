@@ -48,8 +48,11 @@ check "runtime_boundary" {
 
 check "operator_cutover_sequence" {
   assert {
-    condition     = !var.hostname_binding_approved || var.external_oidc_cutover_complete
-    error_message = "Complete the external OIDC registration/callback transaction before enabling the production hostname binding."
+    condition = (
+      (!var.hostname_binding_approved && !var.brand_hostname_binding_approved) ||
+      var.external_oidc_cutover_complete
+    )
+    error_message = "Complete the external OIDC registration/callback transaction before enabling any production hostname binding."
   }
 }
 
@@ -85,6 +88,44 @@ resource "azurerm_app_service_certificate_binding" "compatibility" {
 
   hostname_binding_id = azurerm_app_service_custom_hostname_binding.compatibility[0].id
   certificate_id      = azurerm_app_service_managed_certificate.compatibility[0].id
+  ssl_state           = "SniEnabled"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+# Brand hostname binding — additive, alongside the compatibility hostname
+# above, not a replacement for it. Same external-prerequisite boundary: this
+# root still does not touch Cloudflare DNS or the Mystira OIDC registration.
+resource "azurerm_app_service_custom_hostname_binding" "brand" {
+  count = var.brand_hostname_binding_approved ? 1 : 0
+
+  hostname            = var.brand_hostname
+  app_service_name    = local.runtime.web_app_name
+  resource_group_name = var.resource_group_name
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "azurerm_app_service_managed_certificate" "brand" {
+  count = var.brand_hostname_binding_approved ? 1 : 0
+
+  custom_hostname_binding_id = azurerm_app_service_custom_hostname_binding.brand[0].id
+  tags                       = local.tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "azurerm_app_service_certificate_binding" "brand" {
+  count = var.brand_hostname_binding_approved ? 1 : 0
+
+  hostname_binding_id = azurerm_app_service_custom_hostname_binding.brand[0].id
+  certificate_id      = azurerm_app_service_managed_certificate.brand[0].id
   ssl_state           = "SniEnabled"
 
   lifecycle {
