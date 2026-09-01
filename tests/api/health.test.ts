@@ -18,7 +18,7 @@ describe("GET /api/health", () => {
     const data = await response.json()
     expect(data).toHaveProperty("status")
     expect(["healthy", "degraded"]).toContain(data.status)
-    expect(data.build).toEqual({ commit: "development" })
+    expect(data.build).toEqual({ commit: process.env.NEXT_PUBLIC_BUILD_COMMIT ?? "development" })
     expect(data).toHaveProperty("dataMode")
     expect(data).toHaveProperty("services")
     expect(data).toHaveProperty("timestamp")
