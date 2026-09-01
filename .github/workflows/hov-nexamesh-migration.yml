@@ -880,7 +880,7 @@ jobs:
             az webapp show \
               --resource-group "$TARGET_RESOURCE_GROUP" \
               --name "$TARGET_WEB_APP_NAME" \
-              --query '[name,resourceGroup,defaultHostName]' \
+              --query '[[name,resourceGroup,defaultHostName]]' \
               --output tsv \
               --only-show-errors
           )
