@@ -134,14 +134,25 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "$OwnerRole" IN SCHEMA public
     )
   }
 
+  # Booleans are stringified via explicit CASE, not ::text -- this server's boolean::text
+  # output was observed to render "true"/"false" rather than PostgreSQL's traditional "t"/"f",
+  # which silently failed every -cne "t"/"f" comparison below despite the underlying grants
+  # being exactly correct. CASE fixes the output contract at the comparison site regardless of
+  # engine/version bool_out behavior. The owner-lockdown check uses EXISTS instead of a scalar
+  # subquery so a missing "$OwnerRole" role also yields a deterministic 'f' instead of NULL
+  # (which would otherwise collapse the whole || chain below to NULL).
   $verificationSql = @"
 SELECT current_database() || E'\t' || current_user || E'\t' ||
-       (SELECT (NOT rolcanlogin AND NOT rolsuper AND NOT rolcreatedb AND NOT rolcreaterole AND NOT rolreplication AND NOT rolbypassrls)::text
-          FROM pg_roles WHERE rolname = '$ownerRoleSql') || E'\t' ||
-       pg_has_role('$runtimeRoleSql', '$ownerRoleSql', 'MEMBER')::text || E'\t' ||
-       has_database_privilege('public', current_database(), 'CONNECT')::text || E'\t' ||
-       has_database_privilege('$runtimeRoleSql', current_database(), 'CONNECT')::text || E'\t' ||
-       has_schema_privilege('public', 'public', 'CREATE')::text;
+       CASE WHEN EXISTS (
+         SELECT 1 FROM pg_roles
+         WHERE rolname = '$ownerRoleSql'
+           AND NOT rolcanlogin AND NOT rolsuper AND NOT rolcreatedb
+           AND NOT rolcreaterole AND NOT rolreplication AND NOT rolbypassrls
+       ) THEN 't' ELSE 'f' END || E'\t' ||
+       CASE WHEN pg_has_role('$runtimeRoleSql', '$ownerRoleSql', 'MEMBER') THEN 't' ELSE 'f' END || E'\t' ||
+       CASE WHEN has_database_privilege('public', current_database(), 'CONNECT') THEN 't' ELSE 'f' END || E'\t' ||
+       CASE WHEN has_database_privilege('$runtimeRoleSql', current_database(), 'CONNECT') THEN 't' ELSE 'f' END || E'\t' ||
+       CASE WHEN has_schema_privilege('public', 'public', 'CREATE') THEN 't' ELSE 'f' END;
 "@
   $verification = Invoke-WithPostgresEnvironment -Prefix HOV_TARGET -ScriptBlock {
     Invoke-NativeCommand -FilePath "psql" -ArgumentList @(
