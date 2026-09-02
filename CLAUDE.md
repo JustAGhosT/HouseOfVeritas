@@ -109,7 +109,9 @@ Lifecycle hooks in `.claude/hooks/`:
 - `protect-sensitive.sh` — Block writes to .env, .tfvars, credentials
 - `guard-destructive-bash.sh` — Block force-push, hard reset, terraform destroy
 - `warn-uncommitted.sh` — Warn when 10+ uncommitted files
-- `stop-build-check.sh` — Verify TypeScript and tests pass before finishing
+- `stop-build-check.sh` — **Disabled, not registered in `settings.json`** (PR #217; it checked
+  `$CLAUDE_PROJECT_DIR`, not the active worktree, causing false-positive blocks). Run
+  `pnpm exec tsc --noEmit` and `pnpm test -- --run` manually before ending a session.
 
 ## Current State
 

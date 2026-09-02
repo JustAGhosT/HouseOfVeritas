@@ -147,7 +147,7 @@ Read .claude/commands/fix.md and follow the instructions
 │   ├── protect-sensitive.sh  # Block writes to .env, .tfvars, creds
 │   ├── guard-destructive-bash.sh  # Block force-push, hard reset
 │   ├── warn-uncommitted.sh   # Warn when 10+ uncommitted files
-│   └── stop-build-check.sh   # Verify build passes before finishing
+│   └── stop-build-check.sh   # Verify build passes before finishing (DISABLED — see table below)
 ├── rules/                # Per-domain coding rules
 │   ├── security.md       # Auth, secrets, validation rules
 │   ├── testing.md        # Test framework and coverage rules
@@ -178,13 +178,19 @@ Read .claude/commands/fix.md and follow the instructions
 
 Hooks run automatically during Claude Code sessions (configured in `settings.json`):
 
-| Hook                        | Trigger             | Action                                           |
-| --------------------------- | ------------------- | ------------------------------------------------ |
-| `session-start.sh`          | Session begins      | Verify Node.js, run build check, show git status |
-| `protect-sensitive.sh`      | Before file write   | Block writes to `.env.local`, `.tfvars`, creds   |
-| `guard-destructive-bash.sh` | Before bash command | Block `git push --force`, `terraform destroy`    |
-| `warn-uncommitted.sh`       | After file write    | Warn if 10+ uncommitted changes                  |
-| `stop-build-check.sh`       | Session ends        | Verify TypeScript and tests still pass           |
+| Hook                        | Trigger              | Action                                            |
+| --------------------------- | --------------------- | -------------------------------------------------- |
+| `session-start.sh`          | Session begins       | Verify Node.js, run build check, show git status  |
+| `protect-sensitive.sh`      | Before file write     | Block writes to `.env.local`, `.tfvars`, creds     |
+| `guard-destructive-bash.sh` | Before bash command   | Block `git push --force`, `terraform destroy`      |
+| `warn-uncommitted.sh`       | After file write      | Warn if 10+ uncommitted changes                    |
+| `stop-build-check.sh`       | **Disabled** — not registered | No longer runs automatically. Run `pnpm exec tsc --noEmit` and `pnpm test -- --run` manually before ending a session. |
+
+> `stop-build-check.sh` was removed from the `Stop` hook registration in `settings.json` (PR #217).
+> The script always checks `$CLAUDE_PROJECT_DIR` — the main checkout, not the active worktree — so
+> in worktree-isolated sessions it validated a different directory than the one being worked in and
+> produced false-positive blocks. Until the script resolves the session's actual working directory,
+> agents must run the TypeScript and test checks manually before finishing.
 
 ### Permission System
 
