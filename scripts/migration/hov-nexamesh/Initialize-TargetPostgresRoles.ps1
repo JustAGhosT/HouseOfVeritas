@@ -154,6 +154,21 @@ SELECT current_database() || E'\t' || current_user || E'\t' ||
 }
 
 $verificationParts = (($verification -join "").Trim() -split "`t")
+# Diagnostic detail for the failure branch below. Built unconditionally (cheap) so a
+# thrown mismatch names exactly which field(s) failed instead of a single generic message --
+# a verification query whose `||` concatenation hits a NULL sub-expression collapses the
+# entire tab-joined row to an empty string, which trips only the Count check with every
+# individual field looking blank rather than visibly wrong.
+$verificationFieldNames = @(
+  "database", "entraAdminUser", "ownerLockedDown", "runtimeOwnerMembership",
+  "publicConnect", "runtimeConnect", "publicSchemaCreate"
+)
+$verificationFieldDiagnostics = for ($i = 0; $i -lt $verificationParts.Count; $i++) {
+  $label = if ($i -lt $verificationFieldNames.Count) { $verificationFieldNames[$i] } else { "extra$i" }
+  "[${i}:${label}]=[$($verificationParts[$i])]"
+}
+$verificationDiagnosticText = "entraMappingCount=[$entraMappingCount] verificationParts.Count=$($verificationParts.Count) " +
+  ($verificationFieldDiagnostics -join " ")
 if ($verificationParts.Count -ne 7 -or
   $verificationParts[0] -cne $TargetDatabase -or
   $verificationParts[1] -cne $ExpectedEntraAdminRole -or
@@ -163,7 +178,7 @@ if ($verificationParts.Count -ne 7 -or
   $verificationParts[4] -cne "f" -or
   $verificationParts[5] -cne "t" -or
   $verificationParts[6] -cne "f") {
-  throw "PostgreSQL role, Entra mapping, membership, CONNECT, or schema-public verification failed."
+  throw "PostgreSQL role, Entra mapping, membership, CONNECT, or schema-public verification failed. $verificationDiagnosticText"
 }
 
 Write-SafeJson -InputObject ([ordered]@{
