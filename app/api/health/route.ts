@@ -74,7 +74,11 @@ export async function GET() {
       isDocuSealConfigured()
         ? serviceBaseUrl(process.env.NEXT_PUBLIC_DOCUSEAL_URL || process.env.DOCUSEAL_API_URL)
         : undefined,
-      "/health"
+      // DocuSeal (self-hosted, Rails) has no /health route — it 404s there with
+      // a genuine app-level response (cookie, x-runtime header), not a network
+      // failure. Verified against the live nexamesh instance 2026-09-02: root
+      // "/" is the only path confirmed to answer 200, so probe that instead.
+      "/"
     ),
   ])
 
