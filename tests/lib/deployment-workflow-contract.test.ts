@@ -2,13 +2,14 @@ import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { describe, expect, it } from "vitest"
 
-const productionWorkflows = [
-  ".github/workflows/deploy-on-merge.yml",
-  ".github/workflows/deploy.yml",
-]
+// deploy.yml was disabled (renamed to deploy.yml.disabled) 2026-09-02 -- it
+// targeted the deleted nl-prod-hov-rg/app and GitHub Actions no longer
+// registers it, so its contracts are no longer load-bearing. See the header
+// comment in .github/workflows/deploy.yml.disabled for the replacement paths
+// (deploy-runtime in hov-nexamesh-migration.yml).
+const productionWorkflows = [".github/workflows/deploy-on-merge.yml"]
 
 const terraformMutationWorkflows = [
-  [".github/workflows/deploy.yml", "deploy-infrastructure", undefined],
   [".github/workflows/terraform-apply.yml", "terraform-apply", "if: inputs.confirm == 'APPLY'"],
   [
     ".github/workflows/terraform-destroy.yml",
@@ -19,8 +20,6 @@ const terraformMutationWorkflows = [
 
 const targetMutationJobs = [
   [".github/workflows/deploy-functions.yml", "deploy-functions", "hov-production-functions", false],
-  [".github/workflows/deploy.yml", "deploy-docuseal", "hov-production-docuseal", true],
-  [".github/workflows/deploy.yml", "deploy-baserow", "hov-production-baserow", true],
 ] as const
 
 /**
@@ -71,20 +70,14 @@ describe("production mutation concurrency contracts", () => {
     }
   )
 
-  it.each([".github/workflows/deploy.yml", ".github/workflows/deploy-on-merge.yml"])(
-    "%s protects deploy-webapp with the shared web-app group",
-    (workflowPath) => {
-      const workflow = readWorkflow(workflowPath)
-      const job = extractJob(workflow, "deploy-webapp")
+  it("deploy-on-merge.yml protects deploy-webapp with the shared web-app group", () => {
+    const workflow = readWorkflow(".github/workflows/deploy-on-merge.yml")
+    const job = extractJob(workflow, "deploy-webapp")
 
-      const expectedGroup = workflowPath.endsWith("deploy.yml")
-        ? "group: hov-${{ inputs.environment || 'production' }}-webapp"
-        : "group: hov-production-webapp"
-      expect(job).toContain(expectedGroup)
-      expect(job).toContain("cancel-in-progress: false")
-      expect(job).toContain("queue: max")
-    }
-  )
+    expect(job).toContain("group: hov-production-webapp")
+    expect(job).toContain("cancel-in-progress: false")
+    expect(job).toContain("queue: max")
+  })
 
   it.each(targetMutationJobs)(
     "%s protects %s with its target-specific group",

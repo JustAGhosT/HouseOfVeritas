@@ -20,8 +20,12 @@
 #     alongside the deploy jobs.
 #
 # If a future need reintroduces something like this, retarget every
-# nl-prod-hov-* / hov.neuralliquid.ai reference below to the nex-prod-hov-*
-# resources first - don't just strip the .disabled suffix.
+# nl-prod-hov-* reference below to the nex-prod-hov-* app / resource group /
+# Key Vault first - don't just strip the .disabled suffix. The auth hostname
+# is a separate concern: hov-nexamesh-migration.yml doesn't hardcode a
+# replacement literal for hov.neuralliquid.ai, it reads TF_VAR_auth_url from
+# vars.HOV_AUTH_URL, so that value (not a find-and-replace) is the source of
+# truth for the current auth hostname.
 
 name: "Full Deployment Pipeline"
 
