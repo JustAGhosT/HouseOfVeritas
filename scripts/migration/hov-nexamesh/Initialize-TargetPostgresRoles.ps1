@@ -32,9 +32,9 @@ $preflightSql = @"
 SELECT current_database() || E'\t' || current_user || E'\t' ||
        (SELECT count(*) FROM pg_roles WHERE rolname = '$runtimeRoleSql')::text || E'\t' ||
        (SELECT count(*) FROM pg_catalog.pgaadauth_list_principals(false)
-          WHERE rolename = '$runtimeRoleSql')::text || E'\t' ||
+          WHERE rolname = '$runtimeRoleSql')::text || E'\t' ||
        (SELECT count(*) FROM pg_catalog.pgaadauth_list_principals(false)
-          WHERE rolename = '$runtimeRoleSql'
+          WHERE rolname = '$runtimeRoleSql'
             AND lower(objectId) = '$objectIdSql'
             AND principalType = 'service'
             AND isAdmin = 0)::text || E'\t' ||
@@ -119,7 +119,7 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "$OwnerRole" IN SCHEMA public
   $verificationSql = @"
 SELECT current_database() || E'\t' || current_user || E'\t' ||
        (SELECT count(*) FROM pg_catalog.pgaadauth_list_principals(false)
-          WHERE rolename = '$runtimeRoleSql'
+          WHERE rolname = '$runtimeRoleSql'
             AND lower(objectId) = '$objectIdSql'
             AND principalType = 'service'
             AND isAdmin = 0)::text || E'\t' ||
