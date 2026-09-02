@@ -7,8 +7,8 @@ Multi-agent assessment framework with lifecycle hooks, persistent state, and dom
 ```text
 ┌──────────────────────────────────────────────────────────┐
 │                    LIFECYCLE HOOKS                        │
-│  SessionStart → PreToolUse → PostToolUse → Stop          │
-│  (env check)    (protect)    (warn)        (build check) │
+│  SessionStart → PreToolUse → PostToolUse → Stop*         │
+│  (env check)    (protect)    (warn)        (*disabled)   │
 └──────────────────────────────────────────────────────────┘
          │                                      │
          ▼                                      ▼
@@ -61,7 +61,7 @@ Executable prompts: 11 assessment commands + 6 operational commands
 
 Commands should use `pnpm` for JavaScript/TypeScript work in this repo.
 
-### Hooks (5 lifecycle scripts)
+### Hooks (4 registered, 1 disabled)
 
 Automated safety checks triggered during Claude Code sessions:
 
@@ -69,7 +69,11 @@ Automated safety checks triggered during Claude Code sessions:
 - **PreToolUse (Write|Edit)**: Block writes to sensitive files
 - **PreToolUse (Bash)**: Block destructive commands
 - **PostToolUse (Write|Edit)**: Warn about uncommitted changes
-- **Stop**: Verify TypeScript and tests still pass
+- **Stop** (`stop-build-check.sh`, **disabled**, not registered in `settings.json` — PR #217): used
+  to verify TypeScript and tests still pass. Removed because it always checks
+  `$CLAUDE_PROJECT_DIR` (the main checkout) rather than the active worktree, producing
+  false-positive blocks in worktree-isolated sessions. Run `pnpm exec tsc --noEmit` and
+  `pnpm test -- --run` manually before ending a session until it's fixed and re-enabled.
 
 ### Rules (5 domain files)
 
