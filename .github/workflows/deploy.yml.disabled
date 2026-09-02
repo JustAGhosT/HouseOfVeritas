@@ -1,3 +1,28 @@
+# DISABLED 2026-09-02 — do not rename this back to deploy.yml.
+#
+# Every deploy job below targets nl-prod-hov-rg / nl-prod-hov-app, which no
+# longer exist: the resource group was deleted as part of the NexaMesh
+# migration (az group show -> ResourceGroupNotFound; the old hostname is
+# NXDOMAIN). This workflow last ran 2026-07-21, before that migration, and
+# has never targeted the current infrastructure.
+#
+# Renamed to .disabled (instead of `if: false`) so GitHub Actions stops
+# registering the workflow entirely - no manual-dispatch button is left
+# pointed at dead infrastructure for someone to press.
+#
+# Replacements:
+#   - Deploying the live app: hov-nexamesh-migration.yml, the
+#     `deploy-runtime` job (targets nex-prod-hov-app / nex-prod-hov-rg).
+#   - CI (lint/test/build/e2e): deployment-checklist.yml already runs all
+#     of that on every PR, push to main, workflow_dispatch, and a daily
+#     cron - this file's build/e2e jobs were a redundant second copy of it,
+#     not a unique source of coverage, so nothing here needs to be revived
+#     alongside the deploy jobs.
+#
+# If a future need reintroduces something like this, retarget every
+# nl-prod-hov-* / hov.neuralliquid.ai reference below to the nex-prod-hov-*
+# resources first - don't just strip the .disabled suffix.
+
 name: "Full Deployment Pipeline"
 
 # Triggered manually or on release tags
