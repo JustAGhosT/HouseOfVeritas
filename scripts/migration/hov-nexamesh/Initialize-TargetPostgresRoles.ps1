@@ -96,6 +96,24 @@ Invoke-WithPostgresEnvironment -Prefix HOV_TARGET -ScriptBlock {
   )
 }
 
+# pgaadauth_list_principals() only exists in the "postgres" maintenance database on Azure
+# Database for PostgreSQL Flexible Server, so the Entra-mapping check must run here, before
+# the HOV_TARGET_PGDATABASE switch below -- querying it from the target database fails with
+# "function pgaadauth_list_principals(...) does not exist".
+$entraMappingSql = @"
+SELECT (SELECT count(*) FROM pg_catalog.pgaadauth_list_principals(false)
+          WHERE rolname = '$runtimeRoleSql'
+            AND lower(objectId) = '$objectIdSql'
+            AND principalType = 'service'
+            AND isAdmin = 0)::text;
+"@
+$entraMappingCount = ((Invoke-WithPostgresEnvironment -Prefix HOV_TARGET -ScriptBlock {
+      Invoke-NativeCommand -FilePath "psql" -ArgumentList @(
+        "--no-psqlrc", "--quiet", "--tuples-only", "--no-align", "--set", "ON_ERROR_STOP=1",
+        "--command", $entraMappingSql
+      )
+    }) -join "").Trim()
+
 $previousDatabase = [Environment]::GetEnvironmentVariable("HOV_TARGET_PGDATABASE", "Process")
 try {
   [Environment]::SetEnvironmentVariable("HOV_TARGET_PGDATABASE", $TargetDatabase, "Process")
@@ -118,11 +136,6 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "$OwnerRole" IN SCHEMA public
 
   $verificationSql = @"
 SELECT current_database() || E'\t' || current_user || E'\t' ||
-       (SELECT count(*) FROM pg_catalog.pgaadauth_list_principals(false)
-          WHERE rolname = '$runtimeRoleSql'
-            AND lower(objectId) = '$objectIdSql'
-            AND principalType = 'service'
-            AND isAdmin = 0)::text || E'\t' ||
        (SELECT (NOT rolcanlogin AND NOT rolsuper AND NOT rolcreatedb AND NOT rolcreaterole AND NOT rolreplication AND NOT rolbypassrls)::text
           FROM pg_roles WHERE rolname = '$ownerRoleSql') || E'\t' ||
        pg_has_role('$runtimeRoleSql', '$ownerRoleSql', 'MEMBER')::text || E'\t' ||
@@ -141,15 +154,15 @@ SELECT current_database() || E'\t' || current_user || E'\t' ||
 }
 
 $verificationParts = (($verification -join "").Trim() -split "`t")
-if ($verificationParts.Count -ne 8 -or
+if ($verificationParts.Count -ne 7 -or
   $verificationParts[0] -cne $TargetDatabase -or
   $verificationParts[1] -cne $ExpectedEntraAdminRole -or
-  $verificationParts[2] -cne "1" -or
+  $entraMappingCount -cne "1" -or
+  $verificationParts[2] -cne "t" -or
   $verificationParts[3] -cne "t" -or
-  $verificationParts[4] -cne "t" -or
-  $verificationParts[5] -cne "f" -or
-  $verificationParts[6] -cne "t" -or
-  $verificationParts[7] -cne "f") {
+  $verificationParts[4] -cne "f" -or
+  $verificationParts[5] -cne "t" -or
+  $verificationParts[6] -cne "f") {
   throw "PostgreSQL role, Entra mapping, membership, CONNECT, or schema-public verification failed."
 }
 
