@@ -252,7 +252,11 @@ function Assert-PrivateEndpointReachability {
   }
 
   foreach ($address in $privateAddresses) {
-    $client = [Net.Sockets.TcpClient]::new()
+    # Force a pure IPv4 socket. .NET's dual-stack default on Linux otherwise
+    # reports RemoteEndPoint as an IPv4-mapped IPv6 address (::ffff:a.b.c.d,
+    # AddressFamily.InterNetworkV6), which fails the family-sensitive checks
+    # below even when the connection lands on the exact validated address.
+    $client = [Net.Sockets.TcpClient]::new([Net.Sockets.AddressFamily]::InterNetwork)
     try {
       $connect = $client.ConnectAsync($address, $Port)
       try {

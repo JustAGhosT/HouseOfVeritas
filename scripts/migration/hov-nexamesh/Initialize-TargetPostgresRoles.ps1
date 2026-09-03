@@ -32,9 +32,9 @@ $preflightSql = @"
 SELECT current_database() || E'\t' || current_user || E'\t' ||
        (SELECT count(*) FROM pg_roles WHERE rolname = '$runtimeRoleSql')::text || E'\t' ||
        (SELECT count(*) FROM pg_catalog.pgaadauth_list_principals(false)
-          WHERE rolename = '$runtimeRoleSql')::text || E'\t' ||
+          WHERE rolname = '$runtimeRoleSql')::text || E'\t' ||
        (SELECT count(*) FROM pg_catalog.pgaadauth_list_principals(false)
-          WHERE rolename = '$runtimeRoleSql'
+          WHERE rolname = '$runtimeRoleSql'
             AND lower(objectId) = '$objectIdSql'
             AND principalType = 'service'
             AND isAdmin = 0)::text || E'\t' ||
@@ -96,6 +96,24 @@ Invoke-WithPostgresEnvironment -Prefix HOV_TARGET -ScriptBlock {
   )
 }
 
+# pgaadauth_list_principals() only exists in the "postgres" maintenance database on Azure
+# Database for PostgreSQL Flexible Server, so the Entra-mapping check must run here, before
+# the HOV_TARGET_PGDATABASE switch below -- querying it from the target database fails with
+# "function pgaadauth_list_principals(...) does not exist".
+$entraMappingSql = @"
+SELECT (SELECT count(*) FROM pg_catalog.pgaadauth_list_principals(false)
+          WHERE rolname = '$runtimeRoleSql'
+            AND lower(objectId) = '$objectIdSql'
+            AND principalType = 'service'
+            AND isAdmin = 0)::text;
+"@
+$entraMappingCount = ((Invoke-WithPostgresEnvironment -Prefix HOV_TARGET -ScriptBlock {
+      Invoke-NativeCommand -FilePath "psql" -ArgumentList @(
+        "--no-psqlrc", "--quiet", "--tuples-only", "--no-align", "--set", "ON_ERROR_STOP=1",
+        "--command", $entraMappingSql
+      )
+    }) -join "").Trim()
+
 $previousDatabase = [Environment]::GetEnvironmentVariable("HOV_TARGET_PGDATABASE", "Process")
 try {
   [Environment]::SetEnvironmentVariable("HOV_TARGET_PGDATABASE", $TargetDatabase, "Process")
@@ -116,19 +134,25 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "$OwnerRole" IN SCHEMA public
     )
   }
 
+  # Booleans are stringified via explicit CASE, not ::text -- this server's boolean::text
+  # output was observed to render "true"/"false" rather than PostgreSQL's traditional "t"/"f",
+  # which silently failed every -cne "t"/"f" comparison below despite the underlying grants
+  # being exactly correct. CASE fixes the output contract at the comparison site regardless of
+  # engine/version bool_out behavior. The owner-lockdown check uses EXISTS instead of a scalar
+  # subquery so a missing "$OwnerRole" role also yields a deterministic 'f' instead of NULL
+  # (which would otherwise collapse the whole || chain below to NULL).
   $verificationSql = @"
 SELECT current_database() || E'\t' || current_user || E'\t' ||
-       (SELECT count(*) FROM pg_catalog.pgaadauth_list_principals(false)
-          WHERE rolename = '$runtimeRoleSql'
-            AND lower(objectId) = '$objectIdSql'
-            AND principalType = 'service'
-            AND isAdmin = 0)::text || E'\t' ||
-       (SELECT (NOT rolcanlogin AND NOT rolsuper AND NOT rolcreatedb AND NOT rolcreaterole AND NOT rolreplication AND NOT rolbypassrls)::text
-          FROM pg_roles WHERE rolname = '$ownerRoleSql') || E'\t' ||
-       pg_has_role('$runtimeRoleSql', '$ownerRoleSql', 'MEMBER')::text || E'\t' ||
-       has_database_privilege('public', current_database(), 'CONNECT')::text || E'\t' ||
-       has_database_privilege('$runtimeRoleSql', current_database(), 'CONNECT')::text || E'\t' ||
-       has_schema_privilege('public', 'public', 'CREATE')::text;
+       CASE WHEN EXISTS (
+         SELECT 1 FROM pg_roles
+         WHERE rolname = '$ownerRoleSql'
+           AND NOT rolcanlogin AND NOT rolsuper AND NOT rolcreatedb
+           AND NOT rolcreaterole AND NOT rolreplication AND NOT rolbypassrls
+       ) THEN 't' ELSE 'f' END || E'\t' ||
+       CASE WHEN pg_has_role('$runtimeRoleSql', '$ownerRoleSql', 'MEMBER') THEN 't' ELSE 'f' END || E'\t' ||
+       CASE WHEN has_database_privilege('public', current_database(), 'CONNECT') THEN 't' ELSE 'f' END || E'\t' ||
+       CASE WHEN has_database_privilege('$runtimeRoleSql', current_database(), 'CONNECT') THEN 't' ELSE 'f' END || E'\t' ||
+       CASE WHEN has_schema_privilege('public', 'public', 'CREATE') THEN 't' ELSE 'f' END;
 "@
   $verification = Invoke-WithPostgresEnvironment -Prefix HOV_TARGET -ScriptBlock {
     Invoke-NativeCommand -FilePath "psql" -ArgumentList @(
@@ -141,16 +165,31 @@ SELECT current_database() || E'\t' || current_user || E'\t' ||
 }
 
 $verificationParts = (($verification -join "").Trim() -split "`t")
-if ($verificationParts.Count -ne 8 -or
+# Diagnostic detail for the failure branch below. Built unconditionally (cheap) so a
+# thrown mismatch names exactly which field(s) failed instead of a single generic message --
+# a verification query whose `||` concatenation hits a NULL sub-expression collapses the
+# entire tab-joined row to an empty string, which trips only the Count check with every
+# individual field looking blank rather than visibly wrong.
+$verificationFieldNames = @(
+  "database", "entraAdminUser", "ownerLockedDown", "runtimeOwnerMembership",
+  "publicConnect", "runtimeConnect", "publicSchemaCreate"
+)
+$verificationFieldDiagnostics = for ($i = 0; $i -lt $verificationParts.Count; $i++) {
+  $label = if ($i -lt $verificationFieldNames.Count) { $verificationFieldNames[$i] } else { "extra$i" }
+  "[${i}:${label}]=[$($verificationParts[$i])]"
+}
+$verificationDiagnosticText = "entraMappingCount=[$entraMappingCount] verificationParts.Count=$($verificationParts.Count) " +
+  ($verificationFieldDiagnostics -join " ")
+if ($verificationParts.Count -ne 7 -or
   $verificationParts[0] -cne $TargetDatabase -or
   $verificationParts[1] -cne $ExpectedEntraAdminRole -or
-  $verificationParts[2] -cne "1" -or
+  $entraMappingCount -cne "1" -or
+  $verificationParts[2] -cne "t" -or
   $verificationParts[3] -cne "t" -or
-  $verificationParts[4] -cne "t" -or
-  $verificationParts[5] -cne "f" -or
-  $verificationParts[6] -cne "t" -or
-  $verificationParts[7] -cne "f") {
-  throw "PostgreSQL role, Entra mapping, membership, CONNECT, or schema-public verification failed."
+  $verificationParts[4] -cne "f" -or
+  $verificationParts[5] -cne "t" -or
+  $verificationParts[6] -cne "f") {
+  throw "PostgreSQL role, Entra mapping, membership, CONNECT, or schema-public verification failed. $verificationDiagnosticText"
 }
 
 Write-SafeJson -InputObject ([ordered]@{
