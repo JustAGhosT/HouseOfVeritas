@@ -160,10 +160,21 @@ jobs:
       - name: Create deployment package
         run: zip -r deploy.zip . -x "*.git*"
 
+      # AZURE_CREDENTIALS (client-secret login) authenticates into a subscription
+      # that doesn't contain nex-prod-hov-rg -- confirmed by run 33862780562,
+      # where login succeeded but the deploy step then failed with "Resource
+      # nex-prod-hov-app of type Microsoft.Web/Sites doesn't exist." OIDC login
+      # via these vars is the same identity (house-of-veritas-checklist-oidc-v2)
+      # that hov-nexamesh-migration.yml's "Deploy exact HOV runtime build" job
+      # already used to successfully deploy to this exact app (run 33743090376).
+      # Its federated credential trusts ref:refs/heads/main (not an environment
+      # subject), so it authenticates here too without any Azure-side change.
       - name: Azure Login
         uses: azure/login@v3
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@v3
