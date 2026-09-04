@@ -55,5 +55,11 @@ describe("HOV NexaMesh runtime authentication contract", () => {
     expect(runtimeMain).toContain(
       'var.mystira_oidc_end_session_endpoint == "https://login.hov.nexamesh.ai/connect/endsession"'
     )
+    expect(productionVariables).toContain(
+      'condition     = var.mystira_oidc_authorization_endpoint == "https://login.hov.nexamesh.ai/connect/authorize"'
+    )
+    expect(productionVariables).toContain(
+      'condition     = var.mystira_oidc_end_session_endpoint == "https://login.hov.nexamesh.ai/connect/endsession"'
+    )
   })
 })

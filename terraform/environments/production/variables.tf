@@ -585,8 +585,8 @@ variable "mystira_oidc_authorization_endpoint" {
   default     = "https://login.hov.nexamesh.ai/connect/authorize"
 
   validation {
-    condition     = can(regex("^https://[a-z0-9.-]+(:[0-9]+)?/connect/authorize$", var.mystira_oidc_authorization_endpoint))
-    error_message = "mystira_oidc_authorization_endpoint must be an HTTPS /connect/authorize URL."
+    condition     = var.mystira_oidc_authorization_endpoint == "https://login.hov.nexamesh.ai/connect/authorize"
+    error_message = "mystira_oidc_authorization_endpoint must remain https://login.hov.nexamesh.ai/connect/authorize."
   }
 }
 
@@ -596,8 +596,8 @@ variable "mystira_oidc_end_session_endpoint" {
   default     = "https://login.hov.nexamesh.ai/connect/endsession"
 
   validation {
-    condition     = can(regex("^https://[a-z0-9.-]+(:[0-9]+)?/connect/endsession$", var.mystira_oidc_end_session_endpoint))
-    error_message = "mystira_oidc_end_session_endpoint must be an HTTPS /connect/endsession URL."
+    condition     = var.mystira_oidc_end_session_endpoint == "https://login.hov.nexamesh.ai/connect/endsession"
+    error_message = "mystira_oidc_end_session_endpoint must remain https://login.hov.nexamesh.ai/connect/endsession."
   }
 }
 
