@@ -163,12 +163,18 @@ jobs:
       # AZURE_CREDENTIALS (client-secret login) authenticates into a subscription
       # that doesn't contain nex-prod-hov-rg -- confirmed by run 33862780562,
       # where login succeeded but the deploy step then failed with "Resource
-      # nex-prod-hov-app of type Microsoft.Web/Sites doesn't exist." OIDC login
-      # via these vars is the same identity (house-of-veritas-checklist-oidc-v2)
-      # that hov-nexamesh-migration.yml's "Deploy exact HOV runtime build" job
-      # already used to successfully deploy to this exact app (run 33743090376).
-      # Its federated credential trusts ref:refs/heads/main (not an environment
-      # subject), so it authenticates here too without any Azure-side change.
+      # nex-prod-hov-app of type Microsoft.Web/Sites doesn't exist."
+      #
+      # This job's `environment: production` means its OIDC subject is
+      # repo:.../house-of-veritas:environment:production (GitHub always includes
+      # the environment name in the subject for an environment-bound job). The
+      # `production` GitHub environment has its own AZURE_CLIENT_ID variable
+      # override pointing at house-of-veritas-github-oidc (Contributor + User
+      # Access Administrator on nex-prod-hov-rg), which has a federated
+      # credential for exactly that subject -- added alongside this change. Do
+      # not "simplify" this to the repo-level AZURE_CLIENT_ID: that app
+      # (house-of-veritas-checklist-oidc-v2) is Reader-only and is federated
+      # only for `pull_request`/`ref:refs/heads/main`, not this environment.
       - name: Azure Login
         uses: azure/login@v3
         with:
