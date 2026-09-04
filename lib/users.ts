@@ -342,7 +342,17 @@ export async function createUserAsync(input: CreateUserInput): Promise<User> {
   }
 
   if (!isPostgresConfigured()) {
-    if (findUserByEmail(normalizedEmail)) {
+    // findUserByEmail alone isn't enough: it matches the *effective* identity
+    // (oidcEmail ?? email), which deliberately frees up a superseded raw
+    // email for sign-in once a user's oidc_email has diverged (see the
+    // "does not retain Lucky's superseded email" test). But that same raw
+    // email is still occupying a row's `email` column, and the Postgres path
+    // below enforces a real UNIQUE constraint on that column — so mirror it
+    // here, or static mode would silently allow two rows to share one email.
+    const rawEmailTaken = Object.values(USERS).some(
+      (existing) => existing.email.toLowerCase() === normalizedEmail
+    )
+    if (rawEmailTaken || findUserByEmail(normalizedEmail)) {
       throw new UserAlreadyExistsError(normalizedEmail)
     }
     USERS[user.id] = user

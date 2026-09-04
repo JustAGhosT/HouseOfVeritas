@@ -91,6 +91,18 @@ describe("createUserAsync (static mode)", () => {
     expect(Object.keys(USERS)).toHaveLength(keyCountBefore)
   })
 
+  it("rejects a new user's email that matches an existing user's superseded raw email", async () => {
+    // Lucky's row has email "lucky@houseofv.com" but oidcEmail
+    // "omniposthq@gmail.com" -- findUserByEmail alone (effective identity)
+    // would call "lucky@houseofv.com" free, but the raw column is still his.
+    await expect(
+      createUserAsync({ email: "lucky@houseofv.com", name: "Impersonator", role: "resident" })
+    ).rejects.toThrow(UserAlreadyExistsError)
+
+    // Confirmed INSERT-only: the collision must not create a row either.
+    expect(Object.values(USERS).filter((user) => user.email === "lucky@houseofv.com")).toHaveLength(1)
+  })
+
   it("restricts CreatableUserRole to non-admin roles (type-level check)", () => {
     // @ts-expect-error "admin" must never be assignable to CreatableUserRole —
     // minting a second admin identity is a separate, reviewed action and must
