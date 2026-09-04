@@ -171,3 +171,81 @@ describe("PostgreSQL OIDC identity mappings", () => {
     expect(seededRows.find((values) => values[0] === "lucky")?.[3]).toBe("omniposthq@gmail.com")
   })
 })
+
+describe("createUserAsync (Postgres mode)", () => {
+  beforeEach(() => {
+    vi.resetModules()
+    postgres.ensureSchema.mockReset()
+    postgres.isPostgresConfigured.mockReturnValue(true)
+    postgres.query.mockReset()
+    postgres.withClient.mockReset()
+  })
+
+  function mockSchemaAndSeedQueries(onInsert: (values: unknown[]) => { rows: unknown[]; rowCount: number }) {
+    postgres.query.mockImplementation(async (text: string, values?: unknown[]) => {
+      if (text.includes("LOWER(id) <> LOWER($2)")) return { rows: [], rowCount: 0 }
+      if (text.includes("UPDATE users")) return { rows: [], rowCount: 1 }
+      if (text.includes("CREATE UNIQUE INDEX")) return { rows: [], rowCount: 0 }
+      if (text.includes("SELECT 1 FROM users LIMIT 1")) return { rows: [{}], rowCount: 1 }
+      if (text.includes("INSERT INTO users")) return onInsert(values ?? [])
+      throw new Error(`Unexpected query: ${text}`)
+    })
+  }
+
+  it("creates a new user via a single INSERT (never an UPDATE), with oidc_email defaulted to the normalized email", async () => {
+    mockSchemaAndSeedQueries(() => ({ rows: [], rowCount: 1 }))
+
+    const users = await import("@/lib/users")
+    // Pre-warm schema/seed bookkeeping — this alone issues Lucky's legitimate
+    // backfill UPDATE (see the OIDC mapping tests above) — so the window
+    // below captures only createUserAsync's own statements.
+    await users.seedUsersIfEmpty()
+    postgres.query.mockClear()
+
+    const user = await users.createUserAsync({
+      email: "New.Operator@Example.com",
+      name: "New Operator",
+      role: "operator",
+    })
+
+    expect(user.email).toBe("new.operator@example.com")
+    expect(user.oidcEmail).toBe("new.operator@example.com")
+    expect(user.role).toBe("operator")
+
+    const calls = postgres.query.mock.calls
+    const insertCalls = calls.filter(([text]) => text.includes("INSERT INTO users"))
+    expect(insertCalls).toHaveLength(1)
+    const [insertText, insertValues] = insertCalls[0]
+    expect(insertText).not.toMatch(/ON CONFLICT[\s\S]*DO UPDATE/i)
+    // $4 in the INSERT's column list is oidc_email — defaulted to the
+    // normalized contact email at the SQL level, not left null/undefined.
+    expect(insertValues[3]).toBe("new.operator@example.com")
+
+    // Deliberately INSERT-only: no UPDATE statement (bare or upsert-style)
+    // targets the new row. Mutating an existing row to add an identity would
+    // silently evict its old one (see createUserAsync's doc comment).
+    expect(calls.filter(([text]) => /UPDATE/i.test(text))).toHaveLength(0)
+  })
+
+  it("throws UserAlreadyExistsError on a unique-violation without retrying as an UPDATE", async () => {
+    mockSchemaAndSeedQueries(() => {
+      throw Object.assign(new Error("duplicate key value violates unique constraint"), {
+        code: "23505",
+      })
+    })
+
+    const users = await import("@/lib/users")
+    await users.seedUsersIfEmpty()
+    postgres.query.mockClear()
+
+    await expect(
+      users.createUserAsync({ email: "lucky@houseofv.com", name: "Duplicate", role: "employee" })
+    ).rejects.toThrow(users.UserAlreadyExistsError)
+
+    const calls = postgres.query.mock.calls
+    expect(calls.filter(([text]) => text.includes("INSERT INTO users"))).toHaveLength(1)
+    // A collision is reported back as a conflict, never silently resolved by
+    // falling back to an UPDATE of the pre-existing row.
+    expect(calls.filter(([text]) => /UPDATE/i.test(text))).toHaveLength(0)
+  })
+})
