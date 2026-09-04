@@ -506,11 +506,18 @@ Treat OIDC as one coordinated change across HOV and Mystira Identity:
    registration/secret reference, authorization endpoint,
    end-session endpoint, `AUTH_URL`, callbacks and post-logout allowlists in the
    same maintenance window.
+   The target runtime must set
+   `MYSTIRA_OIDC_AUTHORIZATION_ENDPOINT=https://login.hov.nexamesh.ai/connect/authorize`
+   and
+   `MYSTIRA_OIDC_END_SESSION_ENDPOINT=https://login.hov.nexamesh.ai/connect/endsession`;
+   the canonical issuer remains `https://identity.mystira.app/`.
 6. Verify discovery/JWKS/token issuer, PKCE/state, login and logout before
    removing any old redirect URI or secret.
 
-Changing the issuer or secret alone is prohibited. `login.hov.neuralliquid.ai`
-belongs to the Identity side and must not be rebound to HOV infrastructure.
+Changing the issuer or secret alone is prohibited. Both `login.hov.nexamesh.ai`
+and the rollback-only `login.hov.neuralliquid.ai` belong to the Identity side
+and must not be rebound to HOV infrastructure. Retire the legacy hostname only
+after authentic HOV login and logout acceptance on the NexaMesh endpoint.
 
 ## Phase 8: TLS, DNS and authentic Gate 0
 

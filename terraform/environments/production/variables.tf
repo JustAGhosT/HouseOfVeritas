@@ -582,7 +582,7 @@ variable "mystira_oidc_issuer" {
 variable "mystira_oidc_authorization_endpoint" {
   description = "Browser-facing Mystira authorization endpoint on the isolated HOV login hostname"
   type        = string
-  default     = "https://login.hov.neuralliquid.ai/connect/authorize"
+  default     = "https://login.hov.nexamesh.ai/connect/authorize"
 
   validation {
     condition     = can(regex("^https://[a-z0-9.-]+(:[0-9]+)?/connect/authorize$", var.mystira_oidc_authorization_endpoint))
@@ -593,7 +593,7 @@ variable "mystira_oidc_authorization_endpoint" {
 variable "mystira_oidc_end_session_endpoint" {
   description = "Browser-facing Mystira end-session endpoint on the isolated HOV login hostname"
   type        = string
-  default     = "https://login.hov.neuralliquid.ai/connect/endsession"
+  default     = "https://login.hov.nexamesh.ai/connect/endsession"
 
   validation {
     condition     = can(regex("^https://[a-z0-9.-]+(:[0-9]+)?/connect/endsession$", var.mystira_oidc_end_session_endpoint))

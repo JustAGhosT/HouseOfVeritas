@@ -16,10 +16,13 @@ the App Service identity exists, an authorized database administrator must
 create the least-privilege `nex-prod-hov-app` database principal for the output
 object ID. No static or server-administrator DSN is accepted.
 
-`identity_cutover_approved` defaults to `false`, so Mystira issuer, client,
-client-secret reference and `AUTH_URL` settings are absent while the target is
-built and rehearsed. The migration workflow exposes the switch only for the
-`runtime` root and requires the complete reviewed values from
+`identity_cutover_approved` defaults to `false`, so Mystira issuer,
+browser-facing authorization and end-session endpoints, client, client-secret
+reference and `AUTH_URL` settings are absent while the target is built and
+rehearsed. When approved, the runtime pins the browser endpoints to
+`login.hov.nexamesh.ai` while the issuer remains canonical Mystira Identity.
+The migration workflow exposes the switch only for the `runtime` root and
+requires the complete reviewed values from
 `HOV_MYSTIRA_OIDC_ISSUER`, `HOV_MYSTIRA_OIDC_CLIENT_ID`,
 `HOV_MYSTIRA_OIDC_CLIENT_SECRET_NAME`, and `HOV_AUTH_URL`. Its plan policy
 permits only the in-place App Service update for that phase. Perform identity
