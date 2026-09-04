@@ -92,4 +92,15 @@ describe("HOV NexaMesh runtime authentication contract", () => {
       "TF_VAR_auth_url: ${{ vars.HOV_AUTH_URL || 'https://hov.nexamesh.ai' }}"
     )
   })
+
+  it("requires a non-secret break-glass key only when planning the private migration runner", () => {
+    expect(migrationWorkflow).toContain(
+      "TF_VAR_admin_ssh_public_key: ${{ vars.HOV_MIGRATION_RUNNER_ADMIN_SSH_PUBLIC_KEY }}"
+    )
+    expect(migrationWorkflow).toContain('if [ "$INPUT_ROOT" = migration-runner ]; then')
+    expect(migrationWorkflow).toContain('test -n "${TF_VAR_admin_ssh_public_key:-}"')
+    expect(migrationWorkflow).toContain(
+      '^(ssh-(rsa|ed25519)|ecdsa-sha2-nistp(256|384|521))[[:space:]]'
+    )
+  })
 })

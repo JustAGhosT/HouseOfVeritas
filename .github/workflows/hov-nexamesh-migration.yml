@@ -118,6 +118,7 @@ jobs:
       TF_VAR_postgres_entra_admin_object_id: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_OBJECT_ID }}
       TF_VAR_postgres_entra_admin_principal_name: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_PRINCIPAL_NAME }}
       TF_VAR_postgres_entra_admin_principal_type: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_PRINCIPAL_TYPE }}
+      TF_VAR_admin_ssh_public_key: ${{ vars.HOV_MIGRATION_RUNNER_ADMIN_SSH_PUBLIC_KEY }}
       INPUT_ROOT: ${{ inputs.root }}
       INPUT_HOSTNAME_BINDING_APPROVED: ${{ inputs.hostname_binding_approved }}
       INPUT_BRAND_HOSTNAME_BINDING_APPROVED: ${{ inputs.brand_hostname_binding_approved }}
@@ -195,6 +196,7 @@ jobs:
           TF_VAR_postgres_entra_admin_object_id: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_OBJECT_ID }}
           TF_VAR_postgres_entra_admin_principal_name: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_PRINCIPAL_NAME }}
           TF_VAR_postgres_entra_admin_principal_type: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_PRINCIPAL_TYPE }}
+          TF_VAR_admin_ssh_public_key: ${{ vars.HOV_MIGRATION_RUNNER_ADMIN_SSH_PUBLIC_KEY }}
         run: |
           set -euo pipefail
           test -n "$APPROVED_CLIENT_ID"
@@ -217,6 +219,11 @@ jobs:
             test -n "${TF_VAR_postgres_entra_admin_object_id:-}"
             test -n "${TF_VAR_postgres_entra_admin_principal_name:-}"
             test -n "${TF_VAR_postgres_entra_admin_principal_type:-}"
+          fi
+
+          if [ "$INPUT_ROOT" = migration-runner ]; then
+            test -n "${TF_VAR_admin_ssh_public_key:-}"
+            [[ "$TF_VAR_admin_ssh_public_key" =~ ^(ssh-(rsa|ed25519)|ecdsa-sha2-nistp(256|384|521))[[:space:]] ]]
           fi
 
           if [ "$INPUT_IDENTITY_CUTOVER_APPROVED" = true ]; then
@@ -432,6 +439,7 @@ jobs:
       TF_VAR_postgres_entra_admin_object_id: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_OBJECT_ID }}
       TF_VAR_postgres_entra_admin_principal_name: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_PRINCIPAL_NAME }}
       TF_VAR_postgres_entra_admin_principal_type: ${{ vars.HOV_POSTGRES_ENTRA_ADMIN_PRINCIPAL_TYPE }}
+      TF_VAR_admin_ssh_public_key: ${{ vars.HOV_MIGRATION_RUNNER_ADMIN_SSH_PUBLIC_KEY }}
       INPUT_ROOT: ${{ inputs.root }}
       INPUT_IDENTITY_CUTOVER_APPROVED: ${{ inputs.identity_cutover_approved }}
       PLAN_RUN_ID: ${{ inputs.plan_run_id }}
