@@ -308,7 +308,8 @@ jobs:
               actions: .change.actions
             }] |
             all(
-              .actions == ["create"] or
+              ((.actions == ["create"]) and
+               ($root != "runtime" or $identity_cutover_approved != true)) or
               .actions == ["no-op"] or
               .actions == ["read"] or
               ($root == "runtime" and

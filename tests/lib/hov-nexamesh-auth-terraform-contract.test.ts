@@ -56,6 +56,13 @@ describe("HOV NexaMesh runtime authentication contract", () => {
     )
   })
 
+  it("rejects resource creation during an approved runtime identity cutover", () => {
+    expect(migrationWorkflow).toContain(
+      '((.actions == ["create"]) and\n' +
+        '               ($root != "runtime" or $identity_cutover_approved != true))'
+    )
+  })
+
   it("fails an approved cutover if either endpoint regresses from NexaMesh", () => {
     expect(runtimeMain).toContain(
       'var.mystira_oidc_authorization_endpoint == "https://login.hov.nexamesh.ai/connect/authorize"'
