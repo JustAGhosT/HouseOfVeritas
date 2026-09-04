@@ -498,10 +498,12 @@ Treat OIDC as one coordinated change across HOV and Mystira Identity:
 3. Confirm the target App Service managed identity resolves the Key Vault
    reference.
 4. Generate a new sealed `runtime` plan with
-   `identity_cutover_approved=true` and the four reviewed `HOV_MYSTIRA_*` /
-   `HOV_AUTH_URL` environment variables. Reject it unless the only mutation is
-   an in-place update of `azurerm_linux_web_app.runtime`, then bind approval to
-   its exact artifact hash.
+   `identity_cutover_approved=true` and the reviewed canonical identity values.
+   The workflow supplies non-secret defaults and accepts `HOV_MYSTIRA_*` /
+   `HOV_AUTH_URL` environment overrides only for an explicitly reviewed
+   rotation. Reject the plan unless the only mutation is an in-place update of
+   `azurerm_linux_web_app.runtime`, then bind approval to its exact artifact
+   hash.
 5. Apply that exact runtime plan while changing issuer, client
    registration/secret reference, authorization endpoint,
    end-session endpoint, `AUTH_URL`, callbacks and post-logout allowlists in the

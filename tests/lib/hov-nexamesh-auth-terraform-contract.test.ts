@@ -10,6 +10,7 @@ const runtimeMain = read("terraform/migrations/hov-nexamesh/runtime/main.tf")
 const runtimeVariables = read("terraform/migrations/hov-nexamesh/runtime/variables.tf")
 const productionVariables = read("terraform/environments/production/variables.tf")
 const environmentExample = read(".env.example")
+const migrationWorkflow = read(".github/workflows/hov-nexamesh-migration.yml")
 const identitySettings = runtimeMain.match(
   /identity_cutover_app_settings = var\.identity_cutover_approved \? \{([\s\S]*?)\n  \} : \{\}/
 )?.[1]
@@ -60,6 +61,21 @@ describe("HOV NexaMesh runtime authentication contract", () => {
     )
     expect(productionVariables).toContain(
       'condition     = var.mystira_oidc_end_session_endpoint == "https://login.hov.nexamesh.ai/connect/endsession"'
+    )
+  })
+
+  it("provides reviewed non-secret identity defaults when environment variables are absent", () => {
+    expect(migrationWorkflow).toContain(
+      "TF_VAR_mystira_oidc_issuer: ${{ vars.HOV_MYSTIRA_OIDC_ISSUER || 'https://identity.mystira.app/' }}"
+    )
+    expect(migrationWorkflow).toContain(
+      "TF_VAR_mystira_oidc_client_id: ${{ vars.HOV_MYSTIRA_OIDC_CLIENT_ID || 'neuralliquid-hov-web' }}"
+    )
+    expect(migrationWorkflow).toContain(
+      "TF_VAR_mystira_oidc_client_secret_name: ${{ vars.HOV_MYSTIRA_OIDC_CLIENT_SECRET_NAME || 'mystira-oidc-client-secret' }}"
+    )
+    expect(migrationWorkflow).toContain(
+      "TF_VAR_auth_url: ${{ vars.HOV_AUTH_URL || 'https://hov.nexamesh.ai' }}"
     )
   })
 })

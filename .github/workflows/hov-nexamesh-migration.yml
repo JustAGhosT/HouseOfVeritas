@@ -126,10 +126,10 @@ jobs:
       TF_VAR_brand_hostname_binding_approved: ${{ inputs.brand_hostname_binding_approved }}
       TF_VAR_external_oidc_cutover_complete: ${{ inputs.hostname_binding_approved || inputs.brand_hostname_binding_approved }}
       TF_VAR_identity_cutover_approved: ${{ inputs.identity_cutover_approved }}
-      TF_VAR_mystira_oidc_issuer: ${{ vars.HOV_MYSTIRA_OIDC_ISSUER }}
-      TF_VAR_mystira_oidc_client_id: ${{ vars.HOV_MYSTIRA_OIDC_CLIENT_ID }}
-      TF_VAR_mystira_oidc_client_secret_name: ${{ vars.HOV_MYSTIRA_OIDC_CLIENT_SECRET_NAME }}
-      TF_VAR_auth_url: ${{ vars.HOV_AUTH_URL }}
+      TF_VAR_mystira_oidc_issuer: ${{ vars.HOV_MYSTIRA_OIDC_ISSUER || 'https://identity.mystira.app/' }}
+      TF_VAR_mystira_oidc_client_id: ${{ vars.HOV_MYSTIRA_OIDC_CLIENT_ID || 'neuralliquid-hov-web' }}
+      TF_VAR_mystira_oidc_client_secret_name: ${{ vars.HOV_MYSTIRA_OIDC_CLIENT_SECRET_NAME || 'mystira-oidc-client-secret' }}
+      TF_VAR_auth_url: ${{ vars.HOV_AUTH_URL || 'https://hov.nexamesh.ai' }}
 
     steps:
       - name: Checkout exact planning commit
