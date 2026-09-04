@@ -49,6 +49,13 @@ describe("HOV NexaMesh runtime authentication contract", () => {
     )
   })
 
+  it("suppresses App Service setting values in Terraform plan and apply logs", () => {
+    expect(runtimeMain).toContain("app_settings = sensitive(merge({")
+    expect(runtimeMain).toContain(
+      "}, local.key_vault_app_settings, local.identity_cutover_app_settings))"
+    )
+  })
+
   it("fails an approved cutover if either endpoint regresses from NexaMesh", () => {
     expect(runtimeMain).toContain(
       'var.mystira_oidc_authorization_endpoint == "https://login.hov.nexamesh.ai/connect/authorize"'

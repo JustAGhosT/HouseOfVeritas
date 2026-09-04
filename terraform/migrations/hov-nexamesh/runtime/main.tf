@@ -152,7 +152,10 @@ resource "azurerm_linux_web_app" "runtime" {
     }
   }
 
-  app_settings = merge({
+  # App Service returns existing literal settings during refresh. Treat the
+  # complete map as sensitive so Terraform cannot render credentials in plan
+  # or apply logs while replacing them with Key Vault references.
+  app_settings = sensitive(merge({
     NODE_ENV                              = "production"
     WEBSITE_NODE_DEFAULT_VERSION          = "~22"
     HOSTNAME                              = "0.0.0.0"
@@ -173,7 +176,7 @@ resource "azurerm_linux_web_app" "runtime" {
     RADAR_ENABLED                         = "false"
     ALLOW_DEMO_DATA                       = "false"
     ALLOW_DEMO_USERS                      = "false"
-  }, local.key_vault_app_settings, local.identity_cutover_app_settings)
+  }, local.key_vault_app_settings, local.identity_cutover_app_settings))
 
   tags = local.tags
 
