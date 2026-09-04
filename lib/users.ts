@@ -284,6 +284,106 @@ export async function findOrCreateOidcUserAsync(
   return user
 }
 
+/** Non-admin roles a new account can be created with via {@link createUserAsync}. */
+export type CreatableUserRole = Exclude<UserRole, "admin">
+
+export interface CreateUserInput {
+  email: string
+  name: string
+  role: CreatableUserRole
+  phone?: string
+  description?: string
+  color?: string
+  icon?: string
+  specialty?: string[]
+}
+
+export class UserAlreadyExistsError extends Error {
+  constructor(email: string) {
+    super(`A user with email ${email} already exists`)
+    this.name = "UserAlreadyExistsError"
+  }
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as { code?: string }).code === "23505"
+}
+
+/**
+ * Create a brand-new, independently-addressable user row for an
+ * administrator-issued account (e.g. a second admin identity).
+ *
+ * Deliberately an INSERT of a fresh row, never an UPDATE of an existing one:
+ * `oidc_email` is a one-way field (see ensureUsersSchemaOnce's sync guard) and
+ * `LOWER(COALESCE(oidc_email, email))` matches exactly one identity per row,
+ * so editing an existing row to add a new identity would silently evict its
+ * old one. A new row lets both identities keep working independently.
+ *
+ * `role` excludes "admin" at the type level: this path is reachable from an
+ * API route intended for provisioning ordinary accounts, and granting admin
+ * is a separate, deliberately-reviewed action, not something this function
+ * should make routine.
+ */
+export async function createUserAsync(input: CreateUserInput): Promise<User> {
+  const normalizedEmail = input.email.trim().toLowerCase()
+  const color = input.color?.trim() || "gray"
+  const user: User = {
+    id: `user-${globalThis.crypto.randomUUID()}`,
+    name: input.name.trim(),
+    email: normalizedEmail,
+    oidcEmail: normalizedEmail,
+    phone: input.phone?.trim() ?? "",
+    role: input.role,
+    description: input.description?.trim() ?? "",
+    color,
+    themeId: defaultUserThemeForColor(color),
+    icon: input.icon?.trim() || "👤",
+    specialty: input.specialty ?? [],
+  }
+
+  if (!isPostgresConfigured()) {
+    if (findUserByEmail(normalizedEmail)) {
+      throw new UserAlreadyExistsError(normalizedEmail)
+    }
+    USERS[user.id] = user
+    return user
+  }
+
+  await ensureUsersSchemaOnce()
+  await seedUsersIfEmpty()
+
+  try {
+    await query(
+      `INSERT INTO users (id, name, email, oidc_email, phone, role, description, color, theme_id, icon, specialty)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      [
+        user.id,
+        user.name,
+        user.email,
+        user.oidcEmail,
+        user.phone,
+        user.role,
+        user.description,
+        user.color,
+        user.themeId,
+        user.icon,
+        user.specialty,
+      ]
+    )
+  } catch (error) {
+    // No ON CONFLICT DO NOTHING here on purpose: unlike the OIDC
+    // self-provisioning path above, a collision here means an admin asked to
+    // create an account that already exists, which should be reported back
+    // as a clear conflict rather than silently resolved.
+    if (isUniqueViolation(error)) {
+      throw new UserAlreadyExistsError(normalizedEmail)
+    }
+    throw error
+  }
+
+  return user
+}
+
 export async function getAllUsersAsync(): Promise<User[]> {
   if (!isPostgresConfigured()) {
     return Object.values(USERS)
