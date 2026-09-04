@@ -516,8 +516,10 @@ Treat OIDC as one coordinated change across HOV and Mystira Identity:
 
 Changing the issuer or secret alone is prohibited. Both `login.hov.nexamesh.ai`
 and the rollback-only `login.hov.neuralliquid.ai` belong to the Identity side
-and must not be rebound to HOV infrastructure. Retire the legacy hostname only
-after authentic HOV login and logout acceptance on the NexaMesh endpoint.
+and must not be rebound to HOV infrastructure. Keep the legacy hostname
+available through authentic HOV login and logout acceptance and the complete
+Gate 0 observation window. Retire it only in the separately approved source-
+retirement step after rollback is no longer required.
 
 ## Phase 8: TLS, DNS and authentic Gate 0
 
