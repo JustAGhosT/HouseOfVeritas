@@ -51,19 +51,21 @@ the private target Blob account.
 
 Linux Managed Run Command executes `source.script` with a POSIX shell. A raw
 PowerShell file is therefore not a valid payload even though `pwsh` is installed.
-`scripts/migration/hov-nexamesh/Invoke-ProtectedMigrationRunCommand.ps1` must be
-used only after its reviewed command source is a Linux shell wrapper that writes
-the repository PowerShell payload to a mode-0600 temporary file and invokes:
+`scripts/migration/hov-nexamesh/Invoke-ProtectedMigrationRunCommand.ps1` supplies
+a reviewed Linux shell wrapper: it writes the repository PowerShell payload and
+its launcher as mode-0600 files inside a mode-0700 temporary directory, invokes:
 
 ```text
 /usr/bin/pwsh -NoLogo -NoProfile -NonInteractive -File <temporary-script.ps1>
 ```
 
-The wrapper must trap exit to remove the temporary file and must forward the
-PowerShell exit code. Do not put protected parameter values in `source.script`,
-custom data, extension settings, Terraform variables, outputs, or state. Until
-that launcher contract is implemented and reviewed, the protected migration
-command gate remains blocked.
+The wrapper traps exit, clears protected process-environment variables, removes
+the temporary directory, forwards the PowerShell exit code, and suppresses
+payload stdout/stderr. Do not put protected parameter values in `source.script`,
+custom data, extension settings, Terraform variables, outputs, or state. The
+launcher makes protected Run Command execution technically available; every
+payload still needs separate source review, a pinned SHA-256, an exact command
+approval, and evidence that records names and outcomes only.
 
 The exact runner plan and exact protected command remain separate approval
 gates. This state owns the runner identity as the temporary PostgreSQL Entra
