@@ -16,15 +16,24 @@ the App Service identity exists, an authorized database administrator must
 create the least-privilege `nex-prod-hov-app` database principal for the output
 object ID. No static or server-administrator DSN is accepted.
 
-`identity_cutover_approved` defaults to `false`, so Mystira issuer, client,
-client-secret reference and `AUTH_URL` settings are absent while the target is
-built and rehearsed. The migration workflow exposes the switch only for the
-`runtime` root and requires the complete reviewed values from
-`HOV_MYSTIRA_OIDC_ISSUER`, `HOV_MYSTIRA_OIDC_CLIENT_ID`,
-`HOV_MYSTIRA_OIDC_CLIENT_SECRET_NAME`, and `HOV_AUTH_URL`. Its plan policy
-permits only the in-place App Service update for that phase. Perform identity
-and callback changes only as an atomic cutover with the edge operator steps and
-a newly reviewed exact plan.
+`identity_cutover_approved` defaults to `false`, so Mystira issuer,
+browser-facing authorization and end-session endpoints, client, client-secret
+reference and `AUTH_URL` settings are absent while the target is built and
+rehearsed. When approved, the runtime pins the browser endpoints to
+`login.hov.nexamesh.ai` while the issuer remains canonical Mystira Identity.
+The migration workflow exposes the switch only for the `runtime` root. Its
+reviewed non-secret defaults are the canonical Mystira issuer, the existing HOV
+client registration ID and Key Vault secret name, and `https://hov.nexamesh.ai`
+as `AUTH_URL`; the corresponding `HOV_MYSTIRA_*` and `HOV_AUTH_URL` environment
+variables may override them when an explicitly reviewed rotation requires it.
+Its plan policy permits only the in-place App Service update for that phase.
+The complete App Service settings map is deliberately marked sensitive because
+Azure can return legacy literal credentials during refresh. Do not remove that
+wrapper: it keeps values out of Terraform plan and apply console output. Saved
+plan artifacts can still contain sensitive state and must remain access-limited,
+short-lived, and bound to the exact approved run.
+Perform identity and callback changes only as an atomic cutover with the edge
+operator steps and a newly reviewed exact plan.
 
 Initialize this root only against the target backend key
 `hov/prod/runtime.tfstate`. Do not run ad-hoc apply commands; use the sealed

@@ -35,13 +35,13 @@ describe("Mystira OIDC provider configuration", () => {
     vi.stubEnv("MYSTIRA_OIDC_ISSUER", "https://identity.mystira.app")
     vi.stubEnv(
       "MYSTIRA_OIDC_AUTHORIZATION_ENDPOINT",
-      "https://login.hov.neuralliquid.ai/connect/authorize"
+      "https://login.hov.nexamesh.ai/connect/authorize"
     )
 
     const provider = await loadProvider()
 
     expect(provider.authorization).toMatchObject({
-      url: "https://login.hov.neuralliquid.ai/connect/authorize",
+      url: "https://login.hov.nexamesh.ai/connect/authorize",
     })
     expect(provider.issuer).toBe("https://identity.mystira.app")
     expect(provider.checks).toEqual(["pkce", "state"])

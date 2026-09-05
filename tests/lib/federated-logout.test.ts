@@ -51,10 +51,10 @@ describe("resolveEndSessionEndpoint", () => {
 
     const endpoint = await resolveEndSessionEndpoint(
       "https://identity.example.com",
-      "https://login.hov.neuralliquid.ai/connect/endsession"
+      "https://login.hov.nexamesh.ai/connect/endsession"
     )
 
-    expect(endpoint).toBe("https://login.hov.neuralliquid.ai/connect/endsession")
+    expect(endpoint).toBe("https://login.hov.nexamesh.ai/connect/endsession")
     expect(fetchMock).not.toHaveBeenCalled()
   })
 

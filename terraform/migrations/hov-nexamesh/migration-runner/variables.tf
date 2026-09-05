@@ -42,7 +42,7 @@ variable "admin_ssh_public_key" {
   type        = string
 
   validation {
-    condition     = can(regex("^(ssh-(rsa|ed25519)|ecdsa-sha2-nistp(256|384|521)) ", trimspace(var.admin_ssh_public_key)))
+    condition     = can(regex("^(ssh-(rsa|ed25519)|ecdsa-sha2-nistp(256|384|521))[[:space:]]+([A-Za-z0-9+/]{4}){8,}([A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?([[:space:]]+[^[:space:]].*)?$", trimspace(var.admin_ssh_public_key)))
     error_message = "Supply a valid OpenSSH public key. Never supply a private key."
   }
 }

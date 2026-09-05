@@ -184,6 +184,28 @@ variable "mystira_oidc_issuer" {
   default     = ""
 }
 
+variable "mystira_oidc_authorization_endpoint" {
+  description = "NexaMesh browser-facing Mystira authorization endpoint to emit during the approved identity cutover."
+  type        = string
+  default     = "https://login.hov.nexamesh.ai/connect/authorize"
+
+  validation {
+    condition     = var.mystira_oidc_authorization_endpoint == "https://login.hov.nexamesh.ai/connect/authorize"
+    error_message = "The HOV NexaMesh migration authorization endpoint must remain https://login.hov.nexamesh.ai/connect/authorize."
+  }
+}
+
+variable "mystira_oidc_end_session_endpoint" {
+  description = "NexaMesh browser-facing Mystira end-session endpoint to emit during the approved identity cutover."
+  type        = string
+  default     = "https://login.hov.nexamesh.ai/connect/endsession"
+
+  validation {
+    condition     = var.mystira_oidc_end_session_endpoint == "https://login.hov.nexamesh.ai/connect/endsession"
+    error_message = "The HOV NexaMesh migration end-session endpoint must remain https://login.hov.nexamesh.ai/connect/endsession."
+  }
+}
+
 variable "mystira_oidc_client_id" {
   description = "Target HOV relying-party client ID to emit only during approved cutover."
   type        = string

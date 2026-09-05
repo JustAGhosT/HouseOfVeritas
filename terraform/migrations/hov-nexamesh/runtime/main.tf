@@ -36,10 +36,12 @@ locals {
   }
 
   identity_cutover_app_settings = var.identity_cutover_approved ? {
-    MYSTIRA_OIDC_ISSUER        = var.mystira_oidc_issuer
-    MYSTIRA_OIDC_CLIENT_ID     = var.mystira_oidc_client_id
-    MYSTIRA_OIDC_CLIENT_SECRET = "@Microsoft.KeyVault(SecretUri=${local.key_vault_secret_base}/${var.mystira_oidc_client_secret_name})"
-    AUTH_URL                   = var.auth_url
+    MYSTIRA_OIDC_ISSUER                 = var.mystira_oidc_issuer
+    MYSTIRA_OIDC_AUTHORIZATION_ENDPOINT = var.mystira_oidc_authorization_endpoint
+    MYSTIRA_OIDC_END_SESSION_ENDPOINT   = var.mystira_oidc_end_session_endpoint
+    MYSTIRA_OIDC_CLIENT_ID              = var.mystira_oidc_client_id
+    MYSTIRA_OIDC_CLIENT_SECRET          = "@Microsoft.KeyVault(SecretUri=${local.key_vault_secret_base}/${var.mystira_oidc_client_secret_name})"
+    AUTH_URL                            = var.auth_url
   } : {}
 }
 
@@ -73,9 +75,11 @@ check "identity_cutover_complete" {
       var.mystira_oidc_client_secret_name != "",
       var.auth_url != "",
       can(regex("^https://", var.mystira_oidc_issuer)),
+      var.mystira_oidc_authorization_endpoint == "https://login.hov.nexamesh.ai/connect/authorize",
+      var.mystira_oidc_end_session_endpoint == "https://login.hov.nexamesh.ai/connect/endsession",
       can(regex("^https://", var.auth_url)),
     ])
-    error_message = "Approved identity cutover requires complete HTTPS issuer, client, Key Vault secret-name, and AUTH_URL settings."
+    error_message = "Approved identity cutover requires complete HTTPS issuer, NexaMesh authorization/end-session endpoints, client, Key Vault secret-name, and AUTH_URL settings."
   }
 }
 
@@ -148,7 +152,10 @@ resource "azurerm_linux_web_app" "runtime" {
     }
   }
 
-  app_settings = merge({
+  # App Service returns existing literal settings during refresh. Treat the
+  # complete map as sensitive so Terraform cannot render credentials in plan
+  # or apply logs while replacing them with Key Vault references.
+  app_settings = sensitive(merge({
     NODE_ENV                              = "production"
     WEBSITE_NODE_DEFAULT_VERSION          = "~22"
     HOSTNAME                              = "0.0.0.0"
@@ -169,7 +176,7 @@ resource "azurerm_linux_web_app" "runtime" {
     RADAR_ENABLED                         = "false"
     ALLOW_DEMO_DATA                       = "false"
     ALLOW_DEMO_USERS                      = "false"
-  }, local.key_vault_app_settings, local.identity_cutover_app_settings)
+  }, local.key_vault_app_settings, local.identity_cutover_app_settings))
 
   tags = local.tags
 
