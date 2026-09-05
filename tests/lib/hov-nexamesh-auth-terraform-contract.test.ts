@@ -12,6 +12,7 @@ const productionVariables = read("terraform/environments/production/variables.tf
 const environmentExample = read(".env.example")
 const migrationWorkflow = read(".github/workflows/hov-nexamesh-migration.yml")
 const migrationRunnerVariables = read("terraform/migrations/hov-nexamesh/migration-runner/variables.tf")
+const migrationPlan = read(".azure/plan.md")
 const identitySettings = runtimeMain.match(
   /identity_cutover_app_settings = var\.identity_cutover_approved \? \{([\s\S]*?)\n  \} : \{\}/
 )?.[1]
@@ -115,5 +116,7 @@ describe("HOV NexaMesh runtime authentication contract", () => {
   it("pins the reviewed migration runner retry SKU", () => {
     expect(migrationRunnerVariables).toContain('default     = "Standard_B2als_v2"')
     expect(migrationRunnerVariables).toContain('condition     = var.vm_size == "Standard_B2als_v2"')
+    expect(migrationPlan).toContain("`Standard_B2als_v2` catalogue-listed in South Africa North")
+    expect(migrationPlan).toContain("409 SkuNotAvailable")
   })
 })

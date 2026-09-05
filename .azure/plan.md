@@ -125,10 +125,12 @@ Live checks were run on 2026-08-21 against `nexamesh-sub` in `southafricanorth`.
 | `Microsoft.KeyVault/vaults`                 |           1 |          1 regional | Region available                                                                          | Live provider-location query returned true                                     |
 | `Microsoft.Insights/components`             |           1 |          1 regional | Region available                                                                          | Live provider-location query returned true                                     |
 | `Microsoft.OperationalInsights/workspaces`  |           1 |          1 regional | Region available                                                                          | Provider registered; no target regional usage                                  |
-| `Microsoft.Compute/virtualMachines`         | 1 temporary |          1 regional | `Standard_B2s` listed in South Africa North; regional usage API returned no quota records | Live `az vm list-sizes`; exact plan remains gated on successful allocation     |
+| `Microsoft.Compute/virtualMachines`         | 1 temporary |          1 regional | `Standard_B2als_v2` catalogue-listed in South Africa North; B-series family quota limit 65 vCPUs | Live `az vm list-sizes` and `az quota list`; exact plan remains gated on successful allocation |
 | Private DNS zones and links                 |           4 | 4 subscription-wide | Control-plane service limits; no regional capacity allocation                             | Required for PostgreSQL, Blob, Key Vault and Cosmos private endpoints          |
 
-**Capacity status:** All planned resource families and selected SKUs are available with ample quota in South Africa North.
+**Capacity status:** All planned resource families are within quota in South Africa North. VM SKU listing and quota headroom establish eligibility only; dynamic Compute capacity is proved only by successful allocation.
+
+**Migration-runner retry evidence (2026-09-05):** Sealed apply 33977311825 failed before VM creation with `409 SkuNotAvailable` for `Standard_B2s` in South Africa North. The retry changes only the temporary runner to `Standard_B2als_v2` (2 vCPU / 4 GiB), which is catalogue-listed in the same region. A fresh sealed plan and separately approved apply are required; the failed plan must not be reused.
 
 Region evidence: [Azure regions list](https://learn.microsoft.com/azure/reliability/regions-list), [Azure PostgreSQL availability](https://learn.microsoft.com/azure/postgresql/overview), and live subscription/SKU/quota queries recorded above.
 
