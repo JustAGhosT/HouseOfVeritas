@@ -200,7 +200,7 @@ migration_main() {
      (.versions.psql | contains($psql)) and .versions.node == $node and
      (.versions.azcopy | contains($azcopy))' "$tooling_readiness_path" >/dev/null 2>&1 || return 34
 
-  [[ "$(pwsh -NoLogo -NoProfile -NonInteractive -Command '$PSVersionTable.PSVersion.ToString()' 2>/dev/null)" == "$expected_pwsh_version" ]] || return 35
+  [[ "$(/usr/bin/pwsh -NoLogo -NoProfile -NonInteractive -Command '$PSVersionTable.PSVersion.ToString()' 2>/dev/null)" == "$expected_pwsh_version" ]] || return 35
   [[ "$(az version --output json 2>/dev/null | jq --raw-output '."azure-cli"')" == "$expected_azure_cli_version" ]] || return 36
   [[ "$(node --version 2>/dev/null)" == "$expected_node_version" ]] || return 37
   [[ "$(psql --version 2>/dev/null)" == *" $expected_psql_version"* ]] || return 38
@@ -223,7 +223,7 @@ migration_main() {
   actual_payload_sha256="${sha256_output%% *}"
   [[ "$actual_payload_sha256" == "$expected_payload_sha256" ]] || return 46
 
-  pwsh -NoLogo -NoProfile -NonInteractive -File "$launcher_path" "$payload_path" \
+  /usr/bin/pwsh -NoLogo -NoProfile -NonInteractive -File "$launcher_path" "$payload_path" \
     >"$payload_stdout" 2>"$payload_stderr"
   local payload_status=$?
   if [[ $payload_status -ne 0 ]]; then
