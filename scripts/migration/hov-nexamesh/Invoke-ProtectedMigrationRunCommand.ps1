@@ -175,6 +175,11 @@ cleanup() {
   unset payload_base64 launcher_base64 expected_payload_sha256 temporary_directory
 }
 
+trap cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
 migration_main() {
   local command_name payload_path launcher_path payload_stdout payload_stderr actual_payload_sha256 sha256_output tooling_readiness_path
   for command_name in "${required_commands[@]}"; do
@@ -219,14 +224,17 @@ migration_main() {
   [[ "$actual_payload_sha256" == "$expected_payload_sha256" ]] || return 46
 
   pwsh -NoLogo -NoProfile -NonInteractive -File "$launcher_path" "$payload_path" \
-    >"$payload_stdout" 2>"$payload_stderr" || return 47
+    >"$payload_stdout" 2>"$payload_stderr"
+  local payload_status=$?
+  if [[ $payload_status -ne 0 ]]; then
+    return "$payload_status"
+  fi
 }
 
 set +e
 migration_main >/dev/null 2>&1
 status=$?
 set -e
-cleanup
 if [[ $status -eq 0 ]]; then
   printf '%s\n' 'reviewed migration payload succeeded; payload output was not recorded' >&3
 else

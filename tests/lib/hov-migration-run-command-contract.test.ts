@@ -24,6 +24,11 @@ describe("HOV protected migration Run Command contract", () => {
     )
     expect(runCommand).toContain('unset "$name" || true')
     expect(runCommand).toContain('rm -rf -- "$temporary_directory"')
+    expect(runCommand).toContain("trap cleanup EXIT")
+    expect(runCommand).toContain("trap 'exit 143' TERM")
+    expect(runCommand).toContain("local payload_status=$?")
+    expect(runCommand).toContain('return "$payload_status"')
+    expect(runCommand).not.toContain('2>"$payload_stderr" || return 47')
     expect(runCommand).toContain("payload output was not recorded")
     expect(runCommand).toContain("protectedValuesRecorded = $false")
     expect(runnerReadme).toContain(
