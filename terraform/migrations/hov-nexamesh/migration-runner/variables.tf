@@ -50,11 +50,11 @@ variable "admin_ssh_public_key" {
 variable "vm_size" {
   description = "Reviewed temporary migration runner size."
   type        = string
-  default     = "Standard_B2s"
+  default     = "Standard_B2als_v2"
 
   validation {
-    condition     = var.vm_size == "Standard_B2s"
-    error_message = "The reviewed temporary migration runner size is Standard_B2s."
+    condition     = var.vm_size == "Standard_B2als_v2"
+    error_message = "The reviewed temporary migration runner size is Standard_B2als_v2."
   }
 }
 
