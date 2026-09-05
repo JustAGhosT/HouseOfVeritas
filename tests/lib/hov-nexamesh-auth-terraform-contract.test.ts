@@ -14,6 +14,7 @@ const migrationWorkflow = read(".github/workflows/hov-nexamesh-migration.yml")
 const identitySettings = runtimeMain.match(
   /identity_cutover_app_settings = var\.identity_cutover_approved \? \{([\s\S]*?)\n  \} : \{\}/
 )?.[1]
+const strictOpenSshPublicKey = /^(ssh-(rsa|ed25519)|ecdsa-sha2-nistp(256|384|521))\s+([A-Za-z0-9+/]{4}){8,}([A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?(\s+\S.*)?$/
 
 describe("HOV NexaMesh runtime authentication contract", () => {
   it("pins the browser-facing OIDC endpoints to the NexaMesh login host", () => {
@@ -58,9 +59,14 @@ describe("HOV NexaMesh runtime authentication contract", () => {
 
   it("rejects resource creation during an approved runtime identity cutover", () => {
     expect(migrationWorkflow).toContain(
-      '((.actions == ["create"]) and\n' +
+      '((.change.actions == ["create"]) and\n' +
         '               ($root != "runtime" or $identity_cutover_approved != true))'
     )
+    expect(migrationWorkflow).toContain("def runtime_oidc_only:")
+    expect(migrationWorkflow).toContain("(.change.before | del(.app_settings)) == (.change.after | del(.app_settings))")
+    expect(migrationWorkflow).toContain('.change.actions == ["update"] and')
+    expect(migrationWorkflow).toContain("MYSTIRA_OIDC_AUTHORIZATION_ENDPOINT")
+    expect(migrationWorkflow).toContain("MYSTIRA_OIDC_END_SESSION_ENDPOINT")
   })
 
   it("fails an approved cutover if either endpoint regresses from NexaMesh", () => {
@@ -99,8 +105,9 @@ describe("HOV NexaMesh runtime authentication contract", () => {
     )
     expect(migrationWorkflow).toContain('if [ "$INPUT_ROOT" = migration-runner ]; then')
     expect(migrationWorkflow).toContain('test -n "${TF_VAR_admin_ssh_public_key:-}"')
-    expect(migrationWorkflow).toContain(
-      '^(ssh-(rsa|ed25519)|ecdsa-sha2-nistp(256|384|521))[[:space:]]'
-    )
+    expect(migrationWorkflow).toContain("([A-Za-z0-9+/]{4}){8,}")
+    expect(strictOpenSshPublicKey.test(`ssh-ed25519 ${"A".repeat(32)}`)).toBe(true)
+    expect(strictOpenSshPublicKey.test("ssh-ed25519")).toBe(false)
+    expect(strictOpenSshPublicKey.test("ssh-ed25519 x")).toBe(false)
   })
 })
