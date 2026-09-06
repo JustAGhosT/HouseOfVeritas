@@ -1,18 +1,25 @@
 [CmdletBinding()]
 param(
   [Parameter()][string]$ResourceGroup = "nex-prod-hov-rg",
-  [Parameter(Mandatory)][string]$PlanJsonPath,
-  [Parameter(Mandatory)][string[]]$AllowedResourceAddresses,
+  [Parameter(Mandatory)][string]$PlanBinaryPath,
+  [Parameter(Mandatory)][string]$AllowedResourceAddressesCsv,
   [Parameter(Mandatory)][string]$OutputPath
 )
 
 . "$PSScriptRoot/Common.ps1"
 
 $context = Assert-AzureBoundary -Boundary Target -ResourceGroup $ResourceGroup
-$planPath = (Resolve-Path -LiteralPath $PlanJsonPath).Path
-$raw = Get-Content -LiteralPath $planPath -Raw
+$planBinaryPath = (Resolve-Path -LiteralPath $PlanBinaryPath).Path
+$raw = (& terraform show -json $planBinaryPath | Out-String)
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($raw)) {
+  throw "Unable to derive policy JSON from the sealed Terraform plan."
+}
 $plan = $raw | ConvertFrom-Json -Depth 100
 $failures = [Collections.Generic.List[string]]::new()
+$AllowedResourceAddresses = @($AllowedResourceAddressesCsv.Split(",", [StringSplitOptions]::RemoveEmptyEntries))
+if ($AllowedResourceAddresses.Count -eq 0 -or $AllowedResourceAddresses.Count -ne (@($AllowedResourceAddresses | Sort-Object -Unique)).Count) {
+  throw "Runner teardown allowlist must contain unique, non-empty addresses."
+}
 
 foreach ($forbidden in @("9530cd32-9e33-47f0-9247-ed964730b580", "bb4e3882-2079-4bab-8974-611bc0b8bb58", "nl-prod-")) {
   if ($raw.Contains($forbidden, [StringComparison]::OrdinalIgnoreCase)) {
@@ -35,13 +42,13 @@ foreach ($change in @($plan.resource_changes)) {
     $failures.Add("$($change.address) is not a delete-only runner change.")
     continue
   }
-  if ($change.address -notin $AllowedResourceAddresses) {
+  if ($change.address -cnotin $AllowedResourceAddresses) {
     $failures.Add("$($change.address) is not in the exact approved runner teardown allowlist.")
   }
   $deleted += $change.address
 }
 foreach ($allowed in $AllowedResourceAddresses) {
-  if ($allowed -notin $deleted) { $failures.Add("Approved runner resource '$allowed' is absent from the teardown plan.") }
+  if ($allowed -cnotin $deleted) { $failures.Add("Approved runner resource '$allowed' is absent from the teardown plan.") }
 }
 if ($failures.Count -gt 0) { throw "Runner teardown plan policy failed: $($failures -join ' ')" }
 
@@ -49,7 +56,7 @@ Write-SafeJson -InputObject ([ordered]@{
     schemaVersion      = 1
     verifiedAtUtc      = (Get-Date).ToUniversalTime().ToString("o")
     target             = $context
-    planSha256         = Get-Sha256 -Path $planPath
+    planSha256         = Get-Sha256 -Path $planBinaryPath
     deletedAddresses   = @($deleted | Sort-Object)
     sourceRetirement   = $false
     allowlistExact     = $true

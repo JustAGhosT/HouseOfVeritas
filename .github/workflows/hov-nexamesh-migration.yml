@@ -32,6 +32,7 @@ on:
           - bootstrap
           - foundation-data
           - migration-runner
+          - migration-runner-teardown
           - runtime
           - edge
       hostname_binding_approved:
@@ -104,7 +105,7 @@ jobs:
     timeout-minutes: 45
     environment: hov-nexamesh-target-production
     concurrency:
-      group: hov-nexamesh-target-${{ inputs.root }}
+      group: hov-nexamesh-target-${{ inputs.root == 'migration-runner-teardown' && 'migration-runner' || inputs.root }}
       cancel-in-progress: false
     env:
       ARM_USE_OIDC: "true"
@@ -261,7 +262,7 @@ jobs:
           else
             case "$INPUT_ROOT" in
               foundation-data) state_key='hov/prod/foundation-data.tfstate' ;;
-              migration-runner) state_key='hov/prod/migration-runner.tfstate' ;;
+              migration-runner|migration-runner-teardown) state_key='hov/prod/migration-runner.tfstate' ;;
               runtime) state_key='hov/prod/runtime.tfstate' ;;
               edge) state_key='hov/prod/edge.tfstate' ;;
               *) echo '::error::Unsupported target root'; exit 1 ;;
@@ -298,7 +299,7 @@ jobs:
         working-directory: terraform/migrations/hov-nexamesh/${{ inputs.root }}
         run: terraform plan -input=false -lock-timeout=5m -out=tfplan
 
-      - name: Enforce create-only target policy
+      - name: Enforce target plan policy
         shell: bash
         env:
           WORKING_DIR: terraform/migrations/hov-nexamesh/${{ inputs.root }}
@@ -307,7 +308,15 @@ jobs:
           cd "$WORKING_DIR"
           terraform show -json tfplan > tfplan.json
 
-          jq -e \
+          if [ "$INPUT_ROOT" = migration-runner-teardown ]; then
+            pwsh -NoLogo -NoProfile -NonInteractive \
+              -File "$GITHUB_WORKSPACE/scripts/migration/hov-nexamesh/Assert-RunnerTeardownPlan.ps1" \
+              -PlanBinaryPath "$PWD/tfplan" \
+              -AllowedResourceAddressesCsv \
+                'terraform_data.target_guard,azurerm_public_ip.nat,azurerm_nat_gateway.migration,azurerm_nat_gateway_public_ip_association.migration,azurerm_subnet_nat_gateway_association.migration,azurerm_network_interface.migration,azurerm_linux_virtual_machine.migration,azurerm_virtual_machine_extension.tooling_readiness,azurerm_role_assignment.target_blob,azurerm_role_assignment.target_secrets,azurerm_postgresql_flexible_server_active_directory_administrator.migration' \
+              -OutputPath "$PWD/teardown-plan-evidence.json"
+          else
+            jq -e \
             --arg root "$INPUT_ROOT" \
             --argjson identity_cutover_approved "$INPUT_IDENTITY_CUTOVER_APPROVED" '
             def runtime_oidc_app_setting_keys: [
@@ -345,6 +354,7 @@ jobs:
             echo '::error::Plan contains an update outside the approved runtime OIDC cutover, or a delete, replace, forget, or other forbidden action.'
             exit 1
           }
+          fi
 
           jq -r '.. | strings' tfplan.json > planned-strings.txt
           if grep -iE 'bb4e3882-2079-4bab-8974-611bc0b8bb58|9530cd32-9e33-47f0-9247-ed964730b580|production-canonical\.terraform\.tfstate|(^|[^a-z])nl-prod-' planned-strings.txt; then
@@ -408,6 +418,15 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Upload teardown policy evidence
+        if: inputs.root == 'migration-runner-teardown'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.seal.outputs.artifact_name }}-policy-evidence
+          path: terraform/migrations/hov-nexamesh/${{ inputs.root }}/teardown-plan-evidence.json
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Remove this runner from the tfstate storage account
         if: always() && inputs.root != 'bootstrap' && steps.runner-ip.outputs.ip != ''
         shell: bash
@@ -442,7 +461,7 @@ jobs:
     timeout-minutes: 60
     environment: hov-nexamesh-target-production
     concurrency:
-      group: hov-nexamesh-target-${{ inputs.root }}
+      group: hov-nexamesh-target-${{ inputs.root == 'migration-runner-teardown' && 'migration-runner' || inputs.root }}
       cancel-in-progress: false
     env:
       ARM_USE_OIDC: "true"
@@ -607,7 +626,7 @@ jobs:
           else
             case "$INPUT_ROOT" in
               foundation-data) state_key='hov/prod/foundation-data.tfstate' ;;
-              migration-runner) state_key='hov/prod/migration-runner.tfstate' ;;
+              migration-runner|migration-runner-teardown) state_key='hov/prod/migration-runner.tfstate' ;;
               runtime) state_key='hov/prod/runtime.tfstate' ;;
               edge) state_key='hov/prod/edge.tfstate' ;;
               *) echo '::error::Unsupported target root'; exit 1 ;;
