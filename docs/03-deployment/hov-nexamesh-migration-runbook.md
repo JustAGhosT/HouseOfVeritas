@@ -602,7 +602,7 @@ address allowlist:
 ```powershell
 pwsh scripts/migration/hov-nexamesh/Assert-RunnerTeardownPlan.ps1 `
   -PlanJsonPath <restricted-runner-teardown-plan.json> `
-  -AllowedResourceAddresses <exact-vm-nic-disk-role-addresses> `
+  -AllowedResourceAddressesCsv <comma-separated-exact-runner-addresses> `
   -OutputPath "$evidence/runner-teardown-plan-policy.json"
 ```
 
