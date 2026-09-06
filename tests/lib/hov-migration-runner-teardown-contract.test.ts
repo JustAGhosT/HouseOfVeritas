@@ -52,6 +52,7 @@ describe("HOV migration-runner teardown contract", () => {
     expect(teardownMain.match(/\bresource\s+"/g)).toBeNull()
     expect(teardownMain.match(/destroy = true/g)).toHaveLength(expectedAddresses.length)
     expect(teardownOutputs).toContain("intentionally declares no outputs")
+    expect(teardownOutputs.match(/\boutput\s+"/g)).toBeNull()
     for (const address of expectedAddresses) {
       expect(workflow).toContain(address)
     }
@@ -63,6 +64,8 @@ describe("HOV migration-runner teardown contract", () => {
     expect(teardownVersions).toContain("subscription_id = var.target_subscription_id")
     expect(teardownPolicy).toContain('$actions[0] -cne "delete"')
     expect(teardownPolicy).toContain("AllowedResourceAddressesCsv.Split")
+    expect(teardownPolicy).toContain("terraform show -json $planBinaryPath")
+    expect(teardownPolicy).not.toContain("PlanJsonPath")
     expect(teardownPolicy).toContain("planSha256         = Get-Sha256 -Path $planBinaryPath")
     expect(teardownPolicy).toContain("$change.address -cnotin $AllowedResourceAddresses")
     expect(teardownPolicy).toContain("sourceRetirement   = $false")
