@@ -46,6 +46,9 @@ $sensitiveNamePattern = '(?i)(password|secret|token|credential|connection|string
 
 $publicParameterNames = @($Parameters.Keys | ForEach-Object { [string]$_ } | Sort-Object -Unique)
 $protectedParameterNames = @($ProtectedParameterBindings.Keys | ForEach-Object { [string]$_ } | Sort-Object -Unique)
+if ($publicParameterNames -contains "Confirm" -or $publicParameterNames -contains "cf") {
+  throw "Confirm and cf are reserved by the protected launcher."
+}
 foreach ($name in @($publicParameterNames + $protectedParameterNames)) {
   if ($name -cnotmatch $environmentNamePattern) {
     throw "Managed Run Command parameter names must be safe process-environment names."

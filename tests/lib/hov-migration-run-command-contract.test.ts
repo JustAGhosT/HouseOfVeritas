@@ -25,6 +25,10 @@ describe("HOV protected migration Run Command contract", () => {
     expect(runCommand).toContain('$ConfirmPreference = "None"')
     expect(runCommand).toContain('& $PayloadPath @payloadArguments *> $null')
     expect(runCommand).not.toContain('@payloadArguments -Confirm:$false')
+    expect(runCommand).toContain(
+      '$publicParameterNames -contains "Confirm" -or $publicParameterNames -contains "cf"'
+    )
+    expect(runCommand).toContain('throw "Confirm and cf are reserved by the protected launcher."')
     expect(runCommand).toContain('unset "$name" || true')
     expect(runCommand).toContain('rm -rf -- "$temporary_directory"')
     expect(runCommand).toContain("trap cleanup EXIT")
