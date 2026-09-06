@@ -72,6 +72,12 @@ describe("HOV protected migration Run Command contract", () => {
     expect(keyVaultSecretPayload).not.toContain('$reference.properties.source -cne "KeyVault"')
     expect(keyVaultSecretPayload).toContain('$operationStage = "key-vault-write"')
     expect(keyVaultSecretPayload).toContain('throw "HOV_SAFE_STAGE/$operationStage"')
+    expect(keyVaultSecretPayload).toContain(
+      "Assert-AzureBoundary -Boundary Target -ResourceGroup $ResourceGroup"
+    )
+    expect(keyVaultSecretPayload).not.toContain(
+      "Assert-AzureBoundary -Boundary Target -ResourceGroup $ResourceGroup -RequireResourceGroup"
+    )
     expect(runCommand).toContain('unset "$name" || true')
     expect(runCommand).toContain("expected_target_subscription AZURE_CONFIG_DIR temporary_directory")
     expect(runCommand).toContain('rm -rf -- "$temporary_directory"')

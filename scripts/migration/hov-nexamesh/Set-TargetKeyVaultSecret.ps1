@@ -19,7 +19,7 @@ if ($Confirmation -cne $requiredConfirmation) {
   throw "Secret-seeding confirmation must exactly equal '$requiredConfirmation'."
 }
 $operationStage = "azure-boundary"
-$context = Assert-AzureBoundary -Boundary Target -ResourceGroup $ResourceGroup -RequireResourceGroup
+$context = Assert-AzureBoundary -Boundary Target -ResourceGroup $ResourceGroup
 $operationStage = "vault-metadata"
 $vaultJson = Invoke-NativeCommand -FilePath "az" -ArgumentList @(
   "keyvault", "show", "--name", $VaultName, "--resource-group", $ResourceGroup,
