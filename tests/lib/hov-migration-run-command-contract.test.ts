@@ -24,7 +24,10 @@ describe("HOV protected migration Run Command contract", () => {
     expect(runCommand).toContain("umask 077")
     expect(runCommand).toContain("mktemp -d /tmp/hov-migration-run-command.XXXXXXXX")
     expect(runCommand).toContain('chmod 700 "$temporary_directory"')
-    expect(runCommand).toContain('chmod 600 "$payload_path" "$launcher_path"')
+    expect(runCommand).toContain('common_path="$temporary_directory/Common.ps1"')
+    expect(runCommand).toContain('chmod 600 "$payload_path" "$common_path" "$launcher_path"')
+    expect(runCommand).toContain('[[ "$actual_common_sha256" == "$expected_common_sha256" ]]')
+    expect(runCommand).toContain("Managed Run Command Common.ps1 hash does not match")
     expect(runCommand).toContain(
       '/usr/bin/pwsh -NoLogo -NoProfile -NonInteractive -File "$launcher_path" "$payload_path"'
     )
@@ -67,6 +70,7 @@ describe("HOV protected migration Run Command contract", () => {
     expect(runCommand).toContain('exit "$status"')
     expect(runCommand).toContain("payload output was not recorded")
     expect(runCommand).toContain("protectedValuesRecorded = $false")
+    expect(runCommand).toContain("commonSha256            = $commonHash")
     expect(runnerReadme).toContain(
       "launcher makes protected Run Command execution technically available"
     )

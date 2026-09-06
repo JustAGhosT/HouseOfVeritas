@@ -5,6 +5,7 @@ param(
   [Parameter(Mandatory)][ValidatePattern('^hov-migration-[a-z0-9-]+$')][string]$RunCommandName,
   [Parameter(Mandatory)][string]$ScriptPath,
   [Parameter(Mandatory)][ValidatePattern('^[a-f0-9]{64}$')][string]$ExpectedScriptSha256,
+  [Parameter(Mandatory)][ValidatePattern('^[a-f0-9]{64}$')][string]$ExpectedCommonSha256,
   [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ExpectedImagePublisher,
   [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ExpectedImageOffer,
   [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ExpectedImageSku,
@@ -99,11 +100,25 @@ $scriptHash = Get-Sha256 -Path $scriptFile
 if ($scriptHash -cne $ExpectedScriptSha256.ToLowerInvariant()) {
   throw "Managed Run Command script hash does not match the separately reviewed digest."
 }
+$commonFile = Join-Path (Split-Path -Parent $scriptFile) "Common.ps1"
+if (-not (Test-Path -LiteralPath $commonFile -PathType Leaf)) {
+  throw "Managed Run Command payload requires sibling Common.ps1."
+}
+$commonHash = Get-Sha256 -Path $commonFile
+if ($commonHash -cne $ExpectedCommonSha256.ToLowerInvariant()) {
+  throw "Managed Run Command Common.ps1 hash does not match the separately reviewed digest."
+}
 $payloadBytes = [IO.File]::ReadAllBytes($scriptFile)
 try {
   $payloadBase64 = [Convert]::ToBase64String($payloadBytes)
 } finally {
   [Array]::Clear($payloadBytes, 0, $payloadBytes.Length)
+}
+$commonBytes = [IO.File]::ReadAllBytes($commonFile)
+try {
+  $commonBase64 = [Convert]::ToBase64String($commonBytes)
+} finally {
+  [Array]::Clear($commonBytes, 0, $commonBytes.Length)
 }
 
 $vmJson = Invoke-NativeCommand -FilePath "az" -ArgumentList @(
@@ -196,7 +211,7 @@ cleanup() {
   case "$wrapper_path" in
     /var/lib/waagent/*|/tmp/*) rm -f -- "$wrapper_path" >/dev/null 2>&1 || true ;;
   esac
-  unset payload_base64 launcher_base64 expected_payload_sha256 temporary_directory
+  unset payload_base64 common_base64 launcher_base64 expected_payload_sha256 expected_common_sha256 temporary_directory
 }
 
 trap cleanup EXIT
@@ -205,7 +220,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 migration_main() {
-  local command_name payload_path launcher_path payload_stdout payload_stderr actual_payload_sha256 sha256_output tooling_readiness_path
+  local command_name payload_path common_path launcher_path payload_stdout payload_stderr actual_payload_sha256 actual_common_sha256 sha256_output tooling_readiness_path
   for command_name in "${required_commands[@]}"; do
     command -v -- "$command_name" >/dev/null 2>&1 || return 31
   done
@@ -233,19 +248,26 @@ migration_main() {
   temporary_directory="$(mktemp -d /tmp/hov-migration-run-command.XXXXXXXX)" || return 40
   chmod 700 "$temporary_directory" || return 41
   payload_path="$temporary_directory/payload.ps1"
+  common_path="$temporary_directory/Common.ps1"
   launcher_path="$temporary_directory/launcher.ps1"
   payload_stdout="$temporary_directory/payload.stdout"
   payload_stderr="$temporary_directory/payload.stderr"
   payload_base64='__PAYLOAD_BASE64__'
+  common_base64='__COMMON_BASE64__'
   launcher_base64='__LAUNCHER_BASE64__'
   expected_payload_sha256='__PAYLOAD_SHA256__'
+  expected_common_sha256='__COMMON_SHA256__'
 
   printf '%s' "$payload_base64" | base64 --decode > "$payload_path" || return 42
-  printf '%s' "$launcher_base64" | base64 --decode > "$launcher_path" || return 43
-  chmod 600 "$payload_path" "$launcher_path" || return 44
-  sha256_output="$(sha256sum "$payload_path")" || return 45
+  printf '%s' "$common_base64" | base64 --decode > "$common_path" || return 43
+  printf '%s' "$launcher_base64" | base64 --decode > "$launcher_path" || return 44
+  chmod 600 "$payload_path" "$common_path" "$launcher_path" || return 45
+  sha256_output="$(sha256sum "$payload_path")" || return 46
   actual_payload_sha256="${sha256_output%% *}"
-  [[ "$actual_payload_sha256" == "$expected_payload_sha256" ]] || return 46
+  [[ "$actual_payload_sha256" == "$expected_payload_sha256" ]] || return 47
+  sha256_output="$(sha256sum "$common_path")" || return 48
+  actual_common_sha256="${sha256_output%% *}"
+  [[ "$actual_common_sha256" == "$expected_common_sha256" ]] || return 49
 
   /usr/bin/pwsh -NoLogo -NoProfile -NonInteractive -File "$launcher_path" "$payload_path" \
     >"$payload_stdout" 2>"$payload_stderr"
@@ -274,8 +296,10 @@ $wrapper = $wrapper.Replace('__PROTECTED_ENVIRONMENT_NAMES__', $protectedNameLin
   Replace('__EXPECTED_NODE_VERSION__', $ExpectedNodeVersion).
   Replace('__EXPECTED_AZCOPY_VERSION__', $ExpectedAzCopyVersion).
   Replace('__PAYLOAD_BASE64__', $payloadBase64).
+  Replace('__COMMON_BASE64__', $commonBase64).
   Replace('__LAUNCHER_BASE64__', $launcherBase64).
-  Replace('__PAYLOAD_SHA256__', $scriptHash)
+  Replace('__PAYLOAD_SHA256__', $scriptHash).
+  Replace('__COMMON_SHA256__', $commonHash)
 $wrapper = $wrapper.Replace("`r`n", "`n")
 $wrapperHash = Get-StringSha256 -Value $wrapper
 
@@ -358,6 +382,7 @@ try {
       }
       runCommandName          = $RunCommandName
       payloadSha256           = $scriptHash
+      commonSha256            = $commonHash
       linuxWrapperSha256      = $wrapperHash
       publicParameterNames    = $publicParameterNames
       protectedParameterNames = $protectedParameterNames
@@ -372,6 +397,7 @@ try {
   }
   $protectedParameters = $null
   $payloadBase64 = $null
+  $commonBase64 = $null
   $launcherBase64 = $null
   $wrapper = $null
   $body = $null

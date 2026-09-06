@@ -77,6 +77,7 @@ pwsh scripts/migration/hov-nexamesh/Invoke-ProtectedMigrationRunCommand.ps1 `
   -RunCommandName hov-migration-source-inventory `
   -ScriptPath <reviewed-vm-wrapper.ps1> `
   -ExpectedScriptSha256 <reviewed-wrapper-sha256> `
+  -ExpectedCommonSha256 <reviewed-common-sha256> `
   -ExpectedImagePublisher Canonical `
   -ExpectedImageOffer ubuntu-24_04-lts `
   -ExpectedImageSku server `
@@ -93,12 +94,12 @@ pwsh scripts/migration/hov-nexamesh/Invoke-ProtectedMigrationRunCommand.ps1 `
   -Confirmation RUN-MIGRATION-COMMAND/<nex-prod-hov-migration-vm>/hov-migration-source-inventory
 ```
 
-The reviewed payload must be self-contained, or must invoke scripts from the
-exact reviewed repository artifact already staged on the VM. Its `param()` names
-must exactly match public `-Parameters` keys. It must read every secret from the
-corresponding protected process-environment name. Do not pass a repository
-script that depends on adjacent files unless those files are present at the
-reviewed path on the VM.
+The reviewed payload may depend on its sibling `Common.ps1`; the runner verifies
+the separately approved digest and stages that file beside the payload. Any
+other dependencies must come from the exact reviewed repository artifact
+already staged on the VM. The payload's `param()` names must exactly match
+public `-Parameters` keys. It must read every secret from the corresponding
+protected process-environment name.
 
 Do not put a database administrator password, DSN, OIDC client secret or Cosmos
 URI in Terraform variables/state, VM custom data, Run Command public
