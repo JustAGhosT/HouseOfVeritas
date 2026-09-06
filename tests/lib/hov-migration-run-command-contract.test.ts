@@ -22,6 +22,7 @@ describe("HOV protected migration Run Command contract", () => {
     expect(runCommand).toContain(
       '/usr/bin/pwsh -NoLogo -NoProfile -NonInteractive -File "$launcher_path" "$payload_path"'
     )
+    expect(runCommand).toContain('& $PayloadPath @payloadArguments -Confirm:$false *> $null')
     expect(runCommand).toContain('unset "$name" || true')
     expect(runCommand).toContain('rm -rf -- "$temporary_directory"')
     expect(runCommand).toContain("trap cleanup EXIT")

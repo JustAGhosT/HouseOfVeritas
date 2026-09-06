@@ -125,7 +125,7 @@ try {
     if ($null -eq $value) { exit 21 }
     $payloadArguments[$name] = $value
   }
-  & $PayloadPath @payloadArguments *> $null
+  & $PayloadPath @payloadArguments -Confirm:$false *> $null
   if (-not $?) { exit 22 }
   exit 0
 } catch {
