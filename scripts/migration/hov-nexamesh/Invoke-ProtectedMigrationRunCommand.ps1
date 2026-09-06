@@ -117,6 +117,7 @@ $publicNamesLiteral = if ($publicParameterNames.Count -eq 0) {
 $launcher = @'
 param([Parameter(Mandatory)][string]$PayloadPath)
 $ErrorActionPreference = "Stop"
+$ConfirmPreference = "None"
 $allowedPublicParameterNames = __PUBLIC_PARAMETER_NAMES__
 $payloadArguments = @{}
 try {
@@ -125,7 +126,7 @@ try {
     if ($null -eq $value) { exit 21 }
     $payloadArguments[$name] = $value
   }
-  & $PayloadPath @payloadArguments -Confirm:$false *> $null
+  & $PayloadPath @payloadArguments *> $null
   if (-not $?) { exit 22 }
   exit 0
 } catch {

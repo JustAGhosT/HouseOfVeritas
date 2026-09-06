@@ -61,11 +61,12 @@ its launcher as mode-0600 files inside a mode-0700 temporary directory, invokes:
 
 The wrapper traps exit, clears protected process-environment variables, removes
 the temporary directory, forwards the PowerShell exit code, and suppresses
-payload stdout/stderr. The generated PowerShell launcher supplies
-`-Confirm:$false` to the already-approved payload so `ConfirmImpact = "High"`
-cannot trigger an impossible prompt under `-NonInteractive`; the outer exact
-confirmation token and `ShouldProcess` gate remain mandatory. Do not put
-protected parameter values in `source.script`,
+payload stdout/stderr. The generated PowerShell launcher scopes
+`$ConfirmPreference` to `None` so a payload with `ConfirmImpact = "High"` cannot
+trigger an impossible prompt under `-NonInteractive`; this also keeps payloads
+without `SupportsShouldProcess` executable. The outer exact confirmation token
+and `ShouldProcess` gate remain mandatory. Do not put protected parameter values
+in `source.script`,
 custom data, extension settings, Terraform variables, outputs, or state. The
 launcher makes protected Run Command execution technically available; every
 payload still needs separate source review, a pinned SHA-256, an exact command
