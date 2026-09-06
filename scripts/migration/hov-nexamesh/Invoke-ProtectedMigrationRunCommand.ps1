@@ -296,10 +296,11 @@ try {
     }
   }
 
-  $token = (Invoke-NativeCommand -FilePath "az" -ArgumentList @(
+  $tokenOutput = Invoke-NativeCommand -FilePath "az" -ArgumentList @(
       "account", "get-access-token", "--resource", "https://management.azure.com/",
       "--query", "accessToken", "--output", "tsv", "--only-show-errors"
-    ) -join "").Trim()
+    )
+  $token = ($tokenOutput -join "").Trim()
   $body = [ordered]@{
     location   = $vm.location
     properties = [ordered]@{
@@ -373,6 +374,7 @@ try {
   $launcherBase64 = $null
   $wrapper = $null
   $body = $null
+  $tokenOutput = $null
   $token = $null
   $response = $null
 }

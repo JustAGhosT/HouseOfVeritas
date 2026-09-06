@@ -38,10 +38,11 @@ $secretValue = Get-RequiredEnvironmentValue -Name $SecretValueEnvironmentVariabl
 $token = $null
 $body = $null
 try {
-  $token = (Invoke-NativeCommand -FilePath "az" -ArgumentList @(
+  $tokenOutput = Invoke-NativeCommand -FilePath "az" -ArgumentList @(
       "account", "get-access-token", "--resource", "https://vault.azure.net",
       "--query", "accessToken", "--output", "tsv", "--only-show-errors"
-    ) -join "").Trim()
+    )
+  $token = ($tokenOutput -join "").Trim()
   $headers = @{ Authorization = "Bearer $token" }
   $body = @{ value = $secretValue; attributes = @{ enabled = $true } } | ConvertTo-Json -Compress
   try {
@@ -56,6 +57,7 @@ try {
 } finally {
   $secretValue = $null
   $body = $null
+  $tokenOutput = $null
   $token = $null
   $headers = $null
   [Environment]::SetEnvironmentVariable($SecretValueEnvironmentVariable, $null, "Process")

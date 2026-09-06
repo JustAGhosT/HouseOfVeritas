@@ -12,6 +12,11 @@ const runnerReadme = readFileSync(
   "utf8"
 ).replace(/\r\n/g, "\n")
 
+const keyVaultSecretPayload = readFileSync(
+  resolve(process.cwd(), "scripts/migration/hov-nexamesh/Set-TargetKeyVaultSecret.ps1"),
+  "utf8"
+).replace(/\r\n/g, "\n")
+
 describe("HOV protected migration Run Command contract", () => {
   it("uses a cleanup-bound POSIX launcher without recording protected payload output", () => {
     expect(runCommand).toContain("#!/usr/bin/env bash")
@@ -44,6 +49,10 @@ describe("HOV protected migration Run Command contract", () => {
     )
     expect(runCommand).toContain('$_ -notin $environmentReferenceParameterNames')
     expect(runCommand).toContain('$_ -notin $publicMetadataNames')
+    expect(runCommand).toContain('$token = ($tokenOutput -join "").Trim()')
+    expect(runCommand).not.toContain(') -join "").Trim()')
+    expect(keyVaultSecretPayload).toContain('$token = ($tokenOutput -join "").Trim()')
+    expect(keyVaultSecretPayload).not.toContain(') -join "").Trim()')
     expect(runCommand).toContain('unset "$name" || true')
     expect(runCommand).toContain('rm -rf -- "$temporary_directory"')
     expect(runCommand).toContain("trap cleanup EXIT")
