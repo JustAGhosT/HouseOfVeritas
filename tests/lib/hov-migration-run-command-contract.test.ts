@@ -41,6 +41,8 @@ describe("HOV protected migration Run Command contract", () => {
       '/usr/bin/pwsh -NoLogo -NoProfile -NonInteractive -File "$launcher_path" "$payload_path"'
     )
     expect(runCommand).toContain('$ConfirmPreference = "None"')
+    expect(runCommand).toContain('"HOV_SAFE_STAGE/key-vault-write" = 66')
+    expect(runCommand).toContain('$safeExitCode = $safeStageExitCodes[[string]$_.Exception.Message]')
     expect(runCommand).toContain('& $PayloadPath @payloadArguments *> $null')
     expect(runCommand).not.toContain('@payloadArguments -Confirm:$false')
     expect(runCommand).toContain(
@@ -68,6 +70,8 @@ describe("HOV protected migration Run Command contract", () => {
     expect(keyVaultSecretPayload).not.toContain(') -join "").Trim()')
     expect(keyVaultSecretPayload).toContain('$reference.properties.status -cne "Resolved"')
     expect(keyVaultSecretPayload).not.toContain('$reference.properties.source -cne "KeyVault"')
+    expect(keyVaultSecretPayload).toContain('$operationStage = "key-vault-write"')
+    expect(keyVaultSecretPayload).toContain('throw "HOV_SAFE_STAGE/$operationStage"')
     expect(runCommand).toContain('unset "$name" || true')
     expect(runCommand).toContain("expected_target_subscription AZURE_CONFIG_DIR temporary_directory")
     expect(runCommand).toContain('rm -rf -- "$temporary_directory"')

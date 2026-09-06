@@ -12,11 +12,15 @@ param(
 
 . "$PSScriptRoot/Common.ps1"
 
+$operationStage = "confirmation"
+try {
 $requiredConfirmation = "SEED-TARGET-SECRET/$VaultName/$SecretName"
 if ($Confirmation -cne $requiredConfirmation) {
   throw "Secret-seeding confirmation must exactly equal '$requiredConfirmation'."
 }
+$operationStage = "azure-boundary"
 $context = Assert-AzureBoundary -Boundary Target -ResourceGroup $ResourceGroup -RequireResourceGroup
+$operationStage = "vault-metadata"
 $vaultJson = Invoke-NativeCommand -FilePath "az" -ArgumentList @(
   "keyvault", "show", "--name", $VaultName, "--resource-group", $ResourceGroup,
   "--subscription", $context.subscriptionId,
@@ -28,12 +32,14 @@ if (-not $vault.rbac -or $vault.publicNetworkAccess -ne "Disabled") {
   throw "Target Key Vault must use RBAC authorization with public network access disabled."
 }
 $vaultHost = ([uri]$vault.uri).Host
+$operationStage = "private-endpoint"
 Assert-PrivateEndpointReachability -HostName $vaultHost -Port 443
 
 if (-not $PSCmdlet.ShouldProcess("$VaultName/$SecretName", "Seed a secret from process-only input through the target private endpoint")) {
   return
 }
 
+$operationStage = "secret-input"
 $secretValue = Get-RequiredEnvironmentValue -Name $SecretValueEnvironmentVariable
 $token = $null
 $body = $null
@@ -45,6 +51,7 @@ try {
   $token = ($tokenOutput -join "").Trim()
   $headers = @{ Authorization = "Bearer $token" }
   $body = @{ value = $secretValue; attributes = @{ enabled = $true } } | ConvertTo-Json -Compress
+  $operationStage = "key-vault-write"
   try {
     Invoke-RestMethod -Method Put -Uri "$($vault.uri)secrets/$SecretName`?api-version=7.4" `
       -Headers $headers -ContentType "application/json" -Body $body -TimeoutSec 20 | Out-Null
@@ -64,6 +71,7 @@ try {
 }
 
 if ($WebAppName) {
+  $operationStage = "app-refresh"
   if (-not $AppSettingName) { throw "AppSettingName is required when WebAppName is supplied." }
   $appId = "/subscriptions/$($context.subscriptionId)/resourceGroups/$ResourceGroup/providers/Microsoft.Web/sites/$WebAppName"
   $null = Invoke-NativeCommand -FilePath "az" -ArgumentList @(
@@ -74,6 +82,7 @@ if ($WebAppName) {
     "rest", "--method", "get", "--uri", "https://management.azure.com$appId/config/configreferences/appsettings/$AppSettingName`?api-version=2022-03-01",
     "--output", "json", "--only-show-errors"
   )
+  $operationStage = "app-reference"
   $reference = ($referenceJson -join [Environment]::NewLine) | ConvertFrom-Json
   if ($reference.properties.status -cne "Resolved" -or
     $reference.properties.vaultName -cne $VaultName -or
@@ -82,6 +91,7 @@ if ($WebAppName) {
   }
 }
 if ($OutputPath) {
+  $operationStage = "evidence"
   Write-SafeJson -InputObject ([ordered]@{
       schemaVersion       = 1
       completedAtUtc      = (Get-Date).ToUniversalTime().ToString("o")
@@ -94,3 +104,6 @@ if ($OutputPath) {
     }) -Path $OutputPath
 }
 Write-Host "Target Key Vault secret was seeded through the private endpoint and metadata verification passed. The process input was cleared."
+} catch {
+  throw "HOV_SAFE_STAGE/$operationStage"
+}

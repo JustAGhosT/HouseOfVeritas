@@ -157,6 +157,17 @@ param([Parameter(Mandatory)][string]$PayloadPath)
 $ErrorActionPreference = "Stop"
 $ConfirmPreference = "None"
 $allowedPublicParameterNames = __PUBLIC_PARAMETER_NAMES__
+$safeStageExitCodes = @{
+  "HOV_SAFE_STAGE/confirmation" = 61
+  "HOV_SAFE_STAGE/azure-boundary" = 62
+  "HOV_SAFE_STAGE/vault-metadata" = 63
+  "HOV_SAFE_STAGE/private-endpoint" = 64
+  "HOV_SAFE_STAGE/secret-input" = 65
+  "HOV_SAFE_STAGE/key-vault-write" = 66
+  "HOV_SAFE_STAGE/app-refresh" = 67
+  "HOV_SAFE_STAGE/app-reference" = 68
+  "HOV_SAFE_STAGE/evidence" = 69
+}
 $payloadArguments = @{}
 try {
   foreach ($name in $allowedPublicParameterNames) {
@@ -168,6 +179,8 @@ try {
   if (-not $?) { exit 22 }
   exit 0
 } catch {
+  $safeExitCode = $safeStageExitCodes[[string]$_.Exception.Message]
+  if ($null -ne $safeExitCode) { exit $safeExitCode }
   exit 23
 } finally {
   foreach ($name in $allowedPublicParameterNames) {
