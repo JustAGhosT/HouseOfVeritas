@@ -11,6 +11,9 @@ const teardownMain = read("terraform/migrations/hov-nexamesh/migration-runner-te
 const teardownVersions = read(
   "terraform/migrations/hov-nexamesh/migration-runner-teardown/versions.tf"
 )
+const teardownOutputs = read(
+  "terraform/migrations/hov-nexamesh/migration-runner-teardown/outputs.tf"
+)
 const teardownPolicy = read("scripts/migration/hov-nexamesh/Assert-RunnerTeardownPlan.ps1")
 
 const expectedAddresses = [
@@ -35,7 +38,9 @@ describe("HOV migration-runner teardown contract", () => {
     )
     expect(workflow).toContain('if [ "$INPUT_ROOT" = migration-runner-teardown ]; then')
     expect(workflow).toContain("Assert-RunnerTeardownPlan.ps1")
+    expect(workflow).toContain('-PlanBinaryPath "$PWD/tfplan"')
     expect(workflow).toContain("teardown-plan-evidence.json")
+    expect(workflow.match(/inputs\.root == 'migration-runner-teardown' && 'migration-runner'/g)).toHaveLength(2)
   })
 
   it("removes exactly the temporary runner state addresses", () => {
@@ -46,6 +51,7 @@ describe("HOV migration-runner teardown contract", () => {
     expect(removedAddresses).toEqual(expectedAddresses)
     expect(teardownMain.match(/\bresource\s+"/g)).toBeNull()
     expect(teardownMain.match(/destroy = true/g)).toHaveLength(expectedAddresses.length)
+    expect(teardownOutputs).toContain("intentionally declares no outputs")
     for (const address of expectedAddresses) {
       expect(workflow).toContain(address)
     }
@@ -57,6 +63,7 @@ describe("HOV migration-runner teardown contract", () => {
     expect(teardownVersions).toContain("subscription_id = var.target_subscription_id")
     expect(teardownPolicy).toContain('$actions[0] -cne "delete"')
     expect(teardownPolicy).toContain("AllowedResourceAddressesCsv.Split")
+    expect(teardownPolicy).toContain("planSha256         = Get-Sha256 -Path $planBinaryPath")
     expect(teardownPolicy).toContain("$change.address -cnotin $AllowedResourceAddresses")
     expect(teardownPolicy).toContain("sourceRetirement   = $false")
   })

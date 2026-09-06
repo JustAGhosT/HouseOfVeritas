@@ -2,6 +2,7 @@
 param(
   [Parameter()][string]$ResourceGroup = "nex-prod-hov-rg",
   [Parameter(Mandatory)][string]$PlanJsonPath,
+  [Parameter(Mandatory)][string]$PlanBinaryPath,
   [Parameter(Mandatory)][string]$AllowedResourceAddressesCsv,
   [Parameter(Mandatory)][string]$OutputPath
 )
@@ -10,6 +11,7 @@ param(
 
 $context = Assert-AzureBoundary -Boundary Target -ResourceGroup $ResourceGroup
 $planPath = (Resolve-Path -LiteralPath $PlanJsonPath).Path
+$planBinaryPath = (Resolve-Path -LiteralPath $PlanBinaryPath).Path
 $raw = Get-Content -LiteralPath $planPath -Raw
 $plan = $raw | ConvertFrom-Json -Depth 100
 $failures = [Collections.Generic.List[string]]::new()
@@ -53,7 +55,8 @@ Write-SafeJson -InputObject ([ordered]@{
     schemaVersion      = 1
     verifiedAtUtc      = (Get-Date).ToUniversalTime().ToString("o")
     target             = $context
-    planSha256         = Get-Sha256 -Path $planPath
+    planSha256         = Get-Sha256 -Path $planBinaryPath
+    planJsonSha256     = Get-Sha256 -Path $planPath
     deletedAddresses   = @($deleted | Sort-Object)
     sourceRetirement   = $false
     allowlistExact     = $true
