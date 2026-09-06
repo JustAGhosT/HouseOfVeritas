@@ -17,6 +17,7 @@ param(
   [Parameter()][string[]]$RequiredCommands = @(),
   [Parameter()][hashtable]$Parameters = @{},
   [Parameter()][hashtable]$ProtectedParameterBindings = @{},
+  [Parameter()][string[]]$PublicMetadataParameterNames = @(),
   [Parameter(Mandatory)][string]$OutputPath,
   [Parameter(Mandatory)][string]$Confirmation,
   [ValidateRange(300, 14400)][int]$TimeoutSeconds = 7200
@@ -42,6 +43,7 @@ if ($Confirmation -cne $requiredConfirmation) {
 }
 $context = Assert-AzureBoundary -Boundary Target -ResourceGroup $ResourceGroup -RequireResourceGroup
 $environmentNamePattern = '^[A-Za-z_][A-Za-z0-9_]*$'
+$metadataValuePattern = '^[0-9A-Za-z][0-9A-Za-z_.-]{0,126}$'
 $sensitiveNamePattern = '(?i)(password|secret|token|credential|connection|string|dsn|uri|key)'
 
 $publicParameterNames = @($Parameters.Keys | ForEach-Object { [string]$_ } | Sort-Object -Unique)
@@ -62,8 +64,16 @@ foreach ($name in $environmentReferenceParameterNames) {
     throw "Environment-variable reference parameters must name a bound protected parameter."
   }
 }
+$publicMetadataNames = @($PublicMetadataParameterNames | ForEach-Object { [string]$_ } | Sort-Object -Unique)
+foreach ($name in $publicMetadataNames) {
+  if ($name -notin $publicParameterNames -or [string]$Parameters[$name] -cnotmatch $metadataValuePattern) {
+    throw "Allowed public metadata parameters must exist and contain only a bounded resource identifier."
+  }
+}
 if (@($publicParameterNames | Where-Object {
-      $_ -match $sensitiveNamePattern -and $_ -notin $environmentReferenceParameterNames
+      $_ -match $sensitiveNamePattern -and
+      $_ -notin $environmentReferenceParameterNames -and
+      $_ -notin $publicMetadataNames
     }).Count -gt 0) {
   throw "Sensitive-looking Run Command parameters must use ProtectedParameterBindings, never public Parameters."
 }

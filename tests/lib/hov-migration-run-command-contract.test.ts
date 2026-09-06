@@ -36,7 +36,14 @@ describe("HOV protected migration Run Command contract", () => {
     expect(runCommand).toContain(
       "Environment-variable reference parameters must name a bound protected parameter."
     )
+    expect(runCommand).toContain("$PublicMetadataParameterNames")
+    expect(runCommand).toContain("$name -notin $publicParameterNames")
+    expect(runCommand).toContain("[string]$Parameters[$name] -cnotmatch $metadataValuePattern")
+    expect(runCommand).toContain(
+      "Allowed public metadata parameters must exist and contain only a bounded resource identifier."
+    )
     expect(runCommand).toContain('$_ -notin $environmentReferenceParameterNames')
+    expect(runCommand).toContain('$_ -notin $publicMetadataNames')
     expect(runCommand).toContain('unset "$name" || true')
     expect(runCommand).toContain('rm -rf -- "$temporary_directory"')
     expect(runCommand).toContain("trap cleanup EXIT")

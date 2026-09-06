@@ -76,6 +76,11 @@ Public payload parameters whose names end in `EnvironmentVariable` carry only
 the name of a protected process-environment variable. The launcher requires
 each referenced name to be a key supplied through `ProtectedParameterBindings`;
 the corresponding secret value must never be supplied publicly.
+Sensitive-looking parameters that contain non-secret resource names must be
+explicitly listed in `PublicMetadataParameterNames`. The launcher accepts those
+values only when they are bounded identifiers made from letters, digits, dots,
+underscores, and hyphens; all other sensitive-looking public parameters remain
+blocked.
 
 The exact runner plan and exact protected command remain separate approval
 gates. This state owns the runner identity as the temporary PostgreSQL Entra
