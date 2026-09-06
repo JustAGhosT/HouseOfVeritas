@@ -61,7 +61,7 @@ $environmentReferenceParameterNames = @($publicParameterNames | Where-Object { $
 foreach ($name in $environmentReferenceParameterNames) {
   $referencedEnvironmentName = [string]$Parameters[$name]
   if ($referencedEnvironmentName -cnotmatch $environmentNamePattern -or
-    $referencedEnvironmentName -notin $protectedParameterNames) {
+    $referencedEnvironmentName -cnotin $protectedParameterNames) {
     throw "Environment-variable reference parameters must name a bound protected parameter."
   }
 }

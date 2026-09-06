@@ -51,7 +51,7 @@ describe("HOV protected migration Run Command contract", () => {
     expect(runCommand).toContain('throw "Confirm and cf are reserved by the protected launcher."')
     expect(runCommand).toContain("$_ -match '(?i)EnvironmentVariable$'")
     expect(runCommand).toContain(
-      "$referencedEnvironmentName -notin $protectedParameterNames"
+      "$referencedEnvironmentName -cnotin $protectedParameterNames"
     )
     expect(runCommand).toContain(
       "Environment-variable reference parameters must name a bound protected parameter."
