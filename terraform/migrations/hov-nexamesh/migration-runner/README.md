@@ -52,8 +52,9 @@ the private target Blob account.
 Linux Managed Run Command executes `source.script` with a POSIX shell. A raw
 PowerShell file is therefore not a valid payload even though `pwsh` is installed.
 `scripts/migration/hov-nexamesh/Invoke-ProtectedMigrationRunCommand.ps1` supplies
-a reviewed Linux shell wrapper: it writes the repository PowerShell payload and
-its launcher as mode-0600 files inside a mode-0700 temporary directory, invokes:
+a reviewed LF-normalized Linux shell wrapper: it verifies and writes the
+repository PowerShell payload, its sibling `Common.ps1` dependency, and its
+launcher as mode-0600 files inside a mode-0700 temporary directory, then invokes:
 
 ```text
 /usr/bin/pwsh -NoLogo -NoProfile -NonInteractive -File <temporary-script.ps1>
@@ -61,7 +62,10 @@ its launcher as mode-0600 files inside a mode-0700 temporary directory, invokes:
 
 The wrapper traps exit, clears protected process-environment variables, removes
 the temporary directory, forwards the PowerShell exit code, and suppresses
-payload stdout/stderr. The generated PowerShell launcher scopes
+payload stdout/stderr. Before invoking the payload, it signs Azure CLI in with
+the VM's system-assigned identity using an ephemeral configuration directory,
+selects the already asserted target subscription, and removes the token cache
+during cleanup. The generated PowerShell launcher scopes
 `$ConfirmPreference` to `None` so a payload with `ConfirmImpact = "High"` cannot
 trigger an impossible prompt under `-NonInteractive`; this also keeps payloads
 without `SupportsShouldProcess` executable. The outer exact confirmation token
@@ -71,6 +75,16 @@ custom data, extension settings, Terraform variables, outputs, or state. The
 launcher makes protected Run Command execution technically available; every
 payload still needs separate source review, a pinned SHA-256, an exact command
 approval, and evidence that records names and outcomes only.
+
+Public payload parameters whose names end in `EnvironmentVariable` carry only
+the name of a protected process-environment variable. The launcher requires
+each referenced name to be a key supplied through `ProtectedParameterBindings`;
+the corresponding secret value must never be supplied publicly.
+Sensitive-looking parameters that contain non-secret resource names must be
+explicitly listed in `PublicMetadataParameterNames`. The launcher accepts those
+values only when they are at most 127 characters long, begin with a letter or
+digit, and otherwise contain only letters, digits, dots, underscores, or
+hyphens; all other sensitive-looking public parameters remain blocked.
 
 The exact runner plan and exact protected command remain separate approval
 gates. This state owns the runner identity as the temporary PostgreSQL Entra

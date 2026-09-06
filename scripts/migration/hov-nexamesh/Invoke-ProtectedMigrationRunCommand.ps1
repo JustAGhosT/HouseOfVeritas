@@ -5,6 +5,7 @@ param(
   [Parameter(Mandatory)][ValidatePattern('^hov-migration-[a-z0-9-]+$')][string]$RunCommandName,
   [Parameter(Mandatory)][string]$ScriptPath,
   [Parameter(Mandatory)][ValidatePattern('^[a-f0-9]{64}$')][string]$ExpectedScriptSha256,
+  [Parameter(Mandatory)][ValidatePattern('^[a-f0-9]{64}$')][string]$ExpectedCommonSha256,
   [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ExpectedImagePublisher,
   [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ExpectedImageOffer,
   [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$ExpectedImageSku,
@@ -17,6 +18,7 @@ param(
   [Parameter()][string[]]$RequiredCommands = @(),
   [Parameter()][hashtable]$Parameters = @{},
   [Parameter()][hashtable]$ProtectedParameterBindings = @{},
+  [Parameter()][string[]]$PublicMetadataParameterNames = @(),
   [Parameter(Mandatory)][string]$OutputPath,
   [Parameter(Mandatory)][string]$Confirmation,
   [ValidateRange(300, 14400)][int]$TimeoutSeconds = 7200
@@ -42,6 +44,7 @@ if ($Confirmation -cne $requiredConfirmation) {
 }
 $context = Assert-AzureBoundary -Boundary Target -ResourceGroup $ResourceGroup -RequireResourceGroup
 $environmentNamePattern = '^[A-Za-z_][A-Za-z0-9_]*$'
+$metadataValuePattern = '^[0-9A-Za-z][0-9A-Za-z_.-]{0,126}$'
 $sensitiveNamePattern = '(?i)(password|secret|token|credential|connection|string|dsn|uri|key)'
 
 $publicParameterNames = @($Parameters.Keys | ForEach-Object { [string]$_ } | Sort-Object -Unique)
@@ -54,7 +57,25 @@ foreach ($name in @($publicParameterNames + $protectedParameterNames)) {
     throw "Managed Run Command parameter names must be safe process-environment names."
   }
 }
-if (@($publicParameterNames | Where-Object { $_ -match $sensitiveNamePattern }).Count -gt 0) {
+$environmentReferenceParameterNames = @($publicParameterNames | Where-Object { $_ -match '(?i)EnvironmentVariable$' })
+foreach ($name in $environmentReferenceParameterNames) {
+  $referencedEnvironmentName = [string]$Parameters[$name]
+  if ($referencedEnvironmentName -cnotmatch $environmentNamePattern -or
+    $referencedEnvironmentName -cnotin $protectedParameterNames) {
+    throw "Environment-variable reference parameters must name a bound protected parameter."
+  }
+}
+$publicMetadataNames = @($PublicMetadataParameterNames | ForEach-Object { [string]$_ } | Sort-Object -Unique)
+foreach ($name in $publicMetadataNames) {
+  if ($name -notin $publicParameterNames -or [string]$Parameters[$name] -cnotmatch $metadataValuePattern) {
+    throw "Allowed public metadata parameters must exist and contain only a bounded resource identifier."
+  }
+}
+if (@($publicParameterNames | Where-Object {
+      $_ -match $sensitiveNamePattern -and
+      $_ -notin $environmentReferenceParameterNames -and
+      $_ -notin $publicMetadataNames
+    }).Count -gt 0) {
   throw "Sensitive-looking Run Command parameters must use ProtectedParameterBindings, never public Parameters."
 }
 if (@($publicParameterNames | Where-Object { $protectedParameterNames -ccontains $_ }).Count -gt 0) {
@@ -79,11 +100,25 @@ $scriptHash = Get-Sha256 -Path $scriptFile
 if ($scriptHash -cne $ExpectedScriptSha256.ToLowerInvariant()) {
   throw "Managed Run Command script hash does not match the separately reviewed digest."
 }
+$commonFile = Join-Path (Split-Path -Parent $scriptFile) "Common.ps1"
+if (-not (Test-Path -LiteralPath $commonFile -PathType Leaf)) {
+  throw "Managed Run Command payload requires sibling Common.ps1."
+}
+$commonHash = Get-Sha256 -Path $commonFile
+if ($commonHash -cne $ExpectedCommonSha256.ToLowerInvariant()) {
+  throw "Managed Run Command Common.ps1 hash does not match the separately reviewed digest."
+}
 $payloadBytes = [IO.File]::ReadAllBytes($scriptFile)
 try {
   $payloadBase64 = [Convert]::ToBase64String($payloadBytes)
 } finally {
   [Array]::Clear($payloadBytes, 0, $payloadBytes.Length)
+}
+$commonBytes = [IO.File]::ReadAllBytes($commonFile)
+try {
+  $commonBase64 = [Convert]::ToBase64String($commonBytes)
+} finally {
+  [Array]::Clear($commonBytes, 0, $commonBytes.Length)
 }
 
 $vmJson = Invoke-NativeCommand -FilePath "az" -ArgumentList @(
@@ -122,6 +157,17 @@ param([Parameter(Mandatory)][string]$PayloadPath)
 $ErrorActionPreference = "Stop"
 $ConfirmPreference = "None"
 $allowedPublicParameterNames = __PUBLIC_PARAMETER_NAMES__
+$safeStageExitCodes = @{
+  "HOV_SAFE_STAGE/confirmation" = 61
+  "HOV_SAFE_STAGE/azure-boundary" = 62
+  "HOV_SAFE_STAGE/vault-metadata" = 63
+  "HOV_SAFE_STAGE/private-endpoint" = 64
+  "HOV_SAFE_STAGE/secret-input" = 65
+  "HOV_SAFE_STAGE/key-vault-write" = 66
+  "HOV_SAFE_STAGE/app-refresh" = 67
+  "HOV_SAFE_STAGE/app-reference" = 68
+  "HOV_SAFE_STAGE/evidence" = 69
+}
 $payloadArguments = @{}
 try {
   foreach ($name in $allowedPublicParameterNames) {
@@ -133,6 +179,8 @@ try {
   if (-not $?) { exit 22 }
   exit 0
 } catch {
+  $safeExitCode = $safeStageExitCodes[[string]$_.Exception.Message]
+  if ($null -ne $safeExitCode) { exit $safeExitCode }
   exit 23
 } finally {
   foreach ($name in $allowedPublicParameterNames) {
@@ -164,6 +212,7 @@ expected_azure_cli_version='__EXPECTED_AZURE_CLI_VERSION__'
 expected_psql_version='__EXPECTED_PSQL_VERSION__'
 expected_node_version='__EXPECTED_NODE_VERSION__'
 expected_azcopy_version='__EXPECTED_AZCOPY_VERSION__'
+expected_target_subscription='__EXPECTED_TARGET_SUBSCRIPTION__'
 
 cleanup() {
   local name
@@ -176,7 +225,7 @@ cleanup() {
   case "$wrapper_path" in
     /var/lib/waagent/*|/tmp/*) rm -f -- "$wrapper_path" >/dev/null 2>&1 || true ;;
   esac
-  unset payload_base64 launcher_base64 expected_payload_sha256 temporary_directory
+  unset payload_base64 common_base64 launcher_base64 expected_payload_sha256 expected_common_sha256 expected_target_subscription AZURE_CONFIG_DIR temporary_directory
 }
 
 trap cleanup EXIT
@@ -185,7 +234,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 migration_main() {
-  local command_name payload_path launcher_path payload_stdout payload_stderr actual_payload_sha256 sha256_output tooling_readiness_path
+  local command_name payload_path common_path launcher_path payload_stdout payload_stderr actual_payload_sha256 actual_common_sha256 sha256_output tooling_readiness_path
   for command_name in "${required_commands[@]}"; do
     command -v -- "$command_name" >/dev/null 2>&1 || return 31
   done
@@ -212,20 +261,30 @@ migration_main() {
 
   temporary_directory="$(mktemp -d /tmp/hov-migration-run-command.XXXXXXXX)" || return 40
   chmod 700 "$temporary_directory" || return 41
+  export AZURE_CONFIG_DIR="$temporary_directory/.azure"
+  az login --identity --allow-no-subscriptions --output none --only-show-errors >/dev/null 2>&1 || return 50
+  az account set --subscription "$expected_target_subscription" --only-show-errors >/dev/null 2>&1 || return 51
   payload_path="$temporary_directory/payload.ps1"
+  common_path="$temporary_directory/Common.ps1"
   launcher_path="$temporary_directory/launcher.ps1"
   payload_stdout="$temporary_directory/payload.stdout"
   payload_stderr="$temporary_directory/payload.stderr"
   payload_base64='__PAYLOAD_BASE64__'
+  common_base64='__COMMON_BASE64__'
   launcher_base64='__LAUNCHER_BASE64__'
   expected_payload_sha256='__PAYLOAD_SHA256__'
+  expected_common_sha256='__COMMON_SHA256__'
 
   printf '%s' "$payload_base64" | base64 --decode > "$payload_path" || return 42
-  printf '%s' "$launcher_base64" | base64 --decode > "$launcher_path" || return 43
-  chmod 600 "$payload_path" "$launcher_path" || return 44
-  sha256_output="$(sha256sum "$payload_path")" || return 45
+  printf '%s' "$common_base64" | base64 --decode > "$common_path" || return 43
+  printf '%s' "$launcher_base64" | base64 --decode > "$launcher_path" || return 44
+  chmod 600 "$payload_path" "$common_path" "$launcher_path" || return 45
+  sha256_output="$(sha256sum "$payload_path")" || return 46
   actual_payload_sha256="${sha256_output%% *}"
-  [[ "$actual_payload_sha256" == "$expected_payload_sha256" ]] || return 46
+  [[ "$actual_payload_sha256" == "$expected_payload_sha256" ]] || return 47
+  sha256_output="$(sha256sum "$common_path")" || return 48
+  actual_common_sha256="${sha256_output%% *}"
+  [[ "$actual_common_sha256" == "$expected_common_sha256" ]] || return 49
 
   /usr/bin/pwsh -NoLogo -NoProfile -NonInteractive -File "$launcher_path" "$payload_path" \
     >"$payload_stdout" 2>"$payload_stderr"
@@ -253,9 +312,13 @@ $wrapper = $wrapper.Replace('__PROTECTED_ENVIRONMENT_NAMES__', $protectedNameLin
   Replace('__EXPECTED_PSQL_VERSION__', $ExpectedPostgresClientVersion).
   Replace('__EXPECTED_NODE_VERSION__', $ExpectedNodeVersion).
   Replace('__EXPECTED_AZCOPY_VERSION__', $ExpectedAzCopyVersion).
+  Replace('__EXPECTED_TARGET_SUBSCRIPTION__', $context.subscriptionId).
   Replace('__PAYLOAD_BASE64__', $payloadBase64).
+  Replace('__COMMON_BASE64__', $commonBase64).
   Replace('__LAUNCHER_BASE64__', $launcherBase64).
-  Replace('__PAYLOAD_SHA256__', $scriptHash)
+  Replace('__PAYLOAD_SHA256__', $scriptHash).
+  Replace('__COMMON_SHA256__', $commonHash)
+$wrapper = $wrapper.Replace("`r`n", "`n")
 $wrapperHash = Get-StringSha256 -Value $wrapper
 
 $publicParameters = foreach ($entry in $Parameters.GetEnumerator()) {
@@ -276,10 +339,11 @@ try {
     }
   }
 
-  $token = (Invoke-NativeCommand -FilePath "az" -ArgumentList @(
+  $tokenOutput = Invoke-NativeCommand -FilePath "az" -ArgumentList @(
       "account", "get-access-token", "--resource", "https://management.azure.com/",
       "--query", "accessToken", "--output", "tsv", "--only-show-errors"
-    ) -join "").Trim()
+    )
+  $token = ($tokenOutput -join "").Trim()
   $body = [ordered]@{
     location   = $vm.location
     properties = [ordered]@{
@@ -336,6 +400,7 @@ try {
       }
       runCommandName          = $RunCommandName
       payloadSha256           = $scriptHash
+      commonSha256            = $commonHash
       linuxWrapperSha256      = $wrapperHash
       publicParameterNames    = $publicParameterNames
       protectedParameterNames = $protectedParameterNames
@@ -350,9 +415,11 @@ try {
   }
   $protectedParameters = $null
   $payloadBase64 = $null
+  $commonBase64 = $null
   $launcherBase64 = $null
   $wrapper = $null
   $body = $null
+  $tokenOutput = $null
   $token = $null
   $response = $null
 }
