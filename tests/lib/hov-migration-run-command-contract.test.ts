@@ -20,6 +20,7 @@ const keyVaultSecretPayload = readFileSync(
 describe("HOV protected migration Run Command contract", () => {
   it("uses a cleanup-bound POSIX launcher without recording protected payload output", () => {
     expect(runCommand).toContain("#!/usr/bin/env bash")
+    expect(runCommand).toContain('$wrapper = $wrapper.Replace("`r`n", "`n")')
     expect(runCommand).toContain("umask 077")
     expect(runCommand).toContain("mktemp -d /tmp/hov-migration-run-command.XXXXXXXX")
     expect(runCommand).toContain('chmod 700 "$temporary_directory"')

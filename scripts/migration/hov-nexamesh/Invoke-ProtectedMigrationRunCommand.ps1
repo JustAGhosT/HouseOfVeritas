@@ -276,6 +276,7 @@ $wrapper = $wrapper.Replace('__PROTECTED_ENVIRONMENT_NAMES__', $protectedNameLin
   Replace('__PAYLOAD_BASE64__', $payloadBase64).
   Replace('__LAUNCHER_BASE64__', $launcherBase64).
   Replace('__PAYLOAD_SHA256__', $scriptHash)
+$wrapper = $wrapper.Replace("`r`n", "`n")
 $wrapperHash = Get-StringSha256 -Value $wrapper
 
 $publicParameters = foreach ($entry in $Parameters.GetEnumerator()) {

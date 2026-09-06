@@ -52,7 +52,7 @@ the private target Blob account.
 Linux Managed Run Command executes `source.script` with a POSIX shell. A raw
 PowerShell file is therefore not a valid payload even though `pwsh` is installed.
 `scripts/migration/hov-nexamesh/Invoke-ProtectedMigrationRunCommand.ps1` supplies
-a reviewed Linux shell wrapper: it writes the repository PowerShell payload and
+a reviewed LF-normalized Linux shell wrapper: it writes the repository PowerShell payload and
 its launcher as mode-0600 files inside a mode-0700 temporary directory, invokes:
 
 ```text
