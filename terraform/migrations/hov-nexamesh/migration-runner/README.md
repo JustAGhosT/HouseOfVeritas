@@ -62,7 +62,10 @@ launcher as mode-0600 files inside a mode-0700 temporary directory, then invokes
 
 The wrapper traps exit, clears protected process-environment variables, removes
 the temporary directory, forwards the PowerShell exit code, and suppresses
-payload stdout/stderr. The generated PowerShell launcher scopes
+payload stdout/stderr. Before invoking the payload, it signs Azure CLI in with
+the VM's system-assigned identity using an ephemeral configuration directory,
+selects the already asserted target subscription, and removes the token cache
+during cleanup. The generated PowerShell launcher scopes
 `$ConfirmPreference` to `None` so a payload with `ConfirmImpact = "High"` cannot
 trigger an impossible prompt under `-NonInteractive`; this also keeps payloads
 without `SupportsShouldProcess` executable. The outer exact confirmation token

@@ -199,6 +199,7 @@ expected_azure_cli_version='__EXPECTED_AZURE_CLI_VERSION__'
 expected_psql_version='__EXPECTED_PSQL_VERSION__'
 expected_node_version='__EXPECTED_NODE_VERSION__'
 expected_azcopy_version='__EXPECTED_AZCOPY_VERSION__'
+expected_target_subscription='__EXPECTED_TARGET_SUBSCRIPTION__'
 
 cleanup() {
   local name
@@ -211,7 +212,7 @@ cleanup() {
   case "$wrapper_path" in
     /var/lib/waagent/*|/tmp/*) rm -f -- "$wrapper_path" >/dev/null 2>&1 || true ;;
   esac
-  unset payload_base64 common_base64 launcher_base64 expected_payload_sha256 expected_common_sha256 temporary_directory
+  unset payload_base64 common_base64 launcher_base64 expected_payload_sha256 expected_common_sha256 expected_target_subscription AZURE_CONFIG_DIR temporary_directory
 }
 
 trap cleanup EXIT
@@ -247,6 +248,9 @@ migration_main() {
 
   temporary_directory="$(mktemp -d /tmp/hov-migration-run-command.XXXXXXXX)" || return 40
   chmod 700 "$temporary_directory" || return 41
+  export AZURE_CONFIG_DIR="$temporary_directory/.azure"
+  az login --identity --allow-no-subscriptions --output none --only-show-errors >/dev/null 2>&1 || return 50
+  az account set --subscription "$expected_target_subscription" --only-show-errors >/dev/null 2>&1 || return 51
   payload_path="$temporary_directory/payload.ps1"
   common_path="$temporary_directory/Common.ps1"
   launcher_path="$temporary_directory/launcher.ps1"
@@ -295,6 +299,7 @@ $wrapper = $wrapper.Replace('__PROTECTED_ENVIRONMENT_NAMES__', $protectedNameLin
   Replace('__EXPECTED_PSQL_VERSION__', $ExpectedPostgresClientVersion).
   Replace('__EXPECTED_NODE_VERSION__', $ExpectedNodeVersion).
   Replace('__EXPECTED_AZCOPY_VERSION__', $ExpectedAzCopyVersion).
+  Replace('__EXPECTED_TARGET_SUBSCRIPTION__', $context.subscriptionId).
   Replace('__PAYLOAD_BASE64__', $payloadBase64).
   Replace('__COMMON_BASE64__', $commonBase64).
   Replace('__LAUNCHER_BASE64__', $launcherBase64).

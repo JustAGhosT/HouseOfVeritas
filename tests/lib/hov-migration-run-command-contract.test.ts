@@ -24,6 +24,15 @@ describe("HOV protected migration Run Command contract", () => {
     expect(runCommand).toContain("umask 077")
     expect(runCommand).toContain("mktemp -d /tmp/hov-migration-run-command.XXXXXXXX")
     expect(runCommand).toContain('chmod 700 "$temporary_directory"')
+    expect(runCommand).toContain('export AZURE_CONFIG_DIR="$temporary_directory/.azure"')
+    expect(runCommand).toContain(
+      "az login --identity --allow-no-subscriptions --output none --only-show-errors"
+    )
+    expect(runCommand).toContain(
+      'az account set --subscription "$expected_target_subscription" --only-show-errors'
+    )
+    expect(runCommand).toContain("expected_target_subscription='__EXPECTED_TARGET_SUBSCRIPTION__'")
+    expect(runCommand).toContain("Replace('__EXPECTED_TARGET_SUBSCRIPTION__', $context.subscriptionId)")
     expect(runCommand).toContain('common_path="$temporary_directory/Common.ps1"')
     expect(runCommand).toContain('chmod 600 "$payload_path" "$common_path" "$launcher_path"')
     expect(runCommand).toContain('[[ "$actual_common_sha256" == "$expected_common_sha256" ]]')
@@ -58,6 +67,7 @@ describe("HOV protected migration Run Command contract", () => {
     expect(keyVaultSecretPayload).toContain('$token = ($tokenOutput -join "").Trim()')
     expect(keyVaultSecretPayload).not.toContain(') -join "").Trim()')
     expect(runCommand).toContain('unset "$name" || true')
+    expect(runCommand).toContain("expected_target_subscription AZURE_CONFIG_DIR temporary_directory")
     expect(runCommand).toContain('rm -rf -- "$temporary_directory"')
     expect(runCommand).toContain("trap cleanup EXIT")
     expect(runCommand).toContain("trap 'exit 129' HUP")
