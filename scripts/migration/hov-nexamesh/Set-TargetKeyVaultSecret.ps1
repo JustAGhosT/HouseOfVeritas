@@ -76,7 +76,6 @@ if ($WebAppName) {
   )
   $reference = ($referenceJson -join [Environment]::NewLine) | ConvertFrom-Json
   if ($reference.properties.status -cne "Resolved" -or
-    $reference.properties.source -cne "KeyVault" -or
     $reference.properties.vaultName -cne $VaultName -or
     $reference.properties.secretName -cne $SecretName) {
     throw "Target App Service Key Vault reference is not resolved."

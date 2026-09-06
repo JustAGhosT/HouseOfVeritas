@@ -66,6 +66,8 @@ describe("HOV protected migration Run Command contract", () => {
     expect(runCommand).not.toContain(') -join "").Trim()')
     expect(keyVaultSecretPayload).toContain('$token = ($tokenOutput -join "").Trim()')
     expect(keyVaultSecretPayload).not.toContain(') -join "").Trim()')
+    expect(keyVaultSecretPayload).toContain('$reference.properties.status -cne "Resolved"')
+    expect(keyVaultSecretPayload).not.toContain('$reference.properties.source -cne "KeyVault"')
     expect(runCommand).toContain('unset "$name" || true')
     expect(runCommand).toContain("expected_target_subscription AZURE_CONFIG_DIR temporary_directory")
     expect(runCommand).toContain('rm -rf -- "$temporary_directory"')
