@@ -72,6 +72,11 @@ launcher makes protected Run Command execution technically available; every
 payload still needs separate source review, a pinned SHA-256, an exact command
 approval, and evidence that records names and outcomes only.
 
+Public payload parameters whose names end in `EnvironmentVariable` carry only
+the name of a protected process-environment variable. The launcher validates
+those reference values as environment names; the corresponding secret value
+must still be supplied separately through `ProtectedParameterBindings`.
+
 The exact runner plan and exact protected command remain separate approval
 gates. This state owns the runner identity as the temporary PostgreSQL Entra
 administrator. Before teardown, use a separately reviewed change to establish

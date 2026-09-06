@@ -54,7 +54,15 @@ foreach ($name in @($publicParameterNames + $protectedParameterNames)) {
     throw "Managed Run Command parameter names must be safe process-environment names."
   }
 }
-if (@($publicParameterNames | Where-Object { $_ -match $sensitiveNamePattern }).Count -gt 0) {
+$environmentReferenceParameterNames = @($publicParameterNames | Where-Object { $_ -match '(?i)EnvironmentVariable$' })
+foreach ($name in $environmentReferenceParameterNames) {
+  if ([string]$Parameters[$name] -cnotmatch $environmentNamePattern) {
+    throw "Environment-variable reference parameters must contain safe process-environment names."
+  }
+}
+if (@($publicParameterNames | Where-Object {
+      $_ -match $sensitiveNamePattern -and $_ -notin $environmentReferenceParameterNames
+    }).Count -gt 0) {
   throw "Sensitive-looking Run Command parameters must use ProtectedParameterBindings, never public Parameters."
 }
 if (@($publicParameterNames | Where-Object { $protectedParameterNames -ccontains $_ }).Count -gt 0) {
